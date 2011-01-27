@@ -17,7 +17,7 @@
  * Author: Nicolas Burrus <nicolas.burrus@uc3m.es>, (C) 2010
  */
 
-#include <ntk/camera/opencv_grabber.h>
+#include <ntk/camera/kinect_grabber.h>
 #include <ntk/camera/rgbd_processor.h>
 
 #include <QApplication>
@@ -28,7 +28,10 @@ using namespace cv;
 class ImageHandler : public AsyncEventListener
 {
 public:
-  ImageHandler(OpencvGrabber& grabber) : m_grabber(grabber)
+  ImageHandler(KinectGrabber& grabber,
+	       RGBDProcessor& processor) 
+    : m_grabber(grabber),
+      m_processor(processor)
   {
     namedWindow("color");
   }
@@ -53,19 +56,22 @@ public:
   }
 
 private:
-  OpencvGrabber& m_grabber;
+  KinectGrabber& m_grabber;
+  RGBDProcessor& m_processor;
   RGBDImage m_current_frame;
-  RGBDProcessor m_processor;
 };
 
 int main(int argc, char **argv)
 {
   QApplication app(argc, argv);
 
-  OpencvGrabber grabber(cv::Size(640, 480));
-  grabber.initialize(0 /* camera id */);
+  KinectGrabber grabber;
+  grabber.initialize();
 
-  ImageHandler handler(grabber);
+  RGBDProcessor processor;
+  processor.setFilterFlag(RGBDProcessor::ComputeKinectDepthBaseline, true);
+
+  ImageHandler handler(grabber, processor);
 
   // Register image handler as a listener of grabbed data.
   grabber.addEventListener(&handler);
@@ -73,7 +79,7 @@ int main(int argc, char **argv)
   // Start the grabbing thread.
   grabber.start();
 
-  // Launch QT main loop.
+  // Launch QT main loop. Handles the events.
   return app.exec();
 }
 
