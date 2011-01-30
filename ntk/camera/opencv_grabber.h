@@ -26,6 +26,9 @@
 namespace ntk
 {
 
+/*!
+ * Grab RGB-D images from an OpenCV camera.
+ */
 class OpencvGrabber : public RGBDGrabber
 {
 public:

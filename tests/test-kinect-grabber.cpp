@@ -32,14 +32,11 @@ int main(int argc, char** argv)
 
   KinectGrabber grabber;
   grabber.initialize();
-  // grabber.start();
+  grabber.start();
 
   // Set camera tilt.
   grabber.setTiltAngle(15);
 
-  namedWindow("color");
-
-#if 0
   // New opencv window
   namedWindow("color");
   namedWindow("ir");
@@ -47,8 +44,7 @@ int main(int argc, char** argv)
   namedWindow("depth_as_color");
 
   // Tell the processor to transform raw depth into meters using linear coefficients.
-  RGBDProcessor processor;
-  processor.setFilterFlag(RGBDProcessor::ComputeKinectDepthBaseline, true);
+  KinectProcessor processor;
 
   RGBDImage current_frame;
   cv::Mat3b depth_as_color;
@@ -79,6 +75,4 @@ int main(int argc, char** argv)
     if (c == 'f')
       grabber.setIRMode(!grabber.irModeEnabled());
   }
-#endif
 }
-

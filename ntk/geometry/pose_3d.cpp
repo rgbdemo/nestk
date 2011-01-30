@@ -274,7 +274,7 @@ void Pose3D :: toLeftCamera(const cv::Mat1d& cv_matrix,
   applyTransformAfter(toVec3d(new_T), new_R);
 }
 
-void Pose3D :: setRightCameraParametersFromOpencv(const cv::Mat1d& cv_matrix,
+void Pose3D :: toRightCamera(const cv::Mat1d& cv_matrix,
                                                   const cv::Mat1d& R,
                                                   const cv::Mat1d& T)
 {
@@ -645,14 +645,6 @@ void Pose3D :: invert()
   impl->camera_transform = impl->camera_transform.inverse();
   impl->computeProjectiveTransform();
 }
-
-cv::Point3f Pose3D :: projectWithoutPrincipalPoint(const cv::Point3f& p) const
-{
-  Eigen::Vector3d ep; toEigen(p, ep);
-  return toVec3f(impl->projectWithoutPrincipalPoint(ep));
-}
-
-
 
 cv::Point3f Pose3D :: projectToImage(const cv::Point3f& p) const
 {

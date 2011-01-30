@@ -36,25 +36,37 @@ extern "C" {
 namespace ntk
 {
 
+/*!
+ * Grab RGB-D images from a Kinect.
+ */
 class KinectGrabber : public RGBDGrabber
 {
 public:
   KinectGrabber()
     : m_depth_transmitted(0),
-    m_rgb_transmitted(0),
-    f_ctx(0), f_dev(0),
-    m_ir_mode(0),
-    m_dual_ir_rgb(0)
+      m_rgb_transmitted(0),
+      f_ctx(0), f_dev(0),
+      m_ir_mode(0),
+      m_dual_ir_rgb(0)
   {}
 
+  /*! Connect with the Kinect device. */
   void initialize();
+
+  /*! Set the Kinect motor angle using degress. */
+  virtual void setTiltAngle(int angle);
+
+  /*! Grab IR images instead of RGB images. */
+  void setIRMode(bool ir);
+  bool irModeEnabled() const { return m_ir_mode; }
+
+  /*! Special mode switching between IR and RGB after each frame. */
+  void setDualRgbIR(bool enable);
+
+public:
   void depthCallBack(uint16_t *buf, int width, int height);
   void rgbCallBack(uint8_t *buf, int width, int height);
   void irCallBack(uint8_t *buf, int width, int height);
-  virtual void setTiltAngle(int angle);
-  void setIRMode(bool ir);
-  bool irModeEnabled() const { return m_ir_mode; }
-  void setDualRgbIR(bool enable);
 
 protected:
   virtual void run();

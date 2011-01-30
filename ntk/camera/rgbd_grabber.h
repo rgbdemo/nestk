@@ -30,62 +30,81 @@
 namespace ntk
 {
 
-  class RGBDGrabber : public QThread, public EventBroadcaster, public SyncEventListener
+/*!
+ * Abstract RGB-D image grabber.
+ * The grabber works in its own QT thread.
+ */
+class RGBDGrabber : public QThread, public EventBroadcaster, public SyncEventListener
+{
+public:
+  RGBDGrabber()
+    : m_calib_data(0),
+      m_should_exit(0),
+      m_last_frame_tick(0),
+      m_framerate(0),
+      m_frame_count(0)
   {
-  public:
-    RGBDGrabber()
-      : m_calib_data(0),
-        m_should_exit(0),
-        m_last_frame_tick(0),
-        m_framerate(0),
-        m_frame_count(0)
-    {
-      setSynchronous(false);
-    }
+    setSynchronous(false);
+  }
 
-  public:
-    virtual void setShouldExit() { m_should_exit = true; }
+public:
+  /*! Tell the grabber thread to stop grabbing. */
+  virtual void setShouldExit() { m_should_exit = true; }
 
-    virtual void setIntegrationTime(double value) {}
-    virtual double integrationTime() const { return -1; }
-    virtual void setTiltAngle(int angle) {}
+  /*! Set the integration time for Time-of-Flight cameras. */
+  virtual void setIntegrationTime(double value) {}
+  virtual double integrationTime() const { return -1; }
 
-    virtual double frameRate() const { return m_framerate; }
-    void advertiseNewFrame();
+  /*! Set the tilt angle for motorized grabbers such as Kinect. */
+  virtual void setTiltAngle(int angle) {}
 
-    void setCalibrationData(const ntk::RGBDCalibration& data)
-    { m_calib_data = &data; m_rgbd_image.setCalibration(&data); }
+  /*! Return the current framerate. */
+  virtual double frameRate() const { return m_framerate; }
 
-    // Thread safe copy
-    void copyImageTo(RGBDImage& image);
+  /*! Set the calibration data that will be included in each image. */
+  void setCalibrationData(const ntk::RGBDCalibration& data)
+  { m_calib_data = &data; m_rgbd_image.setCalibration(&data); }
 
-    virtual void setSynchronous(bool sync)
-    { SyncEventListener::setEnabled(sync); }
+  /*! Thread safe deep copy. */
+  void copyImageTo(RGBDImage& image);
 
-    bool isSynchronous() const
-    { return SyncEventListener::enabled(); }
+  /*!
+   * Tell the grabber to wait for notifications before each frame grab.
+   * @see SyncEventListener
+   */
+  virtual void setSynchronous(bool sync)
+  { SyncEventListener::setEnabled(sync); }
 
-    bool hasData() const
-    { QReadLocker locker(&m_lock); return m_rgbd_image.depth().data && m_rgbd_image.rgb().data; }
+  /*! Whether the grabber is in synchronous mode. */
+  bool isSynchronous() const
+  { return SyncEventListener::enabled(); }
 
-    void waitForNextFrame(int timeout_msecs = 1000)
-    {
-      m_condition_lock.lock();
-      m_condition.wait(&m_condition_lock, timeout_msecs);
-      m_condition_lock.unlock();
-    }
+  /*! Return true if a frame has already been grabbed. */
+  bool hasData() const
+  { QReadLocker locker(&m_lock); return m_rgbd_image.depth().data && m_rgbd_image.rgb().data; }
 
-  protected:
-    mutable RecursiveQReadWriteLock m_lock;
-    mutable QMutex m_condition_lock;
-    QWaitCondition m_condition;
-    const ntk::RGBDCalibration* m_calib_data;
-    RGBDImage m_rgbd_image;
-    bool m_should_exit;
-    uint64 m_last_frame_tick;
-    double m_framerate;
-    int m_frame_count;
-  };
+  /*! Blocking wait until next frame is ready. */
+  void waitForNextFrame(int timeout_msecs = 1000)
+  {
+    m_condition_lock.lock();
+    m_condition.wait(&m_condition_lock, timeout_msecs);
+    m_condition_lock.unlock();
+  }
+
+protected:
+  void advertiseNewFrame();
+
+protected:
+  mutable RecursiveQReadWriteLock m_lock;
+  mutable QMutex m_condition_lock;
+  QWaitCondition m_condition;
+  const ntk::RGBDCalibration* m_calib_data;
+  RGBDImage m_rgbd_image;
+  bool m_should_exit;
+  uint64 m_last_frame_tick;
+  double m_framerate;
+  int m_frame_count;
+};
 
 } // ntk
 

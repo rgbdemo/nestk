@@ -87,7 +87,7 @@ void RGBDCalibration :: loadFromFile(const char* filename)
   depth_pose->setCameraParametersFromOpencv(depth_intrinsics);
 
   rgb_pose = new Pose3D();
-  rgb_pose->setRightCameraParametersFromOpencv(rgb_intrinsics, R, T);
+  rgb_pose->toRightCamera(rgb_intrinsics, R, T);
 
   initUndistortRectifyMap(rgb_intrinsics, rgb_distortion,
                           Mat(), rgb_intrinsics, rgb_size, CV_16SC2,

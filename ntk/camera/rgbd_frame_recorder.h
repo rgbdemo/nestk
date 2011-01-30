@@ -29,15 +29,29 @@
 namespace ntk
 {
 
+/*!
+ * Store a serie of RGB-D images in viewXXXX directories.
+ */
 class RGBDFrameRecorder
 {
 public:
+  /*! Initialize and set the root directory. */
   RGBDFrameRecorder(const std::string& directory);
 
+  /*! Save an image. */
   void saveCurrentFrame(const RGBDImage& image);
+
+  /*!
+   * Whether the undistorted and postprocessed images should be
+   * saved also.
+   */
   void setSaveOnlyRaw(bool v) { m_only_raw = v; }
+
+  /*! Set the starting index. */
   void setFrameIndex(int index) { m_frame_index = index; }
   void resetFrameIndex() { m_frame_index = 0; }
+
+  /*! Change the parent directory. */
   void setDirectory(const std::string& directory);
   const QDir& directory() const { return m_dir; }
 

@@ -28,20 +28,30 @@
 namespace ntk
 {
 
+/*!
+ * Fake RGB-D grabber reading images from viewXXXX directories.
+ */
 class FileGrabber : public RGBDGrabber
 {
 public:
-    FileGrabber(const std::string& path, bool is_directory);
+  /*!
+   * Initialize the file grabber from a given path.
+   * \param path viewXXXX directory or directory
+   *        containing a set of viewXXXX dirs.
+   * \param is_directory whether path is a one viewXXXX directory
+   *        or should be interpreted as a set of viewXXXX dirs.
+   */
+  FileGrabber(const std::string& path, bool is_directory);
 
 protected:
-    virtual void run();
+  virtual void run();
 
 private:
-    QDir m_path;
-    QStringList m_image_list;
-    RGBDImage m_buffer_image;
-    int m_current_image_index;
-    bool m_is_directory;
+  QDir m_path;
+  QStringList m_image_list;
+  RGBDImage m_buffer_image;
+  int m_current_image_index;
+  bool m_is_directory;
 };
 
 } // ntk

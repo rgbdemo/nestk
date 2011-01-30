@@ -29,85 +29,123 @@ namespace ntk
   class RGBDCalibration;
 
 /*!
- * Stores a color image and a depth image with associated
- * amplitude and intensity.
+ * Stores RGB+Depth data.
+ *
+ * RGBDImage also stores a pointer on calibration data,
+ * and caches postprocessed data such as normals.
+ * The rawXXX accessors are the raw data extracted by a grabber.
+ * The other accessors refers to postprocessed data, e.g. after
+ * RGBDProcessor::processImage .
  */
 class CV_EXPORTS RGBDImage
 {
 public:
   RGBDImage() : m_calibration(0) {}
 
+  /*! Initialize from an viewXXXX directory. */
   RGBDImage(const std::string& dir,
             const RGBDCalibration* calib = 0,
             RGBDProcessor* processor = 0)
   { loadFromDir(dir, calib, processor); }
 
+  /*! Directory path if loaded from disk. */
   const std::string& directory() const { return m_directory; }
+
+  /*! Whether the image was loaded from disk. */
   bool hasDirectory() const { return !m_directory.empty(); }
 
-  // Load from a viewXXXX directory.
+  /*! Load from a viewXXXX directory. */
   void loadFromDir(const std::string& dir,
                    const RGBDCalibration* calib = 0,
                    RGBDProcessor* processor = 0);
 
-  // Load from a single color image.
+  /*! Load from a single color image. No depth data. */
   void loadFromFile(const std::string& dir,
                     const RGBDCalibration* calib = 0);
 
+  /*! Associated optional calibration data. */
+  const RGBDCalibration* calibration() const { return m_calibration; }
+
+  /*! Set an associated calibration data. */
+  void setCalibration(const RGBDCalibration* calibration) { m_calibration = calibration; }
+
+  /*! Set an associated viewXXXX directory. */
+  void setDirectory(const std::string& dir) { m_directory = dir; }
+
+  /*! Swap content with another image. */
+  void swap(RGBDImage& other);
+
+  /*! Deep copy. */
+  void copyTo(RGBDImage& other) const;
+
+  /*! Size of the color channel. */
   int rgbWidth() const { return m_rgb.cols; }
   int rgbHeight() const { return m_rgb.rows; }
 
+  /*! Size of the depth channel. */
   int depthWidth() const { return m_depth.cols; }
   int depthHeight() const { return m_depth.rows; }
 
-  // Accessors to color image.
+  /*! Accessors to the postprocessed color channel. */
   cv::Mat3b& rgbRef() { return m_rgb; }
   const cv::Mat3b& rgb() const { return m_rgb; }
 
-  cv::Mat1b& rgbAsGrayRef() { return m_rgb_as_gray; }
-  const cv::Mat1b& rgbAsGray() const { return m_rgb_as_gray; }
-
-  // Accessors to color image mapped onto depth camera.
-  cv::Mat3b& mappedRgbRef() { return m_mapped_rgb; }
-  const cv::Mat3b& mappedRgb() const { return m_mapped_rgb; }
-
-  // Accessors to depth image.
+  /*! Accessors to the postprocessed depth channel. */
   cv::Mat1f& depthRef() { return m_depth; }
   const cv::Mat1f& depth() const { return m_depth; }
 
-  // Accessors to depth image mapped onto color camera.
-  cv::Mat1f& mappedDepthRef() { return m_mapped_depth; }
-  const cv::Mat1f& mappedDepth() const { return m_mapped_depth; }
+  /*! Accessors to the raw rgb channel. */
+  cv::Mat3b& rawRgbRef() { return m_raw_rgb; }
+  const cv::Mat3b& rawRgb() const { return m_raw_rgb; }
 
-  // Accessors to depth mask. This can be used to mark and
-  // filter out unreliable depth values.
-  cv::Mat1b& depthMaskRef() { return m_depth_mask; }
-  const cv::Mat1b& depthMask() const { return m_depth_mask; }
-
-  // 3D normals computed using the depth image.
-  cv::Mat3f& normalRef() { return m_normal; }
-  const cv::Mat3f& normal() const { return m_normal; }
-
-  // Amplitude image associated to depth grab.
-  cv::Mat1f& amplitudeRef() { return m_amplitude; }
-  const cv::Mat1f& amplitude() const { return m_amplitude; }
-
-  // Intensity image associated to depth grab.
-  cv::Mat1f& intensityRef() { return m_intensity; }
-  const cv::Mat1f& intensity() const { return m_intensity; }
-
-  // Raw images
-  cv::Mat1f& rawIntensityRef() { return m_raw_intensity; }
-  const cv::Mat1f& rawIntensity() const { return m_raw_intensity; }
-
-  cv::Mat1f& rawAmplitudeRef() { return m_raw_amplitude; }
-  const cv::Mat1f& rawAmplitude() const { return m_raw_amplitude; }
-
+  /*! Accessors to the raw depth channel. */
   cv::Mat1f& rawDepthRef() { return m_raw_depth; }
   const cv::Mat1f& rawDepth() const { return m_raw_depth; }
 
-  cv::Mat3b& rawRgbRef() { return m_raw_rgb; }
-  const cv::Mat3b& rawRgb() const { return m_raw_rgb; }
+  /*! Accessors to the raw intensity channel (ignored with Kinect). */
+  cv::Mat1f& rawIntensityRef() { return m_raw_intensity; }
+  const cv::Mat1f& rawIntensity() const { return m_raw_intensity; }
+
+  /*! Accessors to the raw depth channel (ignored with Kinect). */
+  cv::Mat1f& rawAmplitudeRef() { return m_raw_amplitude; }
+  const cv::Mat1f& rawAmplitude() const { return m_raw_amplitude; }
+
+  /*!
+   * Accessors to depth mask.
+   * This can be used to mark and filter out unreliable depth values.
+   */
+  cv::Mat1b& depthMaskRef() { return m_depth_mask; }
+  const cv::Mat1b& depthMask() const { return m_depth_mask; }
+
+  /*! Accessors to the postprocessed color channel, as a gray image. */
+  cv::Mat1b& rgbAsGrayRef() { return m_rgb_as_gray; }
+  const cv::Mat1b& rgbAsGray() const { return m_rgb_as_gray; }
+
+  /*!
+   * Accessors to the color image aligned with the depth camera.
+   * Has the same size as the depth channel.
+   */
+  cv::Mat3b& mappedRgbRef() { return m_mapped_rgb; }
+  const cv::Mat3b& mappedRgb() const { return m_mapped_rgb; }
+
+  /*!
+   * Accessors to the depth image aligned with the rgb camera.
+   * Has the same size as the rgb channel.
+   */
+  cv::Mat1f& mappedDepthRef() { return m_mapped_depth; }
+  const cv::Mat1f& mappedDepth() const { return m_mapped_depth; }
+
+  /*! Accessors to 3D normals. */
+  cv::Mat3f& normalRef() { return m_normal; }
+  const cv::Mat3f& normal() const { return m_normal; }
+
+  /*! Accessors to the amplitude image. Ignored with Kinect. */
+  cv::Mat1f& amplitudeRef() { return m_amplitude; }
+  const cv::Mat1f& amplitude() const { return m_amplitude; }
+
+  /*! Accessors to the intensity image. Ignored with Kinect. */
+  cv::Mat1f& intensityRef() { return m_intensity; }
+  const cv::Mat1f& intensity() const { return m_intensity; }
 
   /*! Whether this particular pixel has valid depth information */
   bool pixelHasDepth(int r, int c) const
@@ -115,14 +153,6 @@ public:
         && r < m_depth_mask.rows && c < m_depth_mask.cols && r >= 0 && c >= 0
         && m_depth_mask(r,c);
   }
-
-  // Raw calibration data. Migth no be set.
-  const RGBDCalibration* calibration() const { return m_calibration; }
-  void setCalibration(const RGBDCalibration* calibration) { m_calibration = calibration; }
-  void setDirectory(const std::string& dir) { m_directory = dir; }
-
-  void swap(RGBDImage& other);
-  void copyTo(RGBDImage& other) const;
 
 private:
   cv::Mat3b m_rgb;
