@@ -29,6 +29,12 @@ typedef ntk::Ptr<const Class> Class##ConstPtr;
 
 #define ntk_stringify(Code) #Code
 
+#if (defined WIN32 || defined _WIN32 || defined WINCE)
+    #define NTK_EXPORTS __declspec(dllexport)
+#else
+    #define NTK_EXPORTS
+#endif
+
 namespace cv {
   CV_EXPORTS void* fastMalloc(size_t);
   CV_EXPORTS void fastFree(void* ptr);
