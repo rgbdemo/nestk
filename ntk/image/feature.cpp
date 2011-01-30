@@ -22,6 +22,7 @@
 #include <ntk/image/sift_gpu.h>
 #include <ntk/image/sift.h>
 #include <ntk/utils/opencv_utils.h>
+#include <ntk/numeric/utils.h>
 
 using namespace cv;
 
@@ -219,11 +220,11 @@ void FeatureSet :: extractFromImageUsingSiftPP(const RGBDImage& image,
 
   if(O < 1)
   {
-    O = std::max
+    O = ntk::math::max
         (int
         (std::floor
-        (log2
-        (std::min(fim.cols,fim.rows))) - omin -3), 1);
+        (ntk::math::log2
+        (ntk::math::min(fim.cols,fim.rows))) - omin -3), 1);
   }
 
   VL::Sift sift(fim[0], fim.cols, fim.rows,

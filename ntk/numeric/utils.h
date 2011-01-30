@@ -207,6 +207,8 @@ namespace ntk
     inline unsigned long cube(unsigned long x) { return x*x*x; }
     inline float         cube(float x)         { return x*x*x; }
     inline double        cube(double x)        { return x*x*x; }
+
+	inline double		 log2(double x)        { return log(x)/log2e; }
   } // end of math
 
 } // end of ntk
