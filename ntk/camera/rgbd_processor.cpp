@@ -27,6 +27,19 @@ using namespace cv;
 namespace ntk
 {
 
+	RGBDProcessor :: RGBDProcessor() :
+        m_image(0),
+        //m_flags(FixGeometry | FixBias | UndistortImages | ComputeNormals),
+        m_flags(UndistortImages),
+        m_min_depth(0.3),
+        m_max_depth(2.0),
+        m_max_normal_angle(80),
+        m_max_time_depth_delta(0.1),
+        m_max_spatial_depth_delta(0.1),
+        m_mapping_resolution(1.0)
+    {
+    }
+
   void RGBDProcessor :: fixDepthGeometry()
   {
     ntk_ensure(m_image->calibration(), "Calibration required.");
