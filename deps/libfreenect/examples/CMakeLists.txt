@@ -12,7 +12,7 @@ if (WIN32)
   set(THREADS_USE_PTHREADS_WIN32 true)
   find_package(Threads REQUIRED)
 
-  include_directories(${THREADS_PTHREADS_INCLUDE_DIR} ${GLUT_INCLUDE_DIR})
+  include_directories(${THREADS_PTHREADS_INCLUDE_DIR})
 endif()
 
 add_executable(glview glview.c)

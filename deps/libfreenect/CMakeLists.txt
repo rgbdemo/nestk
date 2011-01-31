@@ -49,9 +49,9 @@ set (PROJECT_APIVER
   "${PROJECT_VER_MAJOR}.${PROJECT_VER_MINOR}")
 
 OPTION(BUILD_EXAMPLES "Build example programs" ON)
-OPTION(BUILD_FAKENECT "Build fakenect mock library" OFF)
-OPTION(BUILD_C_SYNC "Build c synchronous library" OFF)
-OPTION(BUILD_CPP "Build C++ Library (currently header only)" OFF)
+OPTION(BUILD_FAKENECT "Build fakenect mock library" ON)
+OPTION(BUILD_C_SYNC "Build c synchronous library" ON)
+OPTION(BUILD_CPP "Build C++ Library (currently header only)" ON)
 OPTION(BUILD_CV "Build OpenCV wrapper" OFF)
 OPTION(BUILD_AS3_SERVER "Build the Actionscript 3 Server Example" OFF)
 OPTION(BUILD_PYTHON "Build Python extension" OFF)
@@ -147,7 +147,7 @@ configure_file(
   "${CMAKE_CURRENT_BINARY_DIR}/UninstallTarget.cmake"
   IMMEDIATE @ONLY)
 
-add_custom_target(freenect_uninstall
+add_custom_target(libfreenect_uninstall
   COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/UninstallTarget.cmake)
 
 # Create Debian/RPM Packages

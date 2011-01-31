@@ -114,8 +114,7 @@ public:
 
   inline bool RaisePriority()
   {
-    return TRUE;
-      // return(TRUE == SetThreadPriority(hThread, THREAD_PRIORITY_TIME_CRITICAL));
+    return(TRUE == SetThreadPriority(hThread, THREAD_PRIORITY_TIME_CRITICAL));
   }
 
   static inline void Sleep(int milliseconds)

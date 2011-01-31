@@ -17,16 +17,12 @@ ENDIF(WIN32)
 add_library (freenect SHARED ${SRC})
 set_target_properties ( freenect PROPERTIES
   VERSION ${PROJECT_VER}
-  SOVERSION ${PROJECT_APIVER})
-set_target_properties (freenect PROPERTIES
-  ARCHIVE_OUTPUT_DIRECTORY "${LIBRARY_OUTPUT_PATH}"
-  RUNTIME_OUTPUT_DIRECTORY "${EXECUTABLE_OUTPUT_PATH}")
+  SOVERSION ${PROJECT_APIVER})	
 install (TARGETS freenect
   DESTINATION "${PROJECT_LIBRARY_INSTALL_DIR}")
 
 add_library (freenectstatic STATIC ${SRC})
 set_target_properties (freenectstatic PROPERTIES OUTPUT_NAME freenect)
-
 IF(UNIX AND NOT APPLE)
   SET_TARGET_PROPERTIES (freenectstatic PROPERTIES COMPILE_FLAGS "-fPIC")
 ENDIF()
