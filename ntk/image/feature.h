@@ -31,6 +31,9 @@ namespace ntk
 class FeatureLocation : public cv::KeyPoint
 {
 public:
+  FeatureLocation() : has_depth(false), depth(0.0)
+  {}
+
   /*! Whether depth data was available at this position */
   bool has_depth;
 
