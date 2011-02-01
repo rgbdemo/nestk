@@ -148,6 +148,9 @@ public:
   /*! Returns the 4x4 projection matrix (intrinsics * camera) */
   cv::Mat1f cvProjectionMatrix() const;
 
+  /*! Returns the 4x4 inverse projection matrix from image to plane. */
+  cv::Mat1f cvInvProjectionMatrix() const;
+
 public:
   /*! Reset the camera transform to Identity. */
   void resetCameraTransform();

@@ -19,7 +19,7 @@
 
 #include "event.h"
 
-#include <QCoreApplication>
+#include <QApplication>
 
 namespace ntk
 {
@@ -53,7 +53,7 @@ void AsyncEventListener :: newEvent(void* sender)
 
     m_ready = false;
   }
-  QCoreApplication::postEvent(this, new QEvent(QEvent::User));
+  QApplication::postEvent(this, new QEvent(QEvent::User));
 }
 
 void AsyncEventListener :: customEvent(QEvent* event)
@@ -62,8 +62,8 @@ void AsyncEventListener :: customEvent(QEvent* event)
     return QObject::customEvent(event);
 
   event->accept();
-  m_ready = true;
   handleAsyncEvent();
+  m_ready = true;
 }
 
 void EventBroadcaster :: addEventListener(EventListener* updater)

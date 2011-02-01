@@ -633,6 +633,13 @@ cv::Mat1f Pose3D :: cvProjectionMatrix() const
   return m;
 }
 
+cv::Mat1f Pose3D :: cvInvProjectionMatrix() const
+{
+  cv::Mat1f m(4,4);
+  toOpencv(impl->inv_project_transform.matrix(), m);
+  return m;
+}
+
 cv::Point3f Pose3D :: invCameraTransform(const cv::Point3f& p) const
 {
   Eigen::Vector3d ep; toEigen(p, ep);
@@ -678,6 +685,7 @@ void Pose3D :: projectToImage(const cv::Mat3f& voxels, const cv::Mat1b& mask, cv
   }
 }
 
+#if 1
 void Pose3D :: unprojectFromImage(const cv::Mat1f& pixels, const cv::Mat1b& mask, cv::Mat3f& voxels) const
 {
   Eigen::Vector4d epix;
@@ -705,6 +713,37 @@ void Pose3D :: unprojectFromImage(const cv::Mat1f& pixels, const cv::Mat1b& mask
     }
   }
 }
+#else
+void Pose3D :: unprojectFromImage(const cv::Mat1f& pixels, const cv::Mat1b& mask, cv::Mat3f& voxels) const
+{
+  cv::Mat1f unproj = cvInvProjectionMatrix();
+
+  cv::Mat1f p2d(4,1), p3d(4,1);
+  ntk_dbg_print(unproj.rows, 1);
+  ntk_dbg_print(unproj.cols, 1);
+  p2d(3,0) = 1; // w is always 1.
+
+  for (int r = 0; r < pixels.rows; ++r)
+  {
+    const float* pixels_data = pixels.ptr<float>(r);
+    const uchar* mask_data = mask.ptr<uchar>(r);
+    Vec3f* voxels_data = voxels.ptr<Vec3f>(r);
+    for (int c = 0; c < pixels.cols; ++c)
+    {
+      if (!mask[c])
+        continue;
+      const float d = pixels_data[c];
+      p2d(0,0) = c*d;
+      p2d(1,0) = r*d;
+      p2d(2,0) = d;
+      p3d = unproj * p2d;
+      voxels_data[c][0] = p3d(0,0);
+      voxels_data[c][1] = p3d(1,0);
+      voxels_data[c][2] = p3d(2,0);
+    }
+  }
+}
+#endif
 
 cv::Point3f Pose3D :: unprojectFromImage(const cv::Point2f& p, double depth) const
 {
