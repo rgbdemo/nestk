@@ -48,12 +48,14 @@ namespace ntk
 void AsyncEventListener :: newEvent(void* sender)
 {
   {
-    if (!m_ready)
+    if (m_event_signaled)
       return;
 
-    m_ready = false;
+    m_event_signaled = true;
   }
-  QApplication::postEvent(this, new QEvent(QEvent::User));
+
+  if (!m_handler_running)
+    QApplication::postEvent(this, new QEvent(QEvent::User));
 }
 
 void AsyncEventListener :: customEvent(QEvent* event)
@@ -62,8 +64,14 @@ void AsyncEventListener :: customEvent(QEvent* event)
     return QObject::customEvent(event);
 
   event->accept();
-  handleAsyncEvent();
-  m_ready = true;
+  m_handler_running = true;
+  while (m_event_signaled)
+  {
+    m_event_signaled = false;
+    handleAsyncEvent();
+    QApplication::processEvents();
+  }
+  m_handler_running = false;
 }
 
 void EventBroadcaster :: addEventListener(EventListener* updater)

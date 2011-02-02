@@ -63,7 +63,7 @@ class AsyncEventListener : public QObject, public EventListener
   Q_OBJECT
 
 public:
-  AsyncEventListener() : m_ready(true)
+  AsyncEventListener() : m_event_signaled(false), m_handler_running(false)
   {}
 
   virtual void newEvent(void* sender = 0);
@@ -71,7 +71,8 @@ public:
   virtual void customEvent(QEvent* event);
 
 private:
-  bool m_ready; // FIXME: need for a lock here?
+  bool m_event_signaled; // FIXME: need for a lock here?
+  bool m_handler_running;
 };
 
 class EventBroadcaster
