@@ -168,22 +168,36 @@ libusbemu exists.
 3) libusbemu: Tips, Hints and Best Practices
    *****************************************
 
----------------------------------------------------------------
-TIP: Trigger the Fail Guard if the system becomes unresponsive.
----------------------------------------------------------------
+----------------------------------------------------------------------------
+TIP: Configure your project to build your application with a console window!
+----------------------------------------------------------------------------
 
-Since libusbemu is quite experimental, there is a fail guard within it. If for some
-reason your system renders unresponsive, try focusing any window of the application
-and hold [CTRL] + [ALT] for a while.
+Since libusbemu is quite experimental, There is a fail guard within it. If for some
+reason your system renders unresponsive, try to focus the console window of your
+application and press [ESC].
 
 This will trigger a special synchronization event within the libusbemu which will
 interrupt the execution of any internal thread of libusbemu and prompt a message box
 to the user asking for action. You can either resume execution (if you unintentionally
-pressed [CTRL] + [ALT] in the console window) or abort libusbemu. The fail guard will
-never trigger if there is no incoming video or depth streams.
+pressed [ESC] in the console window) or abort the libusbemu. The recent fixes in the
+libusbemu don not seem to be causing any unresponsiveness, but is hard to assert...
 
-The Fail Guard is important since in such situations one would most likely be forced
-to shutdown the computer (in a not so graceful way, by holding the power button!).
+Note that this key check will only have effect if the console window is focused. The
+application is still free to capture the [ESC] key normally within the application
+window (unless the application window happens to be the console, but then it is very
+likely that no stream is being captured and no call to freenect_process_events() is
+being made, thus preventing the fail guard to be ever trigged).
+
+--------------------------------------------------
+TIP: Do not change the default state of libusbemu.
+--------------------------------------------------
+
+The default libusbemu setup embraces the best performance currently found so far:
+multi-threaded stream reaping.
+
+If one feels curious/adventurous, the USB isochronous reap strategy can be modified
+within the emulator code but don't expect good results; the default ReapThreaded()
+strategy is the most reliable and stable, while the others are very experimental.
 
 ----------------------------------------
 TIP: Only use a single freenect context.
@@ -227,10 +241,6 @@ and if such behavior is really to be expected is a hard task to determine.
 
 4) Overall performance of libfreenect in Windows
    *********************************************
-
----------------------------------------------
-THIS SECTION IS OUTDATED, GOTTA REDO IT SOON!
----------------------------------------------
 
 Hardware:
 * Notebook 
