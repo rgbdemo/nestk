@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 2.6)
+
+PROJECT(libusb)
+
+FIND_LIBRARY(COREFOUNDATION_LIBRARY CoreFoundation)
+FIND_LIBRARY(IOKIT_LIBRARY IOKit)
+
+ADD_SUBDIRECTORY(libusb-1.0)
