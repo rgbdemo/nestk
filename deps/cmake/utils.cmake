@@ -36,3 +36,35 @@ FOREACH(it ${ARGN})
                    )
 ENDFOREACH(it)
 ENDMACRO(QT4_WRAP_CPP_INLINE)
+
+SET(DIRS ${QT_LIBRARY_DIRS} ${CMAKE_BINARY_DIR}/lib ${CMAKE_BINARY_DIR}/bin)
+
+MACRO(INSTALL_STANDALONE_BUNDLE target libdirs)
+INSTALL(TARGETS ${target}
+    BUNDLE DESTINATION . COMPONENT Runtime
+    RUNTIME DESTINATION bin COMPONENT Runtime
+)
+SET(plugin_dest_dir bin)
+SET(qtconf_dest_dir bin)
+IF(APPLE)
+  SET(plugin_dest_dir ${target}.app/Contents/MacOS)
+  SET(qtconf_dest_dir ${target}.app/Contents/Resources)
+  SET(APPS "\${CMAKE_INSTALL_PREFIX}/${target}.app")
+ENDIF(APPLE)
+IF(WIN32)
+  SET(APPS "\${CMAKE_INSTALL_PREFIX}/bin/${target}.exe")
+ENDIF(WIN32)
+
+INSTALL(DIRECTORY "${QT_PLUGINS_DIR}/imageformats" DESTINATION ${plugin_dest_dir}/plugins COMPONENT Runtime)
+
+INSTALL(CODE "
+    file(WRITE \"\${CMAKE_INSTALL_PREFIX}/${qtconf_dest_dir}/qt.conf\" \"\")
+    " COMPONENT Runtime)
+
+INSTALL(CODE "
+   file(GLOB_RECURSE QTPLUGINS
+      \"\${CMAKE_INSTALL_PREFIX}/${plugin_dest_dir}/plugins/*${CMAKE_SHARED_LIBRARY_SUFFIX}\")
+   include(BundleUtilities)
+   fixup_bundle(\"${APPS}\"   \"\"   \"${libdirs}\")
+   " COMPONENT Runtime)
+ENDMACRO(INSTALL_STANDALONE_BUNDLE)
