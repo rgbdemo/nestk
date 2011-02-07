@@ -47,6 +47,12 @@ public:
    */
   void setSaveOnlyRaw(bool v) { m_only_raw = v; }
 
+  /*!
+   * Save float images as binary raw. Faster, but only works
+   * on Little Endian platforms.
+   */
+  void setUseBinaryRaw(bool use_it);
+
   /*! Set the starting index. */
   void setFrameIndex(int index) { m_frame_index = index; }
   void resetFrameIndex() { m_frame_index = 0; }
@@ -59,6 +65,7 @@ private:
   QDir m_dir;
   int m_frame_index;
   bool m_only_raw;
+  bool m_use_binary_raw;
 };
 
 } // ntk

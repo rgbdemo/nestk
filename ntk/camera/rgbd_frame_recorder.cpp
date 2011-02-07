@@ -32,7 +32,7 @@ namespace ntk
 {
 
   RGBDFrameRecorder :: RGBDFrameRecorder(const std::string& directory)
-    : m_frame_index(0), m_only_raw(true)
+    : m_frame_index(0), m_only_raw(true), m_use_binary_raw(false)
   {
     setDirectory(directory);
   }
@@ -41,6 +41,18 @@ namespace ntk
   {
     m_dir = QDir(directory.c_str());
     m_frame_index = 0;
+  }
+
+  void RGBDFrameRecorder :: setUseBinaryRaw(bool use_it)
+  {
+    if (QSysInfo::ByteOrder != QSysInfo::LittleEndian)
+    {
+      ntk_dbg(0) << "WARNING: cannot save images as binary raw, platform is not little endian";
+    }
+    else
+    {
+      m_use_binary_raw = use_it;
+    }
   }
 
   void RGBDFrameRecorder :: saveCurrentFrame(const RGBDImage& image)
@@ -89,13 +101,33 @@ namespace ntk
         imwrite_normalized(filename.c_str(), image.intensity());
     }
 
-    filename = cv::format("%s/raw/depth.yml", frame_dir.c_str());
     if (image.rawDepth().data)
-      imwrite_yml(filename.c_str(), image.rawDepth());
+    {
+      if (m_use_binary_raw)
+      {
+        filename = cv::format("%s/raw/depth.raw", frame_dir.c_str());
+        imwrite_Mat1f_raw(filename.c_str(), image.rawDepth());
+      }
+      else
+      {
+        filename = cv::format("%s/raw/depth.yml", frame_dir.c_str());
+        imwrite_yml(filename.c_str(), image.rawDepth());
+      }
+    }
 
-    filename = cv::format("%s/raw/intensity.png", frame_dir.c_str());
     if (image.intensity().data)
-      imwrite_normalized(filename.c_str(), image.rawIntensity());
+    {
+      if (m_use_binary_raw)
+      {
+        filename = cv::format("%s/raw/intensity.raw", frame_dir.c_str());
+        imwrite_Mat1f_raw(filename.c_str(), image.rawIntensity());
+      }
+      else
+      {
+        filename = cv::format("%s/raw/intensity.yml", frame_dir.c_str());
+        imwrite_normalized(filename.c_str(), image.rawIntensity());
+      }
+    }
 
     if (!m_only_raw)
     {
@@ -108,9 +140,19 @@ namespace ntk
         imwrite_normalized(filename.c_str(), image.amplitude());
     }
 
-    filename = cv::format("%s/raw/amplitude.yml", frame_dir.c_str());
-    if (image.rawAmplitude().data)
-      imwrite_yml(filename.c_str(), image.rawAmplitude());
+    if (image.amplitude().data)
+    {
+      if (m_use_binary_raw)
+      {
+        filename = cv::format("%s/raw/amplitude.raw", frame_dir.c_str());
+        imwrite_Mat1f_raw(filename.c_str(), image.rawAmplitude());
+      }
+      else
+      {
+        filename = cv::format("%s/raw/amplitude.yml", frame_dir.c_str());
+        imwrite_yml(filename.c_str(), image.rawAmplitude());
+      }
+    }
 
     ++m_frame_index;
   }

@@ -21,6 +21,8 @@
 #include <opencv/highgui.h>
 #include <opencv/cv.h>
 
+#include <fstream>
+
 #include <QImage>
 #include <QTemporaryFile>
 #include <QDir>
@@ -259,6 +261,34 @@ namespace ntk
   {
     IplImage tmp = image;
     cvSave(filename.c_str(), &tmp);
+  }
+
+  cv::Mat1f imread_Mat1f_raw(const std::string& filename)
+  {
+    ntk_throw_exception_if(sizeof(float) != 4, "Cannot use raw with sizeof(float) != 4");
+    ntk_throw_exception_if(QSysInfo::ByteOrder != QSysInfo::LittleEndian, "Cannot use raw with big endian");
+    std::ifstream f (filename.c_str());
+    ntk_throw_exception_if(!f, "Could not open " + filename);
+    qint32 rows = -1, cols = -1;
+    f.read((char*)&rows, sizeof(qint32));
+    f.read((char*)&cols, sizeof(qint32));
+    cv::Mat1f m(rows, cols);
+    f.read((char*)m.data, m.rows*m.cols*sizeof(float));
+    ntk_throw_exception_if(f.bad(), "Failure reading " + filename + ": file too short.");
+    return m;
+  }
+
+  void imwrite_Mat1f_raw(const std::string& filename, const cv::Mat1f& m)
+  {
+    ntk_throw_exception_if(sizeof(float) != 4, "Cannot use raw with sizeof(float) != 4");
+    ntk_throw_exception_if(QSysInfo::ByteOrder != QSysInfo::LittleEndian, "Cannot use raw with big endian");
+    std::ofstream f (filename.c_str());
+    ntk_throw_exception_if(!f, "Could not open " + filename);
+    qint32 rows = m.rows, cols = m.cols;
+    f.write((char*)&rows, sizeof(qint32));
+    f.write((char*)&cols, sizeof(qint32));
+    f.write((char*)m.data, m.rows*m.cols*sizeof(float));
+    ntk_throw_exception_if(f.bad(), "Failure writing " + filename);
   }
 
   cv::Mat imread_yml(const std::string& filename)

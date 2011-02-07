@@ -41,9 +41,12 @@ public:
 public:
   MeshViewer(QWidget *parent = 0)
     : QGLWidget(parent),
+    m_glcam_transform(4,4),
     m_mesh_center(0,0,0),
     m_use_vertex_buffer_object(false)
-  {}
+  {
+    cv::setIdentity(m_glcam_transform);
+  }
 
   void addMesh(const ntk::Mesh& mesh, const Pose3D& pose, MeshViewerMode mode);
   void addMeshToDisplayList(const ntk::Mesh& mesh, const Pose3D& pose, MeshViewerMode mode);
@@ -72,7 +75,8 @@ protected:
   void mouseMoveEvent(QMouseEvent*);
 
 private:
-  struct VertexBufferObject {
+  struct VertexBufferObject {    
+    VertexBufferObject() : model_view_matrix(4,4) {}
     unsigned vertex_id;
     unsigned faces_id;
     int color_offset;
@@ -82,6 +86,7 @@ private:
     bool has_texcoords;
     bool has_color;
     bool has_faces;
+    cv::Mat_<GLfloat> model_view_matrix;
   };
 
 private:
@@ -92,6 +97,7 @@ private:
   std::vector<int> m_upcoming_display_lists;
   std::vector<GLuint> m_textures;
   std::vector<GLuint> m_upcoming_textures;
+  cv::Mat1f m_glcam_transform;
   cv::Point3f m_mesh_center;
   cv::Point3f m_display_center;
   bool m_use_vertex_buffer_object;

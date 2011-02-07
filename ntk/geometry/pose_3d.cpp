@@ -271,12 +271,12 @@ void Pose3D :: toLeftCamera(const cv::Mat1d& cv_matrix,
   cv::Mat1d new_R = to_gl_base.inv() * R * to_gl_base;
   cv::Mat1d new_T = to_gl_base * (T);
 
-  applyTransformAfter(toVec3d(new_T), new_R);
+  applyTransformBefore(toVec3d(new_T), new_R);
 }
 
 void Pose3D :: toRightCamera(const cv::Mat1d& cv_matrix,
-                                                  const cv::Mat1d& R,
-                                                  const cv::Mat1d& T)
+                             const cv::Mat1d& R,
+                             const cv::Mat1d& T)
 {
   double fx = cv_matrix(0,0);
   double fy = cv_matrix(1,1);

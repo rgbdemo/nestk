@@ -201,6 +201,11 @@ void imshow_normalized(const std::string& window_name, const cv::Mat1f& m);
 void imwrite_yml(const std::string& filename, const cv::Mat& image);
 cv::Mat imread_yml(const std::string& filename);
 
+/*! Read a float image from raw binary file. Only works for Little Endian platforms. */
+cv::Mat1f imread_Mat1f_raw(const std::string& filename);
+/*! Write a float image to binary file. Only works for Little Endian platforms. */
+void imwrite_Mat1f_raw(const std::string& filename, const cv::Mat1f& m);
+
 inline cv::Mat getCvByteImage(int width, int height) { return cv::Mat(height, width, CV_8UC1); }
 inline cv::Mat getCvFloatImage(int width, int height) { return cv::Mat(height, width, CV_32FC1); }
 inline cv::Mat getCvColorByteImage(int width, int height) { return cv::Mat(height, width, CV_8UC3); }

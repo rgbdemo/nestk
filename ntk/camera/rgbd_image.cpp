@@ -54,12 +54,22 @@ namespace ntk
         ntk_ensure(rawRgbRef().data, ("Could not read raw color image from " + dir).c_str());
       }
 
-      if (is_file(dir + "/raw/depth.yml"))
+      if (is_file(dir + "/raw/depth.raw"))
+      {
+        rawDepthRef() = imread_Mat1f_raw(dir + "/raw/depth.raw");
+        ntk_ensure(rawDepthRef().data, ("Could not read raw depth image from " + dir).c_str());
+      }
+      else if (is_file(dir + "/raw/depth.yml"))
       {
         rawDepthRef() = imread_yml(dir + "/raw/depth.yml");
         ntk_ensure(rawDepthRef().data, ("Could not read raw depth image from " + dir).c_str());
       }
 
+      if (is_file(dir + "/raw/amplitude.raw"))
+      {
+        rawAmplitudeRef() = imread_Mat1f_raw(dir + "/raw/amplitude.raw");
+        ntk_ensure(rawAmplitudeRef().data, ("Could not read raw amplitude image from " + dir).c_str());
+      }
       if (is_file(dir + "/raw/amplitude.yml"))
       {
         rawAmplitudeRef() = imread_yml(dir + "/raw/amplitude.yml");
@@ -67,11 +77,21 @@ namespace ntk
       }
       else if (is_file(dir + "/raw/amplitude.png"))
       {
-        rawAmplitudeRef() = imread(dir + "/raw/amplitude.png");
+        rawAmplitudeRef() = imread(dir + "/raw/amplitude.png", 0);
         ntk_ensure(rawAmplitudeRef().data, ("Could not read raw amplitude image from " + dir).c_str());
       }
 
-      if (is_file(dir + "/raw/intensity.png"))
+      if (is_file(dir + "/raw/intensity.raw"))
+      {
+        rawIntensityRef() = imread_Mat1f_raw(dir + "/raw/intensity.raw");
+        ntk_ensure(rawIntensityRef().data, ("Could not read raw intensity image from " + dir).c_str());
+      }
+      else if (is_file(dir + "/raw/intensity.yml"))
+      {
+        rawIntensityRef() = imread_yml(dir + "/raw/intensity.yml");
+        ntk_ensure(rawIntensityRef().data, ("Could not read raw intensity image from " + dir).c_str());
+      }
+      else if (is_file(dir + "/raw/intensity.png"))
       {
         rawIntensityRef() = imread(dir + "/raw/intensity.png", 0);
         ntk_ensure(rawIntensityRef().data, ("Could not read raw intensity image from " + dir).c_str());

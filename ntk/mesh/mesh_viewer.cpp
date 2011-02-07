@@ -173,13 +173,16 @@ void MeshViewer :: addMeshToDisplayList(const ntk::Mesh& mesh, const Pose3D& pos
 
 void MeshViewer :: addMeshToVertexBufferObject(const ntk::Mesh& mesh, const Pose3D& pose, MeshViewerMode mode)
 {
-#ifdef USE_GLEW
+#ifdef USE_GLEW  
   GLuint vbo_id = -1, vbo_faces_id = -1;
   glGenBuffersARB(1, &vbo_id);
   if (mesh.hasFaces())
     glGenBuffersARB(1, &vbo_faces_id);
 
   VertexBufferObject vbo;
+  pose.cvCameraTransform().copyTo(vbo.model_view_matrix);
+  // Transpose the matrix for OpenGL column-major.
+  vbo.model_view_matrix = vbo.model_view_matrix.t();
   vbo.nb_faces = 0;
   vbo.vertex_id = vbo_id;
   vbo.faces_id = vbo_faces_id;
@@ -423,6 +426,11 @@ void MeshViewer :: paintGL()
     {
       glBindBufferARB(GL_ARRAY_BUFFER_ARB, m_vertex_buffer_objects[i].vertex_id);
 
+      // Set the model view matrix associated with this mesh.
+      glMatrixMode(GL_MODELVIEW);
+      glPushMatrix();
+      glMultMatrixf(m_vertex_buffer_objects[i].model_view_matrix.ptr<float>());
+
       if (m_vertex_buffer_objects[i].has_texcoords)
       {
         glEnable(GL_TEXTURE_2D);
@@ -474,6 +482,10 @@ void MeshViewer :: paintGL()
       {
         glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
       }
+
+      // Restore model view matrix.
+      glMatrixMode(GL_MODELVIEW);
+      glPopMatrix();
     }
   }
   else
