@@ -27,7 +27,7 @@ namespace ntk
   void Thread :: waitForNotification(int timeout_msecs)
   {
     m_mutex.lock();
-    m_wait_condition.wait(&m_mutex, 100);
+    m_wait_condition.wait(&m_mutex, timeout_msecs);
     m_mutex.unlock();
   }
 

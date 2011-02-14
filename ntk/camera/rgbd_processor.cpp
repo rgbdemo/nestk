@@ -475,10 +475,12 @@ namespace ntk
 
     double depth_baseline = 7.5e-02;
     double depth_offset = 1090;
+    double focal_ir = 580;
     if (m_image->calibration())
     {
       depth_baseline = m_image->calibration()->depth_baseline;
       depth_offset = m_image->calibration()->depth_offset;
+      focal_ir = m_image->calibration()->depth_pose->meanFocal();
     }
 
     for_all_rc(depth_im)
@@ -487,7 +489,7 @@ namespace ntk
       float depth = 0;
       if (raw_depth < 2047)
       {
-        depth = 540.0 * 8.0 * depth_baseline / (depth_offset - raw_depth);
+        depth = focal_ir * 8.0 * depth_baseline / (depth_offset - raw_depth);
       }
       if (depth < 0)
         depth = 0;

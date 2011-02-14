@@ -109,7 +109,7 @@ namespace ntk {
 
 #define ntk_dbg_enter_function(level) \
   ntk_dbg(level) << "<Entering> " << PRETTY_FUNCTION \
-                 << " (" << this << ")" \
+                 << " (" << (void*)this << ")" \
                  << " (" << cv::getThreadNum() << ")";
 
 #define ntk_dbg_leave_function(level) \
