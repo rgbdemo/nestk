@@ -115,7 +115,7 @@ namespace ntk
       }
     }
 
-    if (image.intensity().data)
+    if (image.rawIntensity().data)
     {
       if (m_use_binary_raw)
       {
@@ -125,7 +125,7 @@ namespace ntk
       else
       {
         filename = cv::format("%s/raw/intensity.yml", frame_dir.c_str());
-        imwrite_normalized(filename.c_str(), image.rawIntensity());
+        imwrite_yml(filename.c_str(), image.rawIntensity());
       }
     }
 
@@ -140,7 +140,7 @@ namespace ntk
         imwrite_normalized(filename.c_str(), image.amplitude());
     }
 
-    if (image.amplitude().data)
+    if (image.rawAmplitude().data)
     {
       if (m_use_binary_raw)
       {
