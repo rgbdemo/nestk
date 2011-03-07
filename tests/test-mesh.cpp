@@ -22,6 +22,7 @@
 #include <ntk/mesh/mesh.h>
 #include <ntk/mesh/mesh_renderer.h>
 #include <ntk/geometry/pose_3d.h>
+#include <ntk/utils/time.h>
 
 #include <opencv/highgui.h>
 
@@ -30,66 +31,47 @@
 using namespace ntk;
 using namespace cv;
 
+void test_renderer(Mesh& mesh)
+{
+  MeshRenderer renderer(800, 600);
+  renderer.setMesh(mesh);
+  Pose3D pose;
+  pose.parseAvsFile("mesh_pose.avs");
+
+  cv::Mat4b color_image (Size(800,600));
+  cv::Mat1f depth;
+
+  TimeCount tc_render("Rendering 100 times", 1);
+  for (int i = 0; i < 100; ++i)
+  {
+    pose.applyTransformAfter(cv::Vec3f(0.02,0,0), cv::Vec3f(0,0,0));
+    TimeCount tc_render_one("Rendering", 1);
+    renderer.setMesh(mesh);
+    renderer.setPose(pose, 0.3, 5);
+    renderer.renderToImage(color_image, 0);
+    tc_render_one.stop();
+  }
+  tc_render.stop();
+
+  // color_image = renderer.colorBuffer();
+  imwrite("debug_color.png", color_image);
+  depth = renderer.depthBuffer();
+  normalize(depth, depth, 0, 255, cv::NORM_MINMAX);
+  imwrite("debug_depth.png", Mat1b(depth));
+}
+
 int main(int argc, char** argv)
 {
   QApplication app(argc,argv); // renderer uses QT
+  ntk::ntk_debug_level = 1;
   Mesh mesh;
   mesh.loadFromPlyFile("mesh.ply");
-  mesh.saveToPlyFile("output.ply");
-
-#if 0
-  Pose3D pose; pose.parseFromBundler("mesh.pose");
-
-  double tx,ty,tz,rx,ry,rz,field_of_view;
-  pose.toBlenderParameters(800, 600, &tx,&ty,&tz,&rx,&ry,&rz,&field_of_view);
-  ntk_dbg_print(tx,0);
-  ntk_dbg_print(ty,0);
-  ntk_dbg_print(tz,0);
-  ntk_dbg_print(rx,0);
-  ntk_dbg_print(ry,0);
-  ntk_dbg_print(rz,0);
-  ntk_dbg_print(field_of_view,0);
-#endif
-
-#if 1
-  Pose3D pose_from_blender;
-  pose_from_blender.parseBlenderFile("mesh15.pose.blender", 800, 600);
-#if 0
-  pose_from_blender.loadFromBlenderParameters(
-      1.57, 2.52, -1, /* object tx ty tz from blender */
-      84, 44, 142, /* object rx ry rz from blender in degrees */
-      73.8, /* camera field of view in degrees (D flags in camera settings) */
-      800, 600); /* image size */
-  ntk_dbg_print(pose_from_blender.focalLength(), 0);
-#endif
-#endif
-
-  MeshRenderer renderer(mesh, 800, 600);
-
-  cv::Mat4b image (Size(800,600));
-  cv::Mat3b color_image;
-  cv::Mat1f depth;
-
-#if 0
-  renderer.renderToImage(image, pose, 0);
-  color_image = renderer.colorBuffer();
-  imwrite("color.png", color_image);
-  depth = renderer.depthBuffer();
-  normalize(depth, depth, 0, 255, cv::NORM_MINMAX);
-  imwrite("depth.png", Mat1b(depth));
-#endif
-
-#if 1
-  renderer.renderToImage(image, pose_from_blender, 0);
-  color_image = renderer.colorBuffer();
-  imwrite("color2.png", color_image);
-  depth = renderer.depthBuffer();
-  normalize(depth, depth, 0, 255, cv::NORM_MINMAX);
-  imwrite("depth2.png", Mat1b(depth));
-#endif
+  mesh.saveToPlyFile("debug_output.ply");
 
   ntk_dbg_print(mesh.vertices.size(), 0);
   ntk_dbg_print(mesh.faces.size(), 0);
   ntk_dbg_print(mesh.colors.size(), 0);
+
+  test_renderer(mesh);
   return 0;
 }

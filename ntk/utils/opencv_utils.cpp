@@ -219,6 +219,14 @@ namespace ntk
     output_file.writeObj(name, &c_m);
   }
 
+  void write_to_yaml(FileStorage& output_file, const std::string& name, const cv::Vec2f& v)
+  {
+    cv::Mat1f m(1,2);
+    std::copy(&v[0], &v[0]+2, m.ptr<float>());
+    CvMat c_m = m;
+    output_file.writeObj(name, &c_m);
+  }
+
   void read_from_yaml(FileNode node, cv::Vec3f& v)
   {
     CvMat* c_m;
@@ -227,6 +235,16 @@ namespace ntk
     cv::Mat1f m (c_m);
     ntk_assert(m.cols == 3, "Bad vector.");
     std::copy(m.ptr<float>(), m.ptr<float>()+3, &v[0]);
+  }
+
+  void read_from_yaml(FileNode node, cv::Vec2f& v)
+  {
+    CvMat* c_m;
+    c_m = (CvMat*)node.readObj();
+    ntk_throw_exception_if(!c_m, std::string("Could not read field ") + node.name() + " from yml file.");
+    cv::Mat1f m (c_m);
+    ntk_assert(m.cols == 2, "Bad vector.");
+    std::copy(m.ptr<float>(), m.ptr<float>()+2, &v[0]);
   }
 
   void write_to_yaml(cv::FileStorage& output_file, const std::string& name, const cv::Mat& matrix)

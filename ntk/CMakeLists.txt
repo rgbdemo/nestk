@@ -27,6 +27,17 @@ SET (ntk_sources ${ntk_sources}
      camera/rgbd_processor.cpp
 )
 
+IF (USE_OPENNI)
+  SET (ntk_sources ${ntk_sources}
+       camera/nite_rgbd_grabber.h
+       camera/nite_rgbd_grabber.cpp
+       gesture/body_event.h
+       gesture/body_event.cpp
+       gesture/skeleton.h
+       gesture/skeleton.cpp
+      )
+ENDIF()
+
 IF (USE_FREENECT)
   SET (ntk_sources ${ntk_sources}
        camera/kinect_grabber.h
@@ -133,22 +144,6 @@ IF(APPLE AND (CMAKE_OSX_ARCHITECTURES MATCHES "i386"))
     PROPERTIES COMPILE_FLAGS "-O0")
 ENDIF()
 
-SET (ntk_sources ${ntk_sources}
-
-     stats/distributions.h
-     stats/distributions.cpp
-     stats/estimation.cpp
-     stats/estimation.h
-     stats/histogram.h
-     stats/histogram.cpp
-     stats/hypothesis_testing.cpp
-     stats/hypothesis_testing.h
-     stats/hypothesis_testing.hxx
-     stats/moments.h
-     stats/moments.cpp
-     stats/moments.hxx
-    )
-
 
 SET (ntk_sources ${ntk_sources}
 
@@ -217,6 +212,7 @@ TARGET_LINK_LIBRARIES(nestk
   ${LIBUSB_1_LIBRARY}
   ${PMD_LIBRARIES}
   ${FREENECT_LIBRARY}
+  ${OPENNI_LIBRARY}
   ${WINMM_LIBRARY}
   ${PTHREADS_LIBRARY})
 

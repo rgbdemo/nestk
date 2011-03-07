@@ -55,7 +55,8 @@ public:
     Pause = 0x8000, // disable temporary the processing
     RemoveSmallStructures = 0x10000,
     FillSmallHoles = 0x20000,
-    FlipColorImage = 0x40000 // horizontally flip the color image
+    FlipColorImage = 0x40000, // horizontally flip the color image
+    NiteProcessed = 0x80000, // raw = mapped = postprocessed
   };
 
 public:
@@ -113,7 +114,7 @@ public:
   void removeSmallStructures();
   void fillSmallHoles();
 
-private:
+protected:
   RGBDImage* m_image;
   int m_flags;
   cv::Mat1f m_last_depth_image;
@@ -134,6 +135,18 @@ public:
   {
     setFilterFlag(RGBDProcessor::ComputeKinectDepthBaseline, true);
     setFilterFlag(RGBDProcessor::NoAmplitudeIntensityUndistort, true);
+  }
+};
+
+/*! RGBDProcessor with default parameters for OpenNI/Nite. */
+class NiteProcessor : public RGBDProcessor
+{
+public:
+  NiteProcessor()
+    : RGBDProcessor()
+  {
+    // Everything is done by the grabber.
+    setFilterFlags(RGBDProcessor::NiteProcessed);
   }
 };
 

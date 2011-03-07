@@ -25,10 +25,11 @@
 #include <QPoint>
 #include <QImage>
 #include <QWidget>
+#include <QPen>
 
 class QMouseEvent;
 class QPaintEvent;
-
+class QPen;
 namespace ntk
 {
 
@@ -50,7 +51,7 @@ public:
   void setImage(const cv::Mat1f& im, double* min_val = 0, double* max_val = 0);
   void setImage(const cv::Mat1b& im);
   void setImage(const cv::Mat3b& im);
-
+  void setPen(QPen q);
   void setRects(const std::list<cv::Rect>& rects);
 
 signals:
@@ -63,6 +64,7 @@ protected:
 private:
   QPoint m_last_mouse_pos;
   QImage m_image;
+  QPen m_pen;
   std::list<cv::Rect> m_rects;
 };
 

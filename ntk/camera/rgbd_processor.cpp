@@ -114,12 +114,12 @@ namespace ntk
       flip(m_image->rawRgb(), m_image->rawRgbRef(), -1);
     }
 
-    if (m_image->rawIntensity().data)
+    if (!(m_flags&NiteProcessed) && m_image->rawIntensity().data)
     {
       normalize(m_image->rawIntensityRef(), m_image->rawIntensityRef(), 0, 255, NORM_MINMAX, -1);
     }
 
-    if (!m_image->calibration() || !(m_flags & UndistortImages) || (m_flags & Pause))
+    if (!(m_flags&NiteProcessed) && (!m_image->calibration() || !(m_flags & UndistortImages) || (m_flags & Pause)))
     {      
       m_image->rawAmplitude().copyTo(m_image->amplitudeRef());
       m_image->rawIntensity().copyTo(m_image->intensityRef());
@@ -128,7 +128,7 @@ namespace ntk
     }
 
     TimeCount tc_undistort("undistort", 2);
-    if (m_image->calibration() && (m_flags & UndistortImages))
+    if (!(m_flags&NiteProcessed) && m_image->calibration() && (m_flags & UndistortImages))
       undistortImages();
     tc_undistort.stop();
 

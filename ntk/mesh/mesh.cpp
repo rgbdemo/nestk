@@ -28,6 +28,8 @@
 #include <ntk/utils/time.h>
 
 #include <fstream>
+#include <cstring>
+#include <errno.h>
 
 using namespace cv;
 
@@ -212,6 +214,11 @@ namespace ntk
     std::vector<PlyFace> ply_faces;
 
     FILE* mesh_file = fopen(filename, "r");
+    int err = errno;
+    if (err)
+    {
+      ntk_dbg(0) << "[ERROR] " << strerror(err);
+    }
     ntk_ensure(mesh_file, "Could not open mesh file.");
 
     ply::PlyFile* ply_file = ply::read_ply(mesh_file);

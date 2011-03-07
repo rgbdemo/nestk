@@ -134,18 +134,28 @@ double ImageWidget :: scaleY() const
   return double(rect().height())/m_image.rect().height();
 }
 
+void ImageWidget :: setPen(QPen pen)
+{
+    m_pen = pen;
+}
+
+
 void ImageWidget :: paintEvent(QPaintEvent * event)
 {
   double sx = scaleX();
   double sy = scaleY();
 
-  QPen pen(Qt::yellow);
-  pen.setWidth(2);
+  if (m_pen.data_ptr() == NULL){
+      QPen p;
+      m_pen = p;
+      m_pen.setColor(Qt::white);
+      m_pen.setWidth(2);
+  }
 
   QPainter painter(this);
   painter.drawImage(rect(), m_image, m_image.rect());
 
-  painter.setPen(pen);
+  painter.setPen(m_pen);
   foreach_const_it(it, m_rects, std::list<cv::Rect>)
   {
     const cv::Rect& r = *it;

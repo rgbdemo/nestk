@@ -62,8 +62,14 @@ public:
   virtual double frameRate() const { return m_framerate; }
 
   /*! Set the calibration data that will be included in each image. */
-  void setCalibrationData(const ntk::RGBDCalibration& data)
+  void setCalibrationData(ntk::RGBDCalibration& data)
   { m_calib_data = &data; m_rgbd_image.setCalibration(&data); }
+
+  ntk::RGBDCalibration* calibrationData()
+  { return m_calib_data; }
+
+  const ntk::RGBDCalibration* calibrationData() const
+  { return m_calib_data; }
 
   /*! Thread safe deep copy. */
   void copyImageTo(RGBDImage& image);
@@ -83,6 +89,15 @@ public:
   bool hasData() const
   { QReadLocker locker(&m_lock); return m_rgbd_image.depth().data && m_rgbd_image.rgb().data; }
 
+  /*! Returns the last grabbed image. Warning: you should call acquireReadLock first. */
+  const RGBDImage& currentImage() const { return m_rgbd_image; }
+
+  /*! Acquire a lock to ensure data do not get modified by the grabber thread. */
+  void acquireReadLock() { m_lock.lockForRead(); }
+
+  /*! Release the acquired lock. */
+  void releaseReadLock() { m_lock.unlock(); }
+
   /*! Blocking wait until next frame is ready. */
   void waitForNextFrame(int timeout_msecs = 1000)
   {
@@ -98,7 +113,7 @@ protected:
   mutable RecursiveQReadWriteLock m_lock;
   mutable QMutex m_condition_lock;
   QWaitCondition m_condition;
-  const ntk::RGBDCalibration* m_calib_data;
+  ntk::RGBDCalibration* m_calib_data;
   RGBDImage m_rgbd_image;
   bool m_should_exit;
   uint64 m_last_frame_tick;

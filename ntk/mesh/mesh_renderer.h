@@ -27,7 +27,24 @@
 namespace ntk
 {
 
-class Pose3D;
+  class Pose3D;
+
+  struct VertexBufferObject
+  {
+    VertexBufferObject() : initialized(false), vertex_id(-1), model_view_matrix(4,4) {}
+    bool initialized;
+    GLuint vertex_id;
+    GLuint faces_id;
+    GLuint texture_id;
+    int color_offset;
+    int texture_offset;
+    int nb_vertices;
+    int nb_faces;
+    bool has_texcoords;
+    bool has_color;
+    bool has_faces;
+    cv::Mat_<GLfloat> model_view_matrix;
+  };
 
   class MeshRenderer
   {
@@ -36,31 +53,38 @@ class Pose3D;
     enum { NORMAL = 0, WIREFRAME = 1, RANDOM_COLORS = 2, TRANSPARENCY = 4, LIGHTING = 8 };
 
   public:
-    MeshRenderer(const Mesh& mesh, int image_width, int image_height, float transparency = 1.0);
+    MeshRenderer(int image_width, int image_height, float transparency = 1.0);
     ~MeshRenderer();
+
+  public:
+    void setMesh(const Mesh& mesh);
+    void setPose(const Pose3D& pose,
+                 float near_plane_in_meters = -1, /* automatic */
+                 float far_plane_in_meters = -1); /* automatic */
 
   public:
     const cv::Mat1f& depthBuffer() const { return m_depth_buffer; }
     const cv::Mat4b& colorBuffer() const { return m_color_buffer; }
 
   public:
-    void renderToImage(cv::Mat4b& image, const Pose3D& pose, int flags);
+    void renderToImage(cv::Mat4b& image, int flags);
     void setTransparency(float f) { m_transparency = f; }
 
   protected:
     void computeDepthBuffer();
-    void computeProjectionMatrix(cv::Mat4b& image, const Pose3D& pose);
-    void estimateOptimalPlanes(const Pose3D& pose, double* near_plane, double* far_plane);
+    void estimateOptimalPlanes(const Pose3D& pose, float* near_plane, float* far_plane);
+    void clearVertexBufferObject();
 
   private:
-    const Mesh& m_mesh;
+    const Mesh* m_mesh;
     QGLContext* m_context;
     QGLPixelBuffer* m_pbuffer;
+    VertexBufferObject m_vertex_buffer_object;
     GLuint m_list_index;
     cv::Mat1f m_depth_buffer;
     cv::Mat4b m_color_buffer;
-    double m_last_near_plane;
-    double m_last_far_plane;
+    float m_last_near_plane;
+    float m_last_far_plane;
     float m_transparency;
   };
 

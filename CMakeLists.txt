@@ -8,7 +8,12 @@ SET(NESTK_VERSION 0.3)
 
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${nestk_SOURCE_DIR}/cmake CACHE STATIC "Nestk module path")
 
-OPTION(USE_FREENECT "Use freenect drivers" 1)
+OPTION(USE_FREENECT "Use freenect drivers" ${USE_FREENECT})
+OPTION(USE_OPENNI "Use OpenNI drivers" ${USE_OPENNI})
+
+IF (NOT EXECUTABLE_OUTPUT_PATH)
+  SET(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
+ENDIF()
 
 ################################################################################
 ### dependencies
