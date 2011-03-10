@@ -40,3 +40,7 @@ NEW_TEST(test-pose3d 0)
 NEW_TEST(test-transform 0)
 NEW_TEST(test-threads 0)
 NEW_TEST(test-serialization 0)
+
+IF (USE_PCL)
+  NEW_TEST(test-pcl 0)
+ENDIF()

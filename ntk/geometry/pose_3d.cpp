@@ -391,9 +391,9 @@ void Pose3D :: loadFromBlenderParameters(double tx, double ty, double tz,
                                          int image_width,
                                          int image_height)
 {
-  impl->camera_transform.rotate(Eigen::AngleAxisf(rx*M_PI/180.0, Eigen::Vector3f::UnitZ())
-                            * Eigen::AngleAxisf(ry*M_PI/180.0, Eigen::Vector3f::UnitY())
-                            * Eigen::AngleAxisf(rz*M_PI/180.0, Eigen::Vector3f::UnitX()));
+  impl->camera_transform.rotate(Eigen::AngleAxisd(rx*M_PI/180.0, Eigen::Vector3d::UnitZ())
+                            * Eigen::AngleAxisd(ry*M_PI/180.0, Eigen::Vector3d::UnitY())
+                            * Eigen::AngleAxisd(rz*M_PI/180.0, Eigen::Vector3d::UnitX()));
   impl->camera_transform.translate(Eigen::Vector3d(tx,ty,tz));
 
   double focal = image_width / (2.0*(tan(field_of_view * (M_PI / (180.0*2.0)))));

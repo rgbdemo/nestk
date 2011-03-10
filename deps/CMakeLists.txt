@@ -99,7 +99,27 @@ ENDIF()
 ################################################################################
 # eigen
 ################################################################################
-ADD_SUBDIRECTORY(eigen)
+#ADD_SUBDIRECTORY(eigen)
+SET(eigen3_INCLUDE_DIRS ${nestk_deps_SOURCE_DIR}/eigen)
+INCLUDE_DIRECTORIES(${eigen3_INCLUDE_DIRS})
+
+OPTION(USE_PCL "Use PCL library." 0)
+
+IF (USE_PCL)
+  ADD_SUBDIRECTORY(cminpack)
+  INCLUDE_DIRECTORIES(${nestk_deps_SOURCE_DIR}/cminpack)
+
+  ADD_SUBDIRECTORY(flann)
+  INCLUDE_DIRECTORIES(${nestk_deps_SOURCE_DIR}/flann/src/cpp/flann)
+
+  ADD_SUBDIRECTORY(qhull)
+  INCLUDE_DIRECTORIES(${nestk_deps_SOURCE_DIR}/qhull/src)
+
+  ADD_SUBDIRECTORY(pcl)
+  INCLUDE_DIRECTORIES(${nestk_deps_SOURCE_DIR}/pcl/include)
+  INCLUDE_DIRECTORIES(${nestk_deps_SOURCE_DIR}/pcl/src)
+  INCLUDE_DIRECTORIES(${nestk_deps_SOURCE_DIR}/pcl/include/roslib)
+ENDIF(USE_PCL)
 
 ################################################################################
 # cmake scripts
