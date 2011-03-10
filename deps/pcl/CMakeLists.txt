@@ -181,7 +181,7 @@ include (PCLPCHSupport.cmake REQUIRED)
   rosbuild_add_openmp_flags (pcl_range_image_border_extractor)
 
 # disabled by nestk
-add_subdirectory (src/tools)
+# add_subdirectory (src/tools)
 
 
 # Option to generate a standalone tarball

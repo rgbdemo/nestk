@@ -26,6 +26,11 @@
 #include <ntk/image/sift_gpu.h>
 #include <ntk/image/feature.h>
 
+#ifdef USE_PCL
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+#endif
+
 namespace ntk
 {
 
@@ -124,6 +129,21 @@ private:
                          const FeatureSet& features,
                          const std::vector<cv::DMatch>& best_matches,
                          int closest_view_index);
+
+private:
+#ifdef USE_PCL
+  bool get_cloud(const std::vector<cv::Point3f>& points,
+                 pcl::PointCloud<pcl::PointXYZ>& cloud);
+
+  bool get_cloud(const std::vector<cv::Point3f>& points,
+                 const Pose3D& pose,
+                 const RGBDImage& image,
+                 pcl::PointCloud<pcl::PointXYZ>& cloud);
+
+public:
+  bool icp_estimateNewPose(const RGBDImage& current_image,
+                           const RGBDImage& image);
+#endif
 
 private:
   std::vector < FeatureSet > m_features;

@@ -25,7 +25,10 @@
 #include <ntk/numeric/levenberg_marquart_minimizer.h>
 #include <ntk/utils/opencv_utils.h>
 
+#include <pcl/registration/icp.h>
+
 using namespace cv;
+using namespace pcl;
 
 namespace ntk
 {
@@ -40,10 +43,10 @@ struct reprojection_error_3d : public ntk::CostFunction
   reprojection_error_3d(const Pose3D& initial_pose,
                         const std::vector<Point3f>& ref_points,
                         const std::vector<Point3f>& img_points)
-      : CostFunction(6, ref_points.size()*3),
-        initial_pose(initial_pose),
-        ref_points(ref_points),
-        img_points(img_points)
+    : CostFunction(6, ref_points.size()*3),
+      initial_pose(initial_pose),
+      ref_points(ref_points),
+      img_points(img_points)
   {
     ntk_assert(ref_points.size() == img_points.size(), "Invalid matches");
   }
@@ -353,6 +356,168 @@ void RelativePoseEstimatorFromImage::reset()
   m_features.clear();
   m_image_data.clear();
 }
+
+#ifdef USE_PCL
+bool RelativePoseEstimatorFromImage::get_cloud(const std::vector<cv::Point3f>& points,
+                                               PointCloud<PointXYZ>& cloud)
+{
+  cloud.width  = points.size();
+  cloud.height = 1;
+  cloud.points.resize (cloud.width * cloud.height);
+
+  foreach_idx(i, points)
+  {
+    cloud.points[i].x = points[i].x;
+    cloud.points[i].y = points[i].y;
+    cloud.points[i].z = points[i].z;
+  }
+  return true;
+}
+
+bool RelativePoseEstimatorFromImage::get_cloud(const std::vector<cv::Point3f>& points,
+                                               const Pose3D& pose,
+                                               const RGBDImage& image,
+                                               PointCloud<PointXYZ>& cloud)
+{
+  cloud.width  = points.size();
+  cloud.height = 1;
+  cloud.points.resize (cloud.width * cloud.height);
+
+  foreach_idx(i, points)
+  {
+    float depth = points[i].z;
+    cv::Point2i point;
+    point.x = points[i].x;
+    point.y = points[i].y;
+    Point3f img3d = pose.unprojectFromImage(point,depth);
+
+    cloud.points[i].x = img3d.x;
+    cloud.points[i].y = img3d.y;
+    cloud.points[i].z = img3d.z;
+  }
+
+  return true;
+}
+
+bool RelativePoseEstimatorFromImage::icp_estimateNewPose(const RGBDImage& current_image,const RGBDImage& image)
+{
+#if 1
+  return false;
+#else
+  bool pose_features_ok=false;
+  pose_features_ok = estimateNewPose(current_image, image);
+  if (!pose_features_ok)
+    return false;
+
+  PointCloud<PointXYZ> cloud_source, cloud_target, cloud_reg;
+  bool pose_ok=false;
+  Pose3D new_pose;
+
+  new_pose = m_current_pose;
+
+  int frame_actual=m_image_data.size()-1;
+
+  FeatureSet image_features;
+
+  if (frame_actual > 0)  //
+  {  //No es la primera vez
+
+    std::vector<Point3f> ref_points;
+    std::vector<Point3f> img_points;
+    std::vector<KeyPoint> ref_keypoints;
+    std::vector<KeyPoint> img_keypoints;
+
+    std::vector<DMatch> best_matches;
+    int closest_view_index = -1;
+
+    //image_features
+    image_features = m_features[frame_actual];
+
+    closest_view_index = computeNumMatchesWithPrevious(image, image_features, best_matches,2);
+
+
+    const FeatureSet& ref_set = m_features[closest_view_index];
+
+    foreach_idx(i, best_matches)
+    {
+      const DMatch& m = best_matches[i];
+      const FeatureLocation& ref_loc = ref_set.locations()[m.trainIdx];
+      const FeatureLocation& img_loc = image_features.locations()[m.queryIdx];
+
+      ntk_assert(ref_loc.depth > 0, "Match without depth, should not appear");
+
+      Point3f img3d (img_loc.pt.x,
+                     img_loc.pt.y,
+                     img_loc.depth);
+
+      ref_points.push_back(ref_loc.p3d);  //3D Point
+      img_points.push_back(img3d);
+    }
+
+    get_cloud(img_points,new_pose,image,cloud_source);
+    get_cloud(ref_points,cloud_target);
+
+
+    pcl::PointCloud<pcl::PointXYZ>::ConstPtr cloud_source_ptr = cloud_source.makeShared();
+    pcl::PointCloud<pcl::PointXYZ>::ConstPtr cloud_target_ptr = cloud_target.makeShared();
+
+    pose_ok = true;
+
+    IterativeClosestPoint<PointXYZ, PointXYZ> reg;
+    //IterativeClosestPointNonLinear<PointXYZ, PointXYZ> reg;
+
+    //reg.setInputCloud (cloud_source_ptr );   //input_ apunta a cloud_source
+    //reg.setInputTarget (cloud_target_ptr );  //target_ apunta a cloud_target
+
+    reg.setInputCloud (cloud_target_ptr );   //input_ apunta a cloud_source
+    reg.setInputTarget (cloud_source_ptr  );  //target_ apunta a cloud_target
+
+    reg.setMaximumIterations (200);
+    reg.setTransformationEpsilon (1e-8);
+    reg.setMaxCorrespondenceDistance (0.008);
+
+    // Register
+    reg.align (cloud_reg);
+
+    Eigen::Matrix4f t = reg.getFinalTransformation ();
+    cv::Mat1f T(4,4);
+    //toOpencv(t,T);
+    for (int r = 0; r < 4; ++r)
+      for (int c = 0; c < 4; ++c)
+        T(r,c) = t(r,c);
+
+    Pose3D icp_pose;
+    icp_pose = new_pose;
+    icp_pose.setCameraTransform(T);
+
+    new_pose.applyTransformAfter(icp_pose);
+  }
+
+  if (pose_ok)
+  {
+    //Quitar el image_data de estimateNewPose (1º fase, Features)
+    m_image_data.pop_back();
+
+    ImageData image_data;
+    image.rgb().copyTo(image_data.color);
+    image_data.pose = new_pose;
+    m_image_data.push_back(image_data);
+
+    m_current_pose = new_pose;
+
+    //Quitar image_features (1º fase, Features)
+    m_features.pop_back();
+    image_features.compute3dLocation(new_pose);
+    m_features.push_back(image_features);
+    ntk_dbg_print(image_features.locations().size(), 1);
+
+    return true;
+  }
+  else
+    return true;
+#endif
+}
+#endif // USE_PCL
 
 } // ntk
 
