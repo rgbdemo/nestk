@@ -25,10 +25,12 @@
 #include <ntk/numeric/levenberg_marquart_minimizer.h>
 #include <ntk/utils/opencv_utils.h>
 
-#include <pcl/registration/icp.h>
+#ifdef USE_PCL
+# include <pcl/registration/icp.h>
+using namespace pcl;
+#endif
 
 using namespace cv;
-using namespace pcl;
 
 namespace ntk
 {
