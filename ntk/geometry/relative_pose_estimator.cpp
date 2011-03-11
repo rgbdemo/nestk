@@ -241,7 +241,7 @@ computeNumMatchesWithPrevious(const RGBDImage& image,
 }
 
 bool RelativePoseEstimatorFromImage::
-estimateDeltaPose(Pose3D& new_pose,
+estimateDeltaPose(Pose3D& new_rgb_pose,
                   const RGBDImage& image,
                   const FeatureSet& image_features,
                   const std::vector<cv::DMatch>& best_matches,
@@ -249,7 +249,7 @@ estimateDeltaPose(Pose3D& new_pose,
 {
   const float err_threshold = 5;
 
-  ntk_dbg_print(new_pose, 2);
+  ntk_dbg_print(new_rgb_pose, 2);
   const ImageData& ref_image_data = m_image_data[closest_view_index];
 
   ntk_dbg_print(best_matches.size(), 2);
@@ -290,10 +290,10 @@ estimateDeltaPose(Pose3D& new_pose,
 
   // double error = rms_optimize_3d(new_pose, ref_points, img_points);
   std::vector<bool> valid_points;
-  double error = rms_optimize_ransac(new_pose, ref_points, img_points, valid_points);
+  double error = rms_optimize_ransac(new_rgb_pose, ref_points, img_points, valid_points);
 
   ntk_dbg_print(error, 1);
-  ntk_dbg_print(new_pose, 2);
+  ntk_dbg_print(new_rgb_pose, 2);
 
   if (error < err_threshold)
     return true;
@@ -313,6 +313,9 @@ bool RelativePoseEstimatorFromImage::estimateNewPose(const RGBDImage& image)
   image_features.extractFromImage(image, m_feature_parameters);
 
   Pose3D new_pose = *image.calibration()->depth_pose;
+  Pose3D new_rgb_pose = new_pose;
+  new_rgb_pose.toRightCamera(image.calibration()->rgb_intrinsics,
+                         image.calibration()->R, image.calibration()->T);
   bool pose_ok = true;
 
   if (m_image_data.size() > 0)
@@ -324,12 +327,19 @@ bool RelativePoseEstimatorFromImage::estimateNewPose(const RGBDImage& image)
     ntk_dbg_print(best_matches.size(), 1);
 
     new_pose = m_image_data[closest_view_index].pose;
+    new_rgb_pose = new_pose;
+    new_rgb_pose.toRightCamera(image.calibration()->rgb_intrinsics,
+                               image.calibration()->R, image.calibration()->T);
 
     if (best_matches.size() > 0)
     {
       // Estimate the relative pose w.r.t the closest view.
-      if (!estimateDeltaPose(new_pose, image, image_features, best_matches, closest_view_index))
+      if (!estimateDeltaPose(new_rgb_pose, image, image_features, best_matches, closest_view_index))
         pose_ok = false;
+      new_pose = new_rgb_pose;
+      new_pose.toLeftCamera(image.calibration()->depth_intrinsics,
+                            image.calibration()->R, image.calibration()->T);
+
     }
     else
     {
@@ -343,7 +353,7 @@ bool RelativePoseEstimatorFromImage::estimateNewPose(const RGBDImage& image)
     image.rgb().copyTo(image_data.color);
     image_data.pose = new_pose;
     m_current_pose = new_pose;
-    image_features.compute3dLocation(new_pose);
+    image_features.compute3dLocation(new_rgb_pose);
     m_features.push_back(image_features);
     ntk_dbg_print(image_features.locations().size(), 1);
     m_image_data.push_back(image_data);

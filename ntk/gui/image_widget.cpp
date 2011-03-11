@@ -83,7 +83,10 @@ void ImageWidget :: setImage(const cv::Mat1f& im, double* i_min_val, double* i_m
   else
     minMaxLoc(im, &min_val, &max_val);
   if (min_val == max_val)
+  {
+    m_image.fill(qRgb(0,0,0));
     return;
+  }
 
   for (int r = 0; r < im.rows; ++r)
   {

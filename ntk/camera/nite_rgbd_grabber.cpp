@@ -97,6 +97,15 @@ void NiteRGBDGrabber :: initialize()
   status = m_ni_context.FindExistingNode(XN_NODE_TYPE_IMAGE, m_ni_rgb_generator);
   check_error(status, "Find image generator");
 
+  if (m_high_resolution)
+  {
+    XnMapOutputMode rgb_mode;
+    rgb_mode.nFPS = 15;
+    rgb_mode.nXRes = 1280;
+    rgb_mode.nYRes = 1024;
+    m_ni_rgb_generator.SetMapOutputMode(rgb_mode);
+  }
+
   ntk_ensure(m_ni_depth_generator.IsCapabilitySupported(XN_CAPABILITY_ALTERNATIVE_VIEW_POINT), "Cannot register images.");
   m_ni_depth_generator.GetAlternativeViewPointCap().SetViewPoint(m_ni_rgb_generator);
 
@@ -133,9 +142,6 @@ void NiteRGBDGrabber :: estimateCalibration()
   XnPoint3D p;
   p.X = 0; p.Y = 0; p.Z = -1;
   m_ni_depth_generator.ConvertProjectiveToRealWorld(1, &p, &p);
-  ntk_dbg_print(p.X, 1);
-  ntk_dbg_print(p.Y, 1);
-  ntk_dbg_print(p.Z, 1);
 
   p.X = 0; p.Y = 0; p.Z = -1;
   m_ni_depth_generator.ConvertRealWorldToProjective(1, &p, &p);
@@ -147,8 +153,6 @@ void NiteRGBDGrabber :: estimateCalibration()
 
   double fx = -(p.X-cx);
   double fy = p.Y-cy;
-  ntk_dbg_print(fx, 1);
-  ntk_dbg_print(fy, 1);
 
   m_calib_data = new RGBDCalibration();
 
@@ -169,12 +173,23 @@ void NiteRGBDGrabber :: estimateCalibration()
   m_calib_data->raw_depth_size = cv::Size(depth_width, depth_height);
   m_calib_data->depth_size = cv::Size(depth_width, depth_height);
 
+  float width_ratio = float(rgb_width)/depth_width;
+  float height_ratio = float(rgb_height)/depth_height;
+
+  float rgb_fx = fx * width_ratio;
+  // Pixels are square on a Kinect.
+  // Image height gets cropped when going from 1280x1024 in 640x480.
+  // The ratio remains 2.
+  float rgb_fy = rgb_fx;
+  float rgb_cx = cx * width_ratio;
+  float rgb_cy = cy * width_ratio;
+
   m_calib_data->rgb_intrinsics = cv::Mat1d(3,3);
   setIdentity(m_calib_data->rgb_intrinsics);
-  m_calib_data->rgb_intrinsics(0,0) = fx;
-  m_calib_data->rgb_intrinsics(1,1) = fy;
-  m_calib_data->rgb_intrinsics(0,2) = cx;
-  m_calib_data->rgb_intrinsics(1,2) = cy;
+  m_calib_data->rgb_intrinsics(0,0) = rgb_fx;
+  m_calib_data->rgb_intrinsics(1,1) = rgb_fy;
+  m_calib_data->rgb_intrinsics(0,2) = rgb_cx;
+  m_calib_data->rgb_intrinsics(1,2) = rgb_cy;
 
   m_calib_data->rgb_distortion = Mat1d(1,5);
   m_calib_data->rgb_distortion = 0.;
@@ -214,23 +229,49 @@ void NiteRGBDGrabber :: run()
   m_current_image.setCalibration(m_calib_data);
   m_rgbd_image.setCalibration(m_calib_data);
 
-  m_rgbd_image.rawRgbRef() = Mat3b(480, 640);
-  m_rgbd_image.rawDepthRef() = Mat1f(480, 640);
-  m_rgbd_image.rawIntensityRef() = Mat1f(480, 640);
+  m_rgbd_image.rawRgbRef() = Mat3b(m_calib_data->rawRgbSize());
+  m_rgbd_image.rawDepthRef() = Mat1f(m_calib_data->raw_depth_size);
+  m_rgbd_image.rawIntensityRef() = Mat1f(m_calib_data->rawRgbSize());
+
+  m_rgbd_image.rawIntensityRef() = 0.f;
+  m_rgbd_image.rawDepthRef() = 0.f;
+  m_rgbd_image.rawRgbRef() = Vec3b(0,0,0);
+
   m_rgbd_image.rgbRef() = m_rgbd_image.rawRgbRef();
   m_rgbd_image.depthRef() = m_rgbd_image.rawDepthRef();
   m_rgbd_image.intensityRef() = m_rgbd_image.rawIntensityRef();
-  m_rgbd_image.mappedRgbRef() = m_rgbd_image.rawRgbRef();
-  m_rgbd_image.mappedDepthRef() = m_rgbd_image.rawDepthRef();
 
-  m_current_image.rawRgbRef() = Mat3b(480, 640);
-  m_current_image.rawDepthRef() = Mat1f(480, 640);
-  m_current_image.rawIntensityRef() = Mat1f(480, 640);
+  m_current_image.rawRgbRef() = Mat3b(m_calib_data->rawRgbSize());
+  m_current_image.rawRgbRef() = Vec3b(0,0,0);
+  m_current_image.rawDepthRef() = Mat1f(m_calib_data->raw_depth_size);
+  m_current_image.rawDepthRef() = 0.f;
+  m_current_image.rawIntensityRef() = Mat1f(m_calib_data->rawRgbSize());
+  m_current_image.rawIntensityRef() = 0.f;
+
   m_current_image.rgbRef() = m_current_image.rawRgbRef();
   m_current_image.depthRef() = m_current_image.rawDepthRef();
   m_current_image.intensityRef() = m_current_image.rawIntensityRef();
-  m_current_image.mappedRgbRef() = m_rgbd_image.rawRgbRef();
-  m_current_image.mappedDepthRef() = m_rgbd_image.rawDepthRef();
+
+
+  bool mapping_required = m_calib_data->rawRgbSize() != m_calib_data->raw_depth_size;
+  if (!mapping_required)
+  {
+    m_rgbd_image.mappedRgbRef() = m_rgbd_image.rawRgbRef();
+    m_rgbd_image.mappedDepthRef() = m_rgbd_image.rawDepthRef();
+    m_current_image.mappedRgbRef() = m_current_image.rawRgbRef();
+    m_current_image.mappedDepthRef() = m_current_image.rawDepthRef();
+  }
+  else
+  {
+    m_rgbd_image.mappedRgbRef() = Mat3b(m_calib_data->raw_depth_size);
+    m_rgbd_image.mappedRgbRef() = Vec3b(0,0,0);
+    m_rgbd_image.mappedDepthRef() = Mat1f(m_calib_data->rawRgbSize());
+    m_rgbd_image.mappedDepthRef() = 0.f;
+    m_current_image.mappedRgbRef() = Mat3b(m_calib_data->raw_depth_size);
+    m_current_image.mappedRgbRef() = Vec3b(0,0,0);
+    m_current_image.mappedDepthRef() = Mat1f(m_calib_data->rawRgbSize());
+    m_current_image.mappedDepthRef() = 0.f;
+  }
 
   xn::SceneMetaData sceneMD;
   xn::DepthMetaData depthMD;
@@ -250,18 +291,11 @@ void NiteRGBDGrabber :: run()
     ntk_assert((depthMD.XRes() == m_current_image.rawDepth().cols)
                && (depthMD.YRes() == m_current_image.rawDepth().rows),
                "Invalid image size.");
+
+    // Convert to meters.
     float* raw_depth_ptr = m_current_image.rawDepthRef().ptr<float>();
     for (int i = 0; i < depthMD.XRes()*depthMD.YRes(); ++i)
       raw_depth_ptr[i] = pDepth[i]/1000.f;
-
-    float d = m_current_image.rawDepth()(250,240);
-    Point3f p1 = m_calib_data->depth_pose->unprojectFromImage(Point2f(240,250), d);
-    ntk_dbg_print(p1, 2);
-
-    XnPoint3D p; p.X = 240; p.Y = 250; p.Z = d;
-    m_ni_depth_generator.ConvertProjectiveToRealWorld(1, &p, &p);
-    Point3f p2 (p.X, p.Y, p.Z);
-    ntk_dbg_print(p2, 2);
 
     const XnUInt8* pImage = rgbMD.Data();
     ntk_assert(rgbMD.PixelFormat() == XN_PIXEL_FORMAT_RGB24, "Invalid RGB format.");

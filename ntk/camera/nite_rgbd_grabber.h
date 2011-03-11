@@ -40,7 +40,8 @@ public:
   NiteRGBDGrabber() :
     m_need_pose_to_calibrate(false),
     m_max_num_users(1),
-    m_body_event_detector(0)
+    m_body_event_detector(0),
+    m_high_resolution(false)
   {}
 
   /*! Call it before starting the thread. */
@@ -52,6 +53,9 @@ public:
 
   /*! Set the maximal number of tracked users. Default is one. */
   void setMaxUsers(int num) { m_max_num_users = num; }
+
+  /*! Set whether color images should be in high resolution 1280x1024. */
+  void setHighRgbResolution(bool hr) { m_high_resolution = hr; }
 
 public:
   // Nite accessors.
@@ -100,6 +104,7 @@ private:
   int m_max_num_users;
   Skeleton m_skeleton_data;
   BodyEventDetector* m_body_event_detector;
+  bool m_high_resolution;
 };
 
 } // ntk

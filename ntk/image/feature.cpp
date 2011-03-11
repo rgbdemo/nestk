@@ -118,7 +118,7 @@ void FeatureSet :: extractFromImage(const RGBDImage& image,
   {
     foreach_idx(i, keypoints)
     {
-      if (image.pixelHasDepth(keypoints[i].pt.y, keypoints[i].pt.x))
+      if (image.rgbPixelHasDepth(keypoints[i].pt.y, keypoints[i].pt.x))
         filtered_keypoints.push_back(keypoints[i]);
     }
   }
@@ -171,7 +171,7 @@ void FeatureSet :: extractFromImageUsingSiftGPU(const RGBDImage& image,
     m_locations.reserve(keypoints.size());
     foreach_idx(i, keypoints)
     {
-      if (image.pixelHasDepth(keypoints[i].pt.y, keypoints[i].pt.x))
+      if (image.rgbPixelHasDepth(keypoints[i].pt.y, keypoints[i].pt.x))
       {
         FeatureLocation loc;
         (KeyPoint&)loc = keypoints[i];
@@ -244,7 +244,7 @@ void FeatureSet :: extractFromImageUsingSiftPP(const RGBDImage& image,
   {
     FeatureLocation new_location;
 
-    if (params.only_features_with_depth && !image.pixelHasDepth(iter->y,iter->x))
+    if (params.only_features_with_depth && !image.rgbPixelHasDepth(iter->y,iter->x))
       continue;
 
     // detect orientations
@@ -288,11 +288,10 @@ void FeatureSet :: fillDepthData(const RGBDImage& image)
   foreach_idx(i, m_locations)
   {
     FeatureLocation& loc = m_locations[i];
-    if (is_yx_in_range(image.depthMask(), loc.pt.y, loc.pt.x)
-        && image.depthMask()(loc.pt.y, loc.pt.x))
+    if (image.rgbPixelHasDepth(loc.pt.y, loc.pt.x))
     {
       loc.has_depth = true;
-      loc.depth = image.depth()(loc.pt.y, loc.pt.x);
+      loc.depth = image.mappedDepth()(loc.pt.y, loc.pt.x);
     }
   }
 }

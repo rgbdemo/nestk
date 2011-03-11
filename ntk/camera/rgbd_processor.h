@@ -97,22 +97,22 @@ public:
   /*! Postprocess an RGB-D image. */
   virtual void processImage(RGBDImage& image);
 
-  void undistortImages();
-  void fixDepthGeometry();
-  void fixDepthBias();
-  void removeLowAmplitudeOutliers();
-  void removeNormalOutliers();
-  void removeUnstableOutliers();
-  void removeEdgeOutliers();
-  void applyDepthThreshold();
-  void computeNormals();
-  void computeMappings();
-  void medianFilter();
-  void computeKinectDepthLinear();
-  void computeKinectDepthTanh();
-  void computeKinectDepthBaseline();
-  void removeSmallStructures();
-  void fillSmallHoles();
+  virtual void undistortImages();
+  virtual void fixDepthGeometry();
+  virtual void fixDepthBias();
+  virtual void removeLowAmplitudeOutliers();
+  virtual void removeNormalOutliers();
+  virtual void removeUnstableOutliers();
+  virtual void removeEdgeOutliers();
+  virtual void applyDepthThreshold();
+  virtual void computeNormals();
+  virtual void computeMappings();
+  virtual void medianFilter();
+  virtual void computeKinectDepthLinear();
+  virtual void computeKinectDepthTanh();
+  virtual void computeKinectDepthBaseline();
+  virtual void removeSmallStructures();
+  virtual void fillSmallHoles();
 
 protected:
   RGBDImage* m_image;
@@ -146,8 +146,11 @@ public:
     : RGBDProcessor()
   {
     // Everything is done by the grabber.
-    setFilterFlags(RGBDProcessor::NiteProcessed);
+    setFilterFlags(RGBDProcessor::NiteProcessed | RGBDProcessor::ComputeMapping);
   }
+
+protected:
+  virtual void computeMappings();
 };
 
 /*!

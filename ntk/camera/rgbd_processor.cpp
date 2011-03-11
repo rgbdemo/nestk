@@ -602,4 +602,29 @@ namespace ntk
     }
   }
 
+  void NiteProcessor :: computeMappings()
+  {
+    Size depth_size = m_image->calibration()->raw_depth_size;
+    Size rgb_size = m_image->calibration()->rawRgbSize();
+
+    bool mapping_required = depth_size != rgb_size;
+
+    if (!mapping_required)
+      return;
+
+    const float ratio = float(rgb_size.width) / depth_size.width;
+
+    Size raw_rgb_size(rgb_size.width/ratio, rgb_size.height/ratio);
+    cv::Mat3b raw_mapped_rgb(raw_rgb_size);
+    cv::resize(m_image->rawRgb(), raw_mapped_rgb, raw_rgb_size);
+    m_image->mappedRgbRef() = raw_mapped_rgb(Rect(Point(0,0),
+                                                  depth_size));
+
+    Size raw_depth_size(depth_size.width*ratio, depth_size.height*ratio);
+    cv::Mat1f raw_mapped_depth(raw_depth_size);
+    cv::resize(m_image->rawDepth(), raw_mapped_depth, raw_depth_size, 0, 0, INTER_LINEAR);
+    cv::Mat1f roi = m_image->mappedDepthRef()(Rect(Point(0,0), raw_depth_size));
+    raw_mapped_depth.copyTo(roi);
+  }
+
 } // ntk

@@ -148,10 +148,11 @@ public:
   const cv::Mat1f& intensity() const { return m_intensity; }
 
   /*! Whether this particular pixel has valid depth information */
-  bool pixelHasDepth(int r, int c) const
-  { return m_depth_mask.data
-        && r < m_depth_mask.rows && c < m_depth_mask.cols && r >= 0 && c >= 0
-        && m_depth_mask(r,c);
+  bool rgbPixelHasDepth(int r, int c) const
+  {
+    return m_mapped_depth.data
+        && r < m_mapped_depth.rows && c < m_mapped_depth.cols && r >= 0 && c >= 0
+        && m_mapped_depth(r,c) > 1e-5;
   }
 
 private:
