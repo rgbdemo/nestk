@@ -135,6 +135,14 @@ namespace ntk
         other.m_skeleton = new Skeleton();
       m_skeleton->copyTo(*(other.m_skeleton));
     }
+    else
+    {
+      if (other.m_skeleton)
+      {
+        delete other.m_skeleton;
+        other.m_skeleton = 0;
+      }
+    }
 #endif
   }
 

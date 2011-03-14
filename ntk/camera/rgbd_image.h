@@ -46,7 +46,7 @@ public:
   /*! Initialize from an viewXXXX directory. */
   RGBDImage(const std::string& dir,
             const RGBDCalibration* calib = 0,
-            RGBDProcessor* processor = 0)
+            RGBDProcessor* processor = 0) :  m_skeleton(0)
   { loadFromDir(dir, calib, processor); }
 
   ~RGBDImage();
@@ -177,6 +177,9 @@ public:
   const Skeleton* skeleton() const { return m_skeleton; }
   Skeleton* skeletonRef() { return m_skeleton; }
   void setSkeletonData(Skeleton* skeleton) { m_skeleton = skeleton; }
+
+private:
+  RGBDImage(const RGBDImage& rhs);
 
 private:
   cv::Mat3b m_rgb;

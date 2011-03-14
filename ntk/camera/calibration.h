@@ -123,6 +123,9 @@ public:
 
   cv::Size raw_depth_size;
   cv::Size depth_size;
+
+private:
+  RGBDCalibration(const RGBDCalibration& rhs);
 };
 
 void crop_image(cv::Mat& image, cv::Size s);

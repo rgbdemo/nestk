@@ -108,12 +108,6 @@ namespace ntk
 
 #else // NESTK_USE_OPENNI
 
-namespace ntk
-{
 
-Skeleton::Skeleton() {}
-Skeleton::~Skeleton() {}
-
-}
 
 #endif // NESTK_USE_OPENNI
