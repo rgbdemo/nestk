@@ -56,6 +56,9 @@ public:
   /*! Load calibration parameters from a yaml file. */
   void loadFromFile(const char* filename);
 
+  /*! Save calibration parameters to a yaml file. */
+  void saveToFile(const char* filename) const;
+
   /*! Size of postprocessed rgb images. */
   const cv::Size& rgbSize() const { return rgb_size; }
   void setRgbSize(cv::Size s) { rgb_size = s; }

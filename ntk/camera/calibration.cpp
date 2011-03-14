@@ -98,6 +98,42 @@ void RGBDCalibration :: loadFromFile(const char* filename)
                           depth_undistort_map1, depth_undistort_map2);
 }
 
+void RGBDCalibration :: saveToFile(const char* filename) const
+{
+  FileStorage output_file (filename,
+                           CV_STORAGE_WRITE);
+  writeMatrix(output_file, "rgb_intrinsics", rgb_intrinsics);
+  writeMatrix(output_file, "rgb_distortion", rgb_distortion);
+  writeMatrix(output_file, "depth_intrinsics", depth_intrinsics);
+  writeMatrix(output_file, "depth_distortion", depth_distortion);
+  writeMatrix(output_file, "R", R);
+  writeMatrix(output_file, "T", T);
+  cv::Mat1i size_matrix(1,2);
+
+  size_matrix(0,0) = rgb_size.width;
+  size_matrix(0,1) = rgb_size.height;
+  writeMatrix(output_file, "rgb_size", size_matrix);
+
+  size_matrix(0,0) = raw_rgb_size.width;
+  size_matrix(0,1) = raw_rgb_size.height;
+  writeMatrix(output_file, "raw_rgb_size", size_matrix);
+
+  size_matrix(0,0) = depth_size.width;
+  size_matrix(0,1) = depth_size.height;
+  writeMatrix(output_file, "depth_size", size_matrix);
+
+  size_matrix(0,0) = raw_depth_size.width;
+  size_matrix(0,1) = raw_depth_size.height;
+  writeMatrix(output_file, "raw_depth_size", size_matrix);
+
+  cv::Mat1f depth_calib (1,2);
+  depth_calib(0,0) = depth_baseline;
+  depth_calib(0,1) = depth_offset;
+  writeMatrix(output_file, "depth_base_and_offset", depth_calib);
+  output_file.release();
+}
+
+
 } // ntk
 
 namespace ntk
