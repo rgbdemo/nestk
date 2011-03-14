@@ -157,4 +157,31 @@ namespace ntk
     std::swap(m_skeleton, other.m_skeleton);
   }
 
+  void RGBDImage :: fillRgbFromUserLabels(cv::Mat3b& img) const
+  {
+    if (!m_user_labels.data)
+      return;
+
+    const Vec3b colors[] = {
+      Vec3b(255,0,0),
+      Vec3b(255,255,0),
+      Vec3b(255,0,255),
+      Vec3b(255,255,255),
+      Vec3b(0,255,0),
+      Vec3b(0,255,255),
+      Vec3b(0,0,255),
+    };
+    int nb_colors = sizeof(colors) / sizeof(Vec3b);
+
+    img.create(m_user_labels.size());
+    for_all_rc(m_user_labels)
+    {
+      int label = m_user_labels(r,c);
+      if (label == 0)
+        img(r,c) = Vec3b(0,0,0);
+      else
+        img(r,c) = colors[label%nb_colors];
+    }
+  }
+
 } // ntk

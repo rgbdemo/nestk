@@ -31,6 +31,7 @@ IF (USE_OPENNI)
   SET (ntk_sources ${ntk_sources}
        camera/nite_rgbd_grabber.h
        camera/nite_rgbd_grabber.cpp
+       camera/nite_rgbd_grabber_internals.hxx
        gesture/body_event.h
        gesture/body_event.cpp
        gesture/ni_utils.h

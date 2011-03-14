@@ -39,9 +39,10 @@ class NiteRGBDGrabber : public ntk::RGBDGrabber
 public:
   NiteRGBDGrabber() :
     m_need_pose_to_calibrate(false),
-    m_max_num_users(1),
+    m_max_num_users(15),
     m_body_event_detector(0),
-    m_high_resolution(false)
+    m_high_resolution(false),
+    m_custom_bayer_decoding(true)
   {}
 
   /*! Call it before starting the thread. */
@@ -63,8 +64,6 @@ public:
   xn::UserGenerator& niUserGenerator() { return m_ni_user_generator; }
   const xn::DepthGenerator& niDepthGenerator() const { return m_ni_depth_generator; }
   const xn::UserGenerator& niUserGenerator() const { return m_ni_user_generator; }
-
-  void getSkeletons(std::vector<Skeleton>& skeleton);
 
 protected:
   /*! Thread loop. */
@@ -101,6 +100,7 @@ private:
   int m_max_num_users;
   BodyEventDetector* m_body_event_detector;
   bool m_high_resolution;
+  bool m_custom_bayer_decoding;
 };
 
 } // ntk

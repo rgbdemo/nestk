@@ -166,6 +166,9 @@ public:
   const cv::Mat1b& userLabels() const { return m_user_labels; }
   cv::Mat1b& userLabelsRef() { return m_user_labels; }
 
+  /*! Returns a color image from user labels. */
+  void fillRgbFromUserLabels(cv::Mat3b& img) const;
+
   /*!
    * Accessors to skeleton data. Only one user supported now.
    * This is only available when using NiteRGBDGrabber.

@@ -27,6 +27,8 @@
 using namespace cv;
 using namespace ntk;
 
+#include "nite_rgbd_grabber_internals.hxx"
+
 namespace
 {
 
@@ -104,6 +106,16 @@ void NiteRGBDGrabber :: initialize()
     rgb_mode.nXRes = 1280;
     rgb_mode.nYRes = 1024;
     m_ni_rgb_generator.SetMapOutputMode(rgb_mode);
+  }
+
+  if (m_custom_bayer_decoding)
+  {
+    // Grayscale to get raw Bayer pattern.
+    status = m_ni_rgb_generator.SetIntProperty ("InputFormat", 6);
+    check_error(status, "Change input format");
+
+    status = m_ni_rgb_generator.SetPixelFormat(XN_PIXEL_FORMAT_GRAYSCALE_8_BIT);
+    check_error(status, "Change pixel format");
   }
 
   ntk_ensure(m_ni_depth_generator.IsCapabilitySupported(XN_CAPABILITY_ALTERNATIVE_VIEW_POINT), "Cannot register images.");
@@ -286,6 +298,8 @@ void NiteRGBDGrabber :: run()
   xn::DepthMetaData depthMD;
   xn::ImageMetaData rgbMD;
 
+  ImageBayerGRBG bayer_decoder(ImageBayerGRBG::EdgeAware);
+
   while (!m_should_exit)
   {
     waitForNewEvent();
@@ -306,13 +320,24 @@ void NiteRGBDGrabber :: run()
     for (int i = 0; i < depthMD.XRes()*depthMD.YRes(); ++i)
       raw_depth_ptr[i] = pDepth[i]/1000.f;
 
-    const XnUInt8* pImage = rgbMD.Data();
-    ntk_assert(rgbMD.PixelFormat() == XN_PIXEL_FORMAT_RGB24, "Invalid RGB format.");
-    uchar* raw_rgb_ptr = m_current_image.rawRgbRef().ptr<uchar>();
-    for (int i = 0; i < rgbMD.XRes()*rgbMD.YRes()*3; i += 3)
-    for (int k = 0; k < 3; ++k)
+    if (m_custom_bayer_decoding)
     {
-      raw_rgb_ptr[i+k] = pImage[i+(2-k)];
+      uchar* raw_rgb_ptr = m_current_image.rawRgbRef().ptr<uchar>();
+      bayer_decoder.fillRGB(rgbMD,
+                            m_current_image.rawRgb().cols, m_current_image.rawRgb().rows,
+                            raw_rgb_ptr);
+      cvtColor(m_current_image.rawRgbRef(), m_current_image.rawRgbRef(), CV_RGB2BGR);
+    }
+    else
+    {
+      const XnUInt8* pImage = rgbMD.Data();
+      ntk_assert(rgbMD.PixelFormat() == XN_PIXEL_FORMAT_RGB24, "Invalid RGB format.");
+      uchar* raw_rgb_ptr = m_current_image.rawRgbRef().ptr<uchar>();
+      for (int i = 0; i < rgbMD.XRes()*rgbMD.YRes()*3; i += 3)
+        for (int k = 0; k < 3; ++k)
+        {
+          raw_rgb_ptr[i+k] = pImage[i+(2-k)];
+        }
     }
 
     uchar* user_mask_ptr = m_current_image.userLabelsRef().ptr<uchar>();
