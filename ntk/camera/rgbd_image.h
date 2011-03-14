@@ -27,6 +27,7 @@ namespace ntk
 
   class RGBDProcessor;
   class RGBDCalibration;
+  class Skeleton;
 
 /*!
  * Stores RGB+Depth data.
@@ -40,13 +41,15 @@ namespace ntk
 class CV_EXPORTS RGBDImage
 {
 public:
-  RGBDImage() : m_calibration(0) {}
+  RGBDImage() : m_calibration(0), m_skeleton(0) {}
 
   /*! Initialize from an viewXXXX directory. */
   RGBDImage(const std::string& dir,
             const RGBDCalibration* calib = 0,
             RGBDProcessor* processor = 0)
   { loadFromDir(dir, calib, processor); }
+
+  ~RGBDImage();
 
   /*! Directory path if loaded from disk. */
   const std::string& directory() const { return m_directory; }
@@ -155,6 +158,23 @@ public:
         && m_mapped_depth(r,c) > 1e-5;
   }
 
+  /*!
+   * Accessors to the user segmentation labels.
+   * This is only available when using NiteRGBDGrabber.
+   * 0 is the background label, > 0 are the detected user ids.
+   */
+  const cv::Mat1b& userLabels() const { return m_user_labels; }
+  cv::Mat1b& userLabelsRef() { return m_user_labels; }
+
+  /*!
+   * Accessors to skeleton data. Only one user supported now.
+   * This is only available when using NiteRGBDGrabber.
+   * @see Skeleton
+   */
+  const Skeleton* skeleton() const { return m_skeleton; }
+  Skeleton* skeletonRef() { return m_skeleton; }
+  void setSkeletonData(Skeleton* skeleton) { m_skeleton = skeleton; }
+
 private:
   cv::Mat3b m_rgb;
   cv::Mat1b m_rgb_as_gray;
@@ -169,8 +189,10 @@ private:
   cv::Mat1f m_raw_intensity;
   cv::Mat1f m_raw_amplitude;
   cv::Mat1f m_raw_depth;
+  cv::Mat1b m_user_labels;
   const RGBDCalibration* m_calibration;
   std::string m_directory;
+  Skeleton* m_skeleton;
 };
 
 } // ntk

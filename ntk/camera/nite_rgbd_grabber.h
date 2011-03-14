@@ -86,9 +86,6 @@ public:
   /*! Callback: Finished calibration */
   void calibrationFinishedCallback(XnUserID nId, bool success);
 
-  /*! Returns tracked skeleton. */
-  const Skeleton& skeleton() const { return m_skeleton_data; }
-
 private:
   void check_error(const XnStatus& status, const char* what) const;
   void estimateCalibration();
@@ -102,7 +99,6 @@ private:
   bool m_need_pose_to_calibrate;
   XnChar m_calibration_pose[20];
   int m_max_num_users;
-  Skeleton m_skeleton_data;
   BodyEventDetector* m_body_event_detector;
   bool m_high_resolution;
 };

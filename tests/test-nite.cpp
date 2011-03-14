@@ -24,9 +24,51 @@
 
 #include <QApplication>
 #include <QDir>
+#include <QMutex>
 
 using namespace cv;
 using namespace ntk;
+
+class MyBodyListener : public BodyEventListener
+{
+public:
+  MyBodyListener() : m_last_hand_pos_2d(0,0,0)
+  {
+
+  }
+
+  virtual void triggerEvent(const BodyEvent &event)
+  {
+    switch (event.kind)
+    {
+    case BodyEvent::PushEvent:
+      ntk_dbg(1) << "PushEvent detected!";
+      break;
+    case BodyEvent::WaveEvent:
+      ntk_dbg(1) << "WaveEvent detected!";
+      break;
+    case BodyEvent::SteadyEvent:
+      ntk_dbg(1) << "SteadyEvent detected!";
+      break;
+    };
+  }
+
+  virtual void triggerHandPoint(const HandPointUpdate &hand_point)
+  {
+    QMutexLocker locker(&m_lock);
+    m_last_hand_pos_2d = hand_point.pos_2d;
+  }
+
+  cv::Point3f getLastHandPosInImage() const
+  {
+    QMutexLocker locker(&m_lock);
+    return m_last_hand_pos_2d;
+  }
+
+private:
+  mutable QMutex m_lock;
+  Point3f m_last_hand_pos_2d;
+};
 
 int main(int argc, char **argv)
 {
@@ -34,12 +76,17 @@ int main(int argc, char **argv)
   QApplication app (argc, argv);
   QDir::setCurrent(QApplication::applicationDirPath());
 
+  MyBodyListener body_event_listener;
+  BodyEventDetector detector;
+  detector.addListener(&body_event_listener);
+
   NiteRGBDGrabber grabber;
+  grabber.setBodyEventDetector(&detector);
+
   grabber.initialize();
   grabber.start();
 
   RGBDImage image;
-  Skeleton skeleton;
 
   namedWindow("depth");
   namedWindow("color");
@@ -51,14 +98,20 @@ int main(int argc, char **argv)
     // Lock the grabber to ensure data do not change in grab thread.
     grabber.acquireReadLock();
     grabber.currentImage().copyTo(image);
-    grabber.skeleton().copyTo(skeleton);
     grabber.releaseReadLock();
 
+    cv::Point3f handpoint = body_event_listener.getLastHandPosInImage();
+
     cv::Mat1b debug_depth_img = normalize_toMat1b(image.depth());
-    skeleton.drawOnImage(debug_depth_img);
+    if (image.skeleton())
+      image.skeleton()->drawOnImage(debug_depth_img);
+    circle(debug_depth_img, Point(handpoint.x, handpoint.y), 5, Scalar(0, 255, 255));
+
     cv::Mat3b debug_color_img;
     image.mappedRgb().copyTo(debug_color_img);
-    skeleton.drawOnImage(debug_color_img);
+    if (image.skeleton())
+      image.skeleton()->drawOnImage(debug_color_img);
+    circle(debug_color_img, Point(handpoint.x, handpoint.y), 5, Scalar(0, 255, 255));
 
     imshow("depth", debug_depth_img);
     imshow("color", debug_color_img);

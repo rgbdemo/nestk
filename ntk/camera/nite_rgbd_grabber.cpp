@@ -128,7 +128,7 @@ void NiteRGBDGrabber :: initialize()
   m_ni_user_generator.GetSkeletonCap().SetSkeletonProfile(XN_SKEL_PROFILE_ALL);
 
   if (m_body_event_detector)
-    m_body_event_detector->initialize(m_ni_context);
+    m_body_event_detector->initialize(m_ni_context, m_ni_depth_generator);
 
   status = m_ni_context.StartGeneratingAll();
   check_error(status, "StartGenerating");
@@ -241,6 +241,11 @@ void NiteRGBDGrabber :: run()
   m_rgbd_image.depthRef() = m_rgbd_image.rawDepthRef();
   m_rgbd_image.intensityRef() = m_rgbd_image.rawIntensityRef();
 
+  m_rgbd_image.userLabelsRef() = cv::Mat1b(m_calib_data->raw_depth_size);
+  m_rgbd_image.userLabelsRef() = 0u;
+
+  m_rgbd_image.setSkeletonData(new Skeleton());
+
   m_current_image.rawRgbRef() = Mat3b(m_calib_data->rawRgbSize());
   m_current_image.rawRgbRef() = Vec3b(0,0,0);
   m_current_image.rawDepthRef() = Mat1f(m_calib_data->raw_depth_size);
@@ -252,6 +257,10 @@ void NiteRGBDGrabber :: run()
   m_current_image.depthRef() = m_current_image.rawDepthRef();
   m_current_image.intensityRef() = m_current_image.rawIntensityRef();
 
+  m_current_image.userLabelsRef() = cv::Mat1b(m_calib_data->raw_depth_size);
+  m_current_image.userLabelsRef() = 0u;
+
+  m_current_image.setSkeletonData(new Skeleton());
 
   bool mapping_required = m_calib_data->rawRgbSize() != m_calib_data->raw_depth_size;
   if (!mapping_required)
@@ -306,14 +315,26 @@ void NiteRGBDGrabber :: run()
       raw_rgb_ptr[i+k] = pImage[i+(2-k)];
     }
 
+    uchar* user_mask_ptr = m_current_image.userLabelsRef().ptr<uchar>();
+    const XnLabel* pLabel = sceneMD.Data();
+    for (int i = 0; i < sceneMD.XRes()*sceneMD.YRes(); ++i)
+    {
+      user_mask_ptr[i] = pLabel[i];
+    }
+
     XnUserID user_ids[15];
     XnUInt16 num_users = 15;
     m_ni_user_generator.GetUsers(user_ids, num_users);
 
-    XnUserID user_id = user_ids[0];
-    if (m_ni_user_generator.GetSkeletonCap().IsTracking(user_id))
+    // FIXME: only one user supported.
+    for (int i = 0; i < num_users; ++i)
     {
-      m_skeleton_data.computeJoints(user_id, m_ni_user_generator, m_ni_depth_generator);
+      XnUserID user_id = user_ids[i];
+      if (m_ni_user_generator.GetSkeletonCap().IsTracking(user_id))
+      {
+        m_current_image.skeletonRef()->computeJoints(user_id, m_ni_user_generator, m_ni_depth_generator);
+        break;
+      }
     }
 
     {

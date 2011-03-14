@@ -21,11 +21,18 @@
 #include <ntk/utils/opencv_utils.h>
 #include <ntk/utils/stl.h>
 #include <ntk/camera/rgbd_processor.h>
+#include <ntk/gesture/skeleton.h>
 
 using namespace cv;
 
 namespace ntk
 {
+
+  RGBDImage :: ~RGBDImage()
+  {
+    if (m_skeleton)
+      delete m_skeleton;
+  }
 
   void RGBDImage :: loadFromFile(const std::string& dir,
                                  const RGBDCalibration* calib)
@@ -118,8 +125,15 @@ namespace ntk
     m_raw_intensity.copyTo(other.m_raw_intensity);
     m_raw_amplitude.copyTo(other.m_raw_amplitude);
     m_raw_depth.copyTo(other.m_raw_depth);
-    other.m_calibration = m_calibration;
+    m_user_labels.copyTo(other.m_user_labels);
+    other.m_calibration = m_calibration;    
     other.m_directory = m_directory;
+    if (m_skeleton)
+    {
+      if (!other.m_skeleton)
+        other.m_skeleton = new Skeleton();
+      m_skeleton->copyTo(*(other.m_skeleton));
+    }
   }
 
   void RGBDImage :: swap(RGBDImage& other)
@@ -137,8 +151,10 @@ namespace ntk
     cv::swap(m_raw_intensity, other.m_raw_intensity);
     cv::swap(m_raw_amplitude, other.m_raw_amplitude);
     cv::swap(m_raw_depth, other.m_raw_depth);
+    cv::swap(m_user_labels, other.m_user_labels);
     std::swap(m_calibration, other.m_calibration);
     std::swap(m_directory, other.m_directory);
+    std::swap(m_skeleton, other.m_skeleton);
   }
 
 } // ntk

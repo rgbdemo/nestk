@@ -33,6 +33,7 @@ IF (USE_OPENNI)
        camera/nite_rgbd_grabber.cpp
        gesture/body_event.h
        gesture/body_event.cpp
+       gesture/ni_utils.h
        gesture/skeleton.h
        gesture/skeleton.cpp
       )
