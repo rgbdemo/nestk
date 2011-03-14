@@ -27,7 +27,7 @@ SET (ntk_sources ${ntk_sources}
      camera/rgbd_processor.cpp
 )
 
-IF (USE_OPENNI)
+IF (NESTK_USE_OPENNI)
   SET (ntk_sources ${ntk_sources}
        camera/nite_rgbd_grabber.h
        camera/nite_rgbd_grabber.cpp
@@ -40,7 +40,7 @@ IF (USE_OPENNI)
       )
 ENDIF()
 
-IF (USE_FREENECT)
+IF (NESTK_USE_FREENECT)
   SET (ntk_sources ${ntk_sources}
        camera/kinect_grabber.h
        camera/kinect_grabber.cpp)

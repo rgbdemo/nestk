@@ -25,7 +25,7 @@
 #include <ntk/numeric/levenberg_marquart_minimizer.h>
 #include <ntk/utils/opencv_utils.h>
 
-#ifdef USE_PCL
+#ifdef NESTK_USE_PCL
 # include <pcl/registration/icp.h>
 using namespace pcl;
 #endif
@@ -369,7 +369,7 @@ void RelativePoseEstimatorFromImage::reset()
   m_image_data.clear();
 }
 
-#ifdef USE_PCL
+#ifdef NESTK_USE_PCL
 bool RelativePoseEstimatorFromImage::get_cloud(const std::vector<cv::Point3f>& points,
                                                PointCloud<PointXYZ>& cloud)
 {
@@ -529,7 +529,7 @@ bool RelativePoseEstimatorFromImage::icp_estimateNewPose(const RGBDImage& curren
     return true;
 #endif
 }
-#endif // USE_PCL
+#endif // NESTK_USE_PCL
 
 } // ntk
 

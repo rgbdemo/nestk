@@ -14,13 +14,13 @@ ADD_TEST(${name} ${name})
 
 ENDMACRO(NEW_TEST)
 
-IF (USE_FREENECT)
+IF (NESTK_USE_FREENECT)
   NEW_TEST(test-kinect-3d 0)
   NEW_TEST(test-kinect-grabber 0)
   NEW_TEST(test-async-grabber 0)
 ENDIF ()
 
-IF (USE_OPENNI)
+IF (NESTK_USE_OPENNI)
   NEW_TEST(test-nite 0)
 ENDIF()
 
@@ -28,7 +28,7 @@ NEW_TEST(test-opencv-grabber 0)
 NEW_TEST(test-siftgpu 0)
 NEW_TEST(test-siftgpu-server 0)
 NEW_TEST(test-features 0)
-IF (USE_OPENCL)
+IF (NESTK_USE_OPENCL)
   NEW_TEST(test-gpu 0)
 ENDIF()
 
@@ -41,6 +41,6 @@ NEW_TEST(test-transform 0)
 NEW_TEST(test-threads 0)
 NEW_TEST(test-serialization 0)
 
-IF (USE_PCL)
+IF (NESTK_USE_PCL)
   NEW_TEST(test-pcl 0)
 ENDIF()

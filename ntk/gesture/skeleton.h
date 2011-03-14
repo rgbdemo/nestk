@@ -22,11 +22,11 @@
 
 #include <ntk/core.h>
 
-#include <XnOpenNI.h>
-#include <XnCodecIDs.h>
-#include <XnCppWrapper.h>
-#include <XnVSessionManager.h>
-#include <XnVPushDetector.h>
+namespace xn
+{
+  class UserGenerator;
+  class DepthGenerator;
+}
 
 namespace ntk
 {
@@ -112,10 +112,6 @@ public:
     return list[i];
   }
 
-private:
-  /*! Do not use it directly. Use ntkJointList. */
-  static XnSkeletonJoint xnJointList(int i);
-
 public:
   Skeleton()
   {}
@@ -154,40 +150,6 @@ private:
   cv::Point3f m_projected_joints[NumJoints];
   int m_user_id;
 };
-
-inline XnSkeletonJoint Skeleton :: xnJointList(int i)
-{
-  static const XnSkeletonJoint list[NumJoints] =  {
-    XN_SKEL_HEAD,
-    XN_SKEL_NECK,
-    XN_SKEL_TORSO,
-    XN_SKEL_WAIST,
-    XN_SKEL_LEFT_COLLAR,
-    XN_SKEL_LEFT_SHOULDER,
-    XN_SKEL_LEFT_ELBOW,
-    XN_SKEL_LEFT_WRIST,
-    XN_SKEL_LEFT_HAND,
-    XN_SKEL_LEFT_FINGERTIP,
-
-    XN_SKEL_RIGHT_COLLAR,
-    XN_SKEL_RIGHT_SHOULDER,
-    XN_SKEL_RIGHT_ELBOW,
-    XN_SKEL_RIGHT_WRIST,
-    XN_SKEL_RIGHT_HAND,
-    XN_SKEL_RIGHT_FINGERTIP,
-
-    XN_SKEL_LEFT_HIP,
-    XN_SKEL_LEFT_KNEE,
-    XN_SKEL_LEFT_ANKLE,
-    XN_SKEL_LEFT_FOOT,
-
-    XN_SKEL_RIGHT_HIP,
-    XN_SKEL_RIGHT_KNEE,
-    XN_SKEL_RIGHT_ANKLE,
-    XN_SKEL_RIGHT_FOOT
-  };
-  return list[i];
-}
 
 /*! Ordered list of joints */
 inline Skeleton::JointName Skeleton :: ntkJointList(int i)

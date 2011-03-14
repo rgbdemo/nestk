@@ -19,10 +19,52 @@
 
 #include "skeleton.h"
 
+#ifdef NESTK_USE_OPENNI
+
+#include <XnOpenNI.h>
+#include <XnCodecIDs.h>
+#include <XnCppWrapper.h>
+#include <XnVSessionManager.h>
+#include <XnVPushDetector.h>
+
 using namespace cv;
 
 namespace ntk
 {
+
+  static XnSkeletonJoint xnJointList(int i)
+  {
+    static const XnSkeletonJoint list[Skeleton::NumJoints] =  {
+    XN_SKEL_HEAD,
+    XN_SKEL_NECK,
+    XN_SKEL_TORSO,
+    XN_SKEL_WAIST,
+    XN_SKEL_LEFT_COLLAR,
+    XN_SKEL_LEFT_SHOULDER,
+    XN_SKEL_LEFT_ELBOW,
+    XN_SKEL_LEFT_WRIST,
+    XN_SKEL_LEFT_HAND,
+    XN_SKEL_LEFT_FINGERTIP,
+
+    XN_SKEL_RIGHT_COLLAR,
+    XN_SKEL_RIGHT_SHOULDER,
+    XN_SKEL_RIGHT_ELBOW,
+    XN_SKEL_RIGHT_WRIST,
+    XN_SKEL_RIGHT_HAND,
+    XN_SKEL_RIGHT_FINGERTIP,
+
+    XN_SKEL_LEFT_HIP,
+    XN_SKEL_LEFT_KNEE,
+    XN_SKEL_LEFT_ANKLE,
+    XN_SKEL_LEFT_FOOT,
+
+    XN_SKEL_RIGHT_HIP,
+    XN_SKEL_RIGHT_KNEE,
+    XN_SKEL_RIGHT_ANKLE,
+    XN_SKEL_RIGHT_FOOT
+    };
+    return list[i];
+  }
 
  void Skeleton :: computeJoints(int user_id,
                                         xn::UserGenerator& user_generator,
@@ -63,3 +105,15 @@ namespace ntk
  }
 
 } // ntk
+
+#else // NESTK_USE_OPENNI
+
+namespace ntk
+{
+
+Skeleton::Skeleton() {}
+Skeleton::~Skeleton() {}
+
+}
+
+#endif // NESTK_USE_OPENNI

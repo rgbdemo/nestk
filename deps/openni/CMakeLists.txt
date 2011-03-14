@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 2.8)
 
 project(OpenNI)
 
+OPTION(OPENNI_BUILD_SAMPLES "Build OpenNI samples" 0)
+
 # Options
 # ---------
 add_definitions(-DCUSTOM_SAMPLE_XML_PATH="config/SamplesConfig.xml")
@@ -81,6 +83,7 @@ add_subdirectory("./Source/Modules/")
 
 # Add samples
 # ---------------------------
+IF (OPENNI_BUILD_SAMPLES)
 add_subdirectory("./Samples/NiAudioSample") #Compiles and runs on Mac
 add_subdirectory("./Samples/NiBackRecorder") #Compiles and runs on Mac
 add_subdirectory("./Samples/NiConvertXToONI") #Compiles and runs on Mac
@@ -92,6 +95,7 @@ add_subdirectory("./Samples/NiSimpleRead")  #Compiles and runs on Mac
 add_subdirectory("./Samples/NiSimpleViewer") #Compiles and runs on Mac
 add_subdirectory("./Samples/NiUserTracker") #Compiles and runs on Mac
 add_subdirectory("./Samples/NiViewer") #Compiles and runs on Mac
+ENDIF()
 
 # Utils
 # ---------------------------

@@ -119,7 +119,7 @@ namespace ntk
       normalize(m_image->rawIntensityRef(), m_image->rawIntensityRef(), 0, 255, NORM_MINMAX, -1);
     }
 
-    if (!(m_flags&NiteProcessed) && (!m_image->calibration() || !(m_flags & UndistortImages) || (m_flags & Pause)))
+    if ((m_flags&NiteProcessed) || (!m_image->calibration() || !(m_flags & UndistortImages) || (m_flags & Pause)))
     {      
       m_image->rawAmplitude().copyTo(m_image->amplitudeRef());
       m_image->rawIntensity().copyTo(m_image->intensityRef());
@@ -610,7 +610,15 @@ namespace ntk
     bool mapping_required = depth_size != rgb_size;
 
     if (!mapping_required)
-      return;
+    {
+      m_image->mappedDepthRef() = m_image->depth();
+      m_image->mappedRgbRef() = m_image->rgb();
+    }
+    else
+    {
+      m_image->mappedRgbRef().create(m_image->calibration()->raw_depth_size);
+      m_image->mappedDepthRef().create(m_image->calibration()->rawRgbSize());
+    }
 
     const float ratio = float(rgb_size.width) / depth_size.width;
 

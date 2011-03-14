@@ -20,9 +20,9 @@
 #include "utils.h"
 #include <ntk/utils/debug.h>
 
-#ifdef USE_GSL
+#ifdef NESTK_USE_GSL
   #include <gsl/gsl_cdf.h>
-#endif // def USE_GSL
+#endif // def NESTK_USE_GSL
 
 namespace ntk
 {
@@ -161,7 +161,7 @@ namespace ntk
     return l*r*log(p/r) + l*(1.0-r)*log((1.0-p)/(1.0-r));
   }
 
-#ifdef USE_GSL
+#ifdef NESTK_USE_GSL
 
   double binomial_logicdf_gsl(unsigned k, double p, unsigned l)
   {
@@ -182,6 +182,6 @@ namespace ntk
       return binomial_logicdf_gsl(k,p,l);
   }
 
-#endif // def USE_GSL
+#endif // def NESTK_USE_GSL
 
 } // end of ntk

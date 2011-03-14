@@ -128,12 +128,14 @@ namespace ntk
     m_user_labels.copyTo(other.m_user_labels);
     other.m_calibration = m_calibration;    
     other.m_directory = m_directory;
+#ifdef NESTK_USE_OPENNI
     if (m_skeleton)
     {
       if (!other.m_skeleton)
         other.m_skeleton = new Skeleton();
       m_skeleton->copyTo(*(other.m_skeleton));
     }
+#endif
   }
 
   void RGBDImage :: swap(RGBDImage& other)

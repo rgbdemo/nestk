@@ -103,11 +103,11 @@ namespace ntk {
     return value;
   }
 
-#ifdef USE_GSL
+#ifdef NESTK_USE_GSL
   double binomial_logcdf_gsl(unsigned k, double p, unsigned n);
   double binomial_logicdf_gsl(unsigned k, double p, unsigned n);
   double binomial_logicdf_best_estimate(unsigned k, double p, unsigned n);
-#endif // def USE_GSL
+#endif // def NESTK_USE_GSL
 
 } // end of ntk
 

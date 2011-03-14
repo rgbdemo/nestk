@@ -17,7 +17,7 @@
  * Author: Nicolas Burrus <nicolas.burrus@uc3m.es>, (C) 2010
  */
 
-#ifdef USE_GLEW
+#ifdef NESTK_USE_GLEW
 # include <GL/glew.h>
 #endif
 

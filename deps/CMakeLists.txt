@@ -16,13 +16,13 @@ INCLUDE( ${nestk_deps_SOURCE_DIR}/cmake/msvc.cmake )
 ################################################################################
 ## OpenCV
 IF (IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/opencv")
-  OPTION(USE_EXTERNAL_OPENCV "Use external OpenCV" 0)
+  OPTION(NESTK_USE_EXTERNAL_OPENCV "Use external OpenCV" 0)
 ELSE ()
-  OPTION(USE_EXTERNAL_OPENCV "Use external OpenCV" 1)
+  OPTION(NESTK_USE_EXTERNAL_OPENCV "Use external OpenCV" 1)
 ENDIF()
-IF (NOT USE_EXTERNAL_OPENCV)
+IF (NOT NESTK_USE_EXTERNAL_OPENCV)
   ADD_SUBDIRECTORY ( opencv )
-ENDIF(NOT USE_EXTERNAL_OPENCV)
+ENDIF(NOT NESTK_USE_EXTERNAL_OPENCV)
 
 ## GLEW
 set(GLEW_INCLUDE_DIR "${nestk_deps_SOURCE_DIR}/glew/include" CACHE FILEPATH "" FORCE)
@@ -32,9 +32,10 @@ ADD_SUBDIRECTORY("${nestk_deps_SOURCE_DIR}/glew")
 ################################################################################
 # libfreeinect
 ################################################################################
-OPTION(USE_EXTERNAL_FREENECT "Use external Freenect" 0)
+OPTION(NESTK_USE_EXTERNAL_FREENECT "Use external Freenect" 0)
+OPTION(NESTK_USE_FREENECT "Build Freenect support"${NESTK_USE_FREENECT})
 
-IF((NOT USE_EXTERNAL_FREENECT AND USE_FREENECT) OR USE_OPENNI)
+IF((NOT NESTK_USE_EXTERNAL_FREENECT AND NESTK_USE_FREENECT) OR NESTK_USE_OPENNI)
   ## LIBUSB
   IF (NOT LIBUSB_1_INCLUDE_DIR)
     if(WIN32)
@@ -59,7 +60,7 @@ IF((NOT USE_EXTERNAL_FREENECT AND USE_FREENECT) OR USE_OPENNI)
   FIND_PACKAGE(libusb-1.0 REQUIRED)
 ENDIF()
 
-IF(NOT USE_EXTERNAL_FREENECT AND USE_FREENECT)
+IF(NOT NESTK_USE_EXTERNAL_FREENECT AND NESTK_USE_FREENECT)
     ## PTHREADS
     if(WIN32)
       IF (NOT THREADS_PTHREADS_INCLUDE_DIR)
@@ -90,7 +91,9 @@ IF(NOT USE_EXTERNAL_FREENECT AND USE_FREENECT)
     ADD_SUBDIRECTORY(libfreenect)
 ENDIF()
 
-IF (USE_OPENNI)
+OPTION(NESTK_USE_OPENNI "Build OpenNI drivers. support" ${NESTK_USE_OPENNI})
+
+IF (NESTK_USE_OPENNI)
   set(USB_INCLUDE_DIR ${LIBUSB_1_INCLUDE_DIR})
   set(USB_LIBRARIES ${LIBUSB_1_LIBRARY})
   ADD_SUBDIRECTORY(openni)
@@ -103,9 +106,9 @@ ENDIF()
 SET(eigen3_INCLUDE_DIRS ${nestk_deps_SOURCE_DIR}/eigen)
 INCLUDE_DIRECTORIES(${eigen3_INCLUDE_DIRS})
 
-OPTION(USE_PCL "Use PCL library." 0)
+OPTION(NESTK_USE_PCL "Use PCL library." ${NESTK_USE_PCL})
 
-IF (USE_PCL)
+IF (NESTK_USE_PCL)
   ADD_SUBDIRECTORY(cminpack)
   INCLUDE_DIRECTORIES(${nestk_deps_SOURCE_DIR}/cminpack)
 
@@ -119,7 +122,7 @@ IF (USE_PCL)
   INCLUDE_DIRECTORIES(${nestk_deps_SOURCE_DIR}/pcl/include)
   INCLUDE_DIRECTORIES(${nestk_deps_SOURCE_DIR}/pcl/src)
   INCLUDE_DIRECTORIES(${nestk_deps_SOURCE_DIR}/pcl/include/roslib)
-ENDIF(USE_PCL)
+ENDIF(NESTK_USE_PCL)
 
 ################################################################################
 # cmake scripts
