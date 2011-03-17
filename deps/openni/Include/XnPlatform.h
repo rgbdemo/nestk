@@ -52,6 +52,10 @@
 //---------------------------------------------------------------------------
 
 #if defined(_WIN32) // Microsoft Visual Studio
+#ifndef NO_NESTK_CHANGES
+    #define XN_EXPORTS 1
+    #define XN_CORE_EXPORTS 1
+#endif
 	#ifndef RC_INVOKED
 		#if _MSC_VER < 1300 // Before MSVC7 (2003)
 			#error Xiron Platform Abstraction Layer - Win32 - Microsoft Visual Studio versions below 2003 (7.0) are not supported!

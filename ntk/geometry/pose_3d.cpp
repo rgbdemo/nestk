@@ -240,7 +240,8 @@ Vec3f camera_eye_vector(const Pose3D& pose, int r, int c)
   double dy = r - pose.imageCenterY();
   cv::Vec3f eyev(dx/pose.focalX(), dy/pose.focalY(), 1);
   float norm = sqrt(eyev.dot(eyev));
-  eyev *= (1.0f/norm);
+  // FIXME: *= is broken on opencv 2.2.
+  eyev = eyev*(1.0f/norm);
   return eyev;
 }
 
@@ -593,7 +594,8 @@ const cv::Vec3f Pose3D :: cvRodriguesRotation() const
   Eigen::AngleAxisd r;
   r.fromRotationMatrix(impl->camera_transform.rotation().matrix());
   cv::Vec3f rodrigues (r.axis()(0), r.axis()(1), r.axis()(2));
-  rodrigues *= r.angle();
+  // FIXME: *= is broken on OpenCV 2.2
+  rodrigues = rodrigues*(float)r.angle();
   return rodrigues;
 }
 
@@ -842,7 +844,8 @@ cv::Vec3f compute_axis_angle_rotation(const cv::Vec3f& src, const cv::Vec3f& dst
   cv::Vec3f w = norm_src.cross(norm_dst);
   float norm_w = norm(w);
   float magn = asin(norm_w);
-  w *= magn / norm_w;
+  // FIXME: *= is broken on OpenCV 2.2
+  w = w * (magn / norm_w);
   return w;
 }
 

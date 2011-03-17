@@ -58,6 +58,7 @@ if(NOT JPEG_FOUND)
 	# when not found use the one in the externals folder, so we can compile!
 	set(JPEG_FOUND true)
 	set(JPEG_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Source/External/LibJPEG/")
+        set(JPEG_LIBRARY "jpeg")
 	add_subdirectory("./Source/External/LibJPEG/")
 endif()
 
