@@ -26,6 +26,8 @@
 #include <ntk/image/sift_gpu.h>
 #include <ntk/image/feature.h>
 
+#define NESTK_USE_PCL
+
 #ifdef NESTK_USE_PCL
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -101,8 +103,8 @@ private:
 class RelativePoseEstimatorFromImage : public RelativePoseEstimator
 {
 public:
-  RelativePoseEstimatorFromImage(const FeatureSetParams& params)
-   : m_feature_parameters(params)
+  RelativePoseEstimatorFromImage(const FeatureSetParams& params, bool use_icp = false)
+   : m_feature_parameters(params), m_use_icp(use_icp)
   {
     // Force feature extraction to return only features with depth.
     m_feature_parameters.only_features_with_depth = true;
@@ -130,25 +132,13 @@ private:
                          const std::vector<cv::DMatch>& best_matches,
                          int closest_view_index);
 
-private:
-#ifdef NESTK_USE_PCL
-  bool get_cloud(const std::vector<cv::Point3f>& points,
-                 pcl::PointCloud<pcl::PointXYZ>& cloud);
-
-  bool get_cloud(const std::vector<cv::Point3f>& points,
-                 const Pose3D& pose,
-                 const RGBDImage& image,
-                 pcl::PointCloud<pcl::PointXYZ>& cloud);
-
-public:
-  bool icp_estimateNewPose(const RGBDImage& current_image,
-                           const RGBDImage& image);
-#endif
+  void optimizeWithICP(const RGBDImage& image, Pose3D& rgb_pose);
 
 private:
   std::vector < FeatureSet > m_features;
   std::vector< ImageData > m_image_data;
   FeatureSetParams m_feature_parameters;
+  bool m_use_icp;
 };
 
 } // ntk

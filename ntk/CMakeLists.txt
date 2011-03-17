@@ -117,6 +117,8 @@ SET (ntk_sources ${ntk_sources}
      mesh/mesh_generator.cpp
      mesh/mesh_renderer.h
      mesh/mesh_renderer.cpp
+     mesh/pcl_utils.h
+     mesh/pcl_utils.cpp
      mesh/rgbd_modeler.h
      mesh/rgbd_modeler.cpp
      mesh/surfels_rgbd_modeler.h
