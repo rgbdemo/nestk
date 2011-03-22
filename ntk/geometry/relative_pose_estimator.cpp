@@ -488,8 +488,10 @@ bool RelativePoseEstimatorFromImage::optimizeWithICP(const RGBDImage& image, Pos
 
 #else // NESTK_USE_PCL
 
-void RelativePoseEstimateFromImage::optimizeWithICP(const RGBDImage& image, Pose3D& rgb_pose)
-{}
+bool RelativePoseEstimatorFromImage::optimizeWithICP(const RGBDImage& image, Pose3D& rgb_pose, int closest_view_index)
+{
+  return false;
+}
 
 #endif // NESTK_USE_PCL
 
