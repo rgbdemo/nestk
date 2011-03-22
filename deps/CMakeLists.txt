@@ -1,7 +1,7 @@
 #
 # Root nestk
 #
-#   nicolas.burrus@ensta.fr
+#   nicolas@burrus.name
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.2)
 
@@ -126,6 +126,7 @@ IF (NESTK_USE_PCL)
 
   ADD_SUBDIRECTORY(flann)
   INCLUDE_DIRECTORIES(${nestk_deps_SOURCE_DIR}/flann/src/cpp/flann)
+  INCLUDE_DIRECTORIES(${nestk_deps_SOURCE_DIR}/flann/src/cpp)
 
   ADD_SUBDIRECTORY(qhull)
   INCLUDE_DIRECTORIES(${nestk_deps_SOURCE_DIR}/qhull/src)

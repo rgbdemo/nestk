@@ -21,6 +21,7 @@ macro(rosbuild_add_library lib)
   else (WIN32)
     add_library(${lib} SHARED ${ARGN})
   endif (WIN32)
+  INSTALL(TARGETS ${lib} DESTINATION lib)
 endmacro(rosbuild_add_library)
 
 macro(rosbuild_add_boost_directories)
