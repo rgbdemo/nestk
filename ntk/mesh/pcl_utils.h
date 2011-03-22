@@ -37,7 +37,10 @@ class Pose3D;
 
 void vectorToPointCloud(pcl::PointCloud<pcl::PointXYZ>& cloud, const std::vector<cv::Point3f>& points);
 void rgbdImageToPointCloud(pcl::PointCloud<pcl::PointXYZ>& cloud, const RGBDImage& image);
-void rgbdImageToPointCloud(pcl::PointCloud<pcl::PointXYZ>& cloud, const RGBDImage& image, const Pose3D& pose);
+void rgbdImageToPointCloud(pcl::PointCloud<pcl::PointXYZ>& cloud,
+                           const RGBDImage& image,
+                           const Pose3D& pose,
+                           int subsampling_factor = 1);
 
 }
 

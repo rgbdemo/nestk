@@ -17,6 +17,9 @@
  * Author: Nicolas Burrus <nicolas.burrus@uc3m.es>, (C) 2010
  */
 
+// For QTCreator
+// #define NESTK_USE_PCL
+
 #include "relative_pose_estimator.h"
 
 #include <ntk/utils/time.h>
@@ -24,9 +27,12 @@
 #include <ntk/stats/histogram.h>
 #include <ntk/numeric/levenberg_marquart_minimizer.h>
 #include <ntk/utils/opencv_utils.h>
+#include <ntk/mesh/mesh.h>
 
 #ifdef NESTK_USE_PCL
 # include <pcl/registration/icp.h>
+# include <ntk/mesh/pcl_utils.h>
+# include <pcl/filters/voxel_grid.h>
 # include <ntk/mesh/pcl_utils.h>
 using namespace pcl;
 #endif
@@ -112,11 +118,11 @@ double rms_optimize_ransac(Pose3D& pose3d,
   // in rms_optimize.
   const double rms_err_threshold = 5;
   const double compat_err_threshold = 3;
-  const int max_iterations = 30;
-  const int min_support_points = 7;
+  const int max_iterations = 200;
+  const int min_support_points = std::max(7, int(ref_points.size()/20));
   const float min_consensus_support_percent = 0.05;
 
-  ntk_assert(ref_points.size() > 7, "Not enough points.");
+  ntk_assert(ref_points.size() > min_support_points, "Not enough points.");
 
   cv::RNG rgen;
   double best_error = FLT_MAX;
@@ -313,6 +319,7 @@ bool RelativePoseEstimatorFromImage::estimateNewPose(const RGBDImage& image)
     m_current_pose = *image.calibration()->depth_pose;
   }
 
+  ntk_ensure(image.mappedDepth().data, "Image must have depth mapping.");
   FeatureSet image_features;
   image_features.extractFromImage(image, m_feature_parameters);
 
@@ -322,13 +329,26 @@ bool RelativePoseEstimatorFromImage::estimateNewPose(const RGBDImage& image)
                          image.calibration()->R, image.calibration()->T);
   bool pose_ok = true;
 
+  namedWindow("matches");
+
+  int closest_view_index = -1;
+
   if (m_image_data.size() > 0)
   {
     std::vector<DMatch> best_matches;
-    int closest_view_index = -1;
     closest_view_index = computeNumMatchesWithPrevious(image, image_features, best_matches);
     ntk_dbg_print(closest_view_index, 1);
     ntk_dbg_print(best_matches.size(), 1);
+
+#if 0
+    cv::Mat3b debug_img;
+    image_features.drawMatches(image.rgb(),
+                               m_image_data[closest_view_index].color,
+                               m_features[closest_view_index],
+                               best_matches,
+                               debug_img);
+    cv::imshow("matches", debug_img);
+#endif
 
     new_pose = m_image_data[closest_view_index].pose;
     new_rgb_pose = new_pose;
@@ -354,7 +374,11 @@ bool RelativePoseEstimatorFromImage::estimateNewPose(const RGBDImage& image)
   if (pose_ok)
   {
     if (m_use_icp)
-      optimizeWithICP(image, new_rgb_pose);
+      pose_ok &= optimizeWithICP(image, new_rgb_pose, closest_view_index);
+  }
+
+  if (pose_ok)
+  {
     new_pose = new_rgb_pose;
     new_pose.toLeftCamera(image.calibration()->depth_intrinsics,
                           image.calibration()->R, image.calibration()->T);
@@ -382,7 +406,7 @@ void RelativePoseEstimatorFromImage::reset()
 
 #ifdef NESTK_USE_PCL
 
-void RelativePoseEstimatorFromImage::optimizeWithICP(const RGBDImage& image, Pose3D& rgb_pose)
+bool RelativePoseEstimatorFromImage::optimizeWithICP(const RGBDImage& image, Pose3D& rgb_pose, int closest_view_index)
 {
   const int min_ref_points = 100;
 
@@ -390,41 +414,60 @@ void RelativePoseEstimatorFromImage::optimizeWithICP(const RGBDImage& image, Pos
   bool pose_ok=false;
 
   Pose3D new_rgb_pose = rgb_pose;
-  rgbdImageToPointCloud(cloud_source, image, new_rgb_pose);
+  rgbdImageToPointCloud(cloud_source, image, new_rgb_pose, 4);
 
-  int num_ref_points = 0;
-  for (int i = 0; i < m_features.size(); ++i)
+  // Using as reference points features points from views adjacent to the best
+  // matching one to keep it small.
+  std::vector<Point3f> ref_points;
+  // Add points for adjacent views.
+  for (int i = closest_view_index - 1; i <= closest_view_index + 1; ++i)
   {
-    num_ref_points += m_features[i].locations().size();
+    if (i < 0 || i >= m_features.size()) continue;
+    for (int k = 0; k < m_features[i].locations().size(); ++k)
+      ref_points.push_back(m_features[i].locations()[k].p3d);
   }
 
-  if (num_ref_points < min_ref_points)
+  if (ref_points.size() < min_ref_points)
   {
     ntk_dbg(1) << "Not enough reference points, ignoring ICP.";
-    return;
+    return true;
   }
 
-  cloud_target.width = num_ref_points;
-  cloud_target.height = 1;
-  cloud_target.points.resize(cloud_target.width * cloud_target.height);
+  vectorToPointCloud(cloud_target, ref_points);
 
   pcl::PointCloud<pcl::PointXYZ>::ConstPtr cloud_source_ptr = cloud_source.makeShared();
   pcl::PointCloud<pcl::PointXYZ>::ConstPtr cloud_target_ptr = cloud_target.makeShared();
 
+  ntk_dbg_print(cloud_source.points.size(), 1);
+  ntk_dbg_print(cloud_target.points.size(), 1);
+
   IterativeClosestPoint<PointXYZ, PointXYZ> reg;
 
-  reg.setInputCloud (cloud_target_ptr );
-  reg.setInputTarget (cloud_source_ptr  );
+  PointCloud<PointXYZ> cloud_filtered_target;
+  PointCloud<PointXYZ> cloud_filtered_source;
 
-  reg.setMaximumIterations (200);
-  reg.setTransformationEpsilon (1e-8);
-  reg.setMaxCorrespondenceDistance (0.005);
+  // Simplify the point clouds.
+  VoxelGrid<PointXYZ> grid;
+  grid.setLeafSize (0.02, 0.02, 0.02);
+
+  grid.setInputCloud (cloud_target_ptr);
+  grid.filter (cloud_filtered_target);
+
+  grid.setInputCloud (cloud_source_ptr);
+  grid.filter (cloud_filtered_source);
+
+  reg.setInputCloud (cloud_filtered_target.makeShared() );
+  reg.setInputTarget (cloud_filtered_source.makeShared()  );
+
+  reg.setMaximumIterations (20);
+  reg.setTransformationEpsilon (1e-5);
+  reg.setMaxCorrespondenceDistance (0.01);
 
   reg.align (cloud_reg);
   if (!reg.hasConverged())
   {
     ntk_dbg(1) << "ICP did not converge, ignoring.";
-    return;
+    return false;
   }
 
   Eigen::Matrix4f t = reg.getFinalTransformation ();
@@ -440,6 +483,7 @@ void RelativePoseEstimatorFromImage::optimizeWithICP(const RGBDImage& image, Pos
 
   new_rgb_pose.applyTransformAfter(icp_pose);
   rgb_pose = new_rgb_pose;
+  return true;
 }
 
 #else // NESTK_USE_PCL

@@ -44,10 +44,14 @@ void vectorToPointCloud(pcl::PointCloud<pcl::PointXYZ>& cloud, const std::vector
   }
 }
 
-void rgbdImageToPointCloud(pcl::PointCloud<pcl::PointXYZ>& cloud, const RGBDImage& image, const Pose3D& pose)
+void rgbdImageToPointCloud(pcl::PointCloud<pcl::PointXYZ>& cloud,
+                           const RGBDImage& image,
+                           const Pose3D& pose,
+                           int subsampling_factor)
 {
   std::vector<Point3f> points;
-  for_all_rc(image.depth())
+  for (int r = 0; r < image.depth().rows; r += subsampling_factor)
+  for (int c = 0; c < image.depth().cols; c += subsampling_factor)
   {
     float d = image.depth()(r,c);
     bool mask_ok = !image.depthMask().data || image.depthMask()(r,c);

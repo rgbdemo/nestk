@@ -132,7 +132,7 @@ private:
                          const std::vector<cv::DMatch>& best_matches,
                          int closest_view_index);
 
-  void optimizeWithICP(const RGBDImage& image, Pose3D& rgb_pose);
+  bool optimizeWithICP(const RGBDImage& image, Pose3D& rgb_pose, int closest_view_index);
 
 private:
   std::vector < FeatureSet > m_features;

@@ -80,6 +80,15 @@ template <typename PointSource, typename PointTarget> void
         cnt++;
       }
     }
+
+    if (cnt < min_number_correspondences_)
+    {
+      ROS_ERROR ("[pcl::%s::computeTransformation] Not enough correspondences found. Relax your threshold parameters.\n",
+                 getClassName ().c_str ());
+      converged_ = false;
+      return;
+    }
+
     // Resize to the actual number of valid correspondences
     source_indices.resize (cnt); target_indices.resize (cnt);
 

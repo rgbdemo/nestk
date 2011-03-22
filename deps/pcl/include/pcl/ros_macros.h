@@ -38,7 +38,12 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-#define ROS_DEBUG(...) ros::console::print (stdout, 2, 2, __VA_ARGS__)
+#ifdef DEBUG
+# define ROS_DEBUG(...) ros::console::print (stdout, 2, 2, __VA_ARGS__)
+#else
+# define ROS_DEBUG(...)
+#endif
+
 #define ROS_INFO(...) ros::console::print (stdout, 2, 7, __VA_ARGS__)
 #define ROS_WARN(...) ros::console::print (stderr, 2, 3, __VA_ARGS__)
 #define ROS_ERROR(...) ros::console::print (stderr, 1, 1, __VA_ARGS__)
