@@ -158,13 +158,20 @@ void NiteRGBDGrabber :: estimateCalibration()
   p.X = 0; p.Y = 0; p.Z = -1;
   m_ni_depth_generator.ConvertRealWorldToProjective(1, &p, &p);
   double cx = p.X;
-  double cy = p.Y;
+  double cy = p.Y;  
 
   p.X = 1; p.Y = 1; p.Z = -1;
   m_ni_depth_generator.ConvertRealWorldToProjective(1, &p, &p);
 
   double fx = -(p.X-cx);
   double fy = p.Y-cy;
+
+  const double f_correction_factor = 528.0/575.8;
+  fx *= f_correction_factor;
+  fy *= f_correction_factor;
+
+  const double cy_correction_factor = 267.0/240.0;
+  cy *= cy_correction_factor;
 
   m_calib_data = new RGBDCalibration();
 
