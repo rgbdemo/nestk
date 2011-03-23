@@ -326,10 +326,8 @@ bool RelativePoseEstimatorFromImage::estimateNewPose(const RGBDImage& image)
   Pose3D new_pose = *image.calibration()->depth_pose;
   Pose3D new_rgb_pose = new_pose;
   new_rgb_pose.toRightCamera(image.calibration()->rgb_intrinsics,
-                         image.calibration()->R, image.calibration()->T);
+                             image.calibration()->R, image.calibration()->T);
   bool pose_ok = true;
-
-  namedWindow("matches");
 
   int closest_view_index = -1;
 
@@ -340,17 +338,7 @@ bool RelativePoseEstimatorFromImage::estimateNewPose(const RGBDImage& image)
     ntk_dbg_print(closest_view_index, 1);
     ntk_dbg_print(best_matches.size(), 1);
 
-#if 0
-    cv::Mat3b debug_img;
-    image_features.drawMatches(image.rgb(),
-                               m_image_data[closest_view_index].color,
-                               m_features[closest_view_index],
-                               best_matches,
-                               debug_img);
-    cv::imshow("matches", debug_img);
-#endif
-
-    new_pose = m_image_data[closest_view_index].pose;
+    new_pose = m_image_data[closest_view_index].depth_pose;
     new_rgb_pose = new_pose;
     new_rgb_pose.toRightCamera(image.calibration()->rgb_intrinsics,
                                image.calibration()->R, image.calibration()->T);
@@ -374,19 +362,19 @@ bool RelativePoseEstimatorFromImage::estimateNewPose(const RGBDImage& image)
   if (pose_ok)
   {
     if (m_use_icp)
-      pose_ok &= optimizeWithICP(image, new_rgb_pose, closest_view_index);
+      pose_ok &= optimizeWithICP(image, new_pose, closest_view_index);
   }
 
   if (pose_ok)
   {
-    new_pose = new_rgb_pose;
-    new_pose.toLeftCamera(image.calibration()->depth_intrinsics,
-                          image.calibration()->R, image.calibration()->T);
+    new_rgb_pose = new_pose;
+    new_rgb_pose.toRightCamera(image.calibration()->rgb_intrinsics,
+                               image.calibration()->R, image.calibration()->T);
 
 
     ImageData image_data;
     image.rgb().copyTo(image_data.color);
-    image_data.pose = new_pose;
+    image_data.depth_pose = new_pose;
     m_current_pose = new_pose;
     image_features.compute3dLocation(new_rgb_pose);
     m_features.push_back(image_features);
@@ -406,15 +394,17 @@ void RelativePoseEstimatorFromImage::reset()
 
 #ifdef NESTK_USE_PCL
 
-bool RelativePoseEstimatorFromImage::optimizeWithICP(const RGBDImage& image, Pose3D& rgb_pose, int closest_view_index)
+bool RelativePoseEstimatorFromImage::optimizeWithICP(const RGBDImage& image,
+                                                     Pose3D& depth_pose,
+                                                     int closest_view_index)
 {
   const int min_ref_points = 100;
 
   PointCloud<PointXYZ> cloud_source, cloud_target, cloud_reg;
   bool pose_ok=false;
 
-  Pose3D new_rgb_pose = rgb_pose;
-  rgbdImageToPointCloud(cloud_source, image, new_rgb_pose, 4);
+  Pose3D new_depth_pose = depth_pose;
+  rgbdImageToPointCloud(cloud_source, image, new_depth_pose, 4);
 
   // Using as reference points features points from views adjacent to the best
   // matching one to keep it small.
@@ -478,17 +468,17 @@ bool RelativePoseEstimatorFromImage::optimizeWithICP(const RGBDImage& image, Pos
       T(r,c) = t(r,c);
 
   Pose3D icp_pose;
-  icp_pose = new_rgb_pose;
+  icp_pose = new_depth_pose;
   icp_pose.setCameraTransform(T);
 
-  new_rgb_pose.applyTransformAfter(icp_pose);
-  rgb_pose = new_rgb_pose;
+  new_depth_pose.applyTransformAfter(icp_pose);
+  depth_pose = new_depth_pose;
   return true;
 }
 
 #else // NESTK_USE_PCL
 
-bool RelativePoseEstimatorFromImage::optimizeWithICP(const RGBDImage& image, Pose3D& rgb_pose, int closest_view_index)
+bool RelativePoseEstimatorFromImage::optimizeWithICP(const RGBDImage& image, Pose3D& depth_pose, int closest_view_index)
 {
   return false;
 }

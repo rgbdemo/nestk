@@ -115,22 +115,22 @@ public:
 private:
   struct ImageData
   {
-    Pose3D pose;
+    Pose3D depth_pose;
     cv::Mat3b color;
   };
 
 private:
   int newImageIndex() const { return m_image_data.size(); }
   int computeNumMatchesWithPrevious(const RGBDImage& image,
-                                     const FeatureSet& features,
-                                     std::vector<cv::DMatch>& best_matches);
+                                    const FeatureSet& features,
+                                    std::vector<cv::DMatch>& best_matches);
   bool estimateDeltaPose(Pose3D& new_pose,
                          const RGBDImage& image,
                          const FeatureSet& features,
                          const std::vector<cv::DMatch>& best_matches,
                          int closest_view_index);
 
-  bool optimizeWithICP(const RGBDImage& image, Pose3D& rgb_pose, int closest_view_index);
+  bool optimizeWithICP(const RGBDImage& image, Pose3D& depth_pose, int closest_view_index);
 
 private:
   std::vector < FeatureSet > m_features;
