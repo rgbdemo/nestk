@@ -31,4 +31,5 @@ add_subdirectory("./Source/XnFormats/")
 add_subdirectory("./Source/XnDDK/")
 add_subdirectory("./Source/XnDeviceFile/")
 add_subdirectory("./Source/XnDeviceSensorV2/")
-add_subdirectory("./Source/Utils/XnSensorServer/")
+# Disabled by nestk.
+#add_subdirectory("./Source/Utils/XnSensorServer/")

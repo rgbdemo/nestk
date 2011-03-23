@@ -1,7 +1,7 @@
 #
 # Root nestk
 #
-#   nicolas.burrus@ensta.fr
+#   nicolas@burrus.name
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.2)
 
@@ -41,15 +41,15 @@ IF((NOT NESTK_USE_EXTERNAL_FREENECT AND NESTK_USE_FREENECT) OR NESTK_USE_OPENNI)
     if(WIN32)
       set(LIBUSB_1_INCLUDE_DIR "${nestk_deps_SOURCE_DIR}/win32/libusb-1.0/include" CACHE FILEPATH "" FORCE)
       IF (CMAKE_COMPILER_IS_GNUCXX)
-	set(LIBUSB_1_LIBRARY "${nestk_deps_SOURCE_DIR}/win32/libusb-1.0/lib/gcc/libusb.a" CACHE FILEPATH "" FORCE)
+        set(LIBUSB_1_LIBRARY "${nestk_deps_SOURCE_DIR}/win32/libusb-1.0/lib/gcc/libusb.a" CACHE FILEPATH "" FORCE)
       ELSE()
-	set(LIBUSB_1_LIBRARY "${nestk_deps_SOURCE_DIR}/win32/libusb-1.0/lib/msvc/libusb.lib" CACHE FILEPATH "" FORCE)
+        set(LIBUSB_1_LIBRARY "${nestk_deps_SOURCE_DIR}/win32/libusb-1.0/lib/msvc/libusb.lib" CACHE FILEPATH "" FORCE)
       ENDIF()
     ELSEIF(APPLE)
       IF (NOT LIBUSB_1_INCLUDE_DIR)
-	set(LIBUSB_1_INCLUDE_DIR "${nestk_deps_SOURCE_DIR}/macosx/libusb-7da756e" CACHE FILEPATH "" FORCE)
-	set(LIBUSB_1_LIBRARY "usb" CACHE FILEPATH "" FORCE)
-	set(USE_EMBEDDED_LIBUSB 1 CACHE INTERNAL "")
+        set(LIBUSB_1_INCLUDE_DIR "${nestk_deps_SOURCE_DIR}/macosx/libusb-7da756e" CACHE FILEPATH "" FORCE)
+        set(LIBUSB_1_LIBRARY "usb" CACHE FILEPATH "" FORCE)
+        set(USE_EMBEDDED_LIBUSB 1 CACHE INTERNAL "")
       ENDIF()
     ENDIF()
   ENDIF()
@@ -105,7 +105,9 @@ IF (NESTK_USE_OPENNI)
   ELSE()
     set(USB_INCLUDE_DIR ${LIBUSB_1_INCLUDE_DIR})
     set(USB_LIBRARIES ${LIBUSB_1_LIBRARY})
-    ADD_SUBDIRECTORY(openni)
+    IF(NOT NESTK_USE_EXTERNAL_OPENNI)
+      ADD_SUBDIRECTORY(openni)
+    ENDIF(NOT NESTK_USE_EXTERNAL_OPENNI)
   ENDIF()
 ENDIF()
 
@@ -124,6 +126,7 @@ IF (NESTK_USE_PCL)
 
   ADD_SUBDIRECTORY(flann)
   INCLUDE_DIRECTORIES(${nestk_deps_SOURCE_DIR}/flann/src/cpp/flann)
+  INCLUDE_DIRECTORIES(${nestk_deps_SOURCE_DIR}/flann/src/cpp)
 
   ADD_SUBDIRECTORY(qhull)
   INCLUDE_DIRECTORIES(${nestk_deps_SOURCE_DIR}/qhull/src)
