@@ -35,7 +35,10 @@
 #include <math.h>
 #include <stdlib.h>
 #include <time.h>
-#include <unistd.h>
+#ifndef _WIN32
+# include <unistd.h>
+#endif
+
 using namespace std;
 
 

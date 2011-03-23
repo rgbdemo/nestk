@@ -29,9 +29,6 @@ ENDIF(NOT QT4_FOUND)
 
 # For libfreenect
 IF (NESTK_USE_FREENECT)
-	# GLUT
-	FIND_PACKAGE(GLUT REQUIRED)
-	INCLUDE_DIRECTORIES(${GLUT_INCLUDE_DIR})
     if (WIN32)
       include_directories("${nestk_deps_SOURCE_DIR}/libfreenect/platform/windows")
       include_directories("${nestk_deps_SOURCE_DIR}/libfreenect/platform/windows/libusb10emu")
@@ -83,6 +80,10 @@ ENDIF(NESTK_USE_OPENNI)
 
 # opengl
 FIND_PACKAGE(OpenGL REQUIRED)
+
+# GLUT
+FIND_PACKAGE(GLUT REQUIRED)
+INCLUDE_DIRECTORIES(${GLUT_INCLUDE_DIR})
 
 # X11
 FIND_LIBRARY(X11_LIBRARY X11)
