@@ -226,5 +226,12 @@ SET_TARGET_PROPERTIES(nestk PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY "${EXECUTABLE_OUTPUT_PATH}"
 )
 
+# FIXME: on Mac, the dylib rpath points to current directory.
+if(APPLE)
+add_custom_command(TARGET nestk POST_BUILD
+COMMAND cp ${LIBRARY_OUTPUT_PATH}/*.dylib ${EXECUTABLE_OUTPUT_PATH}/
+)
+endif()
+
 INSTALL(TARGETS nestk DESTINATION lib)
 NESTK_INSTALL_NOBASE_HEADER_FILES(include/ntk ${ntk_sources})
