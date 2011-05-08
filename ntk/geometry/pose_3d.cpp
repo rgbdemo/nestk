@@ -674,7 +674,7 @@ void Pose3D :: projectToImage(const cv::Mat3f& voxels, const cv::Mat1b& mask, cv
     Vec3f* pixels_data = pixels.ptr<Vec3f>(r);
     for (int c = 0; c < voxels.cols; ++c)
     {
-      if (!mask[c])
+      if (!mask_data[c])
         continue;
       evox(0) = voxels_data[c][0];
       evox(1) = voxels_data[c][1];
@@ -702,7 +702,7 @@ void Pose3D :: unprojectFromImage(const cv::Mat1f& pixels, const cv::Mat1b& mask
     Vec3f* voxels_data = voxels.ptr<Vec3f>(r);
     for (int c = 0; c < pixels.cols; ++c)
     {
-      if (!mask[c])
+      if (!mask_data[c])
         continue;
       const float d = pixels_data[c];
       epix(0) = c*d;
