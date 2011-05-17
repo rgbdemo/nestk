@@ -138,6 +138,14 @@ namespace ntk
     static  const float float_eps        =1.192092896e-07f;
     static  const float float_sqrteps    =3.4526698307e-4f;
 
+	// isnan does not exist with Visual Studio
+#ifdef _MSC_VER
+	inline bool isnan(float x) { return _isnan(x); }
+	inline bool isnan(double x) { return _isnan(x); }
+#else
+	using std::isnan;
+#endif
+
     // rnd (rounding; 0.5 rounds up)
     // Use C99 functions, which GCC implements as an intrinsic
     // Or in simpler terms - is at least 3 times faster.

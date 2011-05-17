@@ -147,7 +147,7 @@ namespace ntk
         for_all_rc(m_image->depthMaskRef())
         {
             float d = m_image->depth()(r,c);
-            if (d < 1e-5 || isnan(d))
+            if (d < 1e-5 || ntk::math::isnan(d))
                 m_image->depthMaskRef()(r,c) = 0;
             else
                 m_image->depthMaskRef()(r,c) = 255;

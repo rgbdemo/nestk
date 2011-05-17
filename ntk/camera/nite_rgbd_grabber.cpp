@@ -167,6 +167,7 @@ bool NiteRGBDGrabber :: disconnectFromDevice()
 {
     m_body_event_detector->shutDown();
     m_ni_context.Shutdown();
+	return true;
 }
 
 void NiteRGBDGrabber :: estimateCalibration()
