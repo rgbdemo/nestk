@@ -55,6 +55,10 @@ public:
   virtual void setIntegrationTime(double value) {}
   virtual double integrationTime() const { return -1; }
 
+  /*! Set the modulation frequency for Time-of-Flight cameras. */
+  virtual unsigned frequency() const { return 0; }
+  virtual void setFrequency(unsigned freq) {}
+
   /*! Set the tilt angle for motorized grabbers such as Kinect. */
   virtual void setTiltAngle(int angle) {}
 
