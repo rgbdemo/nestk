@@ -19,7 +19,12 @@ ENDIF()
 ### dependencies
 ################################################################################
 ADD_SUBDIRECTORY(deps)
-INCLUDE("${NESTK_DEPS_USE_FILE}")
+OPTION(NESTK_USE_ROS "Use ROS" ${NESTK_USE_ROS})
+IF (NESTK_USE_ROS)
+    INCLUDE("${NESTK_DEPS_ROS_USE_FILE}")
+ELSE()
+    INCLUDE("${NESTK_DEPS_USE_FILE}")
+ENDIF()
 
 ################################################################################
 ### extra flags

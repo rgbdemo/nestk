@@ -14,6 +14,12 @@ SET(NESTK_DEPS_USE_FILE
 CONFIGURE_FILE(UseNestkDeps.cmake.in 
     "${NESTK_DEPS_USE_FILE}" @ONLY)
     
+SET(NESTK_DEPS_ROS_USE_FILE
+    ${nestk_deps_BINARY_DIR}/cmake/UseNestkDepsROS.cmake
+    CACHE FILEPATH "Nestk deps use file for ROS")
+CONFIGURE_FILE(UseNestkDepsROS.cmake.in
+    "${NESTK_DEPS_ROS_USE_FILE}" @ONLY)
+
 SET(NESTK_DEPS_CONFIG_FILE  
     ${nestk_deps_BINARY_DIR}/cmake/NestkDepsConfig.cmake
     CACHE FILEPATH "Nestk deps config file")
