@@ -51,7 +51,10 @@ public:
   {}
 
   /*! Connect with the Kinect device. */
-  void initialize();
+  virtual bool connectToDevice();
+
+  /*! Disconnect from the Kinect device. */
+  virtual bool disconnectFromDevice();
 
   /*! Set the Kinect motor angle using degress. */
   virtual void setTiltAngle(int angle);
@@ -73,7 +76,6 @@ protected:
   void startKinect();
 
 private:
-  QReadWriteLock m_kinect_lock;
   RGBDImage m_current_image;
   bool m_depth_transmitted;
   bool m_rgb_transmitted;

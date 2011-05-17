@@ -31,7 +31,7 @@ public:
   ~HSColorModel() { }
 
 public:
-  void show() const;
+  void show(cv::Mat3b& display) const;
   void build(const cv::Mat3b& model_image, const cv::Mat1b& mask);
   double likelihood(int h_value, int s_value) const;
   void backProject(const cv::Mat3b& bgr_image, cv::Mat1f& likelihood_image) const;

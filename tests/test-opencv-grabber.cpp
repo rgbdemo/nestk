@@ -29,7 +29,7 @@ int main()
   OpencvGrabber grabber(cv::Size(640, 480));
 
   // Connect with the camera, opencv id is 0
-  grabber.initialize(0 /* camera id */);
+  grabber.connectToDevice(0 /* camera id */);
 
   // Start the grabbing thread
   grabber.start();

@@ -32,12 +32,20 @@
 namespace ntk
 {
 
+/*! XYZ + index to find to correspond point in the RGBDImage */
+// FIXME: this is hacky. We should define a custom pcl Point!
+typedef pcl::PointXYZRGBA PointXYZIndex;
+
 class RGBDImage;
 class Pose3D;
 
-void vectorToPointCloud(pcl::PointCloud<pcl::PointXYZ>& cloud, const std::vector<cv::Point3f>& points);
-void rgbdImageToPointCloud(pcl::PointCloud<pcl::PointXYZ>& cloud, const RGBDImage& image);
-void rgbdImageToPointCloud(pcl::PointCloud<pcl::PointXYZ>& cloud,
+void vectorToPointCloud(pcl::PointCloud<PointXYZIndex>& cloud,
+                        const std::vector<cv::Point3f>& points,
+                        const std::vector<int>& indices = std::vector<int>());
+
+void rgbdImageToPointCloud(pcl::PointCloud<PointXYZIndex>& cloud, const RGBDImage& image);
+
+void rgbdImageToPointCloud(pcl::PointCloud<PointXYZIndex>& cloud,
                            const RGBDImage& image,
                            const Pose3D& pose,
                            int subsampling_factor = 1);

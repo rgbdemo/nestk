@@ -93,6 +93,15 @@ private:
   Pose3D m_delta_pose;
 };
 
+class DummyRelativePoseEstimator : public RelativePoseEstimator
+{
+public:
+    virtual bool estimateNewPose(const RGBDImage& image)
+    { m_current_pose = *image.calibration()->depth_pose; return true; }
+
+    virtual void reset() {}
+};
+
 /*!
  * Estimate relative 3D pose using feature point detection.
  * Feature matches are computed between the new image and past images,
@@ -102,7 +111,7 @@ class RelativePoseEstimatorFromImage : public RelativePoseEstimator
 {
 public:
   RelativePoseEstimatorFromImage(const FeatureSetParams& params, bool use_icp = false)
-   : m_feature_parameters(params), m_use_icp(use_icp)
+   : m_feature_parameters(params), m_use_icp(use_icp), m_incremental_model(true)
   {
     // Force feature extraction to return only features with depth.
     m_feature_parameters.only_features_with_depth = true;
@@ -111,6 +120,7 @@ public:
 
   virtual bool estimateNewPose(const RGBDImage& image);
   virtual void reset();
+  void setIncrementalModel(bool enable) { m_incremental_model = enable; }
 
 private:
   struct ImageData
@@ -137,6 +147,7 @@ private:
   std::vector< ImageData > m_image_data;
   FeatureSetParams m_feature_parameters;
   bool m_use_icp;
+  bool m_incremental_model;
 };
 
 } // ntk

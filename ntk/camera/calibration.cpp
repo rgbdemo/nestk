@@ -283,6 +283,23 @@ void calibrationPattern(std::vector< std::vector<Point3f> >& output,
   }
 }
 
+void calibrationPattern(std::vector<cv::Point3f> & output,
+                         int pattern_width,
+                         int pattern_height,
+                         float square_size)
+{
+  const int nb_corners = pattern_width * pattern_height;
+
+
+    output.resize(nb_corners);
+    for(int j = 0; j < pattern_height; ++j)
+      for(int k = 0; k < pattern_width; ++k)
+      {
+        output[j*pattern_width+k] = Point3f(k*square_size, j*square_size, 0);
+      }
+
+}
+
 void estimate_checkerboard_pose(const std::vector<Point3f>& model,
                                 const std::vector<Point2f>& img_points,
                                 const cv::Mat1d& calib_matrix,

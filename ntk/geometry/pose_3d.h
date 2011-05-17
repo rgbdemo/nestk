@@ -31,6 +31,11 @@ namespace ntk
  * Represent transformations within a Pin-Hole or orthographic camera model.
  * Can be used both for 3D camera transforms and projections
  * on an image plane using perspective or othogonal model.
+ * The default representation is OpenGL-like:
+ *   Y
+ *   |__ X
+ *  /
+ * Z
  */
 class Pose3D : public ntk::XmlSerializable
 {
@@ -139,6 +144,9 @@ public:
   /*! Returns the camera rotation as a rodrigues vector. */
   const cv::Vec3f cvRodriguesRotation() const;
 
+  /*! Returns the rotation as a quaternion. */
+  cv::Vec4f cvQuaternionRotation() const;
+
   /*! Returns the camera transform as an OpenCV 4x4 matrix. */
   const cv::Mat1f cvCameraTransform() const;
 
@@ -157,6 +165,9 @@ public:
 
   /*! Invert the camera transform. */
   void invert();
+
+  /*! Go from OpenGL coordinate system to ROS coordinate system. */
+  void fromGLToRos();
 
   /*!
    * Set the 3D camera transformation from OpenCV translation

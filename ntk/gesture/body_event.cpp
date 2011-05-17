@@ -199,6 +199,19 @@ void BodyEventDetector :: initialize(xn::Context& context, xn::DepthGenerator& d
 #endif
 }
 
+void BodyEventDetector :: shutDown()
+{
+    m_context = 0;
+    m_depth_generator = 0;
+    delete m_session_manager; m_session_manager = 0;
+    delete m_push_detector; m_push_detector = 0;
+    delete m_swipe_detector; m_swipe_detector = 0;
+    delete m_wave_detector; m_wave_detector = 0;
+    delete m_circle_detector; m_circle_detector = 0;
+    delete m_steady_detector; m_steady_detector = 0;
+    delete m_point_denoiser; m_point_denoiser = 0;
+}
+
 void BodyEventDetector :: update()
 {
   m_session_manager->Update(m_context);
@@ -276,4 +289,5 @@ void BodyEventDetector :: OnPointUpdate(const XnVHandPointContext* pContext)
   }
 }
 
-} // ntk
+}
+

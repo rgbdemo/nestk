@@ -52,6 +52,13 @@ cv::Vec3f Plane :: normal() const
   return n;
 }
 
+float Plane :: distanceToPlane(const Point3f& p) const
+{
+    float v = a*p.x + b*p.y + c*p.z + d;
+    v /= sqrt(a*a+b*b+c*c);
+    return std::abs(v);
+}
+
 Point3f Plane :: intersectionWithLine (const Point3f& p1, const Point3f& p2) const
 {
   double u = a*p1.x + b*p1.y + c*p1.z + d;

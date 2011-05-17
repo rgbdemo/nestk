@@ -107,13 +107,19 @@ namespace ntk
     setIRMode(m_ir_mode);
   }
 
-  void KinectGrabber :: initialize()  
+  bool KinectGrabber :: connectToDevice()
   {
     if (freenect_init(&f_ctx, NULL) < 0)
-      fatal_error("freenect_init() failed\n");
+    {
+      ntk_dbg(0) << "freenect_init() failed";
+      return false;
+    }
 
     if (freenect_open_device(f_ctx, &f_dev, 0) < 0)
-      fatal_error("freenect_open_device() failed\n");
+    {
+       ntk_dbg(0) << "freenect_open_device() failed";
+       return false;
+    }
 
     freenect_set_user(f_dev, this);
 
@@ -121,6 +127,15 @@ namespace ntk
     freenect_set_video_callback(f_dev, kinect_video_db);
 
     this->setIRMode(m_ir_mode);
+    return true;
+  }
+
+  bool KinectGrabber :: disconnectFromDevice()
+  {
+      // Exit requested.
+      freenect_close_device(f_dev);
+      freenect_shutdown(f_ctx);
+      return true;
   }
 
   void KinectGrabber :: run()

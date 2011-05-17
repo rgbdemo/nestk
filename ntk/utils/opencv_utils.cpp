@@ -330,6 +330,13 @@ namespace ntk
     return tmp;
   }
 
+  void imwrite_normalized(const std::string& filename, const cv::Mat1b& image)
+  {
+      cv::Mat1b tmp;
+      normalize(image, tmp, 0, 255, NORM_MINMAX, 0);
+      imwrite(filename, tmp);
+  }
+
   void imwrite_normalized(const std::string& filename, const cv::Mat1f& image)
   {
     cv::Mat1b tmp;

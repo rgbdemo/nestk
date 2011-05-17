@@ -24,7 +24,7 @@
 #include <ntk/camera/calibration.h>
 #include <ntk/geometry/plane.h>
 #include <ntk/geometry/pose_3d.h>
-
+#include <ntk/utils/opencv_utils.h>
 #include <vector>
 
 namespace ntk
@@ -73,12 +73,12 @@ namespace ntk
     void saveToPlyFile(const char* filename) const;
     void buildFromSurfels(const std::vector<Surfel>& surfels, int min_views = 2);
     cv::Point3f centerize();
-    void addCube(const cv::Point3f& center, const cv::Point3f& sizes);
+    void addCube(const cv::Point3f& center, const cv::Point3f& sizes, const cv::Vec3b& color = cv::Vec3b(255,0,0));
     void applyTransform(const Pose3D& pose);
 
   public:
-    bool hasColors() const { return colors.size() > 0; }
-    bool hasNormals() const { return normals.size() > 0; }
+    bool hasColors() const { return colors.size() == vertices.size(); }
+    bool hasNormals() const { return normals.size() == vertices.size(); }
     bool hasTexcoords() const { return texcoords.size() > 0; }
     bool hasFaces() const { return faces.size() > 0; }
 
@@ -88,6 +88,9 @@ namespace ntk
 
   void generate_mesh_from_plane(Mesh& mesh, const ntk::Plane& plane,
                                 const cv::Point3f& center, float plane_size);
+
+  void generate_mesh_from_cube(Mesh& mesh, const ntk::Rect3f& cube);
+
 
 } // ntk
 

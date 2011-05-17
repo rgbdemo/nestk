@@ -99,12 +99,24 @@ public:
   void releaseReadLock() { m_lock.unlock(); }
 
   /*! Blocking wait until next frame is ready. */
-  void waitForNextFrame(int timeout_msecs = 1000)
+  void waitForNextFrame(unsigned long timeout_msecs = ULONG_MAX)
   {
     m_condition_lock.lock();
     m_condition.wait(&m_condition_lock, timeout_msecs);
     m_condition_lock.unlock();
   }
+
+  /*! Tell the grabber to stop and wait for thread termination. */
+  virtual void stop();
+
+  /*! Obsolete: use connectToDevice. */
+  virtual bool initialize() { return connectToDevice(); }
+
+  /*! Connect to the RGBD device. */
+  virtual bool connectToDevice() { return true; }
+
+  /*! Disconnect form the RGBD device. */
+  virtual bool disconnectFromDevice() { return true; }
 
 protected:
   void advertiseNewFrame();

@@ -649,6 +649,17 @@ cv::Point3f Pose3D :: invCameraTransform(const cv::Point3f& p) const
   return toVec3f(ep);
 }
 
+cv::Vec4f Pose3D :: cvQuaternionRotation() const
+{
+    Eigen::Quaterniond q(impl->camera_transform.rotation().matrix());
+    return Vec4f(q.x(), q.y(), q.z(), q.w());
+}
+
+void Pose3D :: fromGLToRos()
+{
+    applyTransformAfter(Vec3f(0,0,0), Vec3f(M_PI/2.0, 0, -M_PI/2.0));
+}
+
 void Pose3D :: invert()
 {
   impl->camera_transform = impl->camera_transform.inverse();

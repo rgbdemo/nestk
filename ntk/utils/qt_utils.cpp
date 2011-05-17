@@ -23,48 +23,74 @@
 #include <QVector>
 #include <QDir>
 #include <QStringList>
+#include <QCoreApplication>
 
 #include <cstring>
 
 namespace ntk {
-  QTextStream qOut (stdout);
-  QTextStream qErr (stderr);
-  QTextStream qIn (stdin);
+QTextStream qOut (stdout);
+QTextStream qErr (stderr);
+QTextStream qIn (stdin);
 }
 
 QTextStream& operator>>(QTextStream& input, bool& b)
 {
-  int i;
-  input >> i;
-  b = (i != 0);
-  return input;
+    int i;
+    input >> i;
+    b = (i != 0);
+    return input;
 }
 
 QTextStream& operator<<(QTextStream& output, const bool b)
 {
-  output << (int) b;
-  return output;
+    output << (int) b;
+    return output;
 }
 
 QTextStream& operator>>(QTextStream& input, unsigned char& c)
 {
-  input >> (char&) c;
-  return input;
+    input >> (char&) c;
+    return input;
 }
 
 QTextStream& operator<<(QTextStream& output, const unsigned char c)
 {
-  output << (char) c;
-  return output;
+    output << (char) c;
+    return output;
 }
 
 namespace ntk
 {
 
-  void filesWithExts(QStringList& l, const QDir& dir, 
-                     const char* ext1, const char* ext2, 
-                     const char* ext3, const char* ext4)
-  {
+void remove_path_recursively(const std::string& dirpath)
+{
+	QDir dir (dirpath.c_str());
+	QFileInfoList list = dir.entryInfoList();
+	for (int iList=0;iList<list.count();iList++)
+	{
+		QFileInfo info = list[iList];
+
+		QString sFilePath = info.filePath();
+		if (info.isDir())
+		{
+			// recursive
+			if (info.fileName()!=".." && info.fileName()!=".")
+			{
+				remove_path_recursively(sFilePath.toStdString());
+			}
+			dir.rmpath(info.fileName());
+		}
+		else
+		{
+			dir.remove(info.fileName());
+		}
+	}
+}
+
+void filesWithExts(QStringList& l, const QDir& dir,
+                   const char* ext1, const char* ext2,
+                   const char* ext3, const char* ext4)
+{
     QStringList exts;
     if (ext1) exts << ext1;
     if (ext2) exts << ext2;
@@ -75,7 +101,7 @@ namespace ntk
     d.setFilter(QDir::Files);
     d.setNameFilters(exts);
     l = d.entryList();
-  }
+}
 
 } // end of ntk
 
@@ -84,31 +110,47 @@ namespace ntk
 
 QRectF fitInRect(const QRectF& rect, const QSizeF& size)
 {
-  QSizeF s = rect.size();
-  s.scale(size, Qt::KeepAspectRatio);
-  QRectF r = rect;
-  r.setSize(s);
-  return r;
+    QSizeF s = rect.size();
+    s.scale(size, Qt::KeepAspectRatio);
+    QRectF r = rect;
+    r.setSize(s);
+    return r;
 }
 
 unsigned qregion_area(const QRegion& r)
 {
-  unsigned area = 0;
-  QVector<QRect> rects = r.rects();
-  for (int i = 0; i < rects.size(); ++i)  area += rects[i].width()*rects[i].height();
-  return area;
+    unsigned area = 0;
+    QVector<QRect> rects = r.rects();
+    for (int i = 0; i < rects.size(); ++i)  area += rects[i].width()*rects[i].height();
+    return area;
 }
 
 void readFullRawData(QLocalSocket& socket, QDataStream& stream, char* data, int len)
 {
-  int num_bytes = 0;
-  while ((stream.status() == QDataStream::Ok) && num_bytes < len)
-  {
-    socket.waitForReadyRead(100);
-    int new_bytes = stream.readRawData(data+num_bytes, len-num_bytes);
-    if (new_bytes > 0)
-      num_bytes += new_bytes;
-  }
+    int num_bytes = 0;
+    while ((stream.status() == QDataStream::Ok) && num_bytes < len)
+    {
+        socket.waitForReadyRead(100);
+        int new_bytes = stream.readRawData(data+num_bytes, len-num_bytes);
+        if (new_bytes > 0)
+            num_bytes += new_bytes;
+    }
+}
+
+
+void writeFullRawData(QAbstractSocket& socket, const QByteArray& array)
+{
+    QByteArray tmp_array = array;
+    int nbwritten = 0;
+    int tobewritten = tmp_array.size();
+    while (nbwritten < tobewritten)
+    {
+        int n = socket.write(tmp_array);
+        nbwritten += n;
+        tmp_array.remove(0, n);
+        QCoreApplication::processEvents();
+    }
+    socket.waitForBytesWritten(300000);
 }
 
 } // end of ntk

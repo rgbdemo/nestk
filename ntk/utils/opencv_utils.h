@@ -195,6 +195,7 @@ void readMatrix(cv::FileStorage& input_file, const std::string& name, cv::Mat& m
 cv::Mat1b normalize_toMat1b(const cv::Mat1f& image);
 cv::Mat3b toMat3b(const cv::Mat1b& image);
 
+void imwrite_normalized(const std::string& filename, const cv::Mat1b& m);
 void imwrite_normalized(const std::string& filename, const cv::Mat1f& m);
 void imshow_normalized(const std::string& window_name, const cv::Mat1f& m);
 
@@ -215,6 +216,9 @@ double overlap_ratio(const cv::Rect_<float>& r1, const cv::Rect_<float>& r2);
 
 inline bool is_yx_in_range(const cv::Mat& image, int y, int x)
 { return (x >= 0) && (y >= 0) && (x < image.cols) && (y < image.rows); }
+
+inline bool is_zyx_in_range(const cv::Mat& image, int z, int y, int x)
+{ return (x >= 0) && (y >= 0) && (z >= 0) && (x < image.size[0]) && (y < image.size[1]) && (z < image.size[2]); }
 
 inline void normalize(cv::Vec3f& v)
 {

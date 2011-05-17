@@ -28,7 +28,7 @@ using namespace cv;
 namespace ntk
 {
 
-  void SurfelsRGBDModeler :: addNewView(const RGBDImage& image, Pose3D& relative_pose)
+  bool SurfelsRGBDModeler :: addNewView(const RGBDImage& image, Pose3D& relative_pose)
   {
     const float update_max_normal_angle = 60;
     const float update_max_dist = 0.1;
@@ -166,13 +166,15 @@ namespace ntk
     }
 
     ntk_dbg_print(m_surfels.size(), 1);
+    return true;
   }
 
-  void ICPSurfelsRGBDModeler :: addNewView(const RGBDImage& image, Pose3D& relative_pose)
+  bool ICPSurfelsRGBDModeler :: addNewView(const RGBDImage& image, Pose3D& relative_pose)
   {
     Pose3D corrected_relative_pose = fixRelativePose(image, relative_pose);
     SurfelsRGBDModeler::addNewView(image, corrected_relative_pose);
     relative_pose = corrected_relative_pose;
+    return true;
   }
 
   void icpIteration(Pose3D& delta_pose, Mesh& ref_cloud, Mesh& new_cloud);

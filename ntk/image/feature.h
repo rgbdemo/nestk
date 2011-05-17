@@ -28,10 +28,10 @@
 namespace ntk
 {
 
-class FeatureLocation : public cv::KeyPoint
+class FeaturePoint : public cv::KeyPoint
 {
 public:
-  FeatureLocation() : has_depth(false), depth(0.0)
+  FeaturePoint() : has_depth(false), depth(0.0)
   {}
 
   /*! Whether depth data was available at this position */
@@ -111,7 +111,7 @@ public:
 
   int descriptorSize() const { return m_descriptor_size; }
 
-  const std::vector<FeatureLocation>& locations() const { return m_locations; }
+  const std::vector<FeaturePoint>& locations() const { return m_locations; }
   const cv::Mat1f& descriptors() const { return m_descriptors; }
 
 public:
@@ -154,7 +154,7 @@ private:
   ntk::Ptr< cv::flann::Index> m_descriptor_index;
   char m_feature_type;
   unsigned m_descriptor_size;
-  std::vector<FeatureLocation> m_locations;
+  std::vector<FeaturePoint> m_locations;
   cv::Mat1f m_descriptors;
 };
 

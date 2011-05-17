@@ -75,6 +75,12 @@ public:
   void setMaxDepth(float meters) { m_max_depth = meters; }
   float maxDepth() const { return m_max_depth; }
 
+  /*! Set the amplitude range. */
+  void setMinAmplitude(float value) { m_min_amplitude = value; }
+  float minAmplitude() const { return m_min_amplitude; }
+  void setMaxAmplitude(float value) { m_max_amplitude = value; }
+  float maxAmplitude() const { return m_max_amplitude; }
+
   /*!
    * Set the maximal angle between camera vector and
    * normal vector for normal filter.
@@ -124,6 +130,8 @@ protected:
   float m_max_time_depth_delta;
   float m_max_spatial_depth_delta;
   float m_mapping_resolution;
+  float m_min_amplitude;
+  float m_max_amplitude;
 };
 
 /*! RGBDProcessor with default parameters for Kinect. */
@@ -151,6 +159,22 @@ public:
 
 protected:
   virtual void computeMappings();
+};
+
+class RGBDProcessorFactory
+{
+public:
+    struct Params
+    {
+        Params() : camera_type("kinect-ni"), do_mapping(true)
+        {}
+
+        std::string camera_type;
+        bool do_mapping;
+    };
+
+public:
+    RGBDProcessor* createProcessor(const RGBDProcessorFactory::Params& params);
 };
 
 /*!

@@ -29,11 +29,15 @@ using namespace cv;
 namespace ntk
 {
 
-void vectorToPointCloud(pcl::PointCloud<pcl::PointXYZ>& cloud, const std::vector<Point3f>& points)
+void vectorToPointCloud(pcl::PointCloud<PointXYZIndex>& cloud,
+                        const std::vector<Point3f>& points,
+                        const std::vector<int>& indices)
 {
   cloud.width  = points.size();
   cloud.height = 1;
   cloud.points.resize (cloud.width * cloud.height);
+
+  bool has_indices = (indices.size() == points.size());
 
   foreach_idx(i, points)
   {
@@ -41,15 +45,19 @@ void vectorToPointCloud(pcl::PointCloud<pcl::PointXYZ>& cloud, const std::vector
     cloud.points[i].x = p.x;
     cloud.points[i].y = p.y;
     cloud.points[i].z = p.z;
+    if (has_indices)
+      cloud.points[i].rgba = indices[i];
   }
 }
 
-void rgbdImageToPointCloud(pcl::PointCloud<pcl::PointXYZ>& cloud,
+void rgbdImageToPointCloud(pcl::PointCloud<PointXYZIndex>& cloud,
                            const RGBDImage& image,
                            const Pose3D& pose,
                            int subsampling_factor)
 {
   std::vector<Point3f> points;
+  std::vector<int> indices;
+
   for (int r = 0; r < image.depth().rows; r += subsampling_factor)
   for (int c = 0; c < image.depth().cols; c += subsampling_factor)
   {
@@ -59,12 +67,13 @@ void rgbdImageToPointCloud(pcl::PointCloud<pcl::PointXYZ>& cloud,
       continue;
     Point3f p = pose.unprojectFromImage(Point2f(c,r),d);
     points.push_back(p);
+    indices.push_back(r*image.depth().cols+c);
   }
 
-  vectorToPointCloud(cloud, points);
+  vectorToPointCloud(cloud, points, indices);
 }
 
-void rgbdImageToPointCloud(pcl::PointCloud<pcl::PointXYZ>& cloud, const RGBDImage& image)
+void rgbdImageToPointCloud(pcl::PointCloud<PointXYZIndex>& cloud, const RGBDImage& image)
 {
   if (!image.calibration())
     ntk_throw_exception("No calibration data in image.");

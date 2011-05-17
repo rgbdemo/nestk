@@ -55,6 +55,11 @@ namespace ntk
     }
   }
 
+  std::string RGBDFrameRecorder :: getNextFrameDirectory() const
+  {
+    return format("%s/view%04d", m_dir.absolutePath().toStdString().c_str(), m_frame_index);
+  }
+
   void RGBDFrameRecorder :: saveCurrentFrame(const RGBDImage& image)
   {
     std::string frame_dir = format("%s/view%04d", m_dir.absolutePath().toStdString().c_str(), m_frame_index);

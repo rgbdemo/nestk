@@ -35,18 +35,23 @@ public:
   RGBDModeler() : m_global_depth_offset(0) {}
 
 public:
-  virtual void addNewView(const RGBDImage& image, Pose3D& relative_pose);
+  virtual bool addNewView(const RGBDImage& image, Pose3D& relative_pose);
   virtual void computeMesh() {}
   virtual void computeSurfaceMesh() {}
-  const Mesh& currentMesh() { return m_mesh; }
+  virtual void computeAccurateVerticeColors() {}
+  const Mesh& currentMesh() const { return m_mesh; }
+  const RGBDImage& lastImage() const { return m_last_image; }
   virtual void reset() { m_mesh.clear(); }
   void setGlobalDepthOffset(float offset) { m_global_depth_offset = offset; }
   virtual void setResolution(float resolution) {}
   virtual void setDepthMargin(float depth_margin) {}
+  const ntk::Plane& supportPlane() const { return m_support_plane; }
 
 protected:
   ntk::Mesh m_mesh;
   float m_global_depth_offset;
+  ntk::Plane m_support_plane;
+  ntk::RGBDImage m_last_image;
 };
 
 } // ntk

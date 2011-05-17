@@ -48,7 +48,8 @@ public:
     raw_rgb_size(640,480),
     rgb_size(480,480),
     raw_depth_size(204,204),
-    depth_size(204,204)
+    depth_size(204,204),
+    camera_type("kinect-ni")
   {}
 
   ~RGBDCalibration();
@@ -124,6 +125,13 @@ public:
   cv::Size raw_depth_size;
   cv::Size depth_size;
 
+  /**
+    * Name of the camera. This can be used to create an appropriate processor.
+    * Common types are pmd, kinect-freenect and kinect-ni.
+    */
+
+  std::string camera_type;
+
 private:
   RGBDCalibration(const RGBDCalibration& rhs);
 };
@@ -136,6 +144,10 @@ void calibrationPattern(std::vector< std::vector<cv::Point3f> >& output,
                         int pattern_height,
                         float square_size,
                         int nb_images);
+void calibrationPattern(std::vector<cv::Point3f> & output,
+                         int pattern_width,
+                         int pattern_height,
+                         float square_size);
 
 /*! Extract chessboard position using OpenCV. */
 void calibrationCorners(const std::string& image_name,

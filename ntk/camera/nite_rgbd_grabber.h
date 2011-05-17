@@ -42,11 +42,21 @@ public:
     m_max_num_users(15),
     m_body_event_detector(0),
     m_high_resolution(false),
-    m_custom_bayer_decoding(true)
-  {}
+    m_custom_bayer_decoding(true),
+    m_xml_config_file(DEFAULT_XML_CONFIG_FILE),
+    m_track_users(true)
+  {
+  }
+
+  /*! set a new xml config file for the grabber
+   * call it before initialize() */
+  void set_xml_config_file(const std::string & xml_filename);
 
   /*! Call it before starting the thread. */
-  void initialize();
+  virtual bool connectToDevice();
+
+  /*! Disconnect from Kinect. */
+  virtual bool disconnectFromDevice();
 
   /*! Set the body event detector. */
   void setBodyEventDetector(BodyEventDetector* detector)
@@ -57,6 +67,9 @@ public:
 
   /*! Set whether color images should be in high resolution 1280x1024. */
   void setHighRgbResolution(bool hr) { m_high_resolution = hr; }
+
+  /*! Set whether User and Body trackers are enabled. */
+  void setTrackUsers(bool enable) { m_track_users = enable; }
 
 public:
   // Nite accessors.
@@ -101,6 +114,14 @@ private:
   BodyEventDetector* m_body_event_detector;
   bool m_high_resolution;
   bool m_custom_bayer_decoding;
+
+  /*! the default xml config file */
+  static const std::string DEFAULT_XML_CONFIG_FILE;
+
+  /*! the xml config file to load in initialize() */
+  std::string m_xml_config_file;
+
+  bool m_track_users;
 };
 
 } // ntk

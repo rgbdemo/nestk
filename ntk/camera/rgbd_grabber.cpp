@@ -46,4 +46,10 @@ namespace ntk
     broadcastEvent();
   }
 
+  void RGBDGrabber :: stop()
+  {
+      setShouldExit();
+      wait();
+  }
+
 }

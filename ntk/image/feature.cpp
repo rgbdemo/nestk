@@ -173,7 +173,7 @@ void FeatureSet :: extractFromImageUsingSiftGPU(const RGBDImage& image,
     {
       if (image.rgbPixelHasDepth(keypoints[i].pt.y, keypoints[i].pt.x))
       {
-        FeatureLocation loc;
+        FeaturePoint loc;
         (KeyPoint&)loc = keypoints[i];
         m_locations.push_back(loc);
       }
@@ -242,7 +242,7 @@ void FeatureSet :: extractFromImageUsingSiftPP(const RGBDImage& image,
   for (VL::Sift::KeypointsConstIter iter = sift.keypointsBegin();
        iter != sift.keypointsEnd(); ++iter)
   {
-    FeatureLocation new_location;
+    FeaturePoint new_location;
 
     if (params.only_features_with_depth && !image.rgbPixelHasDepth(iter->y,iter->x))
       continue;
@@ -287,7 +287,7 @@ void FeatureSet :: fillDepthData(const RGBDImage& image)
 {
   foreach_idx(i, m_locations)
   {
-    FeatureLocation& loc = m_locations[i];
+    FeaturePoint& loc = m_locations[i];
     if (image.rgbPixelHasDepth(loc.pt.y, loc.pt.x))
     {
       loc.has_depth = true;
@@ -300,7 +300,7 @@ void FeatureSet :: compute3dLocation(const Pose3D& pose)
 {
   foreach_idx(i, m_locations)
   {
-    FeatureLocation& loc = m_locations[i];
+    FeaturePoint& loc = m_locations[i];
     if (!loc.has_depth)
       continue;
     loc.p3d = pose.unprojectFromImage(loc.pt, loc.depth);

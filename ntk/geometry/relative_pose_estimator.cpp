@@ -150,6 +150,8 @@ double rms_optimize_ransac(Pose3D& pose3d,
     }
 
     double initial_error = rms_optimize_3d(current_pose, current_ref_points, current_img_points);
+    ntk_dbg_print(initial_error, 2);
+
     // Base solution not good enough.
     if (initial_error > rms_err_threshold)
       continue;
@@ -174,6 +176,7 @@ double rms_optimize_ransac(Pose3D& pose3d,
     }
 
     ntk_dbg_print(indices.size(), 2);
+    ntk_dbg_print(min_consensus_support_percent*ref_points.size(), 2);
     if (indices.size() < (min_consensus_support_percent*ref_points.size()))
       continue;
 
@@ -239,7 +242,7 @@ computeNumMatchesWithPrevious(const RGBDImage& image,
        --i)
   {
     std::vector<DMatch> current_matches;
-    m_features[i].matchWith(features, current_matches, 0.6*0.6);
+    m_features[i].matchWith(features, current_matches, 0.8*0.8);
     ntk_dbg_print(current_matches.size(), 1);
     if (current_matches.size() > best_matches.size())
     {
@@ -278,8 +281,8 @@ estimateDeltaPose(Pose3D& new_rgb_pose,
   {
     const DMatch& m = best_matches[i];
     const FeatureSet& ref_set = m_features[closest_view_index];
-    const FeatureLocation& ref_loc = ref_set.locations()[m.trainIdx];
-    const FeatureLocation& img_loc = image_features.locations()[m.queryIdx];
+    const FeaturePoint& ref_loc = ref_set.locations()[m.trainIdx];
+    const FeaturePoint& img_loc = image_features.locations()[m.queryIdx];
 
     ntk_assert(ref_loc.depth > 0, "Match without depth, should not appear");
 
@@ -314,9 +317,11 @@ estimateDeltaPose(Pose3D& new_rgb_pose,
 bool RelativePoseEstimatorFromImage::estimateNewPose(const RGBDImage& image)
 {
   ntk_ensure(image.calibration(), "Image must be calibrated.");
+  bool first_pass = false;
   if (!m_current_pose.isValid())
   {
     m_current_pose = *image.calibration()->depth_pose;
+    first_pass = true;
   }
 
   ntk_ensure(image.mappedDepth().data, "Image must have depth mapping.");
@@ -337,6 +342,11 @@ bool RelativePoseEstimatorFromImage::estimateNewPose(const RGBDImage& image)
     closest_view_index = computeNumMatchesWithPrevious(image, image_features, best_matches);
     ntk_dbg_print(closest_view_index, 1);
     ntk_dbg_print(best_matches.size(), 1);
+#ifdef HEAVY_DEBUG
+    cv::Mat3b debug_img;
+    m_features[closest_view_index].drawMatches(m_image_data[closest_view_index].color, image.rgb(), image_features, best_matches, debug_img);
+    imwrite("/tmp/debug_matches.png", debug_img);
+#endif
 
     new_pose = m_image_data[closest_view_index].depth_pose;
     new_rgb_pose = new_pose;
@@ -372,14 +382,17 @@ bool RelativePoseEstimatorFromImage::estimateNewPose(const RGBDImage& image)
                                image.calibration()->R, image.calibration()->T);
 
 
-    ImageData image_data;
-    image.rgb().copyTo(image_data.color);
-    image_data.depth_pose = new_pose;
     m_current_pose = new_pose;
-    image_features.compute3dLocation(new_rgb_pose);
-    m_features.push_back(image_features);
-    ntk_dbg_print(image_features.locations().size(), 1);
-    m_image_data.push_back(image_data);
+    if (m_incremental_model || first_pass)
+    {
+        ImageData image_data;
+        image.rgb().copyTo(image_data.color);
+        image_data.depth_pose = new_pose;
+        image_features.compute3dLocation(new_rgb_pose);
+        m_features.push_back(image_features);
+        ntk_dbg_print(image_features.locations().size(), 1);
+        m_image_data.push_back(image_data);
+    }
     return true;
   }
   else
@@ -390,6 +403,7 @@ void RelativePoseEstimatorFromImage::reset()
 {
   m_features.clear();
   m_image_data.clear();
+  m_current_pose = Pose3D();
 }
 
 #ifdef NESTK_USE_PCL
@@ -400,7 +414,7 @@ bool RelativePoseEstimatorFromImage::optimizeWithICP(const RGBDImage& image,
 {
   const int min_ref_points = 100;
 
-  PointCloud<PointXYZ> cloud_source, cloud_target, cloud_reg;
+  PointCloud<PointXYZIndex> cloud_source, cloud_target, cloud_reg;
   bool pose_ok=false;
 
   Pose3D new_depth_pose = depth_pose;
@@ -425,19 +439,19 @@ bool RelativePoseEstimatorFromImage::optimizeWithICP(const RGBDImage& image,
 
   vectorToPointCloud(cloud_target, ref_points);
 
-  pcl::PointCloud<pcl::PointXYZ>::ConstPtr cloud_source_ptr = cloud_source.makeShared();
-  pcl::PointCloud<pcl::PointXYZ>::ConstPtr cloud_target_ptr = cloud_target.makeShared();
+  pcl::PointCloud<PointXYZIndex>::ConstPtr cloud_source_ptr = cloud_source.makeShared();
+  pcl::PointCloud<PointXYZIndex>::ConstPtr cloud_target_ptr = cloud_target.makeShared();
 
   ntk_dbg_print(cloud_source.points.size(), 1);
   ntk_dbg_print(cloud_target.points.size(), 1);
 
-  IterativeClosestPoint<PointXYZ, PointXYZ> reg;
+  IterativeClosestPoint<PointXYZIndex, PointXYZIndex> reg;
 
-  PointCloud<PointXYZ> cloud_filtered_target;
-  PointCloud<PointXYZ> cloud_filtered_source;
+  PointCloud<PointXYZIndex> cloud_filtered_target;
+  PointCloud<PointXYZIndex> cloud_filtered_source;
 
   // Simplify the point clouds.
-  VoxelGrid<PointXYZ> grid;
+  VoxelGrid<PointXYZIndex> grid;
   grid.setLeafSize (0.02, 0.02, 0.02);
 
   grid.setInputCloud (cloud_target_ptr);

@@ -28,7 +28,7 @@ using namespace cv;
 namespace ntk
 {
 
-  void RGBDModeler :: addNewView(const RGBDImage& image, Pose3D& relative_pose)
+  bool RGBDModeler :: addNewView(const RGBDImage& image, Pose3D& relative_pose)
   {
     Pose3D rgb_pose = *image.calibration()->rgb_pose;
     Pose3D depth_pose = *image.calibration()->depth_pose;
@@ -51,7 +51,7 @@ namespace ntk
       if (!is_yx_in_range(image.rgb(), p_rgb.y, p_rgb.x))
         continue;
 
-      Vec3f camera_normal = image.normal()(r, c);
+      Vec3f camera_normal = image.normal().data ? image.normal()(r, c) : Vec3f(0,0,1);
       Vec3f world_normal = camera_to_world_normal_pose.cameraTransform(camera_normal);
       normalize(world_normal);
 
@@ -60,6 +60,8 @@ namespace ntk
       m_mesh.colors.push_back(color);
       m_mesh.normals.push_back(world_normal);
     }
+
+    return true;
   }
 
 } // ntk

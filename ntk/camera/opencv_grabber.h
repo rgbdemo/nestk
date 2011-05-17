@@ -33,7 +33,7 @@ class OpencvGrabber : public RGBDGrabber
 {
 public:
   OpencvGrabber(const cv::Size& image_size);
-  void initialize(int camera_id = 0);
+  virtual void connectToDevice(int camera_id = 0);
 
 public:
   const cv::Size& imageSize() const { return m_image_size; }

@@ -51,6 +51,8 @@ public:
 
   ~RGBDImage();
 
+  bool withRgbDataAndCalibrated() const { return rawRgb().data && m_calibration; }
+
   /*! Directory path if loaded from disk. */
   const std::string& directory() const { return m_directory; }
 
@@ -138,6 +140,9 @@ public:
   cv::Mat1f& mappedDepthRef() { return m_mapped_depth; }
   const cv::Mat1f& mappedDepth() const { return m_mapped_depth; }
 
+  cv::Mat1b& mappedDepthMaskRef() { return m_mapped_depth_mask; }
+  const cv::Mat1b& mappedDepthMask() const { return m_mapped_depth_mask; }
+
   /*! Accessors to 3D normals. */
   cv::Mat3f& normalRef() { return m_normal; }
   const cv::Mat3f& normal() const { return m_normal; }
@@ -188,6 +193,7 @@ private:
   cv::Mat1f m_depth;
   cv::Mat1f m_mapped_depth;
   cv::Mat1b m_depth_mask;
+  cv::Mat1b m_mapped_depth_mask;
   cv::Mat3f m_normal;
   cv::Mat1f m_amplitude;
   cv::Mat1f m_intensity;

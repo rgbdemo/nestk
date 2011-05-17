@@ -49,56 +49,56 @@ unsigned qHash(const ntk::Ptr<T>& p)
 
 namespace ntk 
 {
-  template <class Key, class Value>
-  const Value& qhash_get(const QHash<Key,Value>& hash, const Key& key)
-  {
+template <class Key, class Value>
+const Value& qhash_get(const QHash<Key,Value>& hash, const Key& key)
+{
     typename QHash<Key,Value>::const_iterator it = hash.find(key);
     Q_ASSERT(it != hash.end());
     return it.value();
-  }
+}
 }
 
 inline unsigned qHash(const QPoint& p)
 { return p.x()+p.y(); }
-  
+
 inline bool operator<(const QPoint& lhs, const QPoint& rhs)
 {
-  if (lhs.x() != rhs.x()) return lhs.x() < rhs.x();
-  return lhs.y() < rhs.y();
+    if (lhs.x() != rhs.x()) return lhs.x() < rhs.x();
+    return lhs.y() < rhs.y();
 }
 
 
 namespace ntk
 {
 
-  inline double area(const QRectF& r)
-  {
+inline double area(const QRectF& r)
+{
     return r.width()*r.height();
-  }
+}
 
-  inline double overlap_ratio(const QRectF& r1, const QRectF& r2)
-  {
+inline double overlap_ratio(const QRectF& r1, const QRectF& r2)
+{
     QRectF u12 = r1 | r2;
     QRectF i12 = r1 & r2;
     return area(i12)/area(u12);
-  }
+}
 
 } // end of ntk
 
 template <class T>
 QDataStream& operator >>(QDataStream& is, ntk::Ptr<T>& obj)
 {
-  T* robj = new T();
-  is >> (*robj);
-  obj = toPtr(robj);
-  return is;
+    T* robj = new T();
+    is >> (*robj);
+    obj = toPtr(robj);
+    return is;
 }
-  
+
 template <class T>
 QDataStream& operator <<(QDataStream& os, const ntk::Ptr<T>& obj)
 {
-  os << *obj;
-  return os;
+    os << *obj;
+    return os;
 }
 
 namespace ntk
@@ -107,46 +107,46 @@ namespace ntk
 template <class IteratorType, class ValueType>
 void toQSet(QSet<ValueType>& output, IteratorType begin, IteratorType end)
 {
-  while (begin != end)
-  {
-    output.insert(*begin);
-    ++begin;
-  }
+    while (begin != end)
+    {
+        output.insert(*begin);
+        ++begin;
+    }
 }
 
 inline
 QString toQt(const std::string& s)
 {
-  return QString(s.c_str());
+    return QString(s.c_str());
 }
 
 inline
 QRectF toQt(const cv::Rect_<float>& rect)
 {
-  return QRectF(rect.x, rect.y, rect.width, rect.height);
+    return QRectF(rect.x, rect.y, rect.width, rect.height);
 }
 
 inline
 QPointF toQt(const cv::Point2f& p)
 {
-  return QPointF(p.x, p.y);
+    return QPointF(p.x, p.y);
 }
 
 inline
 QPoint toQt(const cv::Point2i& p)
 {
-  return QPoint(p.x, p.y);
+    return QPoint(p.x, p.y);
 }
 
 inline
 QRect toQt(const cv::Rect& rect)
 {
-  return QRect(rect.x, rect.y, rect.width, rect.height);
+    return QRect(rect.x, rect.y, rect.width, rect.height);
 }
 
 inline cv::Point2i toOpencv(const QPoint& p)
 {
-  return cv::Point2i(p.x(), p.y());
+    return cv::Point2i(p.x(), p.y());
 }
 
 } // end of ntk
@@ -159,73 +159,82 @@ QTextStream& operator<<(QTextStream& input, const bool b);
 inline
 const NtkDebug& operator<<(const NtkDebug& os, const QPointF& p)
 {
-  os << "[" << p.x() << ", " << p.y() << "]";
-  return os;
+    os << "[" << p.x() << ", " << p.y() << "]";
+    return os;
 }
 
 namespace ntk
 {
 
-  QRectF fitInRect(const QRectF& rect, const QSizeF& size);
-  
-  unsigned qregion_area(const QRegion& r);
+void remove_path_recursively(const std::string& dirpath);
 
-  extern QTextStream qOut;
-  extern QTextStream qErr;
-  extern QTextStream qIn;
+QRectF fitInRect(const QRectF& rect, const QSizeF& size);
 
-  template <class T>
-  bool qsave_object(const T& obj, const char* filename)
-  {
+unsigned qregion_area(const QRegion& r);
+
+extern QTextStream qOut;
+extern QTextStream qErr;
+extern QTextStream qIn;
+
+template <class T>
+bool qsave_object(const T& obj, const char* filename)
+{
     QFile file(filename);
     if (!file.open(QIODevice::WriteOnly))
-      return false;
+        return false;
     QDataStream out(&file);   // we will serialize the data into the file
     out << obj;
     return out.status() == QDataStream::Ok;
-  }
+}
 
-  template <class T>
-  bool qload_object(T& obj, const char* filename)
-  {
+template <class T>
+bool qload_object(T& obj, const char* filename)
+{
     QFile file(filename);
     if (!file.exists()) return false;
     if (!file.open(QIODevice::ReadOnly))
-      return false;
+        return false;
     QDataStream in(&file);   // we will serialize the data into the file
     in >> obj;
     return in.status() == QDataStream::Ok;
-  }
+}
 
-  template <class T>
-  bool qsave_text(const T& obj, const char* filename)
-  {
+template <class T>
+bool qsave_text(const T& obj, const char* filename)
+{
     QFile file(filename);
     if (!file.open(QIODevice::WriteOnly))
-      return false;
+        return false;
     QTextStream out(&file);   // we will serialize the data into the file
     out << obj;
     return out.status() == QTextStream::Ok;
-  }
+}
 
-  template <class T>
-  bool qload_text(T& obj, const char* filename)
-  {
+template <class T>
+bool qload_text(T& obj, const char* filename)
+{
     QFile file(filename);
     if (!file.exists()) return false;
     if (!file.open(QIODevice::ReadOnly))
-      return false;
+        return false;
     QTextStream in(&file);   // we will serialize the data into the file
     in >> obj;
     return in.status() == QTextStream::Ok;
-  }
-  
-  /*!
+}
+
+/*!
    * Read len bytes from a datastream.
    * Do not return until all len bytes have been written or stream state
    * is not Ok.
    */
-  void readFullRawData(QLocalSocket& socket, QDataStream& stream, char* data, int len);
+void readFullRawData(QLocalSocket& socket, QDataStream& stream, char* data, int len);
+
+/*!
+   * Write a byte array to a datastream.
+   * Do not return until all bytes have been written or stream state
+   * is not Ok.
+   */
+void writeFullRawData(QAbstractSocket& socket, const QByteArray& array);
 
 } // end of ntk
 

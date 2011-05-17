@@ -47,6 +47,8 @@ public:
 
   cv::Point3f intersectionWithLine (const cv::Point3f& p1, const cv::Point3f& p2) const;
 
+  float distanceToPlane(const cv::Point3f& p) const;
+
   double a,b,c,d;
 };
 

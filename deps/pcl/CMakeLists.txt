@@ -1,193 +1,154 @@
-cmake_minimum_required (VERSION 2.8)
+### ---[ PCL global CMake
+cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
+set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "possible configurations" FORCE)
+# In case the user does not setup CMAKE_BUILD_TYPE, assume it's RelWithDebInfo
+if("${CMAKE_BUILD_TYPE}" STREQUAL "")
+  set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING "build type default to RelWithDebInfo, set to Release to improve performance" FORCE)
+endif("${CMAKE_BUILD_TYPE}" STREQUAL "")
 
-if (WIN32)
-    include(cmake/windows.cmake)
-else (WIN32)
+project(PCL)
+string(TOLOWER ${PROJECT_NAME} PROJECT_NAME_LOWER)
 
-include (cmake/rosbuild.cmake)
-#set (ROS_BUILD_TYPE Release)
-set (ROS_BUILD_TYPE RelWithDebInfo)
-rosbuild_init ()
-rosbuild_add_boost_directories ()
-#add_definitions(-Wall -funroll-loops -momit-leaf-frame-pointer -fomit-frame-pointer -floop-block -ftree-loop-distribution -ftree-loop-linear -floop-interchange -floop-strip-mine -DNDEBUG -fgcse-lm -fgcse-sm -fsched-spec-load)
-#add_definitions (-Wall -O3 -Winvalid-pch -pipe -funroll-loops -fno-strict-aliasing)
-add_definitions (-Wall -DEIGEN_USE_NEW_STDVECTOR -DEIGEN2_SUPPORT -fno-strict-aliasing)# -fvisibility=hidden -fvisibility-inlines-hidden)
-rosbuild_check_for_sse ()
+# Adjusted by nestk.
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/")
 
-rosbuild_genmsg ()
-set (EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
-include_directories (${CMAKE_CURRENT_BINARY_DIR})
-include(cmake/find_cminpack.cmake)
-include_directories(${CMINPACK_PREFIX}/include)
-# Disabled by nestk. Flann in embedded.
-# include(cmake/find_flann.cmake)
-include_directories(${flann_INCLUDE_DIRS})
-#include(cmake/find_eigen3.cmake)
-include_directories(${eigen3_INCLUDE_DIRS})
-include_directories (src include include/roslib include/sensor_msgs)
-include_directories (include)
+# ---[ Release/Debug specific flags
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+  add_definitions("-DBOOST_DISABLE_ASSERTS -DEIGEN_NO_DEBUG")
+endif(CMAKE_BUILD_TYPE STREQUAL "Release")
+if(WIN32)
+  set(CMAKE_DEBUG_POSTFIX "-gd")
+endif()
 
-include (PCLPCHSupport.cmake REQUIRED)
+# ---[ Unix/Darwin/Windows specific flags
+if(UNIX OR APPLE)
+  add_definitions("-Wall -Wl,--no-undefined -fno-strict-aliasing")
+else(UNIX OR APPLE)
+	if(MSVC)
+		add_definitions ("-W0 -DBOOST_ALL_NO_LIB -D_SCL_SECURE_NO_WARNINGS")
+	else(MSVC)
+		add_definitions("-Wall -Wl,--no-undefined -fno-strict-aliasing")
+		if(PCL_SHARED_LIBS)
+			add_definition("-Wl,--export-all-symbols -Wl,--enable-auto-import")
+		endif(PCL_SHARED_LIBS)
+	endif(MSVC)
+endif(UNIX OR APPLE)
 
-#include (cmake/find_tbb.cmake)
-# Write the pcl_config.h file
-#set(pcl_config_h_in "${CMAKE_CURRENT_SOURCE_DIR}/pcl_config.h.in")
-#set(pcl_config_h "${CMAKE_CURRENT_BINARY_DIR}/pcl/pcl_config.h")
-#configure_file(${pcl_config_h_in} ${pcl_config_h})
-#install(FILES ${pcl_config_h} DESTINATION ${include}
-#   COMPONENT headers)
+include(${PCL_SOURCE_DIR}/cmake/pcl_options.cmake)
+include(${PCL_SOURCE_DIR}/cmake/pcl_utils.cmake)
+set(PCL_VERSION 1.0.0 CACHE STRING "PCL version")
+DISSECT_VERSION()
+GET_OS_INFO()
+SET_INSTALL_DIRS()
 
-# ---[ Point Cloud Library
-  rosbuild_add_library (pcl_base
-                        src/pcl/pcl_base.cpp
-                       )
-  rosbuild_add_compile_flags (pcl_base ${SSE_FLAGS})
+set(PCL_RESOURCES_DIR ${PCL_SOURCE_DIR}/resources)
+set(PCL_POINTCLOUDS_DIR ${PCL_RESOURCES_DIR}/pointclouds)
+# ---[ Windows requires DLLs (shared libraries) to be installed in the same directory as executables
+if(WIN32)
+  set(PCL_OUTPUT_LIB_DIR ${PCL_BINARY_DIR}/${LIB_INSTALL_DIR})
+  set(PCL_OUTPUT_BIN_DIR ${PCL_BINARY_DIR}/${BIN_INSTALL_DIR})
+  make_directory(${PCL_OUTPUT_LIB_DIR})
+  make_directory(${PCL_OUTPUT_BIN_DIR})
+  foreach(CONF ${CMAKE_CONFIGURATION_TYPES})        # For each configuration (Debug, Release, MinSizeRel... and/or anything the user chooses)
+    string(TOUPPER "${CONF}" CONF)                # Go uppercase (DEBUG, RELEASE...)
+    set("CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${CONF}" "${PCL_OUTPUT_LIB_DIR}")
+    set("CMAKE_RUNTIME_OUTPUT_DIRECTORY_${CONF}" "${PCL_OUTPUT_BIN_DIR}")
+    set("CMAKE_LIBRARY_OUTPUT_DIRECTORY_${CONF}" "${PCL_OUTPUT_BIN_DIR}")
+  endforeach()
+endif()
 
-# ---[ Point Cloud Library - Features
-  rosbuild_add_library (pcl_features
-                        src/pcl/features/feature.cpp
-                        src/pcl/features/boundary.cpp
-                        src/pcl/features/intensity_gradient.cpp
-                        src/pcl/features/intensity_spin.cpp
-                        src/pcl/features/moment_invariants.cpp
-                        src/pcl/features/normal_3d.cpp
-                        src/pcl/features/normal_3d_omp.cpp
-#                        src/pcl/features/normal_3d_tbb.cpp
-                        src/pcl/features/principal_curvatures.cpp
-                        src/pcl/features/fpfh.cpp
-                        src/pcl/features/fpfh_omp.cpp
-                        src/pcl/features/pfh.cpp
-                        src/pcl/features/rift.cpp
-                        src/pcl/features/rsd.cpp
-                        src/pcl/features/vfh.cpp
-                        src/pcl/features/narf.cpp
-                        src/pcl/features/narf_descriptor.cpp
-                        src/pcl/features/integral_image_normal.cpp
-                       )
-  rosbuild_add_compile_flags (pcl_features ${SSE_FLAGS})
-  rosbuild_add_openmp_flags (pcl_features)
-  rosbuild_link_boost (pcl_features system filesystem)
-  #  if (HAVE_TBB)
-  #    target_link_libraries (pcl_features tbb)
-  #  endif (HAVE_TBB)
-  target_link_libraries (pcl_features pcl_range_image)
+# Configure FindPCL.cmake
+configure_file("${PCL_SOURCE_DIR}/FindPCL.cmake.in"
+               "${PCL_BINARY_DIR}/FindPCL.cmake" @ONLY)
+# Add an "uninstall" target
+configure_file("${PCL_SOURCE_DIR}/cmake/uninstall_target.cmake.in"
+               "${PCL_BINARY_DIR}/uninstall_target.cmake" IMMEDIATE @ONLY)
+add_custom_target(uninstall "${CMAKE_COMMAND}" -P
+                  "${PCL_BINARY_DIR}/uninstall_target.cmake")
 
-# ---[ Point Cloud Library - Features
-  rosbuild_add_library (pcl_keypoints
-                        src/pcl/keypoints/narf_keypoint.cpp
-                       )
-  target_link_libraries(pcl_keypoints pcl_range_image_border_extractor)
-  rosbuild_add_compile_flags (pcl_keypoints ${SSE_FLAGS})
-  rosbuild_add_openmp_flags (pcl_keypoints)
+###
+# this is copy paste form http://www.itk.org/Wiki/CMake_RPATH_handling
+# in order to always make a full statement RPATH
+###
+SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
+SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE) 
+SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+LIST(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/lib" is_system_dir)
+IF("${is_system_dir}" STREQUAL "-1")
+   SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+ENDIF("${is_system_dir}" STREQUAL "-1")
 
-# ---[ Point Cloud Library - Common
-  rosbuild_add_library (pcl_common src/pcl/common/poses_from_matches.cpp)
-  rosbuild_add_compile_flags (pcl_common ${SSE_FLAGS})
+### ---[ Find universal dependencies
+# SSE flags
+include(${PCL_SOURCE_DIR}/cmake/pcl_find_sse.cmake)
+PCL_CHECK_FOR_SSE()
+# Boost (required)
+include(${PCL_SOURCE_DIR}/cmake/pcl_find_boost.cmake)
+# Eigen (required)
+find_package(Eigen REQUIRED)
+include_directories(${EIGEN_INCLUDE_DIRS})
+add_definitions(-DEIGEN_USE_NEW_STDVECTOR
+                -DEIGEN_YES_I_KNOW_SPARSE_MODULE_IS_NOT_STABLE_YET)
+# FLANN (required)
+find_package(Flann REQUIRED)
+include_directories(${FLANN_INCLUDE_DIRS})
+# CMinpack
+find_package(CMinpack REQUIRED)
+include_directories(${CMINPACK_INCLUDE_DIRS})
+# OpenMP
+include(${PCL_SOURCE_DIR}/cmake/pcl_openmp.cmake)
+# OpenNI
+find_package(OpenNI)
+# Find ROS
+include(${PCL_SOURCE_DIR}/cmake/pcl_find_ros.cmake)
 
-# ---[ Point Cloud Library - IO
-  rosbuild_add_library (pcl_io
-                      src/pcl/io/io.cpp
-                      src/pcl/io/pcd_io.cpp
-                      src/pcl/io/vtk_io.cpp
-                     )
-  rosbuild_add_compile_flags (pcl_io ${SSE_FLAGS})
-  rosbuild_link_boost (pcl_io system filesystem)
-  # if (HAVE_TBB)
-  #  target_link_libraries (pcl_io tbb)
-  # endif (HAVE_TBB)
+### ---[ Create the config.h file
+set(pcl_config_h_in "${CMAKE_CURRENT_SOURCE_DIR}/pcl_config.h.in")
+set(pcl_config_h "${CMAKE_CURRENT_BINARY_DIR}/include/pcl/pcl_config.h")
+configure_file(${pcl_config_h_in} ${pcl_config_h})
+PCL_ADD_INCLUDES(common "" ${pcl_config_h})
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
 
-# ---[ Point Cloud Library - Surface
-  rosbuild_add_library (pcl_surface
-                        src/pcl/surface/mls.cpp
-                        src/pcl/surface/grid_projection.cpp
-                        src/pcl/surface/convex_hull.cpp
-                        src/pcl/surface/gp3.cpp
-                       )
-  rosbuild_add_compile_flags (pcl_surface ${SSE_FLAGS})
-  rosbuild_link_boost (pcl_surface system filesystem)
-# ---[ Point Cloud Library - KdTree
-  rosbuild_add_library (pcl_kdtree
-                        src/pcl/kdtree/kdtree_flann.cpp
-                        src/pcl/kdtree/organized_data.cpp
-                        src/pcl/kdtree/tree_types.cpp
-                       )
-  rosbuild_add_compile_flags (pcl_kdtree ${SSE_FLAGS})
- # ---[ Point Cloud Library - Sample Consensus
-  rosbuild_add_library (pcl_sample_consensus
-                        src/pcl/sample_consensus/lmeds.cpp
-                        src/pcl/sample_consensus/ransac.cpp
-                        src/pcl/sample_consensus/mlesac.cpp
-                        src/pcl/sample_consensus/msac.cpp
-                        src/pcl/sample_consensus/rmsac.cpp
-                        src/pcl/sample_consensus/rransac.cpp
-                        src/pcl/sample_consensus/sac_model_circle.cpp
-                        src/pcl/sample_consensus/sac_model_cylinder.cpp
-                        src/pcl/sample_consensus/sac_model_normal_parallel_plane.cpp
-                        src/pcl/sample_consensus/sac_model_normal_plane.cpp
-                        src/pcl/sample_consensus/sac_model_parallel_plane.cpp
-                        src/pcl/sample_consensus/sac_model_perpendicular_plane.cpp
-                        src/pcl/sample_consensus/sac_model_plane.cpp
-                        src/pcl/sample_consensus/sac_model_line.cpp
-                        src/pcl/sample_consensus/sac_model_parallel_line.cpp
-                        src/pcl/sample_consensus/sac_model_sphere.cpp
-                        src/pcl/sample_consensus/sac_model_registration.cpp
-                       )
-  rosbuild_add_compile_flags (pcl_sample_consensus ${SSE_FLAGS})
+### ---[ Set up for tests
+include(${PCL_SOURCE_DIR}/cmake/pcl_tests.cmake)
 
-# ---[ Point Cloud Library - Filters
-  rosbuild_add_library (pcl_filters
-                        src/pcl/filters/filter.cpp
-                        src/pcl/filters/conditional_removal.cpp
-                        src/pcl/filters/passthrough.cpp
-                        src/pcl/filters/voxel_grid.cpp
-                        src/pcl/filters/extract_indices.cpp
-                        src/pcl/filters/project_inliers.cpp
-                        src/pcl/filters/radius_outlier_removal.cpp
-                        src/pcl/filters/statistical_outlier_removal.cpp
-                       )
-  rosbuild_add_compile_flags (pcl_filters ${SSE_FLAGS})
-  rosbuild_link_boost (pcl_filters system filesystem)
-  target_link_libraries (pcl_filters pcl_base pcl_sample_consensus pcl_kdtree)
-# ---[ Point Cloud Library - Segmentation
-  rosbuild_add_library (pcl_segmentation
-                        src/pcl/segmentation/segment_differences.cpp
-                        src/pcl/segmentation/sac_segmentation.cpp
-                        src/pcl/segmentation/extract_clusters.cpp
-                        src/pcl/segmentation/extract_polygonal_prism_data.cpp
-                       )
-  rosbuild_add_compile_flags (pcl_segmentation ${SSE_FLAGS})
-  target_link_libraries (pcl_segmentation pcl_sample_consensus pcl_kdtree)
-  rosbuild_link_boost (pcl_segmentation system filesystem)
-# ---[ Point Cloud Library - Registration
-  rosbuild_add_library (pcl_registration
-                        src/pcl/registration/registration.cpp
-                       )
-  rosbuild_add_compile_flags (pcl_registration ${SSE_FLAGS})
-  rosbuild_link_boost (pcl_registration system filesystem)
-  target_link_libraries (pcl_registration pcl_sample_consensus pcl_kdtree)
+### ---[ Add the library subdirectories
+include(${PCL_SOURCE_DIR}/cmake/pcl_targets.cmake)
+add_subdirectory(common)
+add_subdirectory(octree)
+add_subdirectory(io)
+add_subdirectory(kdtree)
+add_subdirectory(range_image)
+add_subdirectory(features)
+add_subdirectory(sample_consensus)
+add_subdirectory(keypoints)
+add_subdirectory(filters)
+add_subdirectory(registration)
+add_subdirectory(segmentation)
+add_subdirectory(surface)
+add_subdirectory(visualization)
+## Disabled by nestk.
+#add_subdirectory(test)
 
-  # ---[ Point Cloud Library - RangeImage
-  rosbuild_add_library (pcl_range_image
-                        src/pcl/range_image/range_image.cpp
-                        src/pcl/range_image/range_image_planar.cpp
-                       )
-  rosbuild_add_compile_flags (pcl_range_image ${SSE_FLAGS})
-  rosbuild_add_openmp_flags(pcl_range_image)
+### ---[ Documentation
+## Disabled by nestk.
+#add_subdirectory(doc)
 
-  rosbuild_add_library (pcl_range_image_border_extractor
-                        src/pcl/features/range_image_border_extractor.cpp
-                        src/pcl/features/boundary.cpp
-                       )
-  target_link_libraries (pcl_range_image_border_extractor pcl_range_image)
-  rosbuild_add_openmp_flags (pcl_range_image_border_extractor)
+### ---[ Package creation
+include(${PCL_SOURCE_DIR}/cmake/pcl_cpack.cmake)
+if(CPACK_GENERATOR)
+  message(STATUS "Found CPack generators: ${CPACK_GENERATOR}")
+  PCL_MAKE_CPACK_INPUT()
+  set(CPACK_PROJECT_CONFIG_FILE "${PCL_CPACK_CFG_FILE}")
+  include(CPack)
+endif(CPACK_GENERATOR)
+### ---[ Make a pretty picture of the dependency graph
+include(${PCL_SOURCE_DIR}/cmake/dep_graph.cmake)
+MAKE_DEP_GRAPH()
 
-# disabled by nestk
-# add_subdirectory (src/tools)
-
-
-# Option to generate a standalone tarball
-add_custom_target (tarball ${PROJECT_SOURCE_DIR}/make_tarball WORKING_DIRECTORY ${PROJECT_SOURCE_DIR} VERBATIM)
-
-endif (WIN32)
-
+### ---[ Finish up
+PCL_WRITE_STATUS_REPORT()
+PCL_RESET_MAPS()
 

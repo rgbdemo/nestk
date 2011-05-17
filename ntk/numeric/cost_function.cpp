@@ -31,6 +31,7 @@ double CostFunction :: outputNorm(const std::vector<double>& input) const
   {
     err += output[i]*output[i];
   }
+  err = sqrt(err);
   err /= m_output_dim;
   return err;
 }

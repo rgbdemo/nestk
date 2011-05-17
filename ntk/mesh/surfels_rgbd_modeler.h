@@ -38,7 +38,7 @@ public:
   void setMinViewsPerSurfel(int n) { m_min_views = n; }
 
 public:
-  virtual void addNewView(const RGBDImage& image, Pose3D& relative_pose);
+  virtual bool addNewView(const RGBDImage& image, Pose3D& relative_pose);
   virtual void computeMesh();
 
   virtual void reset() { RGBDModeler::reset(); m_surfels.clear(); }
@@ -58,7 +58,7 @@ public:
   void setMinViewsPerSurfel(int n) { m_min_views = n; }
 
 public:
-  virtual void addNewView(const RGBDImage& image, Pose3D& relative_pose);
+  virtual bool addNewView(const RGBDImage& image, Pose3D& relative_pose);
 
 protected:
   Pose3D fixRelativePose(const RGBDImage& image, const Pose3D& relative_pose);

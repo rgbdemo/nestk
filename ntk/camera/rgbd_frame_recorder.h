@@ -41,6 +41,9 @@ public:
   /*! Save an image. */
   void saveCurrentFrame(const RGBDImage& image);
 
+  /*! Returns the name of directory where the next frame will be written. */
+  std::string getNextFrameDirectory() const;
+
   /*!
    * Whether the undistorted and postprocessed images should be
    * saved also.

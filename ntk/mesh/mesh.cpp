@@ -36,30 +36,30 @@ using namespace cv;
 namespace
 {
 
-  struct PlyVertex
-  {
+struct PlyVertex
+{
     float x,y,z;
     float nx,ny,nz;
     float u,v; // tex coords.
     unsigned char r,g,b;     /* vertex color */
-  };
+};
 
-  struct PlyFace
-  {
+struct PlyFace
+{
     unsigned char nverts;    /* number of vertex indices in list */
     int *verts;              /* vertex index list */
     unsigned char ntexcoord; /* number of tex coords */
     float *texcoord;         /* texture coordinates */
     double nx,ny,nz;         /* normal vector */
-  };
+};
 
-  /* list of the kinds of elements in the user's object */
-  const char *elem_names[] =
-  {
+/* list of the kinds of elements in the user's object */
+const char *elem_names[] =
+{
     "vertex", "face"
-  };
+};
 
-  ply::PlyProperty available_vertex_properties[] = {
+ply::PlyProperty available_vertex_properties[] = {
     {"x", Float32, Float32, offsetof(PlyVertex,x), 0, 0, 0, 0},
     {"y", Float32, Float32, offsetof(PlyVertex,y), 0, 0, 0, 0},
     {"z", Float32, Float32, offsetof(PlyVertex,z), 0, 0, 0, 0},
@@ -71,12 +71,12 @@ namespace
     {"red", Uint8, Uint8, offsetof(PlyVertex,r), 0, 0, 0, 0},
     {"green", Uint8, Uint8, offsetof(PlyVertex,g), 0, 0, 0, 0},
     {"blue", Uint8, Uint8, offsetof(PlyVertex,b), 0, 0, 0, 0},
-  };
+};
 
-  ply::PlyProperty available_face_properties[] = { /* list of property information for a face */
-    {"vertex_indices", PLY_Int32, PLY_Int32, offsetof(PlyFace,verts),
-     1, Uint8, Uint8, offsetof(PlyFace,nverts)},
-  };
+ply::PlyProperty available_face_properties[] = { /* list of property information for a face */
+                                                 {"vertex_indices", PLY_Int32, PLY_Int32, offsetof(PlyFace,verts),
+                                                  1, Uint8, Uint8, offsetof(PlyFace,nverts)},
+                                               };
 
 
 
@@ -85,32 +85,32 @@ namespace
 namespace ntk
 {
 
-  void Mesh::applyTransform(const Pose3D& pose)
-  {
+void Mesh::applyTransform(const Pose3D& pose)
+{
     foreach_idx(i, vertices)
-      vertices[i] = pose.cameraTransform(vertices[i]);
-  }
+            vertices[i] = pose.cameraTransform(vertices[i]);
+}
 
-  Point3f Mesh :: centerize()
-  {
+Point3f Mesh :: centerize()
+{
     Point3f center(0,0,0);
     foreach_idx(i, vertices)
     {
-      center += vertices[i];
+        center += vertices[i];
     }
     center *= 1.0/vertices.size();
 
     foreach_idx(i, vertices)
     {
-      vertices[i] -= center;
+        vertices[i] -= center;
     }
     return center;
-  }
+}
 
-  void Mesh::saveToPlyFile(const char* filename) const
-  {
+void Mesh::saveToPlyFile(const char* filename) const
+{
     if (texture.data)
-      imwrite(cv::format("%s.texture.png", filename), texture);
+        imwrite(cv::format("%s.texture.png", filename), texture);
 
     std::ofstream ply_file (filename);
     ply_file << "ply\n";
@@ -122,32 +122,32 @@ namespace ntk
 
     if (hasNormals())
     {
-      ply_file << "property float nx\n";
-      ply_file << "property float ny\n";
-      ply_file << "property float nz\n";
+        ply_file << "property float nx\n";
+        ply_file << "property float ny\n";
+        ply_file << "property float nz\n";
     }
 
     if (hasTexcoords())
     {
-      // put it twice, blender uses (s,t) and meshlab (u,v)
-      ply_file << "property float s\n";
-      ply_file << "property float t\n";
+        // put it twice, blender uses (s,t) and meshlab (u,v)
+        ply_file << "property float s\n";
+        ply_file << "property float t\n";
     }
 
     if (hasColors())
     {
-      ply_file << "property uchar red\n";
-      ply_file << "property uchar green\n";
-      ply_file << "property uchar blue\n";
+        ply_file << "property uchar red\n";
+        ply_file << "property uchar green\n";
+        ply_file << "property uchar blue\n";
     }
 
     if (hasFaces())
     {
-      ply_file << "element face " << faces.size() << "\n";
-      ply_file << "property list uchar uint vertex_indices\n";
-      // For meshlab wedges.
-      if (hasTexcoords())
-        ply_file << "property list uchar float texcoord\n";
+        ply_file << "element face " << faces.size() << "\n";
+        ply_file << "property list uchar uint vertex_indices\n";
+        // For meshlab wedges.
+        if (hasTexcoords())
+            ply_file << "property list uchar float texcoord\n";
     }
 
 
@@ -155,47 +155,47 @@ namespace ntk
 
     foreach_idx(i, vertices)
     {
-      ply_file << vertices[i].x << " " << vertices[i].y << " " << vertices[i].z;
+        ply_file << vertices[i].x << " " << vertices[i].y << " " << vertices[i].z;
 
-      if (hasNormals())
-        ply_file << " " << normals[i].x << " " << normals[i].y << " " << normals[i].z;
+        if (hasNormals())
+            ply_file << " " << normals[i].x << " " << normals[i].y << " " << normals[i].z;
 
-      if (hasTexcoords())
-      {
-        ply_file << " " << texcoords[i].x << " " << texcoords[i].y;
-      }
+        if (hasTexcoords())
+        {
+            ply_file << " " << texcoords[i].x << " " << texcoords[i].y;
+        }
 
-      if (hasColors())
-        ply_file << " " << (int)colors[i][0] << " " << (int)colors[i][1] << " " << (int)colors[i][2];
+        if (hasColors())
+            ply_file << " " << (int)colors[i][0] << " " << (int)colors[i][1] << " " << (int)colors[i][2];
 
-      ply_file << "\n";
+        ply_file << "\n";
     }
 
     if (hasFaces())
     {
-      foreach_idx(i, faces)
-      {
-        ply_file << faces[i].numVertices();
-        for (unsigned j = 0; j < faces[i].numVertices(); ++j)
-          ply_file << " " << faces[i].indices[j];
-        if (hasTexcoords())
+        foreach_idx(i, faces)
         {
-          ply_file << " 6";
-          for (unsigned j = 0; j < faces[i].numVertices(); ++j)
-          {
-            ply_file << " " << texcoords[faces[i].indices[j]].x;
-            ply_file << " " << 1.0 - texcoords[faces[i].indices[j]].y;
-          }
+            ply_file << faces[i].numVertices();
+            for (unsigned j = 0; j < faces[i].numVertices(); ++j)
+                ply_file << " " << faces[i].indices[j];
+            if (hasTexcoords())
+            {
+                ply_file << " 6";
+                for (unsigned j = 0; j < faces[i].numVertices(); ++j)
+                {
+                    ply_file << " " << texcoords[faces[i].indices[j]].x;
+                    ply_file << " " << 1.0 - texcoords[faces[i].indices[j]].y;
+                }
+            }
+            ply_file << "\n";
         }
-        ply_file << "\n";
-      }
     }
 
     ply_file.close();
-  }
+}
 
-  void Mesh::loadFromPlyFile(const char* filename)
-  {
+void Mesh::loadFromPlyFile(const char* filename)
+{
     vertices.clear();
     colors.clear();
     texcoords.clear();
@@ -217,7 +217,7 @@ namespace ntk
     int err = errno;
     if (err)
     {
-      ntk_dbg(0) << "[ERROR] " << strerror(err);
+        ntk_dbg(0) << "[ERROR] " << strerror(err);
     }
     ntk_ensure(mesh_file, "Could not open mesh file.");
 
@@ -226,64 +226,64 @@ namespace ntk
 
     for (int i = 0; i < ply_file->num_elem_types; i++)
     {
-      /* prepare to read the i'th list of elements */
-      int elem_count = 0;
-      const char* elem_name = ply::setup_element_read_ply (ply_file, i, &elem_count);
+        /* prepare to read the i'th list of elements */
+        int elem_count = 0;
+        const char* elem_name = ply::setup_element_read_ply (ply_file, i, &elem_count);
 
-      if (ply::equal_strings("vertex", elem_name))
-      {
-        /* create a vertex list to hold all the vertices */
-        ply_vertices.resize(elem_count);
-
-        /* set up for getting vertex elements */
-        ply::setup_property_ply (ply_file, &available_vertex_properties[0]);
-        ply::setup_property_ply (ply_file, &available_vertex_properties[1]);
-        ply::setup_property_ply (ply_file, &available_vertex_properties[2]);
-
-        if (has_property(ply_file, "vertex", "nx"))
+        if (ply::equal_strings("vertex", elem_name))
         {
-          has_normals = true;
-          ply::setup_property_ply (ply_file, &available_vertex_properties[3]);
-          ply::setup_property_ply (ply_file, &available_vertex_properties[4]);
-          ply::setup_property_ply (ply_file, &available_vertex_properties[5]);
-        }
+            /* create a vertex list to hold all the vertices */
+            ply_vertices.resize(elem_count);
 
-        if (has_property(ply_file, "vertex", "s"))
+            /* set up for getting vertex elements */
+            ply::setup_property_ply (ply_file, &available_vertex_properties[0]);
+            ply::setup_property_ply (ply_file, &available_vertex_properties[1]);
+            ply::setup_property_ply (ply_file, &available_vertex_properties[2]);
+
+            if (has_property(ply_file, "vertex", "nx"))
+            {
+                has_normals = true;
+                ply::setup_property_ply (ply_file, &available_vertex_properties[3]);
+                ply::setup_property_ply (ply_file, &available_vertex_properties[4]);
+                ply::setup_property_ply (ply_file, &available_vertex_properties[5]);
+            }
+
+            if (has_property(ply_file, "vertex", "s"))
+            {
+                has_texcoords = true;
+                ply::setup_property_ply (ply_file, &available_vertex_properties[6]);
+                ply::setup_property_ply (ply_file, &available_vertex_properties[7]);
+            }
+
+            if (has_property(ply_file, "vertex", "red"))
+            {
+                has_colors = true;
+                ply::setup_property_ply (ply_file, &available_vertex_properties[8]);
+                ply::setup_property_ply (ply_file, &available_vertex_properties[9]);
+                ply::setup_property_ply (ply_file, &available_vertex_properties[10]);
+            }
+
+            /* grab all the vertex elements */
+            for (int j = 0; j < elem_count; j++)
+                ply::get_element_ply (ply_file, &ply_vertices[j]);
+        }
+        else if (ply::equal_strings("face", elem_name))
         {
-          has_texcoords = true;
-          ply::setup_property_ply (ply_file, &available_vertex_properties[6]);
-          ply::setup_property_ply (ply_file, &available_vertex_properties[7]);
+            has_faces = true;
+
+            /* create a list to hold all the face elements */
+            ply_faces.resize(elem_count);
+
+            /* set up for getting face elements */
+            setup_property_ply (ply_file, &available_face_properties[0]);
+            // setup_property_ply (ply_file, &global::face_props[1]);
+
+            /* grab all the face elements */
+            for (int j = 0; j < elem_count; j++)
+            {
+                get_element_ply (ply_file, &ply_faces[j]);
+            }
         }
-
-        if (has_property(ply_file, "vertex", "red"))
-        {
-          has_colors = true;
-          ply::setup_property_ply (ply_file, &available_vertex_properties[8]);
-          ply::setup_property_ply (ply_file, &available_vertex_properties[9]);
-          ply::setup_property_ply (ply_file, &available_vertex_properties[10]);
-        }
-
-        /* grab all the vertex elements */
-        for (int j = 0; j < elem_count; j++)
-          ply::get_element_ply (ply_file, &ply_vertices[j]);
-      }
-      else if (ply::equal_strings("face", elem_name))
-      {
-        has_faces = true;
-
-        /* create a list to hold all the face elements */
-        ply_faces.resize(elem_count);
-
-        /* set up for getting face elements */
-        setup_property_ply (ply_file, &available_face_properties[0]);
-        // setup_property_ply (ply_file, &global::face_props[1]);
-
-        /* grab all the face elements */
-        for (int j = 0; j < elem_count; j++)
-        {
-          get_element_ply (ply_file, &ply_faces[j]);
-        }
-      }
     }
     fclose(mesh_file);
 
@@ -293,40 +293,40 @@ namespace ntk
 
     foreach_idx(i, ply_vertices)
     {
-      const PlyVertex& v = ply_vertices[i];
-      vertices[i] = Point3f(v.x, v.y, v.z);
-      if (has_colors)
-        colors[i] = Vec3b(v.r, v.g, v.b);
-      if (has_normals)
-        normals[i] = Point3f(v.nx, v.ny, v.nz);
+        const PlyVertex& v = ply_vertices[i];
+        vertices[i] = Point3f(v.x, v.y, v.z);
+        if (has_colors)
+            colors[i] = Vec3b(v.r, v.g, v.b);
+        if (has_normals)
+            normals[i] = Point3f(v.nx, v.ny, v.nz);
     }
 
     if (has_faces)
     {
-      faces.resize(ply_faces.size());
-      foreach_idx(i, ply_faces)
-      {
-        const PlyFace& f = ply_faces[i];
-        ntk_ensure(f.nverts == 3, "Only triangles are supported.");
-        for (int j = 0; j < f.nverts; ++j)
-          faces[i].indices[j] = f.verts[j];
-      }
+        faces.resize(ply_faces.size());
+        foreach_idx(i, ply_faces)
+        {
+            const PlyFace& f = ply_faces[i];
+            ntk_ensure(f.nverts == 3, "Only triangles are supported.");
+            for (int j = 0; j < f.nverts; ++j)
+                faces[i].indices[j] = f.verts[j];
+        }
     }
 
-  }
+}
 
-  void Mesh:: clear()
-  {
+void Mesh:: clear()
+{
     vertices.clear();
     colors.clear();
     normals.clear();
     texcoords.clear();
     faces.clear();
     texture = cv::Mat3b();
-  }
+}
 
-  void Mesh :: buildFromSurfels(const std::vector<Surfel>& surfels, int min_views)
-  {
+void Mesh :: buildFromSurfels(const std::vector<Surfel>& surfels, int min_views)
+{
     clear();
 
     unsigned long start = ntk::Time::getMillisecondCounter();
@@ -334,81 +334,80 @@ namespace ntk
 
     foreach_idx(i, surfels)
     {
-      if (!surfels[i].enabled())
+        if (!surfels[i].enabled())
+            continue;
+
+        if (surfels[i].n_views < min_views)
+            continue;
+
+        // FIXME: temp
+        vertices.push_back(surfels[i].location);
+        colors.push_back(surfels[i].color);
+        normals.push_back(surfels[i].normal);
         continue;
 
-      if (surfels[i].n_views < min_views)
-        continue;
+        const Surfel& surfel = surfels[i];
+        Vec3f v1, v2;
+        orthogonal_basis(v1, v2, surfel.normal);
+        Point3f p0 = surfel.location + Point3f(v1 * surfel.radius);
+        Point3f p1 = surfel.location + Point3f(v1 * (surfel.radius/2.0f) + v2 * surfel.radius);
+        Point3f p2 = surfel.location + Point3f(v1 * (-surfel.radius/2.0f) + v2 * surfel.radius);
+        Point3f p3 = surfel.location + Point3f(v1 * -surfel.radius);
+        Point3f p4 = surfel.location + Point3f(v1 * (-surfel.radius/2.0f) + v2 * (-surfel.radius));
+        Point3f p5 = surfel.location + Point3f(v1 * (surfel.radius/2.0f) + v2 * (-surfel.radius));
+        vertices.push_back(p0);
+        vertices.push_back(p1);
+        vertices.push_back(p2);
+        vertices.push_back(p3);
+        vertices.push_back(p4);
+        vertices.push_back(p5);
 
-      // FIXME: temp
-      vertices.push_back(surfels[i].location);
-      colors.push_back(surfels[i].color);
-      normals.push_back(surfels[i].normal);
-      continue;
+        for (int k = 0; k < 6; ++k)
+            colors.push_back(surfel.color);
 
-      const Surfel& surfel = surfels[i];
-      Vec3f v1, v2;
-      orthogonal_basis(v1, v2, surfel.normal);
-      Point3f p0 = surfel.location + Point3f(v1 * surfel.radius);
-      Point3f p1 = surfel.location + Point3f(v1 * (surfel.radius/2.0f) + v2 * surfel.radius);
-      Point3f p2 = surfel.location + Point3f(v1 * (-surfel.radius/2.0f) + v2 * surfel.radius);
-      Point3f p3 = surfel.location + Point3f(v1 * -surfel.radius);
-      Point3f p4 = surfel.location + Point3f(v1 * (-surfel.radius/2.0f) + v2 * (-surfel.radius));
-      Point3f p5 = surfel.location + Point3f(v1 * (surfel.radius/2.0f) + v2 * (-surfel.radius));
-      vertices.push_back(p0);
-      vertices.push_back(p1);
-      vertices.push_back(p2);
-      vertices.push_back(p3);
-      vertices.push_back(p4);
-      vertices.push_back(p5);
+        for (int k = 0; k < 6; ++k)
+            normals.push_back(surfel.normal);
 
-      for (int k = 0; k < 6; ++k)
-        colors.push_back(surfel.color);
+        {
+            Face f;
+            f.indices[0] = idx+5;
+            f.indices[1] = idx+0;
+            f.indices[2] = idx+1;
+            faces.push_back(f);
+        }
 
-      for (int k = 0; k < 6; ++k)
-        normals.push_back(surfel.normal);
+        {
+            Face f;
+            f.indices[0] = idx+5;
+            f.indices[1] = idx+1;
+            f.indices[2] = idx+2;
+            faces.push_back(f);
+        }
 
-      {
-        Face f;
-        f.indices[0] = idx+5;
-        f.indices[1] = idx+0;
-        f.indices[2] = idx+1;
-        faces.push_back(f);
-      }
+        {
+            Face f;
+            f.indices[0] = idx+4;
+            f.indices[1] = idx+5;
+            f.indices[2] = idx+2;
+            faces.push_back(f);
+        }
 
-      {
-        Face f;
-        f.indices[0] = idx+5;
-        f.indices[1] = idx+1;
-        f.indices[2] = idx+2;
-        faces.push_back(f);
-      }
+        {
+            Face f;
+            f.indices[0] = idx+4;
+            f.indices[1] = idx+2;
+            f.indices[2] = idx+3;
+            faces.push_back(f);
+        }
 
-      {
-        Face f;
-        f.indices[0] = idx+4;
-        f.indices[1] = idx+5;
-        f.indices[2] = idx+2;
-        faces.push_back(f);
-      }
-
-      {
-        Face f;
-        f.indices[0] = idx+4;
-        f.indices[1] = idx+2;
-        f.indices[2] = idx+3;
-        faces.push_back(f);
-      }
-
-      idx += 6;
+        idx += 6;
     }
 
     unsigned long end = ntk::Time::getMillisecondCounter();
-   // ntk_dbg_print((end-start) / 1000., 1);
-  }
+    // ntk_dbg_print((end-start) / 1000., 1);
+}
 
-  void generate_mesh_from_plane(Mesh& mesh, const ntk::Plane& plane,
-                                const Point3f& center, float plane_size)
+  void generate_mesh_from_plane(Mesh& mesh, const ntk::Plane& plane, const cv::Point3f& center, float plane_size)
   {
     Point3f line1[2] = { Point3f(center.x-plane_size, center.y-plane_size, center.z-plane_size),
                          Point3f(center.x-plane_size, center.y+plane_size, center.z-plane_size) };
@@ -430,23 +429,77 @@ namespace ntk
     mesh.vertices.push_back(plane_p4);
 
     {
-      Face f;
-      f.indices[0] = 0;
-      f.indices[1] = 1;
-      f.indices[2] = 2;
-      mesh.faces.push_back(f);
+        Face f;
+        f.indices[0] = 0;
+        f.indices[1] = 1;
+        f.indices[2] = 2;
+        mesh.faces.push_back(f);
     }
 
     {
-      Face f;
-      f.indices[0] = 2;
-      f.indices[1] = 1;
-      f.indices[2] = 3;
-      mesh.faces.push_back(f);
+        Face f;
+        f.indices[0] = 2;
+        f.indices[1] = 1;
+        f.indices[2] = 3;
+        mesh.faces.push_back(f);
     }
-  }
+}
 
-  void Mesh::addCube(const cv::Point3f& center, const cv::Point3f& sizes)
+  void generate_mesh_from_cube(Mesh& mesh, const ntk::Rect3f& cube)
+  {
+
+      const int links[12][3] = { {0, 1, 3},
+                                 {0, 3, 2},
+
+                                 {0, 5, 1},
+                                 {0, 4, 5},
+
+                                 {3, 1, 5},
+                                 {3, 5, 7},
+
+                                 {2, 3, 7},
+                                 {2, 7, 6},
+
+                                 {6, 5, 4},
+                                 {6, 7, 5},
+
+                                 {0, 2, 6},
+                                 {0, 6, 4} };
+
+      Point3f center(cube.x + cube.width/2.,cube.y + cube.height/2., cube.z + cube.depth/2.);
+
+      Point3f cube_points[8];
+      Point3f proj_cube_points[8];
+
+      const double xvals [] = {center.x-(cube.width/2), center.x+(cube.width/2)};
+      const double yvals [] = {center.y-(cube.height/2), center.y+(cube.height/2)};
+      const double zvals [] = {center.z-(cube.depth/2), center.z+(cube.depth/2)};
+
+      int first_vertex_index = mesh.vertices.size();
+      for (int i = 0; i < 2; ++i)
+      for (int j = 0; j < 2; ++j)
+      for (int k = 0; k < 2; ++k)
+      {
+        Point3f p(xvals[i], yvals[j], zvals[k]);
+        mesh.vertices.push_back(p);
+      }
+
+      for (int f = 0; f < 12; ++f)
+      {
+        Face face;
+        for (int i = 0; i < 3; ++i)
+        {
+          face.indices[i] = first_vertex_index + links[f][i];
+
+        }
+        mesh.faces.push_back(face);
+      }
+    }
+
+
+
+
+void Mesh::addCube(const cv::Point3f& center, const cv::Point3f& sizes, const cv::Vec3b& color)
   {
     const int links[12][3] = { {0, 1, 3},
                                {0, 3, 2},
@@ -466,6 +519,8 @@ namespace ntk
                                {0, 2, 6},
                                {0, 6, 4} };
 
+    const bool has_colors = hasColors();
+
     Point3f cube_points[8];
     Point3f proj_cube_points[8];
 
@@ -475,22 +530,24 @@ namespace ntk
 
     int first_vertex_index = vertices.size();
     for (int i = 0; i < 2; ++i)
-    for (int j = 0; j < 2; ++j)
-    for (int k = 0; k < 2; ++k)
-    {
-      Point3f p(xvals[i], yvals[j], zvals[k]);
-      vertices.push_back(p);
-    }
+        for (int j = 0; j < 2; ++j)
+            for (int k = 0; k < 2; ++k)
+            {
+                Point3f p(xvals[i], yvals[j], zvals[k]);
+                vertices.push_back(p);
+                if (has_colors)
+                    colors.push_back(color);
+            }
 
     for (int f = 0; f < 12; ++f)
     {
-      Face face;
-      for (int i = 0; i < 3; ++i)
-      {
-        face.indices[i] = first_vertex_index + links[f][i];
-      }
-      faces.push_back(face);
+        Face face;
+        for (int i = 0; i < 3; ++i)
+        {
+            face.indices[i] = first_vertex_index + links[f][i];
+        }
+        faces.push_back(face);
     }
-  }
+}
 
 } // end of ntk

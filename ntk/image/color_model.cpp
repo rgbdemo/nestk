@@ -45,7 +45,7 @@ void HSColorModel :: build(const cv::Mat3b& model_image, const cv::Mat1b& mask)
   m_histogram *= 1.0 / norm[0];
 }
 
-void HSColorModel :: show() const
+void HSColorModel :: show(cv::Mat3b& hist_img) const
 {
   ntk_assert(m_histogram.data, "Model was not build.");
   ntk_assert(m_histogram.dims == 2, "This is for 2d histograms");
@@ -57,7 +57,7 @@ void HSColorModel :: show() const
   double min_value = 0, max_value = 0;
   minMaxLoc(m_histogram, &min_value, &max_value, 0, 0 );
 
-  Mat3b hist_img (x_bins*scale,y_bins*scale);
+  hist_img.create(x_bins*scale,y_bins*scale);
   hist_img = Vec3b(0,0,0);
 
   for(int h = 0; h < x_bins; h++ )
@@ -73,9 +73,6 @@ void HSColorModel :: show() const
                 CV_FILLED );
     }
   }
-
-  namedWindow("H-S Histogram", 0 );
-  imshow("H-S Histogram", hist_img);
 }
 
 double HSColorModel :: likelihood(int h_value, int s_value) const

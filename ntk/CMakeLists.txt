@@ -148,6 +148,24 @@ IF(APPLE AND (CMAKE_OSX_ARCHITECTURES MATCHES "i386"))
     PROPERTIES COMPILE_FLAGS "-O0")
 ENDIF()
 
+## The stats module is not yet compatible with Microsoft compilers
+IF (CMAKE_COMPILER_IS_GNUCXX)
+  SET (ntk_sources ${ntk_sources}
+
+      stats/distributions.h
+      stats/distributions.cpp
+      stats/estimation.cpp
+      stats/estimation.h
+      stats/histogram.h
+      stats/histogram.cpp
+      stats/hypothesis_testing.cpp
+      stats/hypothesis_testing.h
+      stats/hypothesis_testing.hxx
+      stats/moments.h
+      stats/moments.cpp
+      stats/moments.hxx
+  )
+ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 
 SET (ntk_sources ${ntk_sources}
 

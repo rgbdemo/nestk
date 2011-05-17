@@ -82,6 +82,8 @@ public:
   {}
 
   void initialize(xn::Context& m_context, xn::DepthGenerator& depth_generator);
+  void shutDown();
+
   void update();
 
   void addListener(BodyEventListener* listener) { m_listeners.push_back(listener); }
