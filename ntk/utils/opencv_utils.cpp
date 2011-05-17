@@ -285,7 +285,7 @@ namespace ntk
   {
     ntk_throw_exception_if(sizeof(float) != 4, "Cannot use raw with sizeof(float) != 4");
     ntk_throw_exception_if(QSysInfo::ByteOrder != QSysInfo::LittleEndian, "Cannot use raw with big endian");
-    std::ifstream f (filename.c_str());
+    std::ifstream f (filename.c_str(), std::ios::binary);
     ntk_throw_exception_if(!f, "Could not open " + filename);
     qint32 rows = -1, cols = -1;
     f.read((char*)&rows, sizeof(qint32));
@@ -300,7 +300,7 @@ namespace ntk
   {
     ntk_throw_exception_if(sizeof(float) != 4, "Cannot use raw with sizeof(float) != 4");
     ntk_throw_exception_if(QSysInfo::ByteOrder != QSysInfo::LittleEndian, "Cannot use raw with big endian");
-    std::ofstream f (filename.c_str());
+    std::ofstream f (filename.c_str(), std::ios::binary);
     ntk_throw_exception_if(!f, "Could not open " + filename);
     qint32 rows = m.rows, cols = m.cols;
     f.write((char*)&rows, sizeof(qint32));

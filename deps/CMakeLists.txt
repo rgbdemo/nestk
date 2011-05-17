@@ -60,6 +60,20 @@ IF((NOT NESTK_USE_EXTERNAL_FREENECT AND NESTK_USE_FREENECT) OR NESTK_USE_OPENNI)
   FIND_PACKAGE(libusb-1.0 REQUIRED)
 ENDIF()
 
+## GLUT
+if(WIN32)
+  IF (NOT GLUT_INCLUDE_DIR)
+	IF (CMAKE_COMPILER_IS_GNUCXX)
+	  set(GLUT_INCLUDE_DIR "${nestk_deps_SOURCE_DIR}/win32/freeglut/include" CACHE FILEPATH "" FORCE)
+	  set(GLUT_glut_LIBRARY "${nestk_deps_SOURCE_DIR}/win32/freeglut/lib/libfreeglut.a" CACHE FILEPATH "" FORCE)
+	ELSE()
+	  set(GLUT_INCLUDE_DIR "${nestk_deps_SOURCE_DIR}/win32/glut-msvc" CACHE FILEPATH "" FORCE)
+	  set(GLUT_glut_LIBRARY "${nestk_deps_SOURCE_DIR}/win32/glut-msvc/glut32.lib" CACHE FILEPATH "" FORCE)
+	ENDIF()
+  ENDIF()
+  INCLUDE_DIRECTORIES(${GLUT_INCLUDE_DIR})
+endif()
+
 IF(NOT NESTK_USE_EXTERNAL_FREENECT AND NESTK_USE_FREENECT)
     ## PTHREADS
     if(WIN32)
@@ -76,20 +90,6 @@ IF(NOT NESTK_USE_EXTERNAL_FREENECT AND NESTK_USE_FREENECT)
     endif()
     ADD_SUBDIRECTORY(libfreenect)
 ENDIF()
-
-## GLUT
-if(WIN32)
-  IF (NOT GLUT_INCLUDE_DIR)
-	IF (CMAKE_COMPILER_IS_GNUCXX)
-	  set(GLUT_INCLUDE_DIR "${nestk_deps_SOURCE_DIR}/win32/freeglut/include" CACHE FILEPATH "" FORCE)
-	  set(GLUT_glut_LIBRARY "${nestk_deps_SOURCE_DIR}/win32/freeglut/lib/libfreeglut.a" CACHE FILEPATH "" FORCE)
-	ELSE()
-	  set(GLUT_INCLUDE_DIR "${nestk_deps_SOURCE_DIR}/win32/glut-msvc" CACHE FILEPATH "" FORCE)
-	  set(GLUT_glut_LIBRARY "${nestk_deps_SOURCE_DIR}/win32/glut-msvc/glut32.lib" CACHE FILEPATH "" FORCE)
-	ENDIF()
-  ENDIF()
-  INCLUDE_DIRECTORIES(${GLUT_INCLUDE_DIR})
-endif()
 
 OPTION(NESTK_USE_OPENNI "Build OpenNI drivers. support" ${NESTK_USE_OPENNI})
 
