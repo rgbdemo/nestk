@@ -108,10 +108,10 @@ void XN_CALLBACK_TYPE BodyEventDetectorWave_Waved(void* cxt)
 }
 
 // Steady detector
-void XN_CALLBACK_TYPE BodyEventDetectorSteady_Steady(XnFloat fVelocity, void* cxt)
+void XN_CALLBACK_TYPE BodyEventDetectorSteady_Steady(XnUInt32 uid, XnFloat fStdDev, void* cxt)
 {
   ntk::BodyEventDetector* detector = reinterpret_cast<ntk::BodyEventDetector*>(cxt);
-  BodyEvent event(BodyEvent::SteadyEvent, fVelocity, 0);
+  BodyEvent event(BodyEvent::SteadyEvent, fStdDev, 0);
   detector->sendEvent(event);
 }
 
@@ -172,10 +172,12 @@ void BodyEventDetector :: initialize(xn::Context& context, xn::DepthGenerator& d
   m_session_manager->AddListener(m_wave_detector);
 
   m_steady_detector = new XnVSteadyDetector;
-  m_steady_detector->RegisterSteady(this, &BodyEventDetectorSteady_Steady);
+  // FIXME: steady API changed. Needs to guards to select the right function.
+  // m_steady_detector->RegisterSteady(this, &BodyEventDetectorSteady_Steady);
   // FIXME: this should be accessible from Lua.
   m_steady_detector->SetDetectionDuration(1000);
-  m_steady_detector->SetMaximumVelocity(0.005);
+  // m_steady_detector->SetMaximumStdDevForSteady(0.01);
+  // obsolete with latest openni. m_steady_detector->SetMaximumVelocity(0.005);
   m_session_manager->AddListener(m_steady_detector);
 
   m_circle_detector = new XnVCircleDetector;

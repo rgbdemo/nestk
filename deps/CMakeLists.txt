@@ -16,44 +16,24 @@ INCLUDE( ${nestk_deps_SOURCE_DIR}/cmake/msvc.cmake )
 # With ROS, external dependencies are automatically found.
 IF(NOT NESTK_USE_ROS)
 
-  ################################################################################
-  ## OpenCV
-  IF (IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/opencv")
-    OPTION(NESTK_USE_EXTERNAL_OPENCV "Use external OpenCV" 0)
-  ELSE ()
-    OPTION(NESTK_USE_EXTERNAL_OPENCV "Use external OpenCV" 1)
-  ENDIF()
-  IF (NOT NESTK_USE_EXTERNAL_OPENCV)
-    ADD_SUBDIRECTORY ( opencv )
-  ENDIF(NOT NESTK_USE_EXTERNAL_OPENCV)
-
+## GLEW
+IF(NESTK_USE_EMBEDDED_GLEW)
   ## GLEW
   set(GLEW_INCLUDE_DIR "${nestk_deps_SOURCE_DIR}/glew/include" CACHE FILEPATH "" FORCE)
   set(GLEW_LIBRARIES "glew" CACHE FILEPATH "" FORCE)
   ADD_SUBDIRECTORY("${nestk_deps_SOURCE_DIR}/glew")
+ENDIF()
 
-  ################################################################################
-  # libfreeinect
-  ################################################################################
-  OPTION(NESTK_USE_EXTERNAL_FREENECT "Use external Freenect" 0)
-  OPTION(NESTK_USE_FREENECT "Build Freenect support"${NESTK_USE_FREENECT})
-
-  IF((NOT NESTK_USE_EXTERNAL_FREENECT AND NESTK_USE_FREENECT) OR NESTK_USE_OPENNI)
-    ## LIBUSB
-    IF (NOT LIBUSB_1_INCLUDE_DIR)
-      if(WIN32)
-	set(LIBUSB_1_INCLUDE_DIR "${nestk_deps_SOURCE_DIR}/win32/libusb-1.0/include" CACHE FILEPATH "" FORCE)
-	IF (CMAKE_COMPILER_IS_GNUCXX)
-	  set(LIBUSB_1_LIBRARY "${nestk_deps_SOURCE_DIR}/win32/libusb-1.0/lib/gcc/libusb.a" CACHE FILEPATH "" FORCE)
-	ELSE()
-	  set(LIBUSB_1_LIBRARY "${nestk_deps_SOURCE_DIR}/win32/libusb-1.0/lib/msvc/libusb.lib" CACHE FILEPATH "" FORCE)
-	ENDIF()
-      ELSEIF(APPLE)
-	IF (NOT LIBUSB_1_INCLUDE_DIR)
-	  set(LIBUSB_1_INCLUDE_DIR "${nestk_deps_SOURCE_DIR}/macosx/libusb-7da756e" CACHE FILEPATH "" FORCE)
-	  set(LIBUSB_1_LIBRARY "usb" CACHE FILEPATH "" FORCE)
-	  set(USE_EMBEDDED_LIBUSB 1 CACHE INTERNAL "")
-	ENDIF()
+## FREENECT and OPENNI deps
+IF((NESTK_USE_FREENECT AND NESTK_USE_EMBEDDED_FREENECT) OR (NESTK_USE_OPENNI AND NESTK_USE_EMBEDDED_OPENNI))
+  ## LIBUSB
+  IF (NOT LIBUSB_1_INCLUDE_DIR)
+    if(WIN32)
+      set(LIBUSB_1_INCLUDE_DIR "${nestk_deps_SOURCE_DIR}/win32/libusb-1.0/include" CACHE FILEPATH "" FORCE)
+      IF (CMAKE_COMPILER_IS_GNUCXX)
+        set(LIBUSB_1_LIBRARY "${nestk_deps_SOURCE_DIR}/win32/libusb-1.0/lib/gcc/libusb.a" CACHE FILEPATH "" FORCE)
+      ELSE()
+        set(LIBUSB_1_LIBRARY "${nestk_deps_SOURCE_DIR}/win32/libusb-1.0/lib/msvc/libusb.lib" CACHE FILEPATH "" FORCE)
       ENDIF()
     ENDIF()
     IF(APPLE AND USE_EMBEDDED_LIBUSB)
@@ -76,8 +56,9 @@ IF(NOT NESTK_USE_ROS)
     ENDIF()
     INCLUDE_DIRECTORIES(${GLUT_INCLUDE_DIR})
   endif()
+ENDIF()
 
-  IF(NOT NESTK_USE_EXTERNAL_FREENECT AND NESTK_USE_FREENECT)
+IF(NOT NESTK_USE_EXTERNAL_FREENECT AND NESTK_USE_FREENECT)
       ## PTHREADS
       if(WIN32)
 	IF (NOT THREADS_PTHREADS_INCLUDE_DIR)
@@ -92,57 +73,40 @@ IF(NOT NESTK_USE_ROS)
 	set(PTHREAD_LIBRARY pthread)
       endif()
       ADD_SUBDIRECTORY(libfreenect)
-  ENDIF()
+ENDIF()
 
-  OPTION(NESTK_USE_OPENNI "Build OpenNI drivers. support" ${NESTK_USE_OPENNI})
+## FREENECT
+IF(NESTK_USE_FREENECT AND NESTK_USE_EMBEDDED_FREENECT)
+    ## PTHREADS
+    if(WIN32)
+      IF (NOT THREADS_PTHREADS_INCLUDE_DIR)
+        set(THREADS_PTHREADS_INCLUDE_DIR "${nestk_deps_SOURCE_DIR}/win32/pthreads/include" CACHE FILEPATH "" FORCE)
+        set(THREADS_USE_PTHREADS_WIN32 true)
+        FIND_PACKAGE(Threads)
+        set(PTHREAD_LIBRARY ${CMAKE_THREAD_LIBS_INIT} CACHE FILEPATH "" FORCE)
+      ENDIF()
+      include_directories("${nestk_deps_SOURCE_DIR}/libfreenect/platform/windows")
+      include_directories("${nestk_deps_SOURCE_DIR}/libfreenect/platform/windows/libusb10emu")
+    else()
+      set(PTHREAD_LIBRARY pthread)
+    endif()
+    ADD_SUBDIRECTORY(libfreenect)
+ENDIF()
 
-  IF (NESTK_USE_OPENNI)
-    IF(WIN32)
-      SET(OPENNI_INCLUDE_DIR "c:/Program Files/OpenNI/Include" CACHE PATH "OpenNI Include directory")
-      SET(OPENNI_LIBRARY_DIR "c:/Program Files/OpenNI/Lib" CACHE PATH "OpenNI Library directory")
-      SET(NITE_INCLUDE_DIR "C:/Program Files/Prime Sense/NITE/Include" "C:/Program Files/PrimeSense/NITE/Include" CACHE PATH "Nite Include directory")
-      SET(NITE_LIBRARY_DIR "C:/Program Files/Prime Sense/NITE/Lib" "C:/Program Files/PrimeSense/NITE/Lib" CACHE PATH "Nite Library directory")
-      INCLUDE_DIRECTORIES(${OPENNI_INCLUDE_DIR} ${NITE_INCLUDE_DIR})
-      LINK_DIRECTORIES(${OPENNI_LIBRARY_DIR} ${NITE_LIBRARY_DIR})
-      SET(OPENNI_LIBRARY openNI Nite)
-    ELSE()
-      set(USB_INCLUDE_DIR ${LIBUSB_1_INCLUDE_DIR})
-      set(USB_LIBRARIES ${LIBUSB_1_LIBRARY})
-      IF(NOT NESTK_USE_EXTERNAL_OPENNI)
-	ADD_SUBDIRECTORY(openni)
-      ENDIF(NOT NESTK_USE_EXTERNAL_OPENNI)
-    ENDIF()
-  ENDIF()
+## OPENNI
+IF (NESTK_USE_OPENNI AND NESTK_USE_EMBEDDED_OPENNI AND NOT WIN32)
+    set(USB_INCLUDE_DIR ${LIBUSB_1_INCLUDE_DIR})
+    set(USB_LIBRARIES ${LIBUSB_1_LIBRARY})
+    ADD_SUBDIRECTORY(openni)
+ENDIF()
 
-  ################################################################################
-  # eigen
-  ################################################################################
-  #ADD_SUBDIRECTORY(eigen)
+## EIGEN
+IF (NESTK_USE_EMBEDDED_EIGEN)
   SET(eigen3_INCLUDE_DIRS ${nestk_deps_SOURCE_DIR}/eigen)
   SET(EIGEN_INCLUDE_DIR ${eigen3_INCLUDE_DIRS})
   INCLUDE_DIRECTORIES(${eigen3_INCLUDE_DIRS})
-
-  OPTION(NESTK_USE_PCL "Use PCL library." ${NESTK_USE_PCL})
-
-  IF (NESTK_USE_PCL)
-    ADD_SUBDIRECTORY(cminpack)
-    SET(CMINPACK_INCLUDE_DIR ${nestk_deps_SOURCE_DIR}/cminpack)
-    INCLUDE_DIRECTORIES(${CMINPACK_INCLUDE_DIR})
-    SET(CMINPACK_LIBRARY cminpack)
-
-    ADD_SUBDIRECTORY(flann)
-    SET(FLANN_INCLUDE_DIR ${nestk_deps_SOURCE_DIR}/flann/src/cpp/flann ${nestk_deps_SOURCE_DIR}/flann/src/cpp)
-    INCLUDE_DIRECTORIES(${FLANN_INCLUDE_DIR})
-    SET(FLANN_LIBRARY flann_cpp)
-
-    ADD_SUBDIRECTORY(qhull)
-    INCLUDE_DIRECTORIES(${nestk_deps_SOURCE_DIR}/qhull/src)
-
-    ADD_SUBDIRECTORY(pcl)
-    INCLUDE_DIRECTORIES(${nestk_deps_SOURCE_DIR}/pcl/include)
-    INCLUDE_DIRECTORIES(${nestk_deps_SOURCE_DIR}/pcl/src)
-    INCLUDE_DIRECTORIES(${nestk_deps_SOURCE_DIR}/pcl/include/roslib)
-  ENDIF(NESTK_USE_PCL)
+  ADD_SUBDIRECTORY(eigen)
+ENDIF()
 
 ENDIF(NOT NESTK_USE_ROS)
 

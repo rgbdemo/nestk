@@ -287,7 +287,8 @@ endif(EIGEN_BUILD_PKGCONFIG)
 
 add_subdirectory(Eigen)
 
-add_subdirectory(doc EXCLUDE_FROM_ALL)
+# Disabled by nestk.
+#add_subdirectory(doc EXCLUDE_FROM_ALL)
 
 add_custom_target(buildtests)
 add_custom_target(check COMMAND "ctest")
@@ -300,10 +301,11 @@ set(CMAKE_MAKE_PROGRAM_SAVE ${CMAKE_MAKE_PROGRAM})
 # and set a fake one
 set(CMAKE_MAKE_PROGRAM "@EIGEN_MAKECOMMAND_PLACEHOLDER@")
 
-include(CTest)
-enable_testing() # must be called from the root CMakeLists, see man page
-include(EigenTesting)
-ei_init_testing()
+# Disabled by nestk.
+#include(CTest)
+#enable_testing() # must be called from the root CMakeLists, see man page
+#include(EigenTesting)
+#ei_init_testing()
 
 # overwrite default DartConfiguration.tcl
 # The worarounds are different for each version of the MSVC IDE
@@ -318,7 +320,7 @@ else()
   set(EIGEN_MAKECOMMAND_PLACEHOLDER "${CMAKE_MAKE_PROGRAM_SAVE} buildtests")
 endif()
 
-configure_file(${CMAKE_BINARY_DIR}/DartConfiguration.tcl ${CMAKE_BINARY_DIR}/DartConfiguration.tcl)
+# configure_file(${CMAKE_BINARY_DIR}/DartConfiguration.tcl ${CMAKE_BINARY_DIR}/DartConfiguration.tcl)
 # restore default CMAKE_MAKE_PROGRAM
 set(CMAKE_MAKE_PROGRAM ${CMAKE_MAKE_PROGRAM_SAVE})
 # un-set temporary variables so that it is like they never existed. 
@@ -326,28 +328,30 @@ set(CMAKE_MAKE_PROGRAM ${CMAKE_MAKE_PROGRAM_SAVE})
 set(CMAKE_MAKE_PROGRAM_SAVE) 
 set(EIGEN_MAKECOMMAND_PLACEHOLDER)
 
-configure_file(${CMAKE_SOURCE_DIR}/CTestCustom.cmake.in ${CMAKE_BINARY_DIR}/CTestCustom.cmake)
+# Disabled by nestk.
+# configure_file(${CMAKE_SOURCE_DIR}/CTestCustom.cmake.in ${CMAKE_BINARY_DIR}/CTestCustom.cmake)
 
 
-if(EIGEN_LEAVE_TEST_IN_ALL_TARGET)
-  add_subdirectory(test) # can't do EXCLUDE_FROM_ALL here, breaks CTest
-else()
-  add_subdirectory(test EXCLUDE_FROM_ALL)
-endif()
+# Disabled by nestk.
+#if(EIGEN_LEAVE_TEST_IN_ALL_TARGET)
+#  add_subdirectory(test) # can't do EXCLUDE_FROM_ALL here, breaks CTest
+#else()
+#  add_subdirectory(test EXCLUDE_FROM_ALL)
+#endif()
 
-if(NOT MSVC)
-  if(EIGEN_LEAVE_TEST_IN_ALL_TARGET)
-    add_subdirectory(blas)
-    add_subdirectory(lapack)
-  else()
-    add_subdirectory(blas EXCLUDE_FROM_ALL)
-    add_subdirectory(lapack EXCLUDE_FROM_ALL)
-  endif()
-endif(NOT MSVC)
+#if(NOT MSVC)
+#  if(EIGEN_LEAVE_TEST_IN_ALL_TARGET)
+#    add_subdirectory(blas)
+#    add_subdirectory(lapack)
+#  else()
+#    add_subdirectory(blas EXCLUDE_FROM_ALL)
+#    add_subdirectory(lapack EXCLUDE_FROM_ALL)
+#  endif()
+#endif(NOT MSVC)
 
 add_subdirectory(unsupported)
 
-add_subdirectory(demos EXCLUDE_FROM_ALL)
+# add_subdirectory(demos EXCLUDE_FROM_ALL)
 
 # must be after test and unsupported, for configuring buildtests.in
 add_subdirectory(scripts EXCLUDE_FROM_ALL)
@@ -357,7 +361,7 @@ if(EIGEN_BUILD_BTL)
   add_subdirectory(bench/btl EXCLUDE_FROM_ALL)
 endif(EIGEN_BUILD_BTL)
 
-ei_testing_print_summary()
+# ei_testing_print_summary()
 
 message(STATUS "")
 message(STATUS "Configured Eigen ${EIGEN_VERSION_NUMBER}")

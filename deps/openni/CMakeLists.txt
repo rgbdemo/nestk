@@ -119,4 +119,7 @@ ELSEIF(UNIX)
                   WORKING_DIRECTORY ${EXECUTABLE_OUTPUT_PATH}/config)
 ENDIF()
 
-install(DIRECTORY ${EXECUTABLE_OUTPUT_PATH}/config DESTINATION bin/)
+foreach(dir . MacOSX Linux-x86 Linux-Arm Win32)
+  file(GLOB HEADERS "Include/${dir}/*.h")
+  INSTALL(FILES ${HEADERS} DESTINATION include/${dir})
+endforeach()
