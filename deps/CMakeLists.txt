@@ -58,23 +58,6 @@ IF((NESTK_USE_FREENECT AND NESTK_USE_EMBEDDED_FREENECT) OR (NESTK_USE_OPENNI AND
   endif()
 ENDIF()
 
-IF(NOT NESTK_USE_EXTERNAL_FREENECT AND NESTK_USE_FREENECT)
-      ## PTHREADS
-      if(WIN32)
-	IF (NOT THREADS_PTHREADS_INCLUDE_DIR)
-	  set(THREADS_PTHREADS_INCLUDE_DIR "${nestk_deps_SOURCE_DIR}/win32/pthreads/include" CACHE FILEPATH "" FORCE)
-	  set(THREADS_USE_PTHREADS_WIN32 true)
-	  FIND_PACKAGE(Threads)
-	  set(PTHREAD_LIBRARY ${CMAKE_THREAD_LIBS_INIT} CACHE FILEPATH "" FORCE)
-	ENDIF()
-	include_directories("${nestk_deps_SOURCE_DIR}/libfreenect/platform/windows")
-	include_directories("${nestk_deps_SOURCE_DIR}/libfreenect/platform/windows/libusb10emu")
-      else()
-	set(PTHREAD_LIBRARY pthread)
-      endif()
-      ADD_SUBDIRECTORY(libfreenect)
-ENDIF()
-
 ## FREENECT
 IF(NESTK_USE_FREENECT AND NESTK_USE_EMBEDDED_FREENECT)
     ## PTHREADS

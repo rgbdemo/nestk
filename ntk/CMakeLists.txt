@@ -46,6 +46,19 @@ IF (NESTK_USE_FREENECT)
        camera/kinect_grabber.cpp)
 ENDIF()
 
+SET(ntk_sources ${ntk_sources}
+     detection/plane_estimator.h
+     detection/plane_estimator.cpp
+   )
+
+IF (NESTK_USE_PCL)
+    SET (ntk_sources ${ntk_sources}
+         detection/table_object_detector.h
+         detection/table_object_detector.cpp
+         mesh/table_object_rgbd_modeler.h
+         mesh/table_object_rgbd_modeler.cpp
+    )
+ENDIF()
 
 SET (ntk_sources ${ntk_sources}
 
