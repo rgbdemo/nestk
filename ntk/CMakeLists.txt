@@ -219,6 +219,7 @@ SET (ntk_sources ${ntk_sources}
     mesh/mesh_viewer.cpp
   )
 
+
   QT4_WRAP_CPP(moc_sources
     gui/image_widget.h
     mesh/mesh_viewer.h

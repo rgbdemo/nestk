@@ -1,0 +1,113 @@
+/**
+ * This file is part of the nestk library.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * Author: Nicolas Burrus <nicolas.burrus@uc3m.es>, (C) 2010
+ */
+
+#ifndef NESTK_DETECTION_TABLE_OBJECT_DETECTOR_H
+#define NESTK_DETECTION_TABLE_OBJECT_DETECTOR_H
+
+#ifndef NESTK_USE_PCL
+# error PCL support must be enabled to include this file.
+#endif
+
+#include <ntk/core.h>
+
+#include <ntk/mesh/pcl_utils.h>
+#include <ntk/geometry/plane.h>
+
+#include "pcl/filters/voxel_grid.h"
+#include "pcl/filters/passthrough.h"
+#include "pcl/filters/extract_indices.h"
+#include "pcl/features/normal_3d.h"
+#include "pcl/kdtree/kdtree.h"
+#include "pcl/kdtree/kdtree_flann.h"
+#include "pcl/kdtree/organized_data.h"
+#include "pcl/sample_consensus/method_types.h"
+#include "pcl/sample_consensus/model_types.h"
+#include "pcl/segmentation/sac_segmentation.h"
+#include "pcl/filters/project_inliers.h"
+#include "pcl/surface/convex_hull.h"
+#include "pcl/segmentation/extract_polygonal_prism_data.h"
+#include "pcl/segmentation/extract_clusters.h"
+
+namespace ntk
+{
+
+// Note: this class is imported from PCL tutorial
+class TableObjectDetector
+{
+  typedef ntk::PointXYZIndex Point;
+  typedef pcl::KdTree<Point>::Ptr KdTreePtr;
+
+public:
+  TableObjectDetector ();
+
+  /*! Returns true if at least one object and plane are detected. */
+  bool detect(const pcl::PointCloud<Point>& cloud);
+
+  const ntk::Plane& plane() const { return m_plane; }
+  const std::vector <std::vector<cv::Point3f> >& objectClusters() const { return m_object_clusters; }
+
+private:
+  // PCL objects
+  KdTreePtr normals_tree_, clusters_tree_;
+  pcl::PassThrough<Point> pass_;
+  pcl::VoxelGrid<Point> grid_, grid_objects_;
+  pcl::NormalEstimation<Point, pcl::Normal> n3d_;
+  pcl::SACSegmentationFromNormals<Point, pcl::Normal> seg_;
+  pcl::ProjectInliers<Point> proj_;
+  pcl::ConvexHull<Point> hull_;
+  pcl::ExtractPolygonalPrismData<Point> prism_;
+  pcl::EuclideanClusterExtraction<Point> cluster_;
+
+  double downsample_leaf_, downsample_leaf_objects_;
+  int k_;
+  double min_z_bounds_, max_z_bounds_;
+  double sac_distance_threshold_;
+  double normal_distance_weight_;
+
+  // Min/Max height from the table plane object points will be considered from/to
+  double object_min_height_, object_max_height_;
+
+  // Object cluster tolerance and minimum cluster size
+  double object_cluster_tolerance_, object_cluster_min_size_;
+
+  // The raw, input point cloud data
+  pcl::PointCloud<Point>::ConstPtr cloud_;
+  // The filtered and downsampled point cloud data
+  pcl::PointCloud<Point>::ConstPtr cloud_filtered_, cloud_downsampled_;
+  // The resultant estimated point cloud normals for \a cloud_filtered_
+  pcl::PointCloud<pcl::Normal>::ConstPtr cloud_normals_;
+  // The vector of indices from cloud_filtered_ that represent the planar table component
+  pcl::PointIndices::ConstPtr table_inliers_;
+  // The model coefficients of the planar table component
+  pcl::ModelCoefficients::ConstPtr table_coefficients_;
+  // The set of point inliers projected on the planar table component from \a cloud_filtered_
+  pcl::PointCloud<Point>::ConstPtr table_projected_;
+  // The convex hull of \a table_projected_
+  pcl::PointCloud<Point>::ConstPtr table_hull_;
+  // The remaining of the \a cloud_filtered_ which lies inside the \a table_hull_ polygon
+  pcl::PointCloud<Point>::ConstPtr cloud_objects_, cloud_objects_downsampled_;
+
+  ntk::Plane m_plane;
+  std::vector< std::vector<cv::Point3f> > m_object_clusters;
+};
+
+
+} // ntk
+
+#endif // NESTK_DETECTION_TABLE_OBJECT_DETECTOR_H
