@@ -20,7 +20,7 @@
 #include "table_object_rgbd_modeler.h"
 #include <ntk/utils/opencv_utils.h>
 #include <ntk/geometry/pose_3d.h>
-#include <ntk/private/detection/plane_estimator.h>
+#include <ntk/detection/plane_estimator.h>
 #include <ntk/numeric/levenberg_marquart_minimizer.h>
 #include <ntk/utils/time.h>
 #include <ntk/image/color_model.h>
