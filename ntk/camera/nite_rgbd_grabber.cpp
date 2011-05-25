@@ -101,10 +101,12 @@ bool NiteRGBDGrabber :: connectToDevice()
     status = m_ni_context.FindExistingNode(XN_NODE_TYPE_DEPTH, m_ni_depth_generator);
     check_error(status, "Find depth generator");
 
-    status = m_ni_context.FindExistingNode(XN_NODE_TYPE_USER, m_ni_user_generator);
-    check_error(status, "Find user generator");
-    if (!m_track_users)
-        m_ni_user_generator.StopGenerating();
+    if (m_track_users)
+    {
+        status = m_ni_context.FindExistingNode(XN_NODE_TYPE_USER, m_ni_user_generator);
+        check_error(status, "Find user generator");
+        // m_ni_user_generator.StopGenerating();
+    }
 
     status = m_ni_context.FindExistingNode(XN_NODE_TYPE_IMAGE, m_ni_rgb_generator);
     check_error(status, "Find image generator");

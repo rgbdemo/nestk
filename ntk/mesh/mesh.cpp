@@ -340,11 +340,13 @@ void Mesh :: buildFromSurfels(const std::vector<Surfel>& surfels, int min_views)
         if (surfels[i].n_views < min_views)
             continue;
 
+#if 1
         // FIXME: temp
         vertices.push_back(surfels[i].location);
         colors.push_back(surfels[i].color);
         normals.push_back(surfels[i].normal);
         continue;
+#endif
 
         const Surfel& surfel = surfels[i];
         Vec3f v1, v2;
