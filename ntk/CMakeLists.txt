@@ -153,6 +153,13 @@ SET (ntk_sources ${ntk_sources}
      numeric/differential_evolution_minimizer.cpp
     )
 
+IF (NESTK_USE_ROS)
+  SET (ntk_sources ${ntk_sources}
+     ros/ros_rgbd_grabber.h
+     ros/ros_rgbd_grabber.cpp
+  )
+ENDIF(NESTK_USE_ROS)
+
 # Workaround a bug with i386 on Mac that cannot compile this particular
 # file, error is:
 # non-relocatable subtraction expression, "LC36" minus "L00000000103$pb"

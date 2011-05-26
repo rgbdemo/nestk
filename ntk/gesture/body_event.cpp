@@ -171,14 +171,15 @@ void BodyEventDetector :: initialize(xn::Context& context, xn::DepthGenerator& d
   m_wave_detector->RegisterWave(this, &BodyEventDetectorWave_Waved);
   m_session_manager->AddListener(m_wave_detector);
 
-  m_steady_detector = new XnVSteadyDetector;
+  // FIXME: does not work with ROS.
+  // m_steady_detector = new XnVSteadyDetector;
   // FIXME: steady API changed. Needs to guards to select the right function.
   // m_steady_detector->RegisterSteady(this, &BodyEventDetectorSteady_Steady);
   // FIXME: this should be accessible from Lua.
-  m_steady_detector->SetDetectionDuration(1000);
+  // m_steady_detector->SetDetectionDuration(1000);
   // m_steady_detector->SetMaximumStdDevForSteady(0.01);
   // obsolete with latest openni. m_steady_detector->SetMaximumVelocity(0.005);
-  m_session_manager->AddListener(m_steady_detector);
+  // m_session_manager->AddListener(m_steady_detector);
 
   m_circle_detector = new XnVCircleDetector;
   m_circle_detector->RegisterCircle(this, &BodyEventDetectorCircle_Circle);

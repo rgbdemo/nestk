@@ -19,6 +19,13 @@ ENDIF()
 ### Find dependencies
 ################################################################################
 # Look for external dependencies
-INCLUDE(${nestk_SOURCE_DIR}/cmake/find_nestk_deps.cmake)
-# Load parameters for embedded dependencies
-INCLUDE(${nestk_deps_BINARY_DIR}/cmake/UseNestkDeps.cmake)
+IF (NOT NESTK_USE_ROS)
+  INCLUDE(${nestk_SOURCE_DIR}/cmake/find_nestk_deps.cmake)
+  # Load parameters for embedded dependencies
+  INCLUDE(${nestk_deps_BINARY_DIR}/cmake/UseNestkDeps.cmake)
+ENDIF()
+
+IF (NESTK_USE_ROS)
+  INCLUDE(${nestk_deps_BINARY_DIR}/cmake/UseNestkDepsROS.cmake)
+  INCLUDE_DIRECTORIES(${nestk_SOURCE_DIR})
+ENDIF()
