@@ -126,6 +126,8 @@ namespace ntk
 
         topic = m_nh.resolveName("rgb_in");
         m_rgb_sub = m_image_transport.subscribe(topic, 1, &RosRGBDGrabber::rgbCallBack, this, transport);
+
+	return false;
     }
 
     void RosRGBDGrabber :: run()
