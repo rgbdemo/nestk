@@ -267,9 +267,9 @@ SET_TARGET_PROPERTIES(nestk PROPERTIES
 
 # FIXME: on Mac, the dylib rpath points to current directory.
 if(APPLE)
-    add_custom_command(TARGET nestk POST_BUILD
-        COMMAND cp ${LIBRARY_OUTPUT_PATH}/*.dylib ${EXECUTABLE_OUTPUT_PATH}/
-    )
+add_custom_command(TARGET nestk POST_BUILD
+COMMAND cp ${LIBRARY_OUTPUT_PATH}/*.dylib ${EXECUTABLE_OUTPUT_PATH}/
+)
 endif()
 
 INSTALL(TARGETS nestk DESTINATION lib)
