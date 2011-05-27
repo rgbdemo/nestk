@@ -57,6 +57,8 @@ IF (NESTK_USE_PCL)
          detection/table_object_detector.cpp
          mesh/table_object_rgbd_modeler.h
          mesh/table_object_rgbd_modeler.cpp
+	 mesh/pcl_utils.h
+         mesh/pcl_utils.cpp
     )
 ENDIF()
 
@@ -130,8 +132,6 @@ SET (ntk_sources ${ntk_sources}
      mesh/mesh_generator.cpp
      mesh/mesh_renderer.h
      mesh/mesh_renderer.cpp
-     mesh/pcl_utils.h
-     mesh/pcl_utils.cpp
      mesh/rgbd_modeler.h
      mesh/rgbd_modeler.cpp
      mesh/surfels_rgbd_modeler.h
@@ -266,7 +266,7 @@ SET_TARGET_PROPERTIES(nestk PROPERTIES
 )
 
 # FIXME: on Mac, the dylib rpath points to current directory.
-if(APPLE)
+if(APPLE AND NOT "${EXECUTABLE_OUTPUT_PATH}" STREQUAL "" AND NOT "${LIBRARY_OUTPUT_PATH}" STREQUAL "")
     add_custom_command(TARGET nestk POST_BUILD
         COMMAND cp ${LIBRARY_OUTPUT_PATH}/*.dylib ${EXECUTABLE_OUTPUT_PATH}/
     )
