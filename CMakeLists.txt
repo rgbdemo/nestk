@@ -15,7 +15,7 @@ SET(NESTK_ROOT_DIRS_HINTS ${NESTK_DEPS_DIR} ${NESTK_ROOT_DIRS_HINTS} ${CMAKE_INS
                           /usr/local/nestk /opt/nestk /usr/local /opt)
 
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${nestk_SOURCE_DIR}/cmake)
-INCLUDE(${nestk_SOURCE_DIR}/deps/cmake/utils.cmake)
+INCLUDE("${nestk_SOURCE_DIR}/deps/cmake/utils.cmake")
 
 IF (NOT EXECUTABLE_OUTPUT_PATH)
   SET(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
@@ -58,14 +58,14 @@ ADD_SUBDIRECTORY(deps)
 ### Load default flags
 ################################################################################
 CONFIGURE_FILE(UseEmbeddedNestk.cmake.in
-               ${nestk_BINARY_DIR}/UseEmbeddedNestk.cmake @ONLY)
-INCLUDE(${nestk_BINARY_DIR}/UseEmbeddedNestk.cmake)
+               "${nestk_BINARY_DIR}/UseEmbeddedNestk.cmake" @ONLY)
+INCLUDE("${nestk_BINARY_DIR}/UseEmbeddedNestk.cmake")
 
 ################################################################################
 ### nestk
 ################################################################################
-INCLUDE_DIRECTORIES(${nestk_SOURCE_DIR})
-INCLUDE_DIRECTORIES(${nestk_BINARY_DIR})
+INCLUDE_DIRECTORIES("${nestk_SOURCE_DIR}")
+INCLUDE_DIRECTORIES("${nestk_BINARY_DIR}")
 ADD_SUBDIRECTORY( ntk )
 
 ################################################################################
@@ -86,6 +86,6 @@ CONFIGURE_FILE(UseNestk.cmake.in
 FILE(GLOB CMAKE_FILES "cmake/*.cmake")
 
 INSTALL(FILES
-            ${nestk_BINARY_DIR}/UseNestk.cmake
+            "${nestk_BINARY_DIR}/UseNestk.cmake"
             ${CMAKE_FILES}
         DESTINATION share/cmake)
