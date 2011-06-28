@@ -1706,7 +1706,7 @@ XN_C_API const XnChar* xnGetNodeName(XnNodeHandle hNode)
 	return hNode->pNodeInfo->strInstanceName;
 }
 
-XN_C_API const XnBool xnIsTypeGenerator(XnProductionNodeType type)
+XN_C_API XnBool xnIsTypeGenerator(XnProductionNodeType type)
 {
 	switch (type)
 	{

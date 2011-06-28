@@ -36,7 +36,7 @@
 //---------------------------------------------------------------------------
 // Includes
 //---------------------------------------------------------------------------
-#include <XnTypes.h>
+#include "XnTypes.h"
 
 //---------------------------------------------------------------------------
 // Functions
@@ -81,7 +81,7 @@ XN_C_API XnStatus xnProductionNodeTypeFromString(const XnChar* strType, XnProduc
  *
  * @param	type	[in]	The type to check
  */
-XN_C_API const XnBool xnIsTypeGenerator(XnProductionNodeType type);
+XN_C_API XnBool xnIsTypeGenerator(XnProductionNodeType type);
 
 /// @}
 

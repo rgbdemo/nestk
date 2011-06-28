@@ -204,14 +204,15 @@ namespace xn
 			return (XN_STATUS_OK);
 		}
 
-	protected:
-		XnUInt8* m_pAllocatedData;
-
 	private:
 		XnOutputMetaData m_output;
 
 		const XnUInt8** m_ppData;
 		XnUInt32 m_nAllocatedSize;
+
+	protected:
+		XnUInt8* m_pAllocatedData;
+
 	};
 
 	/**
@@ -4099,8 +4100,8 @@ namespace xn
 		inline XnEnumerationErrors* GetUnderlying() { return m_pErrors; }
 
 	private:
-		XnEnumerationErrors* m_pErrors;
 		XnBool m_bAllocated;
+		XnEnumerationErrors* m_pErrors;
 	};
 
 	//---------------------------------------------------------------------------
