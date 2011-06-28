@@ -19,6 +19,7 @@ INCLUDE("${nestk_SOURCE_DIR}/deps/cmake/utils.cmake")
 
 IF (NOT EXECUTABLE_OUTPUT_PATH)
   SET(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
+  SET(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/lib)
 ENDIF()
 
 ## Default build mode is RelWithDebInfo

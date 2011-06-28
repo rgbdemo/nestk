@@ -1,5 +1,5 @@
 ENABLE_TESTING()
-ADD_CUSTOM_TARGET(check command ctest)
+ADD_CUSTOM_TARGET(check_nestk command ctest)
 
 MACRO(NEW_TEST name use_win32)
 IF (WIN32 AND ${use_win32})
