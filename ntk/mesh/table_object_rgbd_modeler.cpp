@@ -35,20 +35,106 @@ using namespace pcl;
 namespace ntk
 {
 
-void TableObjectRGBDModeler :: initialize(const cv::Point3f& sizes,
-                                          const cv::Point3f& offsets,
-                                          float resolution,
-                                          float depth_margin)
+struct TableObjectRGBDModeler :: CurrentImageData
 {
-    m_resolution = resolution;
-    m_depth_margin = depth_margin;
+    // Current image being processed.
+    const RGBDImage* image;
+
+    // Corresponding PCL point cloud.
+    PointCloud<PointXYZIndex> cloud;
+
+    // Pose3D in depth camera frame.
+    Pose3D depth_pose;
+
+    // Pose3D in rgb camera frame.
+    Pose3D rgb_pose;
+
+    // Image after depth painting.
+    RGBDImage painted_image;
+
+    // Temporary images of the area to be painted.
+    cv::Mat1b object_img;
+    cv::Mat1f object_depth;
+    cv::Mat3b object_color;
+
+    // Raw points of cluster of interest.
+    const std::vector<Point3f>* object_points;
+
+    // 2D region of interest around the object.
+    cv::Rect roi;
+
+    // 3D region of interest around the object.
+    Rect3f roi_3d;
+};
+
+void TableObjectRGBDModeler :: initialize(const cv::Point3f& sizes,
+                                          const cv::Point3f& offsets)
+{
+    m_table_object_detector.setObjectVoxelSize(m_resolution);
+
+    ntk_dbg_print(m_resolution, 1);
     m_offsets = offsets;
     m_sizes = sizes;
     const int c_sizes[3] = {sizes.z/m_resolution, sizes.y/m_resolution, sizes.x/m_resolution};
     m_voxels.create(3, c_sizes);       
-    for_all_drc(m_voxels) m_voxels(d,r,c) = Unknown;
+    for_all_drc(m_voxels) m_voxels(d,r,c) = UnknownVoxel;
     m_voxels_color.create(3, c_sizes);
     m_voxels_color = Vec3b(255,255,255);
+}
+
+bool TableObjectRGBDModeler :: addNewView(const RGBDImage& image, Pose3D& depth_pose)
+{
+    image.copyTo(m_last_image);
+
+    CurrentImageData data;
+    data.image = &image;
+    data.depth_pose = depth_pose;
+    data.rgb_pose = depth_pose;
+    data.rgb_pose.toRightCamera(image.calibration()->rgb_intrinsics,
+                                image.calibration()->R, image.calibration()->T);
+
+    ntk::TimeCount tc("addNewView");
+
+    PointCloud<PointXYZIndex>& cloud = data.cloud;
+    rgbdImageToPointCloud(cloud, image, depth_pose);
+    tc.elapsedMsecs("toPointCloud");
+
+    bool ok = buildVoxelsFromNewView(data);
+    if (!ok)
+        return false;
+    tc.elapsedMsecs(" -- first Build from Voxels");
+
+    if (m_depth_filling)
+    {
+        fillDepthImage(data);
+        rgbdImageToPointCloud(cloud, data.painted_image);
+        data.image = &data.painted_image;
+        buildVoxelsFromNewView(data);
+    }
+
+    tc.elapsedMsecs(" -- Depth Filling");
+
+    if (m_remove_small_structures)
+    {
+        morphologicalClose();
+        rankOpenFilter(2);
+        // openVolume();
+    }
+
+    tc.elapsedMsecs(" -- Remove small structures");
+
+    computeMesh();
+    computeSurfaceMesh();
+    tc.stop("mesh computed");
+    return true;
+}
+
+void TableObjectRGBDModeler :: reset()
+{
+    for_all_drc(m_voxels)
+        m_voxels(d,r,c) = UnknownVoxel;
+    RGBDModeler::reset();
+    m_first_view = true;
 }
 
 void TableObjectRGBDModeler :: computeMesh()
@@ -58,7 +144,7 @@ void TableObjectRGBDModeler :: computeMesh()
     // First pass fill up
     for_all_drc(m_voxels)
     {
-        if (m_voxels(d,r,c) != Object)
+        if (m_voxels(d,r,c) != ObjectVoxel)
             continue;
 
         Vec3b color = m_voxels_color(d,r,c);
@@ -81,7 +167,7 @@ void TableObjectRGBDModeler :: computeSurfaceMesh()
     m_mesh.clear();
     for_all_drc(m_voxels)
     {
-        if (m_voxels(d,r,c) != Object)
+        if (m_voxels(d,r,c) != ObjectVoxel)
             continue;
 
         bool is_edge = false;
@@ -89,7 +175,7 @@ void TableObjectRGBDModeler :: computeSurfaceMesh()
             for (int dr=-1; !is_edge && dr<=1; ++dr)
                 for (int dc=-1; !is_edge && dc<=1; ++dc)
                 {
-                    if (m_voxels(d+dd,r+dr,c+dc) != Object)
+                    if (m_voxels(d+dd,r+dr,c+dc) != ObjectVoxel)
                         is_edge = true;
                 }
         if (!is_edge)
@@ -142,12 +228,12 @@ Point3f TableObjectRGBDModeler :: toRealWorld(const Point3f& p) const
                    p.z*m_resolution + (m_resolution/2.0) + m_offsets.z);
 }
 
-void TableObjectRGBDModeler :: closeVolume()
+void TableObjectRGBDModeler :: morphologicalClose()
 {
     cv::Mat1b tmp; m_voxels.copyTo(tmp);
     for_all_drc(m_voxels)
     {
-        if (m_voxels(d, r, c) != Object)
+        if (m_voxels(d, r, c) != ObjectVoxel)
             continue;
 
         for (int dd = -1; dd <= 1; ++dd)
@@ -156,13 +242,13 @@ void TableObjectRGBDModeler :: closeVolume()
         {
             if (!is_zyx_in_range(m_voxels, d+dd,r+dr,c+dc))
                 continue;
-            tmp(d+dd, r+dr, c+dc) = Object;
+            tmp(d+dd, r+dr, c+dc) = ObjectVoxel;
         }
     }
 
     for_all_drc(tmp)
     {
-        if (tmp(d,r,c) != Object)
+        if (tmp(d,r,c) != ObjectVoxel)
             continue;
 
         bool enabled = true;
@@ -172,23 +258,23 @@ void TableObjectRGBDModeler :: closeVolume()
         {
             if (!is_zyx_in_range(tmp, d+dd,r+dr,c+dc))
                 continue;
-            if (tmp(d+dd, r+dr, c+dc) != Object)
+            if (tmp(d+dd, r+dr, c+dc) != ObjectVoxel)
                 enabled = false;
         }
         if (!enabled)
-            m_voxels(d,r,c) = Unknown;
+            m_voxels(d,r,c) = UnknownVoxel;
         else
-            m_voxels(d,r,c) = Object;
+            m_voxels(d,r,c) = ObjectVoxel;
     }
 }
 
-void TableObjectRGBDModeler :: openVolume()
+void TableObjectRGBDModeler :: morphologicalOpen()
 {
     cv::Mat1b tmp; m_voxels.copyTo(tmp);
 
     for_all_drc(m_voxels)
     {
-        if (m_voxels(d,r,c) != Object)
+        if (m_voxels(d,r,c) != ObjectVoxel)
             continue;
 
         bool enabled = true;
@@ -198,20 +284,20 @@ void TableObjectRGBDModeler :: openVolume()
         {
             if (!is_zyx_in_range(m_voxels, d+dd,r+dr,c+dc)) continue;
 
-            if (m_voxels(d+dd, r+dr, c+dc) != Object)
+            if (m_voxels(d+dd, r+dr, c+dc) != ObjectVoxel)
                 enabled = false;
         }
         if (!enabled)
-            tmp(d,r,c) = Unknown;
+            tmp(d,r,c) = UnknownVoxel;
         else
-            tmp(d,r,c) = Object;
+            tmp(d,r,c) = ObjectVoxel;
     }
 
-    m_voxels = Unknown;
+    m_voxels = UnknownVoxel;
 
     for_all_drc(tmp)
     {
-        if (tmp(d, r, c) != Object)
+        if (tmp(d, r, c) != ObjectVoxel)
             continue;
 
         for (int dd = -1; dd <= 1; ++dd)
@@ -220,7 +306,7 @@ void TableObjectRGBDModeler :: openVolume()
         {
             if (!is_zyx_in_range(m_voxels, d+dd,r+dr,c+dc))
                 continue;
-            m_voxels(d+dd, r+dr, c+dc) = Object;
+            m_voxels(d+dd, r+dr, c+dc) = ObjectVoxel;
         }
     }
 }
@@ -231,7 +317,7 @@ void TableObjectRGBDModeler :: rankOpenFilter(int rank)
 
     for_all_drc(m_voxels)
     {
-        if (m_voxels(d,r,c) != Object)
+        if (m_voxels(d,r,c) != ObjectVoxel)
             continue;
 
         bool enabled = true;
@@ -242,33 +328,24 @@ void TableObjectRGBDModeler :: rankOpenFilter(int rank)
         {
             if (!is_zyx_in_range(m_voxels, d+dd,r+dr,c+dc)) continue;
 
-            if (m_voxels(d+dd, r+dr, c+dc) == Object)
+            if (m_voxels(d+dd, r+dr, c+dc) == ObjectVoxel)
                 ++nb_neighb;
         }
         if (nb_neighb < rank)
-            tmp(d,r,c) = Unknown;
+            tmp(d,r,c) = UnknownVoxel;
         else
-            tmp(d,r,c) = Object;
+            tmp(d,r,c) = ObjectVoxel;
     }
 
     m_voxels = tmp;
 }
 
-bool TableObjectRGBDModeler :: buildVoxelsFromNewView(const pcl::PointCloud<PointXYZIndex>& cloud,
-                                                      const RGBDImage& image,
-                                                      const Pose3D& depth_pose)
+int TableObjectRGBDModeler :: selectClusterOfInterest()
 {
-    // object must be closer than 2 cm from the plane.
+    // Look for the most central cluster which is not flying.
+
+    // Closest object points must be at less than 2 cm from the plane.
     const float max_dist_to_plane_threshold = 0.02;
-
-    bool ok = m_table_object_detector.detect(cloud);
-    if (!ok)
-        return false;
-
-    if (m_table_object_detector.objectClusters().size() < 1)
-        return false;
-
-    m_support_plane = m_table_object_detector.plane();
 
     int selected_object = -1;
     float min_x = FLT_MAX;
@@ -285,35 +362,23 @@ bool TableObjectRGBDModeler :: buildVoxelsFromNewView(const pcl::PointCloud<Poin
         if (min_dist_to_plane > max_dist_to_plane_threshold)
             continue;
 
-        ntk::Rect3f bbox = bounding_box(object_points);        
+        ntk::Rect3f bbox = bounding_box(object_points);
         if (std::abs(bbox.centroid().x) < min_x)
         {
             min_x = std::abs(bbox.centroid().x);
             selected_object = i;
         }
     }
+    return selected_object;
+}
 
-    if (selected_object < 0)
-        return false;
-
-    const std::vector<Point3f>& object_points = m_table_object_detector.objectClusters()[selected_object];
-    // FIXME: only one view supported right now.
-    m_first_view = true;
-    if (m_first_view)
-    {
-        ntk::Rect3f bbox = bounding_box(object_points);
-        m_mesh.addCube(bbox.centroid(), Point3f(bbox.width, bbox.height, bbox.depth));
-
-        ntk_dbg_print(bbox.centroid(), 1);
-
-        Point3f working_zone = Point3f(0.5,0.5,0.5);
-        initialize(working_zone, bbox.centroid()-0.5f*working_zone, 0.003 /*res*/, 0.000);
-    }
-
-    Pose3D rgb_pose = depth_pose;
-    rgb_pose.toRightCamera(image.calibration()->rgb_intrinsics,
-                           image.calibration()->R, image.calibration()->T);
-    const Mat1f& depth_im = image.depth();
+// Fill unknown voxels with given points, along with all voxels lying in the line between
+// the observed voxel and the plane to fill the back face.
+void TableObjectRGBDModeler :: fillGridWithNewPoints(CurrentImageData& d)
+{
+    const RGBDImage& image = *(d.image);
+    const std::vector<Point3f>& object_points = *(d.object_points);
+    const Pose3D& rgb_pose = d.rgb_pose;
 
     // Minimum for object points is 3mm from the plane.
     const float min_plane_dist = 0.003;
@@ -324,8 +389,14 @@ bool TableObjectRGBDModeler :: buildVoxelsFromNewView(const pcl::PointCloud<Poin
         Point3f crd = toGridWorld(pobj);
         if (!is_zyx_in_range(m_voxels, crd.z, crd.y, crd.x))
             continue;
-        if (m_voxels(crd.z, crd.y, crd.x) == Object)
+
+        if (m_voxels(crd.z, crd.y, crd.x) == ObjectVoxel)
             continue;
+
+        // Mark the voxel.
+        m_voxels(crd.z, crd.y, crd.x) = ObjectVoxel;
+
+        // Fill voxels lying on the line towards the plane (extrusion).
         Point3f pplane = m_support_plane.intersectionWithLine(pobj, Vec3f(pobj)+m_support_plane.normal());
         pplane = pplane - Point3f(m_support_plane.normal()*min_plane_dist);
         Point3f v = pplane-pobj;
@@ -342,41 +413,27 @@ bool TableObjectRGBDModeler :: buildVoxelsFromNewView(const pcl::PointCloud<Poin
             Point3f crd = toGridWorld(p);
             if (!is_zyx_in_range(m_voxels, crd.z, crd.y, crd.x))
                 continue;
-            if (m_voxels(crd.z, crd.y, crd.x) != Background)
+            if (m_voxels(crd.z, crd.y, crd.x) == UnknownVoxel)
             {
-                m_voxels(crd.z, crd.y, crd.x) = Object;
+                m_voxels(crd.z, crd.y, crd.x) = ObjectVoxel;
                 m_voxels_color(crd.z, crd.y, crd.x) = bgr_to_rgb(color);
             }
         }
-    }   
-
-    // Second loop to apply to true color on originally detected points.
-    foreach_idx(i, object_points)
-    {
-        Point3f pobj = object_points[i];
-
-        Point3f rgb_p = rgb_pose.projectToImage(pobj);
-        Vec3b color (255,255,255);
-        if (!is_yx_in_range(image.rgb(), rgb_p.y, rgb_p.x))
-            continue;
-
-        color = image.rgb()(rgb_p.y, rgb_p.x);
-
-        Point3f crd = toGridWorld(pobj);
-        if (!is_zyx_in_range(m_voxels, crd.z, crd.y, crd.x))
-            continue;
-
-        m_voxels(crd.z, crd.y, crd.x) = Object;
-        m_voxels_color(crd.z, crd.y, crd.x) = bgr_to_rgb(color);
     }
+}
 
-    closeVolume();
-    // openVolume();
+void TableObjectRGBDModeler :: removeInconsistentObjectVoxels(CurrentImageData& d)
+{
+    const RGBDImage& image = *(d.image);
+    const Pose3D& depth_pose = d.depth_pose;
 
-    // Remove background voxels.
+    const float depth_margin = 0.001; // 1 mm
+    const Mat1f& depth_im = image.depth();
+
+    // Remove voxels object that project onto the background.
     for_all_drc(m_voxels)
     {
-        if (m_voxels(d, r, c) != Object)
+        if (!isOrMaybeIsObject((VoxelLabel)m_voxels(d, r, c)))
             continue;
 
         cv::Point3f p3d = toRealWorld(Point3f(c,r,d));
@@ -385,32 +442,65 @@ bool TableObjectRGBDModeler :: buildVoxelsFromNewView(const pcl::PointCloud<Poin
         if (!is_yx_in_range(depth_im, p.y, p.x))
             continue;
 
-        // No valid depth measurement.
-        if (depth_im(p.y, p.x) < 1e-5)
-            m_voxels(d,r,c) = Unknown;
-
         // Depth value is further than voxel, eliminate voxel.
-        if (depth_im(p.y, p.x) > p.z)
+        if (depth_im(p.y, p.x) > (p.z + depth_margin))
         {
-            m_voxels(d,r,c) = Background;
+            m_voxels(d,r,c) = BackgroundVoxel;
         }
     }
+}
+
+bool TableObjectRGBDModeler :: buildVoxelsFromNewView(CurrentImageData& d)
+{
+    const RGBDImage& image = *(d.image);
+    const Pose3D& depth_pose = d.depth_pose;
+    const Pose3D& rgb_pose = d.rgb_pose;
+    const pcl::PointCloud<PointXYZIndex>& cloud = d.cloud;
+
+    bool ok = m_table_object_detector.detect(cloud);
+    if (!ok)
+        return false;
+
+    if (m_table_object_detector.objectClusters().size() < 1)
+        return false;
+
+    m_support_plane = m_table_object_detector.plane();
+
+    int selected_object = selectClusterOfInterest();
+    if (selected_object < 0)
+        return false;
+
+    d.object_points = &(m_table_object_detector.objectClusters()[selected_object]);
+    // FIXME: only one view supported right now.
+    m_first_view = true;
+    if (m_first_view)
+    {
+        // Initialize voxel gris for the working zone.
+        ntk::Rect3f bbox = bounding_box(*d.object_points);
+        Point3f working_zone = Point3f(0.5,0.5,0.5); // zone is 50x50x50cm centered of cluster center.
+        initialize(working_zone, bbox.centroid()-0.5f*working_zone);
+    }
+
+    fillGridWithNewPoints(d);
+    morphologicalClose();
+    removeInconsistentObjectVoxels(d);
     return true;
 }
 
-void TableObjectRGBDModeler :: fillDepthImage(RGBDImage& painted_image,
-                                              const RGBDImage& image,
-                                              const Pose3D& depth_pose)
+void TableObjectRGBDModeler :: computeImageROI(CurrentImageData& data)
 {
-    image.copyTo(painted_image);
-    Mat1f& depth_im = painted_image.depthRef();
+    const RGBDImage& image = *(data.image);
+    RGBDImage& painted_image = data.painted_image;
+    const Pose3D& depth_pose = data.depth_pose;
+    const Mat1f& depth_im = painted_image.depth();
     Mat1b& depth_mask = painted_image.depthMaskRef();
 
-    // FIXME: this is overkill to determine the bounding box!
+    // Determine the bounding box in the image plane.
+    // FIXME: this is overkill!
     std::vector<cv::Point3f> object_pixels;
     for_all_drc(m_voxels)
     {
-        if (m_voxels(d, r, c) != Object)
+        if (m_voxels(d, r, c) != ObjectVoxel)
             continue;
 
         cv::Point3f p3d = toRealWorld(Point3f(c,r,d));
@@ -427,6 +517,7 @@ void TableObjectRGBDModeler :: fillDepthImage(RGBDImage& painted_image,
     }
 
     Rect3f bbox = bounding_box(object_pixels);
+    // Add half of the bbox size as a margin around the object.
     int border_x = bbox.width * 0.5;
     int border_y = bbox.height * 0.5;
     bbox.x -= border_x/2;
@@ -435,15 +526,22 @@ void TableObjectRGBDModeler :: fillDepthImage(RGBDImage& painted_image,
     bbox.height += border_y;
     Rect r(bbox.x, bbox.y, bbox.width, bbox.height);
     r = r & Rect(0,0,depth_im.cols, depth_im.rows);
+    data.roi_3d = bbox;
+    data.roi = r;
+}
 
-    Mat1b object_img(r.height, r.width);
-    Mat1f object_depth(r.height, r.width);
-    Mat3b object_color(r.height, r.width);
+void TableObjectRGBDModeler :: segmentROI(CurrentImageData& d)
+{
+    const RGBDImage& image = *(d.image);
+    const Pose3D& depth_pose = d.depth_pose;
+    Mat1b& object_img = d.object_img;
+    const Mat1f& object_depth = d.object_depth;
+    const Mat3b& object_color = d.object_color;
+    const Rect& roi = d.roi;
+    const Rect3f& roi_3d = d.roi_3d;
 
-    depth_im(r).copyTo(object_depth);
-    painted_image.mappedRgb()(r).copyTo(object_color);
-
-    // imwrite("/tmp/debug_color.png", object_color);
+    const Mat1f& depth_im = d.painted_image.depth();
+    const Mat1b& depth_mask = d.painted_image.depthMask();
 
     computeMesh();
     computeSurfaceMesh();
@@ -454,45 +552,40 @@ void TableObjectRGBDModeler :: fillDepthImage(RGBDImage& painted_image,
     render_image = Vec4b(0,0,0,0);
     renderer.renderToImage(render_image, MeshRenderer::NORMAL);
 
-    const uchar background_voxel= 0;
-    const uchar unknown_voxel = 1;
-    const uchar object_voxel = 2;
-    object_img = background_voxel;
+    object_img = BackgroundVoxel;
 
     for_all_rc(render_image)
     {
         if (cv::norm(render_image(r,c)) > 1e-1)
         {
-            int x = c-bbox.x;
-            int y = r-bbox.y;
-            object_img(y,x) = object_voxel;
+            int x = c-roi_3d.x;
+            int y = r-roi_3d.y;
+            object_img(y,x) = ObjectVoxel;
         }
     }
 
     for_all_rc(object_img)
     {
         if (object_depth(r,c) < 1e-5)
-            object_img(r,c) = unknown_voxel;
+            object_img(r,c) = UnknownVoxel;
     }
 
-    // imwrite_normalized("/tmp/debug_object.png", object_img);
+    imwrite_normalized("/tmp/debug_object.png", object_img);
 
     HSColorModel object_model;
     HSColorModel background_model;
     Mat1b mask (object_img.size());
 
-    for_all_rc(mask) mask(r,c) = (object_img(r,c) == object_voxel) ? 255 : 0;
-    {
-        cv::Mat1b tmp;
-        cv::morphologyEx(mask, tmp,
-                         cv::MORPH_ERODE,
-                         getStructuringElement(cv::MORPH_RECT,
-                                               cv::Size(5,5)));
-        tmp.copyTo(mask);
-    }
+    cv::Mat1b tmp;
+
+    for_all_rc(mask) mask(r,c) = (object_img(r,c) == ObjectVoxel) ? 255 : 0;
+    cv::morphologyEx(mask, tmp, cv::MORPH_ERODE, getStructuringElement(cv::MORPH_RECT, cv::Size(5,5)));
+    tmp.copyTo(mask);
     object_model.build(object_color, mask);
 
-    for_all_rc(mask) mask(r,c) = (object_img(r,c) == background_voxel) ? 255 : 0;
+    for_all_rc(mask) mask(r,c) = (object_img(r,c) == BackgroundVoxel) ? 255 : 0;
+    cv::morphologyEx(mask, tmp, cv::MORPH_ERODE, getStructuringElement(cv::MORPH_RECT, cv::Size(5,5)));
+    tmp.copyTo(mask);
     background_model.build(object_color, mask);
 
     cv::Mat3b debug;
@@ -506,33 +599,48 @@ void TableObjectRGBDModeler :: fillDepthImage(RGBDImage& painted_image,
     object_model.backProject(object_color, object_likelihood);
     background_model.backProject(object_color, background_likelihood);
 
-    // imwrite_normalized("/tmp/debug_object_likelihood.png", object_likelihood);
-    // imwrite_normalized("/tmp/debug_background_likelihood.png", background_likelihood);
+    imwrite_normalized("/tmp/debug_object_likelihood.png", object_likelihood);
+    imwrite_normalized("/tmp/debug_background_likelihood.png", background_likelihood);
 
     for_all_rc(object_img)
     {
-        if (object_img(r,c) != unknown_voxel) continue;
+        if (object_img(r,c) != UnknownVoxel) continue;
 
         if (object_likelihood(r,c) > background_likelihood(r,c))
-            object_img(r,c) = object_voxel;
+            object_img(r,c) = ObjectVoxel;
         else
-            object_img(r,c) = background_voxel;
+            object_img(r,c) = BackgroundVoxel;
     }
 
     {
+        cv::Mat1b binary_object_img (object_img.size());
+        for_all_rc(binary_object_img) binary_object_img(r,c) = ((object_img(r,c) == ObjectVoxel) ? 1 : 0);
+
         cv::Mat1b tmp;
-        cv::morphologyEx(object_img, tmp,
+        cv::morphologyEx(binary_object_img, tmp,
                          cv::MORPH_OPEN,
                          getStructuringElement(cv::MORPH_RECT,
                                                cv::Size(3,3)));
-        cv::morphologyEx(tmp, object_img,
+        cv::morphologyEx(tmp, binary_object_img,
                          cv::MORPH_CLOSE,
                          getStructuringElement(cv::MORPH_RECT,
                                                cv::Size(7,7)));
+        for_all_rc(object_img) object_img(r,c) = (binary_object_img(r,c) ? ObjectVoxel : BackgroundVoxel);
     }
-    // imwrite_normalized("/tmp/debug_object_final.png", object_img);
 
-    // imwrite_normalized("/tmp/debug_depth.png", object_depth);
+    imwrite_normalized("/tmp/debug_object_final.png", object_img);
+}
+
+void TableObjectRGBDModeler :: depthInpaintROI(CurrentImageData& d)
+{
+    RGBDImage& image = d.painted_image;
+    const Mat1b& object_img = d.object_img;
+    Mat1f& object_depth = d.object_depth;
+    const Mat3b& object_color = d.object_color;
+    Mat1f& depth_im = image.depthRef();
+    Mat1b& depth_mask = image.depthMaskRef();
+    const Rect3f& roi_3d = d.roi_3d;
+
     double min_depth = 0, max_depth = 0;
     minMaxLoc(object_depth, &min_depth, &max_depth);
 
@@ -546,7 +654,7 @@ void TableObjectRGBDModeler :: fillDepthImage(RGBDImage& painted_image,
     paint_mask = 0u;
     for_all_rc(paint_mask)
     {
-        if (!object_img(r,c) || object_depth(r,c) < 1e-5)
+        if ((object_img(r,c)==BackgroundVoxel) || object_depth(r,c) < 1e-5)
             paint_mask(r,c) = 255;
     }
     {
@@ -566,17 +674,17 @@ void TableObjectRGBDModeler :: fillDepthImage(RGBDImage& painted_image,
 
     for_all_rc(depth1b)
     {
-        if (object_img(r,c) != object_voxel) continue;
+        if (object_img(r,c) != ObjectVoxel) continue;
         object_depth(r,c) = painted_depth1b(r,c) / 255.0 * max_depth;
     }
     // imwrite_normalized("/tmp/debug_depth_painted.png", object_depth);
 
     for_all_rc(object_depth)
     {
-        int mr = r+bbox.y;
-        int mc = c+bbox.x;
+        int mr = r+roi_3d.y;
+        int mc = c+roi_3d.x;
         if (depth_im(mr,mc) < 1e-5
-            && object_img(r, c) == object_voxel
+            && object_img(r, c) == ObjectVoxel
             && object_depth(r, c) > 1e-5)
         {
             depth_im(mr,mc) = object_depth(r, c);
@@ -586,52 +694,35 @@ void TableObjectRGBDModeler :: fillDepthImage(RGBDImage& painted_image,
     // imwrite_normalized("/tmp/debug_depth_final.png", depth_im);
 }
 
-bool TableObjectRGBDModeler :: addNewView(const RGBDImage& image, Pose3D& depth_pose)
+void TableObjectRGBDModeler :: fillDepthImage(CurrentImageData& d)
 {
-    image.copyTo(m_last_image);
+    RGBDImage& painted_image = d.painted_image;
+    const RGBDImage& image = *(d.image);
+    const Pose3D& depth_pose = d.depth_pose;
+    const Rect& roi = d.roi;
+    cv::Mat1b& object_img = d.object_img;
+    cv::Mat1f& object_depth = d.object_depth;
+    cv::Mat3b& object_color = d.object_color;
 
-    ntk::TimeCount tc("addNewView");
+    image.copyTo(painted_image);
+    Mat1f& depth_im = painted_image.depthRef();
+    Mat1b& depth_mask = painted_image.depthMaskRef();
 
-    PointCloud<PointXYZIndex> cloud;
-    rgbdImageToPointCloud(cloud, image, depth_pose);
-    tc.elapsedMsecs("toPointCloud");
+    computeImageROI(d);
+    ntk_dbg_print(roi, 1);
 
-    bool ok = buildVoxelsFromNewView(cloud, image, depth_pose);
-    if (!ok)
-        return false;
-    tc.elapsedMsecs(" -- first Build from Voxels");
+    object_img.create(roi.height, roi.width);
+    object_depth.create(roi.height, roi.width);
+    object_color.create(roi.height, roi.width);
 
-    if (m_depth_filling)
-    {
-        RGBDImage painted_image;
-        fillDepthImage(painted_image, image, depth_pose);
-        rgbdImageToPointCloud(cloud, painted_image, depth_pose);
-        buildVoxelsFromNewView(cloud, painted_image, depth_pose);
-    }
+    depth_im(roi).copyTo(object_depth);
+    painted_image.mappedRgb()(roi).copyTo(object_color);
+    segmentROI(d);
+    depthInpaintROI(d);
 
-    tc.elapsedMsecs(" -- Depth Filling");
-
-    if (m_remove_small_structures)
-    {
-        closeVolume();
-        rankOpenFilter(2);
-        // openVolume();
-    }
-
-    tc.elapsedMsecs(" -- Remove small structures");
-
-    computeMesh();
-    computeSurfaceMesh();
-    tc.stop("mesh computed");
-    return true;
-}
-
-void TableObjectRGBDModeler :: reset()
-{
-    for_all_drc(m_voxels)
-        m_voxels(d,r,c) = Unknown;
-    RGBDModeler::reset();
-    m_first_view = true;
+    // imwrite("/tmp/debug_color.png", object_color);
+    // imwrite_normalized("/tmp/debug_object_final.pngfalse", object_img);
+    // imwrite_normalized("/tmp/debug_depth.png", object_depth);
 }
 
 } // ntk

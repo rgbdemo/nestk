@@ -47,67 +47,84 @@
 namespace ntk
 {
 
-// Note: this class is imported from PCL tutorial
+/*!
+ * This class is imported from PCL tutorials and detect clusters
+ * lying on a flat table.
+ */
+template <class PointType>
 class TableObjectDetector
 {
-  typedef ntk::PointXYZIndex Point;
-  typedef pcl::KdTree<Point>::Ptr KdTreePtr;
+    typedef PointType Point;
+    typedef typename pcl::PointCloud<Point> PointCloud;
+    typedef typename PointCloud::ConstPtr PointCloudConstPtr;
+    typedef typename pcl::KdTree<Point>::Ptr KdTreePtr;
 
 public:
-  TableObjectDetector ();
+    TableObjectDetector ();
+    void initialize();
 
-  /*! Returns true if at least one object and plane are detected. */
-  bool detect(const pcl::PointCloud<Point>& cloud);
+public:
+    void setObjectVoxelSize(float s = 0.003) { downsample_leaf_objects_ = s; }
+    void setBackgroundVoxelSize(float s = 0.01) { downsample_leaf_ = s; }
+    void setDepthLimits(float min_z = -1.6, float max_z = -0.4) { min_z_bounds_ = min_z; max_z_bounds_ = max_z; }
+    void setObjectHeightLimits(float min_h = 0.01, float max_h = 0.5) { object_min_height_ = min_h;  object_max_height_ = max_h; }
 
-  const ntk::Plane& plane() const { return m_plane; }
-  const std::vector <std::vector<cv::Point3f> >& objectClusters() const { return m_object_clusters; }
+public:
+    /*! Returns true if at least one object and plane are detected. */
+    bool detect(const PointCloud& cloud);
+
+public:
+    const ntk::Plane& plane() const { return m_plane; }
+    const std::vector <std::vector<cv::Point3f> >& objectClusters() const { return m_object_clusters; }
 
 private:
-  // PCL objects
-  KdTreePtr normals_tree_, clusters_tree_;
-  pcl::PassThrough<Point> pass_;
-  pcl::VoxelGrid<Point> grid_, grid_objects_;
-  pcl::NormalEstimation<Point, pcl::Normal> n3d_;
-  pcl::SACSegmentationFromNormals<Point, pcl::Normal> seg_;
-  pcl::ProjectInliers<Point> proj_;
-  pcl::ConvexHull<Point> hull_;
-  pcl::ExtractPolygonalPrismData<Point> prism_;
-  pcl::EuclideanClusterExtraction<Point> cluster_;
+    // PCL objects
+    KdTreePtr normals_tree_, clusters_tree_;
+    pcl::PassThrough<Point> pass_;
+    pcl::VoxelGrid<Point> grid_, grid_objects_;
+    pcl::NormalEstimation<Point, pcl::Normal> n3d_;
+    pcl::SACSegmentationFromNormals<Point, pcl::Normal> seg_;
+    pcl::ProjectInliers<Point> proj_;
+    pcl::ConvexHull<Point> hull_;
+    pcl::ExtractPolygonalPrismData<Point> prism_;
+    pcl::EuclideanClusterExtraction<Point> cluster_;
 
-  double downsample_leaf_, downsample_leaf_objects_;
-  int k_;
-  double min_z_bounds_, max_z_bounds_;
-  double sac_distance_threshold_;
-  double normal_distance_weight_;
+    double downsample_leaf_, downsample_leaf_objects_;
+    int k_;
+    double min_z_bounds_, max_z_bounds_;
+    double sac_distance_threshold_;
+    double normal_distance_weight_;
 
-  // Min/Max height from the table plane object points will be considered from/to
-  double object_min_height_, object_max_height_;
+    // Min/Max height from the table plane object points will be considered from/to
+    double object_min_height_, object_max_height_;
 
-  // Object cluster tolerance and minimum cluster size
-  double object_cluster_tolerance_, object_cluster_min_size_;
+    // Object cluster tolerance and minimum cluster size
+    double object_cluster_tolerance_, object_cluster_min_size_;
 
-  // The raw, input point cloud data
-  pcl::PointCloud<Point>::ConstPtr cloud_;
-  // The filtered and downsampled point cloud data
-  pcl::PointCloud<Point>::ConstPtr cloud_filtered_, cloud_downsampled_;
-  // The resultant estimated point cloud normals for \a cloud_filtered_
-  pcl::PointCloud<pcl::Normal>::ConstPtr cloud_normals_;
-  // The vector of indices from cloud_filtered_ that represent the planar table component
-  pcl::PointIndices::ConstPtr table_inliers_;
-  // The model coefficients of the planar table component
-  pcl::ModelCoefficients::ConstPtr table_coefficients_;
-  // The set of point inliers projected on the planar table component from \a cloud_filtered_
-  pcl::PointCloud<Point>::ConstPtr table_projected_;
-  // The convex hull of \a table_projected_
-  pcl::PointCloud<Point>::ConstPtr table_hull_;
-  // The remaining of the \a cloud_filtered_ which lies inside the \a table_hull_ polygon
-  pcl::PointCloud<Point>::ConstPtr cloud_objects_, cloud_objects_downsampled_;
+    // The raw, input point cloud data
+    PointCloudConstPtr cloud_;
+    // The filtered and downsampled point cloud data
+    PointCloudConstPtr cloud_filtered_, cloud_downsampled_;
+    // The resultant estimated point cloud normals for \a cloud_filtered_
+    pcl::PointCloud<pcl::Normal>::ConstPtr cloud_normals_;
+    // The vector of indices from cloud_filtered_ that represent the planar table component
+    pcl::PointIndices::ConstPtr table_inliers_;
+    // The model coefficients of the planar table component
+    pcl::ModelCoefficients::ConstPtr table_coefficients_;
+    // The set of point inliers projected on the planar table component from \a cloud_filtered_
+    PointCloudConstPtr table_projected_;
+    // The convex hull of \a table_projected_
+    PointCloudConstPtr table_hull_;
+    // The remaining of the \a cloud_filtered_ which lies inside the \a table_hull_ polygon
+    PointCloudConstPtr cloud_objects_, cloud_objects_downsampled_;
 
-  ntk::Plane m_plane;
-  std::vector< std::vector<cv::Point3f> > m_object_clusters;
+    ntk::Plane m_plane;
+    std::vector< std::vector<cv::Point3f> > m_object_clusters;
 };
 
 
 } // ntk
+
+#include "table_object_detector.hpp"
 
 #endif // NESTK_DETECTION_TABLE_OBJECT_DETECTOR_H

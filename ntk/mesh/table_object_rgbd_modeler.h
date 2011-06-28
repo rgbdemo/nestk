@@ -37,63 +37,103 @@ namespace ntk
 class TableObjectRGBDModeler : public RGBDModeler
 {
 private:
-  enum VoxelLabel {
-    Invalid = -1,
-    Background = 0,
-    Object = 1,
-    Unknown = 2
-  };
+    enum VoxelLabel {
+        InvalidVoxel = -1,
+        UnknownVoxel = 0,
+        BackgroundVoxel,
+        MaybeBackgroundVoxel,
+        ObjectVoxel,
+        MaybeObjectVoxel,
+    };
+
+    /*! Store data related to current image processing. */
+    struct CurrentImageData;
 
 public:
-  TableObjectRGBDModeler() : RGBDModeler(),
-      m_first_view(true),
-      m_depth_filling(true),
-      m_remove_small_structures(true)
-  {}
+    TableObjectRGBDModeler() : RGBDModeler(),
+        m_resolution(0.003),
+        m_depth_margin(0.f),
+        m_first_view(true),
+        m_depth_filling(true),
+        m_remove_small_structures(true)
+    {
+        ntk_dbg_print(m_resolution, 1);
+    }
 
-  void initialize(const cv::Point3f& sizes, const cv::Point3f& offsets,
-                  float resolution, float depth_margin);
-
-public:
-  void setDepthFilling(bool useit) { m_depth_filling = useit; }
-  void setRemoveSmallStructures(bool useit) { m_remove_small_structures = useit; }
-  virtual void setResolution(float resolution) {} // { reset(); initialize(m_sizes, m_offsets, resolution, m_depth_margin); }
-  virtual void setDepthMargin(float depth_margin) {} // { m_depth_margin = depth_margin; }
+    /*! Create the voxel grid. */
+    void initialize(const cv::Point3f& sizes, const cv::Point3f& offsets);
 
 public:
-  virtual bool addNewView(const RGBDImage& image, Pose3D& relative_pose);
-  virtual void computeMesh();
-  virtual void computeSurfaceMesh();
-  virtual void computeAccurateVerticeColors();
-  virtual void reset();
+    /*! Set whether depth filling should be used. */
+    void setDepthFilling(bool useit) { m_depth_filling = useit; }
+
+    /*! Set whether small structures should be filtered out. */
+    void setRemoveSmallStructures(bool useit) { m_remove_small_structures = useit; }
+
+    /*! Set the voxel grid resolution. */
+    virtual void setResolution(float resolution) { m_resolution = resolution; }
+
+public:
+    /*! Update the voxel grid using the given image. */
+    virtual bool addNewView(const RGBDImage& image, Pose3D& relative_pose);
+
+    /*! Compute a mesh out of the voxel grid. */
+    virtual void computeMesh();
+
+    /*! Only keep the outer surface of the computed mesh. */
+    virtual void computeSurfaceMesh();
+
+    /*! Compute final vertices colors by reprojecting the mesh on the color image. */
+    virtual void computeAccurateVerticeColors();
+
+    /*! Reset the voxel grid. */
+    virtual void reset();
 
 private:
-  cv::Point3f toRealWorld(const cv::Point3f& p) const;
-  cv::Point3f toGridWorld(const cv::Point3f& p) const;
+    /*! Compute 3D point coordinates from voxel grid coordinates. */
+    cv::Point3f toRealWorld(const cv::Point3f& p) const;
+    /*! Convert a 3D point to grid coordinates. */
+    cv::Point3f toGridWorld(const cv::Point3f& p) const;
 
-  // 3D morphological on the voxel grid.
-  void closeVolume();
+    /*! 3D morphological closing on the voxel grid. */
+    void morphologicalClose();
 
-  // 3D morphological opening on the voxel grid.
-  void openVolume();
+    /*! 3D morphological opening on the voxel grid. */
+    void morphologicalOpen();
 
-  // Rank filter: elimite object voxels that do not have a least k object neighbors.
-  void rankOpenFilter(int rank);
+    /*! Rank filter, elimite object voxels that do not have a least "rank" object neighbors. */
+    void rankOpenFilter(int rank);
 
-  bool buildVoxelsFromNewView(const pcl::PointCloud<PointXYZIndex>& cloud, const RGBDImage& image, const Pose3D& depth_pose);
-  void fillDepthImage(RGBDImage& painted_image, const RGBDImage& image, const Pose3D& depth_pose);
+    /*! Build a new grid from given image and point cloud. */
+    bool buildVoxelsFromNewView(CurrentImageData& d);
+
+    /*! Fill gaps in depth image. */
+    void fillDepthImage(CurrentImageData& d);
+
+    /*! Select the cluster of interest. */
+    int selectClusterOfInterest();
+
+    /*! Initial fill of the voxel grid from new cluster. */
+    void fillGridWithNewPoints(CurrentImageData& d);
+
+    bool isOrMaybeIsObject(VoxelLabel l) { return l == ObjectVoxel || l == MaybeObjectVoxel; }
+
+    void removeInconsistentObjectVoxels(CurrentImageData& d);
+    void computeImageROI(CurrentImageData& d);
+    void segmentROI(CurrentImageData& d);
+    void depthInpaintROI(CurrentImageData& d);
 
 private:
-  TableObjectDetector m_table_object_detector;
-  cv::Mat_<uchar> m_voxels;
-  cv::Mat_<cv::Vec3b> m_voxels_color;
-  float m_resolution;
-  float m_depth_margin;
-  cv::Point3f m_offsets;
-  cv::Point3f m_sizes;
-  bool m_first_view;
-  bool m_depth_filling;
-  bool m_remove_small_structures;
+    TableObjectDetector<ntk::PointXYZIndex> m_table_object_detector;
+    cv::Mat_<uchar> m_voxels;
+    cv::Mat_<cv::Vec3b> m_voxels_color;
+    float m_resolution;
+    float m_depth_margin;
+    cv::Point3f m_offsets;
+    cv::Point3f m_sizes;
+    bool m_first_view;
+    bool m_depth_filling;
+    bool m_remove_small_structures;
 };
 
 } // ntk
