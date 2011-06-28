@@ -18,11 +18,11 @@ set(OPENNI_DEFINITIONS ${PC_OPENNI_CFLAGS_OTHER})
 
 #add a hint so that it can find it without the pkg-config
 find_path(OPENNI_INCLUDE_DIR XnStatus.h
-          HINTS ${NESTK_ROOT_DIRS_HINTS} ${PC_OPENNI_INCLUDEDIR} ${PC_OPENNI_INCLUDE_DIRS} /usr/include/openni
+          HINTS ${NESTK_ROOT_DIRS_HINTS} ${PC_OPENNI_INCLUDEDIR} ${PC_OPENNI_INCLUDE_DIRS} /usr/include/openni /usr/include/ni
           PATHS "$ENV{PROGRAMFILES}/OpenNI/Include" "$ENV{PROGRAMW6432}/OpenNI/Include"
           PATH_SUFFIXES openni)
 #add a hint so that it can find it without the pkg-config
-find_library(OPENNI_LIBRARY 
+find_library(OPENNI_LIBRARY
              NAMES OpenNI64 OpenNI
              HINTS ${NESTK_ROOT_DIRS_HINTS} ${PC_OPENNI_LIBDIR} ${PC_OPENNI_LIBRARY_DIRS} /usr/lib
              PATHS "$ENV{PROGRAMFILES}/OpenNI/Lib${OPENNI_SUFFIX}" "$ENV{PROGRAMW6432}/OpenNI/Lib${OPENNI_SUFFIX}"
@@ -36,7 +36,7 @@ find_library(NITE_LIBRARY
 )
 
 find_path(NITE_INCLUDE_DIR XnVSessionManager.h
-          HINTS ${NESTK_ROOT_DIRS_HINTS} ${PC_OPENNI_INCLUDEDIR} ${PC_OPENNI_INCLUDE_DIRS} /usr/include/openni
+          HINTS ${NESTK_ROOT_DIRS_HINTS} ${PC_OPENNI_INCLUDEDIR} ${PC_OPENNI_INCLUDE_DIRS} /usr/include/openni /usr/include/nite
           PATHS "$ENV{PROGRAMFILES}/PrimeSense/NITE/Include" "$ENV{PROGRAMW6432}/PrimeSense/NITE/Include"
           PATH_SUFFIXES openni)
 
@@ -50,7 +50,7 @@ endif()
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(OpenNI DEFAULT_MSG
     OPENNI_LIBRARY OPENNI_INCLUDE_DIR)
-    
+
 mark_as_advanced(OPENNI_LIBRARY OPENNI_INCLUDE_DIR)
 if(OPENNI_FOUND)
   include_directories(${OPENNI_INCLUDE_DIRS})
