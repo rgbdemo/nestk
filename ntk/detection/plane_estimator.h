@@ -58,7 +58,7 @@ namespace ntk
     void estimate(ntk::RGBDImage& image, cv::Mat1b& plane_points);
     const ntk::Plane& currentPlane() const { return m_plane; }
     const ntk::PlaneSolver& currentPlaneSolver();
-    void getStructures(cv::Mat1b img, vector< vector<cv::Point> > contours);
+    void getStructures(cv::Mat1b img, std::vector< std::vector<cv::Point> > contours);
 
 
   private:
