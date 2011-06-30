@@ -32,6 +32,7 @@ using namespace ntk;
 namespace opt
 {
   ntk::arg<bool> high_resolution("--highres", "High resolution color image.", 0);
+  ntk::arg<int> kinect_id("--kinect-id", "Kinect id", 0);
 }
 
 class MyBodyListener : public BodyEventListener
@@ -88,8 +89,9 @@ int main(int argc, char **argv)
 
   // Set current directory to application directory.
   // This is to find Nite config in config/ directory.
-  QApplication app (argc, argv);
-  QDir::setCurrent(QApplication::applicationDirPath());
+  // FIXME: this is disabled for OpenCV QT compatibility.
+  // QApplication app (argc, argv);
+  // QDir::setCurrent(QApplication::applicationDirPath());
 
   // Prepare body event listeners.
   MyBodyListener body_event_listener;
@@ -97,7 +99,7 @@ int main(int argc, char **argv)
   detector.addListener(&body_event_listener);
 
   // Declare the frame grabber.
-  NiteRGBDGrabber grabber;
+  NiteRGBDGrabber grabber(opt::kinect_id());
   grabber.setBodyEventDetector(&detector);
 
   // High resolution 1280x1024 RGB Image.
@@ -105,7 +107,7 @@ int main(int argc, char **argv)
     grabber.setHighRgbResolution(true);
 
   // Start the grabber.
-  grabber.initialize();
+  grabber.connectToDevice();
   grabber.start();
 
   // Holder for the current image.
@@ -127,6 +129,7 @@ int main(int argc, char **argv)
 
     // Get the last hand point position.
     cv::Point3f handpoint = body_event_listener.getLastHandPosInImage();
+    ntk_dbg_print(handpoint, 1);
 
     // Prepare the depth view, with skeleton and handpoint.
     cv::Mat1b debug_depth_img = normalize_toMat1b(image.depth());
@@ -151,5 +154,5 @@ int main(int argc, char **argv)
     cv::waitKey(10);
   }
 
-  return app.exec();
+  // return app.exec();
 }

@@ -37,7 +37,8 @@ class BodyEventDetector;
 class NiteRGBDGrabber : public ntk::RGBDGrabber
 {
 public:
-  NiteRGBDGrabber() :
+  NiteRGBDGrabber(int camera_id = 0) :
+    m_camera_id(camera_id),
     m_need_pose_to_calibrate(false),
     m_max_num_users(15),
     m_body_event_detector(0),
@@ -103,11 +104,15 @@ private:
   void estimateCalibration();
 
 private:
+  int m_camera_id;
   RGBDImage m_current_image;
   xn::Context m_ni_context;
   xn::DepthGenerator m_ni_depth_generator;
   xn::ImageGenerator m_ni_rgb_generator;
   xn::UserGenerator m_ni_user_generator;
+  xn::HandsGenerator m_ni_hands_generator;
+  xn::GestureGenerator m_ni_gesture_generator;
+  XnLicense license;
   bool m_need_pose_to_calibrate;
   XnChar m_calibration_pose[20];
   int m_max_num_users;

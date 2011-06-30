@@ -66,7 +66,7 @@ int main(int argc, char **argv)
   QApplication app(argc, argv);
 
   KinectGrabber grabber;
-  grabber.initialize();
+  grabber.connectToDevice();
 
   RGBDProcessor processor;
   processor.setFilterFlag(RGBDProcessor::ComputeKinectDepthBaseline, true);

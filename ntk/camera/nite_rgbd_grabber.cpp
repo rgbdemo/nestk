@@ -24,6 +24,7 @@
 #include <ntk/geometry/pose_3d.h>
 
 #include <XnVCircleDetector.h>
+#include <XnLog.h>
 
 using namespace cv;
 using namespace ntk;
@@ -86,52 +87,98 @@ void NiteRGBDGrabber :: set_xml_config_file(const std::string & xml_filename)
 
 bool NiteRGBDGrabber :: connectToDevice()
 {
-    // printf("initialize()\n\n");
-    xn::EnumerationErrors errors;
-    // printf("m_xml_config_file:%s\n\n", m_xml_config_file.c_str());
-    XnStatus status = m_ni_context.InitFromXmlFile(m_xml_config_file.c_str(), &errors);
-    if (status != XN_STATUS_OK)
+    xnLogSetConsoleOutput(true);
+    xnLogSetSeverityFilter(XN_LOG_WARNING);
+    xnLogSetMaskState("ALL", true);
+    xnLogInitSystem();
+
+    XnStatus status = m_ni_context.Init();
+    check_error(status, "Initialize context");
+
+    xn::NodeInfoList device_node_info_list;
+    status = m_ni_context.EnumerateProductionTrees(XN_NODE_TYPE_DEVICE, NULL, device_node_info_list);
+    if (status != XN_STATUS_OK && device_node_info_list.Begin () != device_node_info_list.End ())
+        ntk_throw_exception(format("enumerating devices failed. Reason: %s", xnGetStatusString(status)));
+
+    // No device
+    if (device_node_info_list.IsEmpty())
+        ntk_throw_exception(format("No device connected.\n"));
+
+    for (xn::NodeInfoList::Iterator nodeIt = device_node_info_list.Begin();
+         nodeIt != device_node_info_list.End (); ++nodeIt)
     {
-        ntk_dbg(0) << "[ERROR] " << xnGetStatusString(status);
-        ntk_throw_exception("Could not initialize NITE. Check Log."
-                            "Most probable reasons are device not connected or no config/ directory"
-                            "in the current directory.");
+        const xn::NodeInfo& deviceInfo = *nodeIt;
+        const XnProductionNodeDescription& description = deviceInfo.GetDescription();
+        ntk_dbg(1) << format("device: vendor %s name %s, instance %s\n",
+			     description.strVendor, description.strName, deviceInfo.GetInstanceName());
     }
 
-    status = m_ni_context.FindExistingNode(XN_NODE_TYPE_DEPTH, m_ni_depth_generator);
-    check_error(status, "Find depth generator");
-
-    if (m_track_users)
+    xn::NodeInfoList::Iterator nodeIt = device_node_info_list.Begin();
+    for (int i = 0; nodeIt != device_node_info_list.End () && i < m_camera_id; ++nodeIt, ++i)
     {
-        status = m_ni_context.FindExistingNode(XN_NODE_TYPE_USER, m_ni_user_generator);
-        check_error(status, "Find user generator");
-        // m_ni_user_generator.StopGenerating();
     }
 
-    status = m_ni_context.FindExistingNode(XN_NODE_TYPE_IMAGE, m_ni_rgb_generator);
-    check_error(status, "Find image generator");
+    if (nodeIt == device_node_info_list.End())
+    {
+        ntk_throw_exception(format("No device with id %d\n", m_camera_id));
+    }
 
+    xn::NodeInfo deviceInfo = *nodeIt;
+    status = m_ni_context.CreateProductionTree(deviceInfo);
+    check_error(status, "Create Device");
+
+    const XnProductionNodeDescription& description = deviceInfo.GetDescription();
+    ntk_dbg(1) << format("device: vendor %s name %s, instance %s\n",
+                         description.strVendor, description.strName, deviceInfo.GetInstanceName());
+
+    xn::Query query;
+    query.AddNeededNode(deviceInfo.GetInstanceName());
+
+    strcpy(license.strVendor, "PrimeSense");
+    strcpy(license.strKey, "0KOIk2JeIBYClPWVnMoRKn5cdY4=");
+    m_ni_context.AddLicense(license);
+
+    check_error(status, "Create depth generator");
+    status = m_ni_depth_generator.Create(m_ni_context, &query);
+    XnMapOutputMode depth_mode;
+    depth_mode.nXRes = 640;
+    depth_mode.nYRes = 480;
+    depth_mode.nFPS = 30;
+    m_ni_depth_generator.SetMapOutputMode(depth_mode);
+
+    status = m_ni_rgb_generator.Create(m_ni_context, &query);
+    check_error(status, "Create image generator");
+
+    status = m_ni_rgb_generator.SetIntProperty ("Resolution", 1);
+    check_error(status, "Resolution");
+
+    XnMapOutputMode rgb_mode;
     if (m_high_resolution)
     {
-        XnMapOutputMode rgb_mode;
         rgb_mode.nFPS = 15;
         rgb_mode.nXRes = 1280;
         rgb_mode.nYRes = 1024;
-        m_ni_rgb_generator.SetMapOutputMode(rgb_mode);
     }
-
-    if (m_custom_bayer_decoding)
+    else
     {
-        // Grayscale to get raw Bayer pattern.
-        status = m_ni_rgb_generator.SetIntProperty ("InputFormat", 6);
-        check_error(status, "Change input format");
-
-        status = m_ni_rgb_generator.SetPixelFormat(XN_PIXEL_FORMAT_GRAYSCALE_8_BIT);
-        check_error(status, "Change pixel format");
+        rgb_mode.nXRes = 640;
+        rgb_mode.nYRes = 480;
+        rgb_mode.nFPS = 30;
     }
+    m_ni_rgb_generator.SetMapOutputMode(rgb_mode);
 
     ntk_ensure(m_ni_depth_generator.IsCapabilitySupported(XN_CAPABILITY_ALTERNATIVE_VIEW_POINT), "Cannot register images.");
     m_ni_depth_generator.GetAlternativeViewPointCap().SetViewPoint(m_ni_rgb_generator);
+
+    if (m_track_users)
+    {
+        status = m_ni_user_generator.Create(m_ni_context, &query);
+        check_error(status, "Create user generator");
+        status = m_ni_hands_generator.Create(m_ni_context, &query);
+        check_error(status, "Create hands generator");
+        status = m_ni_gesture_generator.Create(m_ni_context, &query);
+        check_error(status, "Create gestures generator");
+    }
 
     if (m_track_users)
     {
@@ -160,9 +207,19 @@ bool NiteRGBDGrabber :: connectToDevice()
     status = m_ni_context.StartGeneratingAll();
     check_error(status, "StartGenerating");
 
+    if (m_custom_bayer_decoding)
+    {
+        // Grayscale to get raw Bayer pattern.
+        status = m_ni_rgb_generator.SetIntProperty ("InputFormat", 6);
+        check_error(status, "Change input format");
+
+        status = m_ni_rgb_generator.SetPixelFormat(XN_PIXEL_FORMAT_GRAYSCALE_8_BIT);
+        check_error(status, "Change pixel format");
+    }
+
     m_ni_context.WaitAndUpdateAll();
     estimateCalibration();
-  return true;
+    return true;
 }
 
 bool NiteRGBDGrabber :: disconnectFromDevice()

@@ -242,7 +242,7 @@ computeNumMatchesWithPrevious(const RGBDImage& image,
        --i)
   {
     std::vector<DMatch> current_matches;
-    m_features[i].matchWith(features, current_matches, 0.7*0.7);
+    m_features[i].matchWith(features, current_matches, 0.8*0.8);
     ntk_dbg_print(current_matches.size(), 1);
     if (current_matches.size() > best_matches.size())
     {

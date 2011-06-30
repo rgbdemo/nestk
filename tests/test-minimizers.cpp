@@ -30,7 +30,7 @@ using namespace cv;
 // The minimum is 0 at x=0 y=-1
 struct CostFunction1 : public CostFunction
 {
-  // one input, two outputs
+  // two input, two outputs
   CostFunction1() : CostFunction(2, 2)
   {}
 

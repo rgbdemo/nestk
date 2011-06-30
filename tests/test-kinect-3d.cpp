@@ -47,7 +47,7 @@ int main(int argc, char** argv)
   calibration.loadFromFile(opt::calibration_file());
 
   KinectGrabber grabber;
-  grabber.initialize();
+  grabber.connectToDevice();
   // Tell the grabber that we have calibration data.
   grabber.setCalibrationData(calibration);
   grabber.start();

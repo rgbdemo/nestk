@@ -41,7 +41,9 @@ int main(int argc, char** argv)
 
   HSColorModel model;
   model.build(ref_image, Mat1b() /* empty mask, use all image */);
-  model.show();
+  cv::Mat3b display_img;
+  model.show(display_img);
+  imshow("Histogram", display_img);
   cv::waitKey(0);
 
   cv::Mat1f likelihood_image;

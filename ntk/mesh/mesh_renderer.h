@@ -46,6 +46,9 @@ namespace ntk
     cv::Mat_<GLfloat> model_view_matrix;
   };
 
+  /*!
+   * Project a mesh on an image using the given pose.
+   */
   class MeshRenderer
   {
   public:

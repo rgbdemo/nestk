@@ -28,10 +28,10 @@ using namespace cv;
 
 int main(int argc, char** argv)
 {
-  QApplication app(argc, argv);
+  // QApplication app(argc, argv);
 
   KinectGrabber grabber;
-  grabber.initialize();
+  grabber.connectToDevice();
   grabber.start();
 
   // Set camera tilt.
@@ -71,7 +71,7 @@ int main(int argc, char** argv)
     imshow("depth_as_color", depth_as_color);
 
     unsigned char c = cv::waitKey(10);
-    printf("c:%c\n", c);
+    printf("c:%d\n", c);
     if (c == 'f')
       grabber.setIRMode(!grabber.irModeEnabled());
   }
