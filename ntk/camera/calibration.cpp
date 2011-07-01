@@ -144,7 +144,8 @@ void calibrationCorners(const std::string& image_name,
                         int pattern_width, int pattern_height,
                         std::vector<Point2f>& corners,
                         const cv::Mat& image,
-                        float scale_factor)
+                        float scale_factor,
+                        PatternType pattern)
 {
   Size pattern_size (pattern_width, pattern_height);
 
@@ -162,45 +163,71 @@ void calibrationCorners(const std::string& image_name,
   }
 
   int flags = CV_CALIB_CB_NORMALIZE_IMAGE|CV_CALIB_CB_ADAPTIVE_THRESH;
-  bool ok = findChessboardCorners(scaled_image,
-                                  pattern_size,
-                                  corners,
-                                  flags);
-  if (!ok)
+  bool ok = true;
+  switch (pattern)
   {
-    flags = CV_CALIB_CB_NORMALIZE_IMAGE;
-    ok = findChessboardCorners(scaled_image,
-                               pattern_size,
-                               corners,
-                               flags);
-  }
+  case PatternChessboard: {
+      ok = findChessboardCorners(scaled_image,
+                                 pattern_size,
+                                 corners,
+                                 flags);
 
-  if (!ok)
-  {
-    flags = CV_CALIB_CB_ADAPTIVE_THRESH;
-    ok = findChessboardCorners(scaled_image,
-                               pattern_size,
-                               corners,
-                               flags);
-  }
+      if (!ok)
+      {
+        flags = CV_CALIB_CB_NORMALIZE_IMAGE;
+        ok = findChessboardCorners(scaled_image,
+                                   pattern_size,
+                                   corners,
+                                   flags);
+      }
 
-  if (!ok)
-  {
-    flags = 0;
-    ok = findChessboardCorners(scaled_image,
-                               pattern_size,
-                               corners,
-                               flags);
-  }
+      if (!ok)
+      {
+        flags = CV_CALIB_CB_ADAPTIVE_THRESH;
+        ok = findChessboardCorners(scaled_image,
+                                   pattern_size,
+                                   corners,
+                                   flags);
+      }
 
+      if (!ok)
+      {
+        flags = 0;
+        ok = findChessboardCorners(scaled_image,
+                                   pattern_size,
+                                   corners,
+                                   flags);
+      }
+      break;
+  }
+  case PatternCircles: {
+#ifdef HAVE_OPENCV_GREATER_THAN_2_2
+      ok = findCirclesGrid( scaled_image, pattern_size, corners );
+#else
+      ntk_throw_exception("Circles pattern is not supported with OpenCV < 2.3");
+#endif
+      break;
+  }
+  case PatternAsymCircles: {
+#ifdef HAVE_OPENCV_GREATER_THAN_2_2
+      ok = findCirclesGrid( scaled_image, pattern_size, corners, CALIB_CB_ASYMMETRIC_GRID);
+#else
+      ntk_throw_exception("Circles pattern is not supported with OpenCV < 2.3");
+#endif
+      break;
+  }
+  }
   cv::Mat draw_image = scaled_image;
 
   if (ok)
   {
     cv::Mat gray_image;
     cvtColor(image, gray_image, CV_BGR2GRAY);
-    cornerSubPix(gray_image, corners, Size(5,5), Size(-1,-1),
-                 cvTermCriteria( CV_TERMCRIT_EPS+CV_TERMCRIT_ITER, 30, 0.1 ));
+    if (pattern == PatternChessboard)
+    {
+        cornerSubPix(gray_image, corners, Size(5,5), Size(-1,-1),
+                     cvTermCriteria( CV_TERMCRIT_EPS+CV_TERMCRIT_ITER, 30, 0.1 ));
+    }
 
     cv::Mat corner_matrix(corners.size(), 1, CV_32FC2);
     for (int row = 0; row < corners.size(); ++row)

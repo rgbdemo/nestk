@@ -149,13 +149,21 @@ void calibrationPattern(std::vector<cv::Point3f> & output,
                          int pattern_height,
                          float square_size);
 
+enum PatternType
+{
+    PatternChessboard,
+    PatternCircles,
+    PatternAsymCircles
+};
+
 /*! Extract chessboard position using OpenCV. */
 void calibrationCorners(const std::string& image_name,
                         const std::string& window_name,
                         int pattern_width, int pattern_height,
                         std::vector<cv::Point2f>& corners,
                         const cv::Mat& image,
-                        float scale_factor);
+                        float scale_factor,
+                        PatternType pattern = PatternChessboard);
 
 /*!
  * Estimate the 3D transform of a chessboard.
