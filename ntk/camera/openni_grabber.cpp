@@ -74,7 +74,7 @@ void OpenNIGrabber :: check_error(const XnStatus& status, const char* what) cons
     if (status != XN_STATUS_OK)
     {
         ntk_dbg(0) << "[ERROR] " << cv::format("%s failed: %s\n", what, xnGetStatusString(status));
-        ntk_throw_exception("Error in NiteRGBDGrabber.");
+        ntk_throw_exception("Error in OpenniGrabber.");
     }
 }
 

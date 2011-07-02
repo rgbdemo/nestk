@@ -165,7 +165,7 @@ public:
 
   /*!
    * Accessors to the user segmentation labels.
-   * This is only available when using NiteRGBDGrabber.
+   * This is only available when using OpenniGrabber.
    * 0 is the background label, > 0 are the detected user ids.
    */
   const cv::Mat1b& userLabels() const { return m_user_labels; }
@@ -176,7 +176,7 @@ public:
 
   /*!
    * Accessors to skeleton data. Only one user supported now.
-   * This is only available when using NiteRGBDGrabber.
+   * This is only available when using OpenniGrabber.
    * @see Skeleton
    */
   const Skeleton* skeleton() const { return m_skeleton; }
