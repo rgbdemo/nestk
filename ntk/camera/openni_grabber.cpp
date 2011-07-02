@@ -109,8 +109,8 @@ bool OpenNIGrabber :: connectToDevice()
     {
         const xn::NodeInfo& deviceInfo = *nodeIt;
         const XnProductionNodeDescription& description = deviceInfo.GetDescription();
-        ntk_dbg(1) << format("device: vendor %s name %s, instance %s\n",
-			     description.strVendor, description.strName, deviceInfo.GetInstanceName());
+        ntk_dbg(1) << format("device: vendor %s name %s, instance %s",
+                             description.strVendor, description.strName, deviceInfo.GetInstanceName());
     }
 
     xn::NodeInfoList::Iterator nodeIt = device_node_info_list.Begin();

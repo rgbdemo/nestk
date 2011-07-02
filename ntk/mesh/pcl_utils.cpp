@@ -23,6 +23,7 @@
 #include <ntk/camera/rgbd_image.h>
 #include <ntk/geometry/pose_3d.h>
 #include <ntk/utils/opencv_utils.h>
+#include <ntk/mesh/mesh.h>
 
 using namespace cv;
 
@@ -79,6 +80,16 @@ void rgbdImageToPointCloud(pcl::PointCloud<PointXYZIndex>& cloud, const RGBDImag
     ntk_throw_exception("No calibration data in image.");
 
   rgbdImageToPointCloud(cloud, image, *image.calibration()->depth_pose);
+}
+
+void pointCloudToMesh(ntk::Mesh& mesh, const pcl::PointCloud<PointXYZIndex>& cloud)
+{
+    mesh.clear();
+    mesh.vertices.resize(cloud.size());
+    foreach_idx(i, cloud.points)
+    {
+        mesh.vertices[i] = Point3f(cloud.points[i].x, cloud.points[i].y, cloud.points[i].z);
+    }
 }
 
 } // ntk

@@ -24,6 +24,8 @@
 
 #include <ntk/core.h>
 
+#include <ntk/mesh/mesh.h>
+
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 
@@ -32,7 +34,7 @@
 namespace ntk
 {
 
-/*! XYZ + index to find to correspond point in the RGBDImage */
+/*! XYZ + index to find the correspond point in the RGBDImage */
 // FIXME: this is hacky. We should define a custom pcl Point!
 typedef pcl::PointXYZRGBA PointXYZIndex;
 
@@ -49,6 +51,9 @@ void rgbdImageToPointCloud(pcl::PointCloud<PointXYZIndex>& cloud,
                            const RGBDImage& image,
                            const Pose3D& pose,
                            int subsampling_factor = 1);
+
+void pointCloudToMesh(ntk::Mesh& mesh,
+                      const pcl::PointCloud<PointXYZIndex>& cloud);
 
 }
 
