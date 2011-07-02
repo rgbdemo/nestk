@@ -47,6 +47,8 @@ public:
     setSynchronous(false);
   }
 
+  virtual ~RGBDGrabber() { stop(); }
+
 public:
   /*! Tell the grabber thread to stop grabbing. */
   virtual void setShouldExit() { m_should_exit = true; }

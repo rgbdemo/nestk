@@ -152,6 +152,9 @@ bool NiteRGBDGrabber :: connectToDevice()
     status = m_ni_rgb_generator.SetIntProperty ("Resolution", 1);
     check_error(status, "Resolution");
 
+    status = m_ni_context.SetGlobalMirror(m_mirrored);
+    check_error(status, "Mirror");
+
     XnMapOutputMode rgb_mode;
     if (m_high_resolution)
     {
