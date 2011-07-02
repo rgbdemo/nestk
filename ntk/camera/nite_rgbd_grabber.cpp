@@ -36,31 +36,31 @@ namespace
 
 void XN_CALLBACK_TYPE UserCalibration_CalibrationStart(xn::SkeletonCapability& capability, XnUserID nId, void* pCookie)
 {
-    ntk::NiteRGBDGrabber* grabber = reinterpret_cast<ntk::NiteRGBDGrabber*>(pCookie);
+    ntk::OpenNIGrabber* grabber = reinterpret_cast<ntk::OpenNIGrabber*>(pCookie);
     grabber->calibrationStartedCallback(nId);
 }
 
 void XN_CALLBACK_TYPE User_NewUser(xn::UserGenerator& generator, XnUserID nId, void* pCookie)
 {
-    ntk::NiteRGBDGrabber* grabber = reinterpret_cast<ntk::NiteRGBDGrabber*>(pCookie);
+    ntk::OpenNIGrabber* grabber = reinterpret_cast<ntk::OpenNIGrabber*>(pCookie);
     grabber->newUserCallback(nId);
 }
 
 void XN_CALLBACK_TYPE User_LostUser(xn::UserGenerator& generator, XnUserID nId, void* pCookie)
 {
-    ntk::NiteRGBDGrabber* grabber = reinterpret_cast<ntk::NiteRGBDGrabber*>(pCookie);
+    ntk::OpenNIGrabber* grabber = reinterpret_cast<ntk::OpenNIGrabber*>(pCookie);
     grabber->lostUserCallback(nId);
 }
 
 void XN_CALLBACK_TYPE UserPose_PoseDetected(xn::PoseDetectionCapability& capability, const XnChar* strPose, XnUserID nId, void* pCookie)
 {
-    ntk::NiteRGBDGrabber* grabber = reinterpret_cast<ntk::NiteRGBDGrabber*>(pCookie);
+    ntk::OpenNIGrabber* grabber = reinterpret_cast<ntk::OpenNIGrabber*>(pCookie);
     grabber->userPoseDetectedCallback(nId);
 }
 
 void XN_CALLBACK_TYPE UserCalibration_CalibrationEnd(xn::SkeletonCapability& capability, XnUserID nId, XnBool bSuccess, void* pCookie)
 {
-    ntk::NiteRGBDGrabber* grabber = reinterpret_cast<ntk::NiteRGBDGrabber*>(pCookie);
+    ntk::OpenNIGrabber* grabber = reinterpret_cast<ntk::OpenNIGrabber*>(pCookie);
     grabber->calibrationFinishedCallback(nId, bSuccess);
 }
 
@@ -69,7 +69,7 @@ void XN_CALLBACK_TYPE UserCalibration_CalibrationEnd(xn::SkeletonCapability& cap
 namespace ntk
 {
 
-void NiteRGBDGrabber :: check_error(const XnStatus& status, const char* what) const
+void OpenNIGrabber :: check_error(const XnStatus& status, const char* what) const
 {
     if (status != XN_STATUS_OK)
     {
@@ -78,14 +78,14 @@ void NiteRGBDGrabber :: check_error(const XnStatus& status, const char* what) co
     }
 }
 
-const std::string NiteRGBDGrabber :: DEFAULT_XML_CONFIG_FILE =  "config/NestkConfig.xml";
+const std::string OpenNIGrabber :: DEFAULT_XML_CONFIG_FILE =  "config/NestkConfig.xml";
 
-void NiteRGBDGrabber :: set_xml_config_file(const std::string & xml_filename)
+void OpenNIGrabber :: set_xml_config_file(const std::string & xml_filename)
 {
     m_xml_config_file = xml_filename;
 }
 
-bool NiteRGBDGrabber :: connectToDevice()
+bool OpenNIGrabber :: connectToDevice()
 {
     xnLogSetConsoleOutput(true);
     xnLogSetSeverityFilter(XN_LOG_WARNING);
@@ -221,18 +221,19 @@ bool NiteRGBDGrabber :: connectToDevice()
     }
 
     m_ni_context.WaitAndUpdateAll();
-    estimateCalibration();
+    if (!m_calib_data)
+        estimateCalibration();
     return true;
 }
 
-bool NiteRGBDGrabber :: disconnectFromDevice()
+bool OpenNIGrabber :: disconnectFromDevice()
 {
     m_body_event_detector->shutDown();
     m_ni_context.Shutdown();
 	return true;
 }
 
-void NiteRGBDGrabber :: estimateCalibration()
+void OpenNIGrabber :: estimateCalibration()
 {
     XnPoint3D p;
     p.X = 0; p.Y = 0; p.Z = -1;
@@ -330,7 +331,7 @@ void NiteRGBDGrabber :: estimateCalibration()
     m_calib_data->camera_type = "kinect-ni";
 }
 
-void NiteRGBDGrabber :: run()
+void OpenNIGrabber :: run()
 {
     m_should_exit = false;
     m_current_image.setCalibration(m_calib_data);
@@ -474,7 +475,7 @@ void NiteRGBDGrabber :: run()
 }
 
 // Callback: New user was detected
-void NiteRGBDGrabber :: newUserCallback(XnUserID nId)
+void OpenNIGrabber :: newUserCallback(XnUserID nId)
 {
     ntk_dbg(1) << cv::format("New User %d\n", nId);
 
@@ -492,13 +493,13 @@ void NiteRGBDGrabber :: newUserCallback(XnUserID nId)
 }
 
 // Callback: An existing user was lost
-void NiteRGBDGrabber :: lostUserCallback(XnUserID nId)
+void OpenNIGrabber :: lostUserCallback(XnUserID nId)
 {
     ntk_dbg(1) << cv::format("Lost User %d\n", nId);
 }
 
 // Callback: Detected a pose
-void NiteRGBDGrabber :: userPoseDetectedCallback(XnUserID nId)
+void OpenNIGrabber :: userPoseDetectedCallback(XnUserID nId)
 {
     ntk_dbg(1) << cv::format("User Pose Detected %d\n", nId);
     m_ni_user_generator.GetPoseDetectionCap().StopPoseDetection(nId);
@@ -506,13 +507,13 @@ void NiteRGBDGrabber :: userPoseDetectedCallback(XnUserID nId)
 }
 
 // Callback: Calibration started
-void NiteRGBDGrabber :: calibrationStartedCallback(XnUserID nId)
+void OpenNIGrabber :: calibrationStartedCallback(XnUserID nId)
 {
     ntk_dbg(1) << cv::format("Calibration started %d\n", nId);
 }
 
 // Callback: Finished calibration
-void NiteRGBDGrabber :: calibrationFinishedCallback(XnUserID nId, bool success)
+void OpenNIGrabber :: calibrationFinishedCallback(XnUserID nId, bool success)
 {
     ntk_dbg(1) << cv::format("Calibration finished %d\n", nId);
     if (success)

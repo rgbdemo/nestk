@@ -50,7 +50,7 @@ int main(int argc, char **argv)
     QDir::setCurrent(QApplication::applicationDirPath());
 
     // Declare the frame grabber.
-    NiteRGBDGrabber grabber(opt::kinect_id());
+    OpenNIGrabber grabber(opt::kinect_id());
 
     // High resolution 1280x1024 RGB Image.
     if (opt::high_resolution())
@@ -64,7 +64,7 @@ int main(int argc, char **argv)
     RGBDImage image;
 
     // Image post processor. Compute mappings when RGB resolution is 1280x1024.
-    NiteProcessor post_processor;
+    NiteRGBDProcessor post_processor;
 
     namedWindow("depth");
     namedWindow("color");

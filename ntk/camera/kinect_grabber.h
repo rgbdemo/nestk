@@ -39,10 +39,10 @@ namespace ntk
 /*!
  * Grab RGB-D images from a Kinect.
  */
-class KinectGrabber : public RGBDGrabber
+class FreenectGrabber : public RGBDGrabber
 {
 public:
-  KinectGrabber()
+  FreenectGrabber()
     : m_depth_transmitted(0),
       m_rgb_transmitted(0),
       f_ctx(0), f_dev(0),
@@ -84,6 +84,8 @@ private:
   bool m_ir_mode;
   bool m_dual_ir_rgb;
 };
+
+typedef FreenectGrabber KinectGrabber;
 
 } // ntk
 

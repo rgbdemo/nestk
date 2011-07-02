@@ -46,7 +46,7 @@ int main(int argc, char** argv)
   RGBDCalibration calibration;
   calibration.loadFromFile(opt::calibration_file());
 
-  KinectGrabber grabber;
+  FreenectGrabber grabber;
   grabber.connectToDevice();
   // Tell the grabber that we have calibration data.
   grabber.setCalibrationData(calibration);

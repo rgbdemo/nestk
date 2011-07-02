@@ -33,14 +33,14 @@ namespace ntk
 
   static void kinect_depth_db(freenect_device *dev, void *v_depth, uint32_t timestamp)
   {
-    KinectGrabber* grabber = reinterpret_cast<KinectGrabber*>(freenect_get_user(dev));
+    FreenectGrabber* grabber = reinterpret_cast<FreenectGrabber*>(freenect_get_user(dev));
     uint16_t *depth = reinterpret_cast<uint16_t*>(v_depth);
     grabber->depthCallBack(depth, FREENECT_FRAME_W, FREENECT_FRAME_H);
   }
 
   static void kinect_video_db(freenect_device *dev, void *rgb, uint32_t timestamp)
     {
-	  KinectGrabber* grabber = reinterpret_cast<KinectGrabber*>(freenect_get_user(dev));
+      FreenectGrabber* grabber = reinterpret_cast<FreenectGrabber*>(freenect_get_user(dev));
     if (grabber->irModeEnabled()) { // ir mode
 		uint8_t *ir_cast = reinterpret_cast<uint8_t*>(rgb);
 		grabber->irCallBack(ir_cast, FREENECT_FRAME_W, FREENECT_FRAME_H);
@@ -50,7 +50,7 @@ namespace ntk
 	  }
     }
 
-  void KinectGrabber :: irCallBack(uint8_t *buf, int width, int height)
+  void FreenectGrabber :: irCallBack(uint8_t *buf, int width, int height)
   {
     ntk_assert(width == m_current_image.rawIntensity().cols, "Bad width");
     ntk_assert(height == m_current_image.rawIntensity().rows, "Bad height");
@@ -60,7 +60,7 @@ namespace ntk
     m_rgb_transmitted = false;
   }
 
-  void KinectGrabber :: depthCallBack(uint16_t *buf, int width, int height)
+  void FreenectGrabber :: depthCallBack(uint16_t *buf, int width, int height)
   {
     ntk_assert(width == m_current_image.rawDepth().cols, "Bad width");
     ntk_assert(height == m_current_image.rawDepth().rows, "Bad height");
@@ -70,7 +70,7 @@ namespace ntk
     m_depth_transmitted = false;
   }
 
-  void KinectGrabber :: rgbCallBack(uint8_t *buf, int width, int height)
+  void FreenectGrabber :: rgbCallBack(uint8_t *buf, int width, int height)
   {
     ntk_assert(width == m_current_image.rawRgb().cols, "Bad width");
     ntk_assert(height == m_current_image.rawRgb().rows, "Bad height");
@@ -79,17 +79,17 @@ namespace ntk
     m_rgb_transmitted = false;
   }
 
-  void KinectGrabber :: setTiltAngle(int angle)
+  void FreenectGrabber :: setTiltAngle(int angle)
   {
     freenect_set_tilt_degs(f_dev, angle);
   }
 
-  void KinectGrabber :: setDualRgbIR(bool enable)
+  void FreenectGrabber :: setDualRgbIR(bool enable)
   {
     m_dual_ir_rgb = enable;
   }
 
-  void KinectGrabber :: setIRMode(bool ir)
+  void FreenectGrabber :: setIRMode(bool ir)
   {
     QWriteLocker locker(&m_lock);
     m_ir_mode = ir;
@@ -101,13 +101,13 @@ namespace ntk
     freenect_start_video(f_dev);
   }
 
-  void KinectGrabber :: startKinect()
+  void FreenectGrabber :: startKinect()
   {
     freenect_start_depth(f_dev);
     setIRMode(m_ir_mode);
   }
 
-  bool KinectGrabber :: connectToDevice()
+  bool FreenectGrabber :: connectToDevice()
   {
     if (freenect_init(&f_ctx, NULL) < 0)
     {
@@ -130,7 +130,7 @@ namespace ntk
     return true;
   }
 
-  bool KinectGrabber :: disconnectFromDevice()
+  bool FreenectGrabber :: disconnectFromDevice()
   {
       // Exit requested.
       freenect_close_device(f_dev);
@@ -138,7 +138,7 @@ namespace ntk
       return true;
   }
 
-  void KinectGrabber :: run()
+  void FreenectGrabber :: run()
   {
     m_should_exit = false;
     m_current_image.setCalibration(m_calib_data);

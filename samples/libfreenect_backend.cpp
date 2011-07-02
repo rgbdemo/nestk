@@ -30,7 +30,7 @@ int main(int argc, char** argv)
 {
     QApplication app(argc, argv);
 
-    KinectGrabber grabber;
+    FreenectGrabber grabber;
     grabber.connectToDevice();
     grabber.start();
 
@@ -43,7 +43,7 @@ int main(int argc, char** argv)
     namedWindow("depth");
     namedWindow("depth_as_color");
 
-    KinectProcessor processor;
+    FreenectRGBDProcessor processor;
 
     RGBDImage current_frame;
     cv::Mat3b depth_as_color;

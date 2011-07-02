@@ -28,7 +28,7 @@ using namespace ntk;
 
 int main()
 {    
-    OpenNIGrabber grabber1(0);
+    OpenNIGrabber grabber1(0); // first id is 0
     OpenNIGrabber grabber2(1);
 
     grabber1.connectToDevice();

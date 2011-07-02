@@ -134,11 +134,11 @@ protected:
   float m_max_amplitude;
 };
 
-/*! RGBDProcessor with default parameters for Kinect. */
-class KinectProcessor : public RGBDProcessor
+/*! RGBDProcessor with default parameters for libfreenect Kinect driver. */
+class FreenectRGBDProcessor : public RGBDProcessor
 {
 public:
-  KinectProcessor()
+  FreenectRGBDProcessor()
     : RGBDProcessor()
   {
     setFilterFlag(RGBDProcessor::ComputeKinectDepthBaseline, true);
@@ -146,11 +146,14 @@ public:
   }
 };
 
+// For backward compatiblity.
+typedef FreenectRGBDProcessor KinectProcessor;
+
 /*! RGBDProcessor with default parameters for OpenNI/Nite. */
-class NiteProcessor : public RGBDProcessor
+class NiteRGBDProcessor : public RGBDProcessor
 {
 public:
-  NiteProcessor()
+  NiteRGBDProcessor()
     : RGBDProcessor()
   {
     // Everything is done by the grabber.
@@ -160,6 +163,9 @@ public:
 protected:
   virtual void computeMappings();
 };
+
+// For backward compatiblity.
+typedef NiteRGBDProcessor NiteProcessor;
 
 class RGBDProcessorFactory
 {

@@ -630,7 +630,7 @@ namespace ntk
         }
     }
 
-    void NiteProcessor :: computeMappings()
+    void NiteRGBDProcessor :: computeMappings()
     {
         Size depth_size = m_image->calibration()->raw_depth_size;
         Size rgb_size = m_image->calibration()->rawRgbSize();
@@ -683,11 +683,11 @@ namespace ntk
         RGBDProcessor* processor = 0;
         if (params.camera_type == "kinect-ni")
         {
-            processor = new NiteProcessor();
+            processor = new NiteRGBDProcessor();
         }
         else if (params.camera_type == "kinect-freenect")
         {
-            processor = new KinectProcessor();
+            processor = new FreenectRGBDProcessor();
         }
         else if (params.camera_type == "pmd")
         {

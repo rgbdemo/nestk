@@ -28,7 +28,7 @@ using namespace cv;
 class ImageHandler : public AsyncEventListener
 {
 public:
-  ImageHandler(KinectGrabber& grabber,
+  ImageHandler(FreenectGrabber& grabber,
 	       RGBDProcessor& processor) 
     : m_grabber(grabber),
       m_processor(processor)
@@ -56,7 +56,7 @@ public:
   }
 
 private:
-  KinectGrabber& m_grabber;
+  FreenectGrabber& m_grabber;
   RGBDProcessor& m_processor;
   RGBDImage m_current_frame;
 };
@@ -65,7 +65,7 @@ int main(int argc, char **argv)
 {
   QApplication app(argc, argv);
 
-  KinectGrabber grabber;
+  FreenectGrabber grabber;
   grabber.connectToDevice();
 
   RGBDProcessor processor;
