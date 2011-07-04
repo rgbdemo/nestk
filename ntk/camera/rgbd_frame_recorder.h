@@ -41,6 +41,9 @@ public:
   /*! Save an image. */
   void saveCurrentFrame(const RGBDImage& image);
 
+  /*! Save a vector of images, automatically appending a suffix. */
+  void saveCurrentFrames(const std::vector<RGBDImage>& image);
+
   /*! Returns the name of directory where the next frame will be written. */
   std::string getNextFrameDirectory() const;
 
@@ -63,6 +66,9 @@ public:
   /*! Change the parent directory. */
   void setDirectory(const std::string& directory);
   const QDir& directory() const { return m_dir; }
+
+private:
+  void writeFrame(const RGBDImage& image, const std::string& dir);
 
 private:
   QDir m_dir;

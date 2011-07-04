@@ -60,106 +60,124 @@ namespace ntk
     return format("%s/view%04d", m_dir.absolutePath().toStdString().c_str(), m_frame_index);
   }
 
+  void RGBDFrameRecorder :: saveCurrentFrames(const std::vector<RGBDImage>& images)
+  {
+      for (int image_i = 0; image_i < images.size(); ++image_i)
+      {
+          std::string frame_dir = format("%s-%d/view%04d",
+                                         m_dir.absolutePath().toStdString().c_str(),
+                                         image_i,
+                                         m_frame_index);
+          writeFrame(images[image_i], frame_dir);
+
+      }
+      ++m_frame_index;
+  }
+
   void RGBDFrameRecorder :: saveCurrentFrame(const RGBDImage& image)
   {
     std::string frame_dir = format("%s/view%04d", m_dir.absolutePath().toStdString().c_str(), m_frame_index);
-    std::string raw_frame_dir = format("%s/raw", frame_dir.c_str(), m_frame_index);
-
-    QDir dir (frame_dir.c_str());
-    dir.mkpath("raw");
-
-    std::string filename;
-
-    if (!m_only_raw)
-    {
-      filename = cv::format("%s/color.png", frame_dir.c_str());
-      imwrite(filename, image.rgb());
-    }
-
-    filename = cv::format("%s/raw/color.png", frame_dir.c_str());
-    imwrite(filename, image.rawRgb());
-
-    if (!m_only_raw && image.mappedDepth().data)
-    {
-      filename = cv::format("%s/mapped_depth.png", frame_dir.c_str());
-      imwrite_normalized(filename, image.mappedDepth());
-
-      filename = cv::format("%s/mapped_color.png", frame_dir.c_str());
-      imwrite(filename, image.mappedRgb());
-
-      filename = cv::format("%s/depth.yml", frame_dir.c_str());
-      imwrite_yml(filename, image.mappedDepth());
-    }
-
-    if (!m_only_raw)
-    {
-      filename = cv::format("%s/raw/depth.png", frame_dir.c_str());
-      if (image.rawDepth().data)
-        imwrite_normalized(filename.c_str(), image.rawDepth());
-
-      filename = cv::format("%s/depth.png", frame_dir.c_str());
-      if (image.depth().data)
-        imwrite_normalized(filename.c_str(), image.depth());
-
-      filename = cv::format("%s/intensity.png", frame_dir.c_str());
-      if (image.intensity().data)
-        imwrite_normalized(filename.c_str(), image.intensity());
-    }
-
-    if (image.rawDepth().data)
-    {
-      if (m_use_binary_raw)
-      {
-        filename = cv::format("%s/raw/depth.raw", frame_dir.c_str());
-        imwrite_Mat1f_raw(filename.c_str(), image.rawDepth());
-      }
-      else
-      {
-        filename = cv::format("%s/raw/depth.yml", frame_dir.c_str());
-        imwrite_yml(filename.c_str(), image.rawDepth());
-      }
-    }
-
-    if (image.rawIntensity().data)
-    {
-      if (m_use_binary_raw)
-      {
-        filename = cv::format("%s/raw/intensity.raw", frame_dir.c_str());
-        imwrite_Mat1f_raw(filename.c_str(), image.rawIntensity());
-      }
-      else
-      {
-        filename = cv::format("%s/raw/intensity.yml", frame_dir.c_str());
-        imwrite_yml(filename.c_str(), image.rawIntensity());
-      }
-    }
-
-    if (!m_only_raw)
-    {
-      filename = cv::format("%s/raw/amplitude.png", frame_dir.c_str());
-      if (image.rawAmplitude().data)
-        imwrite_normalized(filename.c_str(), image.rawAmplitude());
-
-      filename = cv::format("%s/amplitude.png", frame_dir.c_str());
-      if (image.amplitude().data)
-        imwrite_normalized(filename.c_str(), image.amplitude());
-    }
-
-    if (image.rawAmplitude().data)
-    {
-      if (m_use_binary_raw)
-      {
-        filename = cv::format("%s/raw/amplitude.raw", frame_dir.c_str());
-        imwrite_Mat1f_raw(filename.c_str(), image.rawAmplitude());
-      }
-      else
-      {
-        filename = cv::format("%s/raw/amplitude.yml", frame_dir.c_str());
-        imwrite_yml(filename.c_str(), image.rawAmplitude());
-      }
-    }
-
+    writeFrame(image, frame_dir);
     ++m_frame_index;
+  }
+
+  void RGBDFrameRecorder :: writeFrame(const RGBDImage& image, const std::string& frame_dir)
+  {
+      std::string raw_frame_dir = format("%s/raw", frame_dir.c_str(), m_frame_index);
+
+      QDir dir (frame_dir.c_str());
+      dir.mkpath("raw");
+
+      std::string filename;
+
+      if (!m_only_raw)
+      {
+        filename = cv::format("%s/color.png", frame_dir.c_str());
+        imwrite(filename, image.rgb());
+      }
+
+      filename = cv::format("%s/raw/color.png", frame_dir.c_str());
+      imwrite(filename, image.rawRgb());
+
+      if (!m_only_raw && image.mappedDepth().data)
+      {
+        filename = cv::format("%s/mapped_depth.png", frame_dir.c_str());
+        imwrite_normalized(filename, image.mappedDepth());
+
+        filename = cv::format("%s/mapped_color.png", frame_dir.c_str());
+        imwrite(filename, image.mappedRgb());
+
+        filename = cv::format("%s/depth.yml", frame_dir.c_str());
+        imwrite_yml(filename, image.mappedDepth());
+      }
+
+      if (!m_only_raw)
+      {
+        filename = cv::format("%s/raw/depth.png", frame_dir.c_str());
+        if (image.rawDepth().data)
+          imwrite_normalized(filename.c_str(), image.rawDepth());
+
+        filename = cv::format("%s/depth.png", frame_dir.c_str());
+        if (image.depth().data)
+          imwrite_normalized(filename.c_str(), image.depth());
+
+        filename = cv::format("%s/intensity.png", frame_dir.c_str());
+        if (image.intensity().data)
+          imwrite_normalized(filename.c_str(), image.intensity());
+      }
+
+      if (image.rawDepth().data)
+      {
+        if (m_use_binary_raw)
+        {
+          filename = cv::format("%s/raw/depth.raw", frame_dir.c_str());
+          imwrite_Mat1f_raw(filename.c_str(), image.rawDepth());
+        }
+        else
+        {
+          filename = cv::format("%s/raw/depth.yml", frame_dir.c_str());
+          imwrite_yml(filename.c_str(), image.rawDepth());
+        }
+      }
+
+      if (image.rawIntensity().data)
+      {
+        if (m_use_binary_raw)
+        {
+          filename = cv::format("%s/raw/intensity.raw", frame_dir.c_str());
+          imwrite_Mat1f_raw(filename.c_str(), image.rawIntensity());
+        }
+        else
+        {
+          filename = cv::format("%s/raw/intensity.yml", frame_dir.c_str());
+          imwrite_yml(filename.c_str(), image.rawIntensity());
+        }
+      }
+
+      if (!m_only_raw)
+      {
+        filename = cv::format("%s/raw/amplitude.png", frame_dir.c_str());
+        if (image.rawAmplitude().data)
+          imwrite_normalized(filename.c_str(), image.rawAmplitude());
+
+        filename = cv::format("%s/amplitude.png", frame_dir.c_str());
+        if (image.amplitude().data)
+          imwrite_normalized(filename.c_str(), image.amplitude());
+      }
+
+      if (image.rawAmplitude().data)
+      {
+        if (m_use_binary_raw)
+        {
+          filename = cv::format("%s/raw/amplitude.raw", frame_dir.c_str());
+          imwrite_Mat1f_raw(filename.c_str(), image.rawAmplitude());
+        }
+        else
+        {
+          filename = cv::format("%s/raw/amplitude.yml", frame_dir.c_str());
+          imwrite_yml(filename.c_str(), image.rawAmplitude());
+        }
+      }
   }
 
 }
