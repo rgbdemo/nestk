@@ -455,7 +455,7 @@ bool TableObjectRGBDModeler :: buildVoxelsFromNewView(CurrentImageData& d)
     const RGBDImage& image = *(d.image);
     const Pose3D& depth_pose = d.depth_pose;
     const Pose3D& rgb_pose = d.rgb_pose;
-    const pcl::PointCloud<PointXYZIndex>& cloud = d.cloud;
+    pcl::PointCloud<PointXYZIndex>& cloud = d.cloud;
 
     bool ok = m_table_object_detector.detect(cloud);
     if (!ok)

@@ -81,7 +81,7 @@ int main(int argc, char **argv)
     pcl::VoxelGrid<PointXYZIndex> grid;
     grid.setLeafSize (0.01, 0.01, 0.01); // leaf size is 1 cm
     grid.setFilterFieldName ("z");
-    grid.setFilterLimits (0, 2.0); // keep only data between 0 and 2 meters.
+    grid.setFilterLimits (-2.0, 0); // keep only data between 0 and 2 meters.
     grid.setInputCloud(cloud);
     grid.filter(*filtered_cloud);
     ntk_dbg_print(cloud->points.size(), 1);

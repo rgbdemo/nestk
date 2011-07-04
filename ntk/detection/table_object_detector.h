@@ -71,7 +71,7 @@ public:
 
 public:
     /*! Returns true if at least one object and plane are detected. */
-    bool detect(const PointCloud& cloud);
+    bool detect(PointCloud& cloud);
 
 public:
     const ntk::Plane& plane() const { return m_plane; }

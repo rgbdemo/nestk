@@ -94,7 +94,7 @@ void TableObjectDetector<PointType> :: initialize()
 }
 
 template <class PointType>
-bool TableObjectDetector<PointType> :: detect(const pcl::PointCloud<Point>& cloud)
+bool TableObjectDetector<PointType> :: detect(pcl::PointCloud<Point>& cloud)
 {
     ntk::TimeCount tc("TableObjectDetector::detect", 1);
     m_object_clusters.clear();
