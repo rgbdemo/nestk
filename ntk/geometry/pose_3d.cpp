@@ -628,6 +628,19 @@ const cv::Mat1f Pose3D :: cvCameraTransform() const
   return m;
 }
 
+void Pose3D::cvRotationMatrixTranslation(cv::Mat1d& translation, cv::Mat1d& rotation) const
+{
+    translation.create(3,1);
+    rotation.create(3,3);
+    cv::Mat1f H = cvCameraTransform();
+    for(int r = 0; r < 3; ++r)
+        for(int c = 0; c < 3; ++c)
+            rotation(r,c) = H(r,c);
+    translation(0,0) = H(0,3);
+    translation(1,0) = H(1,3);
+    translation(2,0) = H(2,3);
+}
+
 cv::Mat1f Pose3D :: cvProjectionMatrix() const
 {
   cv::Mat1f m(4,4);

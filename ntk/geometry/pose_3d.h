@@ -150,6 +150,13 @@ public:
   /*! Returns the camera transform as an OpenCV 4x4 matrix. */
   const cv::Mat1f cvCameraTransform() const;
 
+  /*!
+   * Returns the camera transform as an OpenCV 3x3 rotation matrix
+   * and a translation vector as a 3x1 matrix.
+   * Useful to update calibration parameters.
+   */
+  void cvRotationMatrixTranslation(cv::Mat1d& translation, cv::Mat1d& rotation) const;
+
   /*! Returns the inverse camera transform as an OpenCV 4x4 matrix. */
   cv::Mat1f cvInvCameraTransform() const;
 

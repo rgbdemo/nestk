@@ -40,10 +40,47 @@ class ObjectDetector;
 namespace ntk
 {
 
+RGBDCalibration::RGBDCalibration() :
+  zero_rgb_distortion(true),
+  zero_depth_distortion(true),
+  depth_pose(0),
+  rgb_pose(0),
+  depth_baseline(7.5e-02),
+  depth_offset(1090),
+  raw_rgb_size(640,480),
+  rgb_size(480,480),
+  raw_depth_size(204,204),
+  depth_size(204,204),
+  camera_type("kinect-ni")
+{
+    R_extrinsics = Mat1d(3,3);
+    setIdentity(R_extrinsics);
+    T_extrinsics = Mat1d(3,1);
+    T_extrinsics = 0.0;
+
+    R = Mat1d(3,3);
+    setIdentity(R);
+    T = Mat1d(3,1);
+    T = 0.0;
+}
+
 RGBDCalibration :: ~RGBDCalibration()
 {
   delete depth_pose;
   delete rgb_pose;
+}
+
+void RGBDCalibration :: updatePoses()
+{
+    if (!depth_pose || !rgb_pose)
+        return;
+
+    depth_pose->setCameraParametersFromOpencv(depth_intrinsics);
+    depth_pose->resetCameraTransform();
+    depth_pose->applyTransformBefore(T_extrinsics, R_extrinsics);
+
+    *rgb_pose = *depth_pose;
+    rgb_pose->toRightCamera(rgb_intrinsics, R, T);
 }
 
 void RGBDCalibration :: loadFromFile(const char* filename)
@@ -70,6 +107,15 @@ void RGBDCalibration :: loadFromFile(const char* filename)
   readMatrix(calibration_file, "raw_depth_size", size_mat);
   raw_depth_size = cv::Size(size_mat(0,0), size_mat(0,1));
 
+  try {
+    readMatrix(calibration_file, "R_extrinsics", R_extrinsics);
+    readMatrix(calibration_file, "T_extrinsics", T_extrinsics);
+  }
+  catch (...)
+  {
+      ntk_dbg(0) << "Warning: could not load extrinsics (R_extrinsics, T_extrinsics).";
+  }
+
   cv::Mat1f depth_calib (1,2);
   try {
     readMatrix(calibration_file, "depth_base_and_offset", depth_calib);
@@ -84,10 +130,8 @@ void RGBDCalibration :: loadFromFile(const char* filename)
   calibration_file.release();
 
   depth_pose = new Pose3D();
-  depth_pose->setCameraParametersFromOpencv(depth_intrinsics);
-
   rgb_pose = new Pose3D();
-  rgb_pose->toRightCamera(rgb_intrinsics, R, T);
+  updatePoses();
 
   initUndistortRectifyMap(rgb_intrinsics, rgb_distortion,
                           Mat(), rgb_intrinsics, rgb_size, CV_16SC2,
@@ -108,6 +152,8 @@ void RGBDCalibration :: saveToFile(const char* filename) const
   writeMatrix(output_file, "depth_distortion", depth_distortion);
   writeMatrix(output_file, "R", R);
   writeMatrix(output_file, "T", T);
+  writeMatrix(output_file, "R_extrinsics", R_extrinsics);
+  writeMatrix(output_file, "T_extrinsics", T_extrinsics);
   cv::Mat1i size_matrix(1,2);
 
   size_matrix(0,0) = rgb_size.width;

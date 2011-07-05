@@ -38,21 +38,12 @@ class Pose3D;
 class RGBDCalibration
 {
 public:
-  RGBDCalibration() :
-    zero_rgb_distortion(true),
-    zero_depth_distortion(true),
-    depth_pose(0),
-    rgb_pose(0),
-    depth_baseline(7.5e-02),
-    depth_offset(1090),
-    raw_rgb_size(640,480),
-    rgb_size(480,480),
-    raw_depth_size(204,204),
-    depth_size(204,204),
-    camera_type("kinect-ni")
-  {}
+  RGBDCalibration();
 
   ~RGBDCalibration();
+
+  /*! Update depth_pose and rgb_pose from read parameters. */
+  void updatePoses();
 
   /*! Load calibration parameters from a yaml file. */
   void loadFromFile(const char* filename);
@@ -88,6 +79,13 @@ public:
 
   /*! Whether there are distortions for the depth image or not. */
   bool zero_depth_distortion;
+
+  /*!
+   * Rotation and translation of the Depth sensor.
+   * The depth sensor is the reference, so these are camera extrinsics.
+   * R is a 3x3 rotation matrix, and T a 1x3 translation vector.
+   */
+  cv::Mat1d R_extrinsics, T_extrinsics;
 
   /*!
    * Rotation and translation between RGB and Depth sensor.
@@ -132,7 +130,7 @@ public:
 
   std::string camera_type;
 
-private:
+private:  
   RGBDCalibration(const RGBDCalibration& rhs);
 };
 
