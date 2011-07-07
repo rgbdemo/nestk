@@ -635,6 +635,13 @@ const cv::Mat1f Pose3D :: cvCameraTransform() const
   return m;
 }
 
+const cv::Mat1d Pose3D :: cvCameraTransformd() const
+{
+    cv::Mat1d m(4,4);
+    toOpencv(impl->camera_transform.matrix(), m);
+    return m;
+}
+
 void Pose3D::cvRotationMatrixTranslation(cv::Mat1d& translation, cv::Mat1d& rotation) const
 {
     translation.create(3,1);

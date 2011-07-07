@@ -147,8 +147,11 @@ public:
   /*! Returns the rotation as a quaternion. */
   cv::Vec4f cvQuaternionRotation() const;
 
-  /*! Returns the camera transform as an OpenCV 4x4 matrix. */
+  /*! Returns the camera transform as an OpenCV float 4x4 matrix. */
   const cv::Mat1f cvCameraTransform() const;
+
+  /*! Returns the camera transform as an OpenCV double 4x4 matrix. */
+  const cv::Mat1d cvCameraTransformd() const;
 
   /*!
    * Returns the camera transform as an OpenCV 3x3 rotation matrix
