@@ -20,7 +20,10 @@
 #ifndef PCL_UTILS_H
 #define PCL_UTILS_H
 
-#ifdef NESTK_USE_PCL
+#ifndef NESTK_USE_PCL
+# error "NESTK_USE_PCL should be defined!"
+# define NESTK_USE_PCL
+#endif
 
 #include <ntk/core.h>
 
@@ -34,29 +37,29 @@
 namespace ntk
 {
 
-/*! XYZ + index to find the correspond point in the RGBDImage */
-// FIXME: this is hacky. We should define a custom pcl Point!
 typedef pcl::PointXYZRGBA PointXYZIndex;
 
 class RGBDImage;
 class Pose3D;
 
-void vectorToPointCloud(pcl::PointCloud<PointXYZIndex>& cloud,
+template <class PointT>
+void vectorToPointCloud(pcl::PointCloud<PointT>& cloud,
                         const std::vector<cv::Point3f>& points,
                         const std::vector<int>& indices = std::vector<int>());
 
-void rgbdImageToPointCloud(pcl::PointCloud<PointXYZIndex>& cloud, const RGBDImage& image);
+template <class PointT>
+void rgbdImageToPointCloud(pcl::PointCloud<PointT>& cloud, const RGBDImage& image);
 
-void rgbdImageToPointCloud(pcl::PointCloud<PointXYZIndex>& cloud,
+template <class PointT>
+void rgbdImageToPointCloud(pcl::PointCloud<PointT>& cloud,
                            const RGBDImage& image,
                            const Pose3D& pose,
                            int subsampling_factor = 1);
 
+template <class PointT>
 void pointCloudToMesh(ntk::Mesh& mesh,
-                      const pcl::PointCloud<PointXYZIndex>& cloud);
+                      const pcl::PointCloud<PointT>& cloud);
 
 }
-
-#endif // NESTK_USE_PCL
 
 #endif // PCL_UTILS_H

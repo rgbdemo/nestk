@@ -32,6 +32,8 @@ SET ( ntk_sources
      geometry/pose_3d.cpp
      geometry/relative_pose_estimator.h
      geometry/relative_pose_estimator.cpp
+     geometry/relative_pose_estimator_icp.h
+     geometry/relative_pose_estimator_icp.cpp
      geometry/similarity_transform.h
      geometry/similarity_transform.cpp
      gui/image_widget.h
@@ -166,6 +168,7 @@ IF(NESTK_USE_PCL)
          mesh/table_object_rgbd_modeler.h
          mesh/table_object_rgbd_modeler.cpp
          mesh/pcl_utils.h
+         mesh/pcl_utils.hpp
          mesh/pcl_utils.cpp
     )
 ENDIF()

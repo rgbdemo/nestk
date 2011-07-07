@@ -18,80 +18,33 @@
  */
 
 #include "pcl_utils.h"
-
-#ifdef NESTK_USE_PCL
-#include <ntk/camera/rgbd_image.h>
-#include <ntk/geometry/pose_3d.h>
-#include <ntk/utils/opencv_utils.h>
-#include <ntk/mesh/mesh.h>
-
-using namespace cv;
+#include "pcl_utils.hpp"
 
 namespace ntk
 {
 
-void vectorToPointCloud(pcl::PointCloud<PointXYZIndex>& cloud,
-                        const std::vector<Point3f>& points,
-                        const std::vector<int>& indices)
-{
-  cloud.width  = points.size();
-  cloud.height = 1;
-  cloud.points.resize (cloud.width * cloud.height);
+template void vectorToPointCloud(pcl::PointCloud<pcl::PointXYZ>& cloud,
+                                 const std::vector<cv::Point3f>& points,
+                                 const std::vector<int>& indices = std::vector<int>());
+template void vectorToPointCloud(pcl::PointCloud<PointXYZIndex>& cloud,
+                                 const std::vector<cv::Point3f>& points,
+                                 const std::vector<int>& indices = std::vector<int>());
 
-  bool has_indices = (indices.size() == points.size());
+template void rgbdImageToPointCloud(pcl::PointCloud<pcl::PointXYZ>& cloud, const RGBDImage& image);
+template void rgbdImageToPointCloud(pcl::PointCloud<PointXYZIndex>& cloud, const RGBDImage& image);
 
-  foreach_idx(i, points)
-  {
-    const Point3f& p = points[i];
-    cloud.points[i].x = p.x;
-    cloud.points[i].y = p.y;
-    cloud.points[i].z = p.z;
-    if (has_indices)
-      cloud.points[i].rgba = indices[i];
-  }
-}
+template void rgbdImageToPointCloud(pcl::PointCloud<pcl::PointXYZ>& cloud,
+                                    const RGBDImage& image,
+                                    const Pose3D& pose,
+                                    int subsampling_factor = 1);
+template void rgbdImageToPointCloud(pcl::PointCloud<PointXYZIndex>& cloud,
+                                    const RGBDImage& image,
+                                    const Pose3D& pose,
+                                    int subsampling_factor = 1);
 
-void rgbdImageToPointCloud(pcl::PointCloud<PointXYZIndex>& cloud,
-                           const RGBDImage& image,
-                           const Pose3D& pose,
-                           int subsampling_factor)
-{
-  std::vector<Point3f> points;
-  std::vector<int> indices;
-
-  for (int r = 0; r < image.depth().rows; r += subsampling_factor)
-  for (int c = 0; c < image.depth().cols; c += subsampling_factor)
-  {
-    float d = image.depth()(r,c);
-    bool mask_ok = !image.depthMask().data || image.depthMask()(r,c);
-    if (d < 1e-5 || !mask_ok)
-      continue;
-    Point3f p = pose.unprojectFromImage(Point2f(c,r),d);
-    points.push_back(p);
-    indices.push_back(r*image.depth().cols+c);
-  }
-
-  vectorToPointCloud(cloud, points, indices);
-}
-
-void rgbdImageToPointCloud(pcl::PointCloud<PointXYZIndex>& cloud, const RGBDImage& image)
-{
-  if (!image.calibration())
-    ntk_throw_exception("No calibration data in image.");
-
-  rgbdImageToPointCloud(cloud, image, *image.calibration()->depth_pose);
-}
-
-void pointCloudToMesh(ntk::Mesh& mesh, const pcl::PointCloud<PointXYZIndex>& cloud)
-{
-    mesh.clear();
-    mesh.vertices.resize(cloud.size());
-    foreach_idx(i, cloud.points)
-    {
-        mesh.vertices[i] = Point3f(cloud.points[i].x, cloud.points[i].y, cloud.points[i].z);
-    }
-}
+template void pointCloudToMesh(ntk::Mesh& mesh,
+                               const pcl::PointCloud<PointXYZIndex>& cloud);
+template void pointCloudToMesh(ntk::Mesh& mesh,
+                               const pcl::PointCloud<pcl::PointXYZ>& cloud);
 
 } // ntk
-
-#endif // NESTK_USE_PCL

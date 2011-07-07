@@ -36,7 +36,7 @@ class NtkDebug
 {
   public:
     virtual ~NtkDebug()
-    { qDebug() << s; }
+    { qDebug() << "[DBG]" << s; }
 
   public:
     void print(const ntk::XmlSerializable& rhs) const;   

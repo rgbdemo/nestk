@@ -28,22 +28,20 @@ namespace ntk
 /*!
  * Estimate the relative 3D pose between a new image and the reference one.
  */
-class RelativePoseEstimatorICP
+class RelativePoseEstimatorICP : public RelativePoseEstimator
 {
 public:
-  //! Estimate the relative pose for a new image
-  //! \return true is pose successfully estimated, false otherwise.
-  virtual bool estimateNewPose(const RGBDImage& image) = 0;
+    RelativePoseEstimatorICP() {}
 
-  //! Return last estimated pose.
-  const Pose3D& currentPose() const { return m_current_pose; }
-  Pose3D& currentPose() { return m_current_pose; }
+public:
+    void setReferenceImage(const RGBDImage& ref_image);
 
-  //! Reset the relative pose estimator.
-  virtual void reset() = 0;
+public:
+    virtual bool estimateNewPose(const RGBDImage& image);
+    virtual void reset() {}
 
 protected:
-  Pose3D m_current_pose;
+    pcl::PointCloud<pcl::PointXYZ> m_ref_cloud;
 };
 
 } // ntk
