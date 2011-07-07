@@ -356,47 +356,49 @@ void MeshViewer :: rotateCamera(const cv::Vec3f& axis,
     updateDisplayCenter();
 }
 
-void MeshViewer :: mouseMoveEvent(QMouseEvent* event)
+void MeshViewer :: onCameraPositionUpdate(const cv::Vec3f& translation, const cv::Vec3f& rotation)
 {
     GLdouble m[16];
+    makeCurrent();
+    glMatrixMode(GL_MODELVIEW);
+    glGetDoublev(GL_MODELVIEW_MATRIX, m);
+    glLoadIdentity();
+    glTranslatef(translation[0],translation[1],translation[2]);
+    glTranslatef(m_display_center.x,m_display_center.y,m_display_center.z);
+    glRotatef(rotation[0], 0,1,0);
+    glRotatef(rotation[1], 1,0,0);
+    glTranslatef(-m_display_center.x,-m_display_center.y,-m_display_center.z);
+    glMultMatrixd(m);
+}
+
+void MeshViewer :: mouseMoveEvent(QMouseEvent* event)
+{
     QPoint pos = event->pos();
+    Vec3f translation(0,0,0);
+    Vec3f rotation(0,0,0);
+
     if ((event->buttons() & Qt::MidButton)
         || ((event->buttons() & Qt::LeftButton) && (event->modifiers() & Qt::ShiftModifier)))
     {
         double dx = pos.x() - m_last_mouse_pos.x();
         double dy = pos.y() - m_last_mouse_pos.y();
-        makeCurrent();
-        glMatrixMode(GL_MODELVIEW);
-        glGetDoublev(GL_MODELVIEW_MATRIX, m);
-        glLoadIdentity();
-        glTranslatef(dx*0.01,-dy*0.01,0);
-        glMultMatrixd(m);
+        translation[0] = dx*0.01;
+        translation[1] = -dy*0.01;
     }
     else if (event->buttons() & Qt::RightButton)
     {
         double dy = pos.y() - m_last_mouse_pos.y();
-        makeCurrent();
-        glMatrixMode(GL_MODELVIEW);
-        glGetDoublev(GL_MODELVIEW_MATRIX, m);
-        glLoadIdentity();
-        glTranslatef(0,0,-dy*0.01);
-        glMultMatrixd(m);
+        translation[2] = -dy*0.01;
     }
     else if (event->buttons() & Qt::LeftButton)
     {
         double dx = pos.x() - m_last_mouse_pos.x();
         double dy = pos.y() - m_last_mouse_pos.y();
-        makeCurrent();
-        glMatrixMode(GL_MODELVIEW);
-        glGetDoublev(GL_MODELVIEW_MATRIX, m);
-        glLoadIdentity();
-        glTranslatef(m_display_center.x,m_display_center.y,m_display_center.z);
-        glRotatef(dx*0.2, 0,1,0);
-        glRotatef(dy*0.2, 1,0,0);
-        glTranslatef(-m_display_center.x,-m_display_center.y,-m_display_center.z);
-        glMultMatrixd(m);
+        rotation[0] = dx*0.2;
+        rotation[1] = dy*0.2;
     }
 
+    onCameraPositionUpdate(translation, rotation);
     m_last_mouse_pos = pos;
     updateDisplayCenter();
     updateGL();

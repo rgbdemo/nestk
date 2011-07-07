@@ -73,6 +73,7 @@ protected:
 protected:
   void mousePressEvent(QMouseEvent *);
   void mouseMoveEvent(QMouseEvent*);
+  virtual void onCameraPositionUpdate(const cv::Vec3f& translation, const cv::Vec3f& rotation);
 
 private:
   struct VertexBufferObject {    
@@ -89,7 +90,7 @@ private:
     cv::Mat_<GLfloat> model_view_matrix;
   };
 
-private:
+protected:
   QPoint m_last_mouse_pos;
   std::vector<VertexBufferObject> m_vertex_buffer_objects;
   std::vector<VertexBufferObject> m_upcoming_vertex_buffer_objects;

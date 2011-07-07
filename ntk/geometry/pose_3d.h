@@ -185,6 +185,9 @@ public:
   /*! Set the 3D camera transform from 4x4 matrix. */
   void setCameraTransform(const cv::Mat1f& H);
 
+  /*! Set the 3D camera transform from 4x4 matrix. */
+  void setCameraTransform(const cv::Mat1d& H);
+
   /*! Set the 3D camera transform from 3x3 fundamental matrix. */
   void setCameraTransformFromCvFundamentalMatrix(const cv::Mat1f& F);
 
