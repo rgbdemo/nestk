@@ -571,6 +571,7 @@ void TableObjectRGBDModeler :: segmentROI(CurrentImageData& d)
     }
 
     imwrite_normalized("/tmp/debug_object.png", object_img);
+    imwrite("/tmp/debug_object_color.png", object_color);
 
     HSColorModel object_model;
     HSColorModel background_model;
