@@ -1,0 +1,26 @@
+[core]
+	repositoryformatversion = 0
+	filemode = true
+	bare = false
+	logallrefupdates = true
+	ignorecase = true
+[svn-remote "uc3m"]
+	url = https://handle2.uc3m.es/nestk
+	fetch = trunk:refs/remotes/uc3m/trunk
+	branches = branches/*:refs/remotes/uc3m/*
+	tags = tags/*:refs/remotes/tags/uc3m/*
+[svn-remote "manctl"]
+	url = svn+ssh://dev.manctl.com/src/modules/libs/trunk
+	fetch = nestk:refs/remotes/manctl/trunk
+	branches = branches/*:refs/remotes/manctl/*
+	tags = tags/*:refs/remotes/tags/manctl/*
+[remote "github"]
+   	fetch = +refs/heads/*:refs/remotes/github/*
+   	url = git@github.com:nburrus/nestk.git
+	push = github-unstable:unstable
+[branch "github"]
+	remote = github
+	merge = refs/heads/master
+[branch "github-unstable"]
+	remote = github
+	merge = refs/heads/unstable

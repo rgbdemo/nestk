@@ -17,7 +17,7 @@
  * Author: Nicolas Burrus <nicolas.burrus@uc3m.es>, (C) 2010
  */
 
-#include "kinect_grabber.h"
+#include "freenect_grabber.h"
 extern "C" {
 #include <libfreenect.h>
 }

@@ -11,6 +11,8 @@ SET ( ntk_sources
      camera/calibration.cpp
      camera/file_grabber.h
      camera/file_grabber.cpp
+     camera/multiple_grabber.h
+     camera/multiple_grabber.cpp
      camera/opencv_grabber.h
      camera/opencv_grabber.cpp
      camera/rgbd_frame_recorder.h
@@ -142,9 +144,9 @@ ENDIF()
 
 IF (NESTK_USE_OPENNI)
   SET (ntk_sources ${ntk_sources}
-       camera/nite_rgbd_grabber.h
-       camera/nite_rgbd_grabber.cpp
-       camera/nite_rgbd_grabber_internals.hxx
+       camera/openni_grabber.h
+       camera/openni_grabber.cpp
+       camera/openni_grabber_internals.hxx
        gesture/body_event.h
        gesture/body_event.cpp
        gesture/ni_utils.h
@@ -155,8 +157,8 @@ ENDIF()
 
 IF (NESTK_USE_FREENECT)
   SET (ntk_sources ${ntk_sources}
-       camera/kinect_grabber.h
-       camera/kinect_grabber.cpp)
+       camera/freenect_grabber.h
+       camera/freenect_grabber.cpp)
 ENDIF()
 
 IF(NESTK_USE_PCL)
