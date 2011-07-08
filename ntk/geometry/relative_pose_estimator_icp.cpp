@@ -26,6 +26,7 @@
 #include <ntk/mesh/pcl_utils.h>
 
 #include <pcl/registration/icp.h>
+#include <pcl/filters/voxel_grid.h>
 
 using namespace pcl;
 using namespace cv;
@@ -46,23 +47,30 @@ bool RelativePoseEstimatorICP :: estimateNewPose(const RGBDImage& image)
         return false;
     }
 
-    PointCloud<PointXYZ> cloud;
-    rgbdImageToPointCloud(cloud, image);
+    PointCloud<PointXYZ>::Ptr target = m_ref_cloud.makeShared();
+    PointCloud<PointXYZ>::Ptr source (new PointCloud<PointXYZ>());
+    rgbdImageToPointCloud(*source, image);
 
-    PointCloud<PointXYZ>::ConstPtr cloud_source_ptr = cloud.makeShared();
-    PointCloud<PointXYZ>::ConstPtr cloud_target_ptr = m_ref_cloud.makeShared();
+    PointCloud<PointXYZ>::Ptr filtered_source (new PointCloud<PointXYZ>());
+    PointCloud<PointXYZ>::Ptr filtered_target (new PointCloud<PointXYZ>());
+
+    pcl::VoxelGrid<pcl::PointXYZ> grid;
+    grid.setLeafSize (m_voxel_leaf_size, m_voxel_leaf_size, m_voxel_leaf_size);
+
+    grid.setInputCloud(source);
+    grid.filter(*filtered_source);
+
+    grid.setInputCloud(target);
+    grid.filter(*filtered_target);
+
     PointCloud<PointXYZ> cloud_reg;
-
     IterativeClosestPoint<PointXYZ, PointXYZ> reg;
-    reg.setMaximumIterations (20);
+    reg.setMaximumIterations (m_max_iterations);
     reg.setTransformationEpsilon (1e-5);
-    reg.setMaxCorrespondenceDistance (0.05);
-    reg.setInputCloud (cloud_source_ptr);
-    reg.setInputTarget (cloud_target_ptr);
-
+    reg.setMaxCorrespondenceDistance (m_distance_threshold);
+    reg.setInputCloud (filtered_source);
+    reg.setInputTarget (filtered_target);
     reg.align (cloud_reg);
-    ntk_dbg_print(cloud.points[0].x, 1);
-    ntk_dbg_print(cloud_reg.points[0].x, 1);
 
     if (!reg.hasConverged())
     {
@@ -90,7 +98,6 @@ bool RelativePoseEstimatorICP :: estimateNewPose(const RGBDImage& image)
     m_current_pose.invert();
     m_current_pose.applyTransformAfter(icp_pose);
     m_current_pose.invert();
-    rgbdImageToPointCloud(cloud, image, m_current_pose);
     return true;
 }
 

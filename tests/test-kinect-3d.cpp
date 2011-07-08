@@ -17,7 +17,7 @@
  * Author: Nicolas Burrus <nicolas.burrus@uc3m.es>, (C) 2010
  */
 
-#include <ntk/camera/kinect_grabber.h>
+#include <ntk/camera/freenect_grabber.h>
 #include <ntk/camera/rgbd_processor.h>
 #include <ntk/camera/calibration.h>
 #include <ntk/utils/opencv_utils.h>

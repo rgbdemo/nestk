@@ -215,4 +215,38 @@ bool TableObjectDetector<PointType> :: detect(pcl::PointCloud<Point>& cloud)
     return true;
 }
 
+template <class PointType>
+int TableObjectDetector<PointType> :: getMostCentralCluster() const
+{
+    // Look for the most central cluster which is not flying.
+
+    // Closest object points must be at less than 2 cm from the plane.
+    const float max_dist_to_plane_threshold = 0.02;
+
+    int selected_object = -1;
+    float min_x = FLT_MAX;
+    for (int i = 0; i < objectClusters().size(); ++i)
+    {
+        const std::vector<Point3f>& object_points = objectClusters()[i];
+        float min_dist_to_plane = FLT_MAX;
+        for (int j = 0; j < object_points.size(); ++j)
+        {
+            Point3f pobj = object_points[j];
+            min_dist_to_plane = std::min(plane().distanceToPlane(pobj), min_dist_to_plane);
+        }
+
+        if (min_dist_to_plane > max_dist_to_plane_threshold)
+            continue;
+
+        ntk::Rect3f bbox = bounding_box(object_points);
+        if (std::abs(bbox.centroid().x) < min_x)
+        {
+            min_x = std::abs(bbox.centroid().x);
+            selected_object = i;
+        }
+    }
+    return selected_object;
+}
+
+
 } // ntk

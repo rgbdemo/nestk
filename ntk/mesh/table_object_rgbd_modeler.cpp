@@ -57,9 +57,6 @@ struct TableObjectRGBDModeler :: CurrentImageData
     cv::Mat1f object_depth;
     cv::Mat3b object_color;
 
-    // Raw points of cluster of interest.
-    const std::vector<Point3f>* object_points;
-
     // 2D region of interest around the object.
     cv::Rect roi;
 
@@ -67,11 +64,36 @@ struct TableObjectRGBDModeler :: CurrentImageData
     Rect3f roi_3d;
 };
 
+TableObjectRGBDModeler :: TableObjectRGBDModeler() : RGBDModeler(),
+    m_cluster_id(0),
+    m_resolution(0.003),
+    m_depth_margin(0.f),
+    m_first_view(true),
+    m_depth_filling(true),
+    m_remove_small_structures(true),
+    m_object_points(0),
+    m_fed_from_table_detector(false)
+{
+    ntk_dbg_print(m_resolution, 1);
+}
+
+TableObjectRGBDModeler :: ~TableObjectRGBDModeler()
+{
+}
+
+void TableObjectRGBDModeler :: feedFromTableObjectDetector(const TableObjectDetector<pcl::PointXYZ>& detector,
+                                                           int cluster_id)
+{
+    m_support_plane = detector.plane();
+    ntk_assert(cluster_id < detector.objectClusters().size(), "Invalid cluster.");
+    m_object_points = &(detector.objectClusters()[cluster_id]);
+    m_resolution = detector.voxelSize();
+    m_fed_from_table_detector = true;
+}
+
 void TableObjectRGBDModeler :: initialize(const cv::Point3f& sizes,
                                           const cv::Point3f& offsets)
 {
-    m_table_object_detector.setObjectVoxelSize(m_resolution);
-
     ntk_dbg_print(m_resolution, 1);
     m_offsets = offsets;
     m_sizes = sizes;
@@ -85,6 +107,24 @@ void TableObjectRGBDModeler :: initialize(const cv::Point3f& sizes,
 bool TableObjectRGBDModeler :: addNewView(const RGBDImage& image, Pose3D& depth_pose)
 {
     image.copyTo(m_last_image);
+    TableObjectDetector<PointXYZ>* detector = 0;
+    if (!m_fed_from_table_detector)
+    {
+        detector = new TableObjectDetector<PointXYZ>();
+        detector->setObjectVoxelSize(m_resolution);
+        PointCloud<PointXYZ> cloud;
+        rgbdImageToPointCloud(cloud, image, depth_pose);
+        bool ok = detector->detect(cloud);
+        if (!ok)
+        {
+            ntk_dbg(1) << "No cluster found.";
+            return false;
+        }
+        int cluster_id = detector->getMostCentralCluster();
+        feedFromTableObjectDetector(*detector, cluster_id);
+    }
+
+    ntk_assert(m_object_points, "You need to call setTableObjectDetector first.");
 
     CurrentImageData data;
     data.image = &image;
@@ -126,6 +166,13 @@ bool TableObjectRGBDModeler :: addNewView(const RGBDImage& image, Pose3D& depth_
     computeMesh();
     computeSurfaceMesh();
     tc.stop("mesh computed");
+
+    if (detector)
+    {
+        delete detector;
+    }
+    m_object_points = 0; // mask as not fed anymore.
+    m_fed_from_table_detector = false;
     return true;
 }
 
@@ -340,44 +387,13 @@ void TableObjectRGBDModeler :: rankOpenFilter(int rank)
     m_voxels = tmp;
 }
 
-int TableObjectRGBDModeler :: selectClusterOfInterest()
-{
-    // Look for the most central cluster which is not flying.
-
-    // Closest object points must be at less than 2 cm from the plane.
-    const float max_dist_to_plane_threshold = 0.02;
-
-    int selected_object = -1;
-    float min_x = FLT_MAX;
-    for (int i = 0; i < m_table_object_detector.objectClusters().size(); ++i)
-    {
-        const std::vector<Point3f>& object_points = m_table_object_detector.objectClusters()[i];
-        float min_dist_to_plane = FLT_MAX;
-        for (int j = 0; j < object_points.size(); ++j)
-        {
-            Point3f pobj = object_points[j];
-            min_dist_to_plane = std::min(m_support_plane.distanceToPlane(pobj), min_dist_to_plane);
-        }
-
-        if (min_dist_to_plane > max_dist_to_plane_threshold)
-            continue;
-
-        ntk::Rect3f bbox = bounding_box(object_points);
-        if (std::abs(bbox.centroid().x) < min_x)
-        {
-            min_x = std::abs(bbox.centroid().x);
-            selected_object = i;
-        }
-    }
-    return selected_object;
-}
 
 // Fill unknown voxels with given points, along with all voxels lying in the line between
 // the observed voxel and the plane to fill the back face.
 void TableObjectRGBDModeler :: fillGridWithNewPoints(CurrentImageData& d)
 {
     const RGBDImage& image = *(d.image);
-    const std::vector<Point3f>& object_points = *(d.object_points);
+    const std::vector<Point3f>& object_points = *(m_object_points);
     const Pose3D& rgb_pose = d.rgb_pose;
 
     // Minimum for object points is 3mm from the plane.
@@ -457,26 +473,12 @@ bool TableObjectRGBDModeler :: buildVoxelsFromNewView(CurrentImageData& d)
     const Pose3D& rgb_pose = d.rgb_pose;
     pcl::PointCloud<PointXYZIndex>& cloud = d.cloud;
 
-    bool ok = m_table_object_detector.detect(cloud);
-    if (!ok)
-        return false;
-
-    if (m_table_object_detector.objectClusters().size() < 1)
-        return false;
-
-    m_support_plane = m_table_object_detector.plane();
-
-    int selected_object = selectClusterOfInterest();
-    if (selected_object < 0)
-        return false;
-
-    d.object_points = &(m_table_object_detector.objectClusters()[selected_object]);
     // FIXME: only one view supported right now.
     m_first_view = true;
     if (m_first_view)
     {
         // Initialize voxel gris for the working zone.
-        ntk::Rect3f bbox = bounding_box(*d.object_points);
+        ntk::Rect3f bbox = bounding_box(*m_object_points);
         Point3f working_zone = Point3f(0.5,0.5,0.5); // zone is 50x50x50cm centered of cluster center.
         initialize(working_zone, bbox.centroid()-0.5f*working_zone);
     }

@@ -20,7 +20,7 @@
 #include <ntk/core.h>
 #include <ntk/utils/debug.h>
 
-#include <ntk/camera/nite_rgbd_grabber.h>
+#include <ntk/camera/openni_grabber.h>
 #include <ntk/camera/rgbd_processor.h>
 #include <ntk/utils/opencv_utils.h>
 
@@ -28,8 +28,8 @@ using namespace ntk;
 
 int main()
 {    
-    OpenNIGrabber grabber1(0); // first id is 0
-    OpenNIGrabber grabber2(1);
+    OpenniGrabber grabber1(0); // first id is 0
+    OpenniGrabber grabber2(1);
 
     grabber1.connectToDevice();
     grabber2.connectToDevice();
@@ -38,7 +38,7 @@ int main()
     grabber2.start();
 
     RGBDImage image1, image2;
-    NiteRGBDProcessor post_processor;
+    OpenniRGBDProcessor post_processor;
 
     while (true)
     {

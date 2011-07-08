@@ -150,10 +150,10 @@ public:
 typedef FreenectRGBDProcessor KinectProcessor;
 
 /*! RGBDProcessor with default parameters for OpenNI/Nite. */
-class NiteRGBDProcessor : public RGBDProcessor
+class OpenniRGBDProcessor : public RGBDProcessor
 {
 public:
-  NiteRGBDProcessor()
+  OpenniRGBDProcessor()
     : RGBDProcessor()
   {
     // Everything is done by the grabber.
@@ -165,7 +165,7 @@ protected:
 };
 
 // For backward compatiblity.
-typedef NiteRGBDProcessor NiteProcessor;
+typedef OpenniRGBDProcessor NiteProcessor;
 
 class RGBDProcessorFactory
 {

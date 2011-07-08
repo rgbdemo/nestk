@@ -170,10 +170,8 @@ namespace ntk
             if (m_flags & FilterThresholdDepth)
                 applyDepthThreshold();
 
-#if 0
-	    if (m_flags & FilterAmplitude)
+            if (m_flags & FilterAmplitude)
                 removeLowAmplitudeOutliers();
-#endif
 
             if (m_flags & FilterEdges)
                 removeEdgeOutliers();
@@ -630,7 +628,7 @@ namespace ntk
         }
     }
 
-    void NiteRGBDProcessor :: computeMappings()
+    void OpenniRGBDProcessor :: computeMappings()
     {
         Size depth_size = m_image->calibration()->raw_depth_size;
         Size rgb_size = m_image->calibration()->rawRgbSize();
@@ -654,17 +652,17 @@ namespace ntk
 
         Size raw_rgb_size(rgb_size.width/ratio, rgb_size.height/ratio);
         cv::Mat3b raw_mapped_rgb(raw_rgb_size);
-        cv::resize(m_image->rawRgb(), raw_mapped_rgb, raw_rgb_size);
+        cv::resize(m_image->rawRgb(), raw_mapped_rgb, raw_rgb_size, 0, 0, cv::INTER_LINEAR);
         m_image->mappedRgbRef() = raw_mapped_rgb(Rect(Point(0,0),
                                                       depth_size));
 
         Size raw_depth_size(depth_size.width*ratio, depth_size.height*ratio);
 
         cv::Mat1f raw_mapped_depth(raw_depth_size);
-        cv::resize(m_image->rawDepth(), raw_mapped_depth, raw_depth_size, 0, 0, INTER_LINEAR);
+        cv::resize(m_image->rawDepth(), raw_mapped_depth, raw_depth_size, 0, 0, INTER_NEAREST);
 
         cv::Mat1b raw_mapped_depth_mask(raw_depth_size);
-        cv::resize(m_image->depthMask(), raw_mapped_depth_mask, raw_depth_size, 0, 0, INTER_LINEAR);
+        cv::resize(m_image->depthMask(), raw_mapped_depth_mask, raw_depth_size, 0, 0, INTER_NEAREST);
 
         cv::Mat1f roi_depth = m_image->mappedDepthRef()(Rect(Point(0,0), raw_depth_size));
         raw_mapped_depth.copyTo(roi_depth);
@@ -683,19 +681,11 @@ namespace ntk
         RGBDProcessor* processor = 0;
         if (params.camera_type == "kinect-ni")
         {
-            processor = new NiteRGBDProcessor();
+            processor = new OpenniRGBDProcessor();
         }
         else if (params.camera_type == "kinect-freenect")
         {
             processor = new FreenectRGBDProcessor();
-        }
-        else if (params.camera_type == "pmd")
-        {
-#ifdef NESTK_USE_PMDSDK
-            processor = new PmdRgbProcessor();
-#else
-            ntk_throw_exception("NESTK_USE_PMDSDK support is not enabled.");
-#endif
         }
         else
         {

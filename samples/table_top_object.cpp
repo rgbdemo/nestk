@@ -18,6 +18,8 @@
  */
 
 #include <ntk/ntk.h>
+#include <ntk/mesh/mesh_generator.h>
+#include <ntk/mesh/table_object_rgbd_modeler.h>
 #include <ntk/utils/debug.h>
 #include <ntk/camera/openni_grabber.h>
 #include <ntk/gesture/body_event.h>
@@ -56,9 +58,6 @@ int main(int argc, char **argv)
     if (opt::high_resolution())
         grabber.setHighRgbResolution(true);
 
-    // Use mirrored images.
-    grabber.setMirrored(true);
-
     // Start the grabber.
     grabber.connectToDevice();
     grabber.start();
@@ -69,36 +68,32 @@ int main(int argc, char **argv)
     // Image post processor. Compute mappings when RGB resolution is 1280x1024.
     OpenniRGBDProcessor post_processor;
 
-    namedWindow("depth");
-    namedWindow("color");
-    namedWindow("users");
+    // Wait for a new frame, get a local copy and postprocess it.
+    grabber.waitForNextFrame();
+    grabber.copyImageTo(image);
+    post_processor.processImage(image);
 
-    char last_c = 0;
-    while (true && (last_c != 27))
+    ntk_ensure(image.calibration(), "Uncalibrated rgbd image, cannot project to 3D!");
+
+    // Initialize the object modeler.
+    PointCloud<PointXYZ> cloud;
+    rgbdImageToPointCloud(cloud, image);
+
+    TableObjectDetector<PointXYZ> detector;
+    detector.setObjectVoxelSize(0.003); // 3 mm voxels.
+    bool ok = detector.detect(cloud);
+    ntk_throw_exception_if(!ok, "No cluster detected on a table plane!");
+
+    for (int cluster_id = 0; cluster_id < detector.objectClusters().size(); ++cluster_id)
     {
-        // Wait for a new frame, get a local copy and postprocess it.
-        grabber.waitForNextFrame();
-        grabber.copyImageTo(image);
-        post_processor.processImage(image);
-
-        // Prepare the depth view, with skeleton and handpoint.
-        cv::Mat1b debug_depth_img = normalize_toMat1b(image.depth());
-        if (image.skeleton())
-            image.skeleton()->drawOnImage(debug_depth_img);
-
-        // Prepare the color view (mapped to depth frame), with skeleton and handpoint.
-        cv::Mat3b debug_color_img;
-        image.mappedRgb().copyTo(debug_color_img);
-        if (image.skeleton())
-            image.skeleton()->drawOnImage(debug_color_img);
-
-        // Prepare the user mask view as colors.
-        cv::Mat3b debug_users;
-        image.fillRgbFromUserLabels(debug_users);
-
-        imshow("depth", debug_depth_img);
-        imshow("color", debug_color_img);
-        imshow("users", debug_users);
-        last_c = (cv::waitKey(10) & 0xff);
+        TableObjectRGBDModeler modeler;
+        modeler.feedFromTableObjectDetector(detector, cluster_id);
+        Pose3D pose = *image.calibration()->depth_pose;
+        modeler.addNewView(image, pose);
+        modeler.computeMesh();
+        modeler.currentMesh().saveToPlyFile(cv::format("object%d.ply", cluster_id).c_str());
     }
+
+    grabber.stop();
+    grabber.disconnectFromDevice();
 }

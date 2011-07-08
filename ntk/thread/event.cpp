@@ -24,7 +24,7 @@
 namespace ntk
 {
 
-  void SyncEventListener :: newEvent(void* sender)
+  void SyncEventListener :: newEvent(EventBroadcaster* sender)
   {
     if (!m_enabled) return;
     m_lock.lock();
@@ -45,7 +45,7 @@ namespace ntk
     m_lock.unlock();
   }
 
-void AsyncEventListener :: newEvent(void* sender)
+void AsyncEventListener :: newEvent(EventBroadcaster* sender)
 {
   {
     if (m_event_signaled)
@@ -84,10 +84,10 @@ void EventBroadcaster :: removeAllEventListeners()
   m_listeners.clear();
 }
 
-void EventBroadcaster :: broadcastEvent(void* sender)
+void EventBroadcaster :: broadcastEvent()
 {
   foreach_idx(i, m_listeners)
-    m_listeners[i]->newEvent(sender);
+    m_listeners[i]->newEvent(this);
 }
 
 } // ntk

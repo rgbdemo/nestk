@@ -64,6 +64,7 @@ public:
     void initialize();
 
 public:
+    float voxelSize() const { return downsample_leaf_objects_; }
     void setObjectVoxelSize(float s = 0.003) { downsample_leaf_objects_ = s; }
     void setBackgroundVoxelSize(float s = 0.01) { downsample_leaf_ = s; }
     void setDepthLimits(float min_z = -1.6, float max_z = -0.4) { min_z_bounds_ = min_z; max_z_bounds_ = max_z; }
@@ -72,6 +73,9 @@ public:
 public:
     /*! Returns true if at least one object and plane are detected. */
     bool detect(PointCloud& cloud);
+
+    /*! Returns the index of the most central cluster. */
+    int getMostCentralCluster() const;
 
 public:
     const ntk::Plane& plane() const { return m_plane; }

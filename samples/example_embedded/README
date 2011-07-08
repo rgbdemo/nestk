@@ -1,1 +1,9 @@
 Example of using nestk as an embedded library, in a nestk subfolder.
+
+Put nestk as a subdirectory (e.g. using a symlink to the parent directory) 
+and you should be able to compile this example, e.g.:
+
+ln -s ../../../nestk .
+mkdir build
+cmake ..
+make

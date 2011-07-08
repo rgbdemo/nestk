@@ -33,57 +33,59 @@
 namespace ntk
 {
 
-  class EventListener
-  {
-  public:
-    virtual void newEvent(void* sender = 0) = 0;
-  };
+class EventBroadcaster;
 
-  class SyncEventListener : public EventListener
-  {
-  public:
+class EventListener
+{
+public:
+    virtual void newEvent(EventBroadcaster* sender = 0) = 0;
+};
+
+class SyncEventListener : public EventListener
+{
+public:
     SyncEventListener() : m_enabled(true), m_unprocessed_event(false)
     {}
 
     void setEnabled(bool enabled) { m_enabled = enabled; }
     bool enabled() const { return m_enabled; }
 
-    virtual void newEvent(void* sender = 0);
+    virtual void newEvent(EventBroadcaster* sender = 0);
     void waitForNewEvent(int timeout_msecs = 60000);
 
-  private:
+private:
     bool m_enabled;
     bool m_unprocessed_event;
     mutable QMutex m_lock;
     QWaitCondition m_condition;
-  };
+};
 
 class AsyncEventListener : public QObject, public EventListener
 {
-  Q_OBJECT
+    Q_OBJECT
 
 public:
-  AsyncEventListener() : m_event_signaled(false), m_handler_running(false)
-  {}
+    AsyncEventListener() : m_event_signaled(false), m_handler_running(false)
+    {}
 
-  virtual void newEvent(void* sender = 0);
-  virtual void handleAsyncEvent() = 0;
-  virtual void customEvent(QEvent* event);
+    virtual void newEvent(EventBroadcaster* sender = 0);
+    virtual void handleAsyncEvent() = 0;
+    virtual void customEvent(QEvent* event);
 
 private:
-  bool m_event_signaled; // FIXME: need for a lock here?
-  bool m_handler_running;
+    bool m_event_signaled; // FIXME: need for a lock here?
+    bool m_handler_running;
 };
 
 class EventBroadcaster
 {
 public:
-  void addEventListener(EventListener* updater);
-  void removeAllEventListeners();
-  void broadcastEvent(void* sender = 0);
+    virtual void addEventListener(EventListener* updater);
+    virtual void removeAllEventListeners();
+    virtual void broadcastEvent();
 
 private:
-  std::vector<EventListener*> m_listeners;
+    std::vector<EventListener*> m_listeners;
 };
 
 } // ntk

@@ -43,6 +43,8 @@ class CV_EXPORTS RGBDImage
 public:
   RGBDImage() : m_calibration(0), m_skeleton(0) {}
 
+  RGBDImage(const RGBDImage& rhs) : m_calibration(0), m_skeleton(0) { rhs.copyTo(*this); }
+
   /*! Initialize from an viewXXXX directory. */
   RGBDImage(const std::string& dir,
             const RGBDCalibration* calib = 0,
@@ -182,9 +184,6 @@ public:
   const Skeleton* skeleton() const { return m_skeleton; }
   Skeleton* skeletonRef() { return m_skeleton; }
   void setSkeletonData(Skeleton* skeleton) { m_skeleton = skeleton; }
-
-private:
-  RGBDImage(const RGBDImage& rhs);
 
 private:
   cv::Mat3b m_rgb;

@@ -107,7 +107,7 @@ void ImageWidget :: setImage(const cv::Mat1f& im, double* i_min_val, double* i_m
 
 void ImageWidget :: setImage(const cv::Mat3b& im)
 {
-  if (m_image.width() != im.cols
+    if (m_image.width() != im.cols
       || m_image.height() != im.rows)
     m_image = QImage(im.cols, im.rows, QImage::Format_RGB32);
 

@@ -50,15 +50,8 @@ private:
     struct CurrentImageData;
 
 public:
-    TableObjectRGBDModeler() : RGBDModeler(),
-        m_resolution(0.003),
-        m_depth_margin(0.f),
-        m_first_view(true),
-        m_depth_filling(true),
-        m_remove_small_structures(true)
-    {
-        ntk_dbg_print(m_resolution, 1);
-    }
+    TableObjectRGBDModeler();
+    virtual ~TableObjectRGBDModeler();
 
     /*! Create the voxel grid. */
     void initialize(const cv::Point3f& sizes, const cv::Point3f& offsets);
@@ -72,6 +65,9 @@ public:
 
     /*! Set the voxel grid resolution. */
     virtual void setResolution(float resolution) { m_resolution = resolution; }
+
+    /*! Set the input table object detector and the cluster id to model. */
+    void feedFromTableObjectDetector(const TableObjectDetector<pcl::PointXYZ>& detector, int cluster_id);
 
 public:
     /*! Update the voxel grid using the given image. */
@@ -110,9 +106,6 @@ private:
     /*! Fill gaps in depth image. */
     void fillDepthImage(CurrentImageData& d);
 
-    /*! Select the cluster of interest. */
-    int selectClusterOfInterest();
-
     /*! Initial fill of the voxel grid from new cluster. */
     void fillGridWithNewPoints(CurrentImageData& d);
 
@@ -124,7 +117,7 @@ private:
     void depthInpaintROI(CurrentImageData& d);
 
 private:
-    TableObjectDetector<ntk::PointXYZIndex> m_table_object_detector;
+    int m_cluster_id;
     cv::Mat_<uchar> m_voxels;
     cv::Mat_<cv::Vec3b> m_voxels_color;
     float m_resolution;
@@ -134,6 +127,8 @@ private:
     bool m_first_view;
     bool m_depth_filling;
     bool m_remove_small_structures;
+    const std::vector<Point3f>* m_object_points;
+    bool m_fed_from_table_detector;
 };
 
 } // ntk

@@ -19,7 +19,7 @@
 
 #include <ntk/ntk.h>
 #include <ntk/utils/debug.h>
-#include <ntk/camera/nite_rgbd_grabber.h>
+#include <ntk/camera/openni_grabber.h>
 #include <ntk/gesture/body_event.h>
 
 #include <QApplication>
@@ -50,7 +50,7 @@ int main(int argc, char **argv)
     QDir::setCurrent(QApplication::applicationDirPath());
 
     // Declare the frame grabber.
-    OpenNIGrabber grabber(opt::kinect_id());
+    OpenniGrabber grabber(opt::kinect_id());
 
     // High resolution 1280x1024 RGB Image.
     if (opt::high_resolution())
@@ -64,7 +64,7 @@ int main(int argc, char **argv)
     RGBDImage image;
 
     // Image post processor. Compute mappings when RGB resolution is 1280x1024.
-    NiteRGBDProcessor post_processor;
+    OpenniRGBDProcessor post_processor;
 
     namedWindow("depth");
     namedWindow("color");
