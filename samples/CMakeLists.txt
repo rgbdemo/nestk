@@ -16,7 +16,16 @@ TARGET_LINK_LIBRARIES(openni-backend nestk)
 ADD_EXECUTABLE(multiple-kinects multiple_kinects.cpp)
 TARGET_LINK_LIBRARIES(multiple-kinects nestk)
 
+ADD_EXECUTABLE(synchronized-multiple-kinects synchronized_multiple_kinects.cpp)
+TARGET_LINK_LIBRARIES(synchronized-multiple-kinects nestk)
+
 IF (NESTK_USE_PCL)
     ADD_EXECUTABLE(pcl-compatibility pcl_compatibility.cpp)
     TARGET_LINK_LIBRARIES(pcl-compatibility nestk)
+
+    ADD_EXECUTABLE(icp-pcl icp_pcl.cpp)
+    TARGET_LINK_LIBRARIES(icp-pcl nestk)
+
+    ADD_EXECUTABLE(table-top-object table_top_object.cpp)
+    TARGET_LINK_LIBRARIES(table-top-object nestk)
 ENDIF()

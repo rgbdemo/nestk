@@ -61,6 +61,10 @@ public:
   virtual unsigned frequency() const { return 0; }
   virtual void setFrequency(unsigned freq) {}
 
+  /*! Set an additional distance offset which will be added to all distance values for Time-of-Flight cameras. */
+  virtual float offset() const { return 0.0; }
+  virtual void setOffset(int indexFreq) {}
+
   /*! Set the tilt angle for motorized grabbers such as Kinect. */
   virtual void setTiltAngle(int angle) {}
 
@@ -78,7 +82,10 @@ public:
   { return m_calib_data; }
 
   /*! Thread safe deep copy. */
-  void copyImageTo(RGBDImage& image);
+  virtual void copyImageTo(RGBDImage& image);
+
+  /*! Thread safe deep copy of vector of images for multiple grabbers. */
+  virtual void copyImagesTo(std::vector<RGBDImage>& images);
 
   /*!
    * Tell the grabber to wait for notifications before each frame grab.

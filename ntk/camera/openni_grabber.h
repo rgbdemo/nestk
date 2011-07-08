@@ -34,10 +34,10 @@ namespace ntk
 
 class BodyEventDetector;
 
-class OpenNIGrabber : public ntk::RGBDGrabber
+class OpenniGrabber : public ntk::RGBDGrabber
 {
 public:
-    OpenNIGrabber(int camera_id = 0) :
+    OpenniGrabber(int camera_id = 0) :
         m_camera_id(camera_id),
         m_need_pose_to_calibrate(false),
         m_max_num_users(15),
@@ -132,10 +132,12 @@ private:
     std::string m_xml_config_file;
 
     bool m_track_users;
+
+    static QMutex m_ni_mutex;
 };
 
 // Backward compatibility.
-typedef OpenNIGrabber NiteRGBDGrabber;
+typedef OpenniGrabber NiteRGBDGrabber;
 
 } // ntk
 

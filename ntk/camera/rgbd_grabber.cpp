@@ -24,32 +24,40 @@
 namespace ntk
 {
 
-  void RGBDGrabber :: copyImageTo(RGBDImage& image)
-  {
+void RGBDGrabber :: copyImageTo(RGBDImage& image)
+{
     QReadLocker locker(&m_lock);
     m_rgbd_image.copyTo(image);
-  }
+}
 
-  void RGBDGrabber :: advertiseNewFrame()
-  {
+void RGBDGrabber :: copyImagesTo(std::vector<RGBDImage>& images)
+{
+    QReadLocker locker(&m_lock);
+    images.resize(1);
+    m_rgbd_image.copyTo(images[0]);
+}
+
+void RGBDGrabber :: advertiseNewFrame()
+{
     ++m_frame_count;
     float tick = ntk::Time::getMillisecondCounter();
     float delta_tick = (tick - m_last_frame_tick);
     if (delta_tick > 1000)
     {
-      m_framerate = (1000.f * m_frame_count) / (delta_tick);
-      m_last_frame_tick = tick;
-      m_frame_count = 0;
+        m_framerate = (1000.f * m_frame_count) / (delta_tick);
+        m_last_frame_tick = tick;
+        m_frame_count = 0;
     }
 
     m_condition.wakeAll();
     broadcastEvent();
-  }
+}
 
-  void RGBDGrabber :: stop()
-  {
-      setShouldExit();
-      wait();
-  }
+void RGBDGrabber :: stop()
+{
+    setShouldExit();
+    newEvent();
+    wait();
+}
 
 }
