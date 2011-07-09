@@ -34,8 +34,6 @@ SET ( ntk_sources
      geometry/pose_3d.cpp
      geometry/relative_pose_estimator.h
      geometry/relative_pose_estimator.cpp
-     geometry/relative_pose_estimator_icp.h
-     geometry/relative_pose_estimator_icp.cpp
      geometry/similarity_transform.h
      geometry/similarity_transform.cpp
      gui/image_widget.h
@@ -167,6 +165,8 @@ IF(NESTK_USE_PCL)
          detection/plane_estimator.cpp
          detection/table_object_detector.h
          detection/table_object_detector.hpp
+     	 geometry/relative_pose_estimator_icp.h
+     	 geometry/relative_pose_estimator_icp.cpp
          mesh/table_object_rgbd_modeler.h
          mesh/table_object_rgbd_modeler.cpp
          mesh/pcl_utils.h
