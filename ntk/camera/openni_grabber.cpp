@@ -93,9 +93,17 @@ bool OpenniGrabber :: connectToDevice()
     QMutexLocker ni_locker(&m_ni_mutex);
     ntk_dbg(1) << format("[Kinect %x] connecting", this);
 
-    xnLogSetConsoleOutput(true);
-    xnLogSetSeverityFilter(XN_LOG_WARNING);
-    xnLogSetMaskState("LOG", true);
+    if (ntk::ntk_debug_level >= 1)
+    {
+        xnLogSetFileOutput(true);
+        xnLogSetSeverityFilter(XN_LOG_WARNING);
+        xnLogSetMaskState("ALL", true);
+    }
+    if (ntk::ntk_debug_level >= 2)
+    {
+        xnLogSetConsoleOutput(true);
+        xnLogSetSeverityFilter(XN_LOG_VERBOSE);
+    }
     xnLogInitSystem();
 
     XnStatus status = m_ni_context.Init();
@@ -115,14 +123,14 @@ bool OpenniGrabber :: connectToDevice()
     {
         const xn::NodeInfo& deviceInfo = *nodeIt;
         const XnProductionNodeDescription& description = deviceInfo.GetDescription();
-        ntk_dbg(1) << format("device: vendor %s name %s, instance %s",
+        ntk_dbg(2) << format("device: vendor %s name %s, instance %s",
                              description.strVendor, description.strName, deviceInfo.GetInstanceName());
     }
 
     xn::NodeInfoList::Iterator nodeIt = device_node_info_list.Begin();
     for (int i = 0; nodeIt != device_node_info_list.End () && i < m_camera_id; ++nodeIt, ++i)
     {
-    }
+    }        
 
     if (nodeIt == device_node_info_list.End())
     {
