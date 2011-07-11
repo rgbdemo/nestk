@@ -103,18 +103,12 @@ private:
     /*! Build a new grid from given image and point cloud. */
     bool buildVoxelsFromNewView(CurrentImageData& d);
 
-    /*! Fill gaps in depth image. */
-    void fillDepthImage(CurrentImageData& d);
-
     /*! Initial fill of the voxel grid from new cluster. */
     void fillGridWithNewPoints(CurrentImageData& d);
 
     bool isOrMaybeIsObject(VoxelLabel l) { return l == ObjectVoxel || l == MaybeObjectVoxel; }
 
     void removeInconsistentObjectVoxels(CurrentImageData& d);
-    void computeImageROI(CurrentImageData& d);
-    void segmentROI(CurrentImageData& d);
-    void depthInpaintROI(CurrentImageData& d);
 
 private:
     int m_cluster_id;
