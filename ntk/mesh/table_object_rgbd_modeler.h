@@ -85,6 +85,9 @@ public:
     /*! Reset the voxel grid. */
     virtual void reset();
 
+    /*! Returns the mesh volume in m^3. */
+    float meshVolume() const;
+
 private:
     /*! Compute 3D point coordinates from voxel grid coordinates. */
     cv::Point3f toRealWorld(const cv::Point3f& p) const;

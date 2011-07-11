@@ -479,4 +479,18 @@ bool TableObjectRGBDModeler :: buildVoxelsFromNewView(CurrentImageData& d)
     return true;
 }
 
+float TableObjectRGBDModeler :: meshVolume() const
+{
+    int n_voxels = 0;
+    for_all_drc(m_voxels)
+    {
+        if (m_voxels(d,r,c) == ObjectVoxel)
+            n_voxels += 1;
+    }
+    ntk_dbg_print(n_voxels, 1);
+    ntk_dbg_print(m_resolution, 1);
+    ntk_dbg_print(n_voxels * (m_resolution)*(m_resolution)*(m_resolution), 1);
+    return n_voxels * (m_resolution)*(m_resolution)*(m_resolution);
+}
+
 } // ntk
