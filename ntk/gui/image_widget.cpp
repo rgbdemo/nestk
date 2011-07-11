@@ -43,10 +43,17 @@ void ImageWidget :: mouseMoveEvent ( QMouseEvent * event )
   emit mouseMoved(x,y);
 }
 
-void ImageWidget :: setRects(const std::list<cv::Rect>& rects)
+void ImageWidget :: setRects(const std::list<cv::Rect>& rects, const cv::Vec3b& color)
 {
   m_rects = rects;
+  m_rect_color = color;
   update();
+}
+
+void ImageWidget :: setTexts(const std::vector<TextData> texts)
+{
+    m_texts = texts;
+    update();
 }
 
 void ImageWidget :: setImage(const cv::Mat1b& im)
@@ -158,12 +165,23 @@ void ImageWidget :: paintEvent(QPaintEvent * event)
   QPainter painter(this);
   painter.drawImage(rect(), m_image, m_image.rect());
 
+  m_pen.setColor(qRgb(m_rect_color[0], m_rect_color[1], m_rect_color[2]));
   painter.setPen(m_pen);
   foreach_const_it(it, m_rects, std::list<cv::Rect>)
   {
     const cv::Rect& r = *it;
     QRect qr (r.x*sx, r.y*sy, r.width*sx, r.height*sy);
     painter.drawRect(qr);
+  }
+
+  foreach_idx(i, m_texts)
+  {
+      const cv::Vec3b& c = m_texts[i].color;
+      m_pen.setColor(qRgb(c[0], c[1], c[2]));
+      painter.setPen(m_pen);
+      QString s (m_texts[i].text.c_str());
+      QPoint p (m_texts[i].x*sx, m_texts[i].y*sy);
+      painter.drawText(p, s);
   }
 }
 

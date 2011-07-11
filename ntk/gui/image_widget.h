@@ -35,37 +35,49 @@ namespace ntk
 
 class ImageWidget : public QWidget
 {
-  Q_OBJECT
+    Q_OBJECT
 
 public:
-  ImageWidget(QWidget* parent) : QWidget(parent), m_last_mouse_pos(-1,-1)
-  {}
+    struct TextData
+    {
+        std::string text;
+        int x, y;
+        float size;
+        cv::Vec3b color;
+    };
 
 public:
-  double scaleX() const;
-  double scaleY() const;
+    ImageWidget(QWidget* parent) : QWidget(parent), m_last_mouse_pos(-1,-1)
+    {}
 
-  void getLastMousePos(int& x, int& y)
-  { x = m_last_mouse_pos.x(); y = m_last_mouse_pos.y(); }
+public:
+    double scaleX() const;
+    double scaleY() const;
 
-  void setImage(const cv::Mat1f& im, double* min_val = 0, double* max_val = 0);
-  void setImage(const cv::Mat1b& im);
-  void setImage(const cv::Mat3b& im);
-  void setPen(QPen q);
-  void setRects(const std::list<cv::Rect>& rects);
+    void getLastMousePos(int& x, int& y)
+    { x = m_last_mouse_pos.x(); y = m_last_mouse_pos.y(); }
+
+    void setImage(const cv::Mat1f& im, double* min_val = 0, double* max_val = 0);
+    void setImage(const cv::Mat1b& im);
+    void setImage(const cv::Mat3b& im);
+    void setPen(QPen q);
+    void setRects(const std::list<cv::Rect>& rects, const cv::Vec3b& color = cv::Vec3b(0,0,0));
+    void setTexts(const std::vector<TextData> texts);
 
 signals:
-  void mouseMoved(int image_x, int image_y);
+    void mouseMoved(int image_x, int image_y);
 
 protected:
-  virtual void mouseMoveEvent( QMouseEvent * event );
-  virtual void paintEvent(QPaintEvent * event);
+    virtual void mouseMoveEvent( QMouseEvent * event );
+    virtual void paintEvent(QPaintEvent * event);
 
 private:
-  QPoint m_last_mouse_pos;
-  QImage m_image;
-  QPen m_pen;
-  std::list<cv::Rect> m_rects;
+    QPoint m_last_mouse_pos;
+    QImage m_image;
+    QPen m_pen;
+    std::list<cv::Rect> m_rects;
+    cv::Vec3b m_rect_color;
+    std::vector<TextData> m_texts;
 };
 
 } // ntk
