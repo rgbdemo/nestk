@@ -178,6 +178,7 @@ void ImageWidget :: paintEvent(QPaintEvent * event)
   {
       const cv::Vec3b& c = m_texts[i].color;
       m_pen.setColor(qRgb(c[0], c[1], c[2]));
+      painter.setFont(QFont("Helvetica", 14));
       painter.setPen(m_pen);
       QString s (m_texts[i].text.c_str());
       QPoint p (m_texts[i].x*sx, m_texts[i].y*sy);
