@@ -100,6 +100,13 @@ inline void toOpencv(const Eigen::Matrix4d& ep,
     for (int c = 0; c < 4; ++c)
       mat(r,c) = ep(r,c);
 }
+inline void toOpencv(const Eigen::Matrix4d& ep,
+                     cv::Mat1d& mat)
+{
+  for (int r = 0; r < 4; ++r)
+    for (int c = 0; c < 4; ++c)
+      mat(r,c) = ep(r,c);
+}
 #else
 template <typename CvScalarType, typename EigenScalarType, int H, int W>
 inline void toOpencv(const Eigen::Matrix<EigenScalarType,H,W>& ep,
