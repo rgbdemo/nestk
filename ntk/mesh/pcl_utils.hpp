@@ -28,7 +28,7 @@ namespace ntk
 template <class PointT>
 void vectorToPointCloud(pcl::PointCloud<PointT>& cloud,
                         const std::vector<cv::Point3f>& points,
-                        const std::vector<int>& indices = std::vector<int>())
+                        const std::vector<int>& indices)
 {
     cloud.width  = points.size();
     cloud.height = 1;

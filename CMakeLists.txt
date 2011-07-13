@@ -11,6 +11,9 @@ SET(NESTK_DEPS_DIR "" CACHE PATH "Path to nestk deps")
 ## Speficies default possible locations for external dependencies
 SET(NESTK_ROOT_DIRS_HINTS ${NESTK_DEPS_DIR} ${NESTK_ROOT_DIRS_HINTS} ${CMAKE_INSTALL_PREFIX}
                           "C:/nestk" "$ENV{PROGRAMFILES}/nestk"
+                          "$ENV{PROGRAMFILES}/PCL"
+                          "$ENV{PROGRAMFILES}/boost/boost_1_46_1"
+                          "$ENV{PROGRAMFILES}/flann 1.6.9"
                           "$ENV{HOME}/nestk" "$ENV{HOME}/opt/nestk"
                           /usr/local/nestk /opt/nestk /usr/local /opt)
 

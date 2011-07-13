@@ -25,10 +25,10 @@ namespace ntk
 
 template void vectorToPointCloud(pcl::PointCloud<pcl::PointXYZ>& cloud,
                                  const std::vector<cv::Point3f>& points,
-                                 const std::vector<int>& indices = std::vector<int>());
+                                 const std::vector<int>& indices);
 template void vectorToPointCloud(pcl::PointCloud<PointXYZIndex>& cloud,
                                  const std::vector<cv::Point3f>& points,
-                                 const std::vector<int>& indices = std::vector<int>());
+                                 const std::vector<int>& indices);
 
 template void rgbdImageToPointCloud(pcl::PointCloud<pcl::PointXYZ>& cloud, const RGBDImage& image);
 template void rgbdImageToPointCloud(pcl::PointCloud<PointXYZIndex>& cloud, const RGBDImage& image);
@@ -36,11 +36,11 @@ template void rgbdImageToPointCloud(pcl::PointCloud<PointXYZIndex>& cloud, const
 template void rgbdImageToPointCloud(pcl::PointCloud<pcl::PointXYZ>& cloud,
                                     const RGBDImage& image,
                                     const Pose3D& pose,
-                                    int subsampling_factor = 1);
+                                    int subsampling_factor);
 template void rgbdImageToPointCloud(pcl::PointCloud<PointXYZIndex>& cloud,
                                     const RGBDImage& image,
                                     const Pose3D& pose,
-                                    int subsampling_factor = 1);
+                                    int subsampling_factor);
 
 template void pointCloudToMesh(ntk::Mesh& mesh,
                                const pcl::PointCloud<PointXYZIndex>& cloud);

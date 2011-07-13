@@ -29,8 +29,11 @@
 
 #include <opencv2/imgproc/imgproc.hpp>
 
-using namespace cv;
 using namespace pcl;
+using cv::Point3f;
+using cv::Vec3b;
+using cv::Mat1f;
+using cv::Vec3f;
 
 namespace ntk
 {

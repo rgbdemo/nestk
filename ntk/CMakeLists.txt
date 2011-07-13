@@ -199,87 +199,6 @@ IF (IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/private")
    SET(HAVE_NESTK_PRIVATE 1)
 ENDIF()
 
-IF (HAVE_NESTK_PRIVATE)
-  SET (ntk_sources ${ntk_sources}
-    private/detection/find_objects.h
-    private/detection/find_objects.cpp
-    private/detection/pedestrian_detector.h
-    private/detection/pedestrian_detector.cpp
-    private/detection/recognise_objects.h
-    private/detection/recognise_objects.cpp
-    private/mesh/silhouette_rgbd_modeler.h
-    private/mesh/silhouette_rgbd_modeler.cpp
-    private/pa10/pa10client.h
-    private/pa10/pa10client.cpp
-    private/pa10/pa10limitbox.h
-    private/pa10/pa10limitbox.cpp
-    private/pa10/pa10cameracalibration.h
-    private/pa10/pa10cameracalibration.cpp)
-
-  IF (NESTK_USE_PMDSDK)
-    SET (ntk_sources ${ntk_sources}
-      private/camera/pmd_grabber.h
-      private/camera/pmd_grabber.cpp
-      private/camera/pmd_rgb_grabber.h
-      private/camera/pmd_rgb_grabber.cpp
-      geometry/chamfermatching.h
-      geometry/chamfermatching.cpp)
-  ENDIF(NESTK_USE_PMDSDK)
-
-  IF (NESTK_BUILD_ADS)
-    SET (ntk_sources ${ntk_sources}
-      private/detection/ads/Feature.cpp
-      private/detection/ads/Feature.h
-      private/detection/ads/FeatureIndexer.cpp
-      private/detection/ads/FeatureIndexer.h
-      private/detection/ads/FeatureIndexerKdt.cpp
-      private/detection/ads/FeatureIndexerKdt.h
-      private/detection/ads/LocatedFeature.cpp
-      private/detection/ads/LocatedFeature.h
-      private/detection/ads/ObjectDatabase.cpp
-      private/detection/ads/ObjectDatabase.h
-      private/detection/ads/ObjectDetector.cpp
-      private/detection/ads/ObjectDetector.h
-      private/detection/ads/ObjectFinder.cpp
-      private/detection/ads/ObjectFinder.h
-      private/detection/ads/ObjectMatch.cpp
-      private/detection/ads/ObjectMatch.h
-      private/detection/ads/ObjectPose.cpp
-      private/detection/ads/ObjectPose.h
-      private/detection/ads/ObjectTracker.cpp
-      private/detection/ads/ObjectTracker.h
-      private/detection/ads/Pose2D.cpp
-      private/detection/ads/Pose2D.h
-      private/detection/ads/SiftHough.cpp
-      private/detection/ads/SiftHough.h
-      private/detection/ads/SiftObjectDetector.cpp
-      private/detection/ads/SiftObjectDetector.h
-      private/detection/ads/SiftObjectDetectorLowe.cpp
-      private/detection/ads/SiftObjectDetectorLowe.h
-      private/detection/ads/SiftObjectMatch.cpp
-      private/detection/ads/SiftObjectMatch.h
-      private/detection/ads/SiftObjectMatchLowe.cpp
-      private/detection/ads/SiftObjectMatchLowe.h
-      private/detection/ads/SiftObjectPoseEstimator.cpp
-      private/detection/ads/SiftObjectPoseEstimator.h
-      private/detection/ads/SiftParameters.cpp
-      private/detection/ads/SiftParameters.h
-      private/detection/ads/SiftPointMatch.cpp
-      private/detection/ads/SiftPointMatch.h
-      private/detection/ads/TaskPool.h
-      private/detection/ads/TaskPool.cpp
-      private/detection/ads/VisualObject.cpp
-      private/detection/ads/VisualObject.h
-      private/detection/ads/VisualObjectView.cpp
-      private/detection/ads/VisualObjectView.h)
-  ENDIF (NESTK_BUILD_ADS)
-
-  QT4_WRAP_CPP(moc_sources
-    private/pa10/pa10client.h
-  )
-
-ENDIF(HAVE_NESTK_PRIVATE)
-
 IF (WIN32 OR APPLE)
   ADD_LIBRARY(nestk STATIC ${ntk_sources} ${moc_sources})
 ELSE (WIN32 OR APPLE)
@@ -289,6 +208,9 @@ ENDIF (WIN32 OR APPLE)
 IF (WIN32)
   set(WINMM_LIBRARY winmm)
 ENDIF()
+
+MESSAGE("Prefix: ${CMAKE_STATIC_LIBRARY_PREFIX}")
+MESSAGE("${Boost_LIBRARIES}")
 
 TARGET_LINK_LIBRARIES(nestk
   ${Boost_LIBRARIES}

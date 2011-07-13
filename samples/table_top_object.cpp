@@ -28,7 +28,9 @@
 #include <QDir>
 #include <QMutex>
 
-using namespace cv;
+// disabled because of flann name conflict with PCL on Windows.
+// using namespace cv;
+using cv::Point3f;
 using namespace ntk;
 
 namespace opt

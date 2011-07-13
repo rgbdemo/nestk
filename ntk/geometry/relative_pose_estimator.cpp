@@ -37,7 +37,10 @@
 using namespace pcl;
 #endif
 
-using namespace cv;
+// FIXME: disabled because of conflict between opencv flann and pcl flann.
+// using namespace cv;
+using cv::Vec3f;
+using cv::Point3f;
 
 namespace ntk
 {
@@ -231,7 +234,7 @@ bool RelativePoseEstimatorFromDelta::estimateNewPose(const RGBDImage& image)
 int RelativePoseEstimatorFromImage::
 computeNumMatchesWithPrevious(const RGBDImage& image,
                               const FeatureSet& features,
-                              std::vector<DMatch>& best_matches)
+                              std::vector<cv::DMatch>& best_matches)
 {
   const int min_number_of_matches = 30;
   int best_prev_image = 0;
@@ -241,7 +244,7 @@ computeNumMatchesWithPrevious(const RGBDImage& image,
        i >= 0 && best_matches.size() < min_number_of_matches;
        --i)
   {
-    std::vector<DMatch> current_matches;
+    std::vector<cv::DMatch> current_matches;
     m_features[i].matchWith(features, current_matches, 0.8*0.8);
     ntk_dbg_print(current_matches.size(), 1);
     if (current_matches.size() > best_matches.size())
@@ -274,21 +277,21 @@ estimateDeltaPose(Pose3D& new_rgb_pose,
 
   std::vector<Point3f> ref_points;
   std::vector<Point3f> img_points;
-  std::vector<KeyPoint> ref_keypoints;
-  std::vector<KeyPoint> img_keypoints;
+  std::vector<cv::KeyPoint> ref_keypoints;
+  std::vector<cv::KeyPoint> img_keypoints;
 
   foreach_idx(i, best_matches)
   {
-    const DMatch& m = best_matches[i];
+    const cv::DMatch& m = best_matches[i];
     const FeatureSet& ref_set = m_features[closest_view_index];
     const FeaturePoint& ref_loc = ref_set.locations()[m.trainIdx];
     const FeaturePoint& img_loc = image_features.locations()[m.queryIdx];
 
     ntk_assert(ref_loc.depth > 0, "Match without depth, should not appear");
 
-    Point3f img3d (img_loc.pt.x,
-                   img_loc.pt.y,
-                   img_loc.depth);
+    cv::Point3f img3d (img_loc.pt.x,
+                       img_loc.pt.y,
+                       img_loc.depth);
 
     ref_points.push_back(ref_loc.p3d);
     img_points.push_back(img3d);
@@ -338,7 +341,7 @@ bool RelativePoseEstimatorFromImage::estimateNewPose(const RGBDImage& image)
 
   if (m_image_data.size() > 0)
   {
-    std::vector<DMatch> best_matches;
+    std::vector<cv::DMatch> best_matches;
     closest_view_index = computeNumMatchesWithPrevious(image, image_features, best_matches);
     ntk_dbg_print(closest_view_index, 1);
     ntk_dbg_print(best_matches.size(), 1);

@@ -23,7 +23,7 @@
 # include <boost/make_shared.hpp>
 
 using namespace pcl;
-using namespace cv;
+using cv::Point3f;
 
 namespace ntk
 {
