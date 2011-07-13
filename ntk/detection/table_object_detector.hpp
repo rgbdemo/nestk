@@ -199,6 +199,9 @@ bool TableObjectDetector<PointType> :: detect(pcl::PointCloud<Point>& cloud)
     cluster_.extract (object_clusters);
     ntk_dbg(1) << cv::format("Number of clusters found matching the given constraints: %d.\n", (int)object_clusters.size ());
 
+    // Closest object points must be at less than 2 cm from the plane.
+    const float max_dist_to_plane_threshold = 0.03;
+
     for (size_t i = 0; i < object_clusters.size (); ++i)
     {
         std::vector<Point3f> object_points;
@@ -208,6 +211,18 @@ bool TableObjectDetector<PointType> :: detect(pcl::PointCloud<Point>& cloud)
             Point p = cloud_objects_downsampled_->points[index];
             object_points.push_back(Point3f(p.x,p.y,p.z));
         }
+
+        float min_dist_to_plane = FLT_MAX;
+        for (int j = 0; j < object_points.size(); ++j)
+        {
+            Point3f pobj = object_points[j];
+            min_dist_to_plane = std::min(plane().distanceToPlane(pobj), min_dist_to_plane);
+        }
+
+        ntk_dbg_print(min_dist_to_plane, 1);
+        if (min_dist_to_plane > max_dist_to_plane_threshold)
+            continue;
+
         m_object_clusters.push_back(object_points);
     }
 
