@@ -23,6 +23,8 @@ SET ( ntk_sources
      camera/rgbd_image.cpp
      camera/rgbd_processor.h
      camera/rgbd_processor.cpp
+     projector/calibration.h
+     projector/calibration.cpp
      geometry/affine_transform.h
      geometry/affine_transform.cpp
      geometry/eigen_utils.h
