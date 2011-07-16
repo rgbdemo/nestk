@@ -72,7 +72,7 @@ void XN_CALLBACK_TYPE UserCalibration_CalibrationEnd(xn::SkeletonCapability& cap
 
 } // namespace anonymous
 
-extern const char* xn_modules_file;
+const char* xn_modules_file;
 
 namespace ntk
 {
