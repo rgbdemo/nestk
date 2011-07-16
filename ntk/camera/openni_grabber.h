@@ -37,18 +37,8 @@ class BodyEventDetector;
 class OpenniGrabber : public ntk::RGBDGrabber
 {
 public:
-    OpenniGrabber(int camera_id = 0) :
-        m_camera_id(camera_id),
-        m_need_pose_to_calibrate(false),
-        m_max_num_users(15),
-        m_body_event_detector(0),
-        m_high_resolution(false),
-        m_mirrored(false),
-        m_custom_bayer_decoding(true),
-        m_xml_config_file(DEFAULT_XML_CONFIG_FILE),
-        m_track_users(true)
-    {
-    }
+    /*! Constructor. Camera_id is the device id, starting at 0. */
+    OpenniGrabber(int camera_id = 0);
 
     /*! set a new xml config file for the grabber
    * call it before initialize() */
@@ -63,6 +53,9 @@ public:
     /*! Set the body event detector. */
     void setBodyEventDetector(BodyEventDetector* detector)
     { m_body_event_detector = detector; }
+
+    /*! Returns the associated body event detector. */
+    const BodyEventDetector* bodyDetector() const { return m_body_event_detector; }
 
     /*! Set the maximal number of tracked users. Default is one. */
     void setMaxUsers(int num) { m_max_num_users = num; }
@@ -108,6 +101,10 @@ private:
     void estimateCalibration();
 
 private:
+    struct Config;
+    Config* m_config;
+
+private:
     int m_camera_id;
     RGBDImage m_current_image;
     xn::Context m_ni_context;
@@ -136,7 +133,6 @@ private:
     static QMutex m_ni_mutex;
 };
 
-// Backward compatibility.
 typedef OpenniGrabber NiteRGBDGrabber;
 
 } // ntk

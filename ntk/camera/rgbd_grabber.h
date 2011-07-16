@@ -42,7 +42,8 @@ public:
       m_should_exit(0),
       m_last_frame_tick(0),
       m_framerate(0),
-      m_frame_count(0)
+      m_frame_count(0),
+      m_connected(false)
   {
     setSynchronous(false);
   }
@@ -131,6 +132,9 @@ public:
   /*! Disconnect form the RGBD device. */
   virtual bool disconnectFromDevice() { return true; }
 
+  /*! Whether the grabber is connected to the device. */
+  bool isConnected() const { return m_connected; }
+
 protected:
   void advertiseNewFrame();
 
@@ -144,6 +148,7 @@ protected:
   uint64 m_last_frame_tick;
   double m_framerate;
   int m_frame_count;
+  bool m_connected;
 };
 
 } // ntk

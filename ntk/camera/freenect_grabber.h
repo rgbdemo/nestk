@@ -17,8 +17,8 @@
  * Author: Nicolas Burrus <nicolas.burrus@uc3m.es>, (C) 2010
  */
 
-#ifndef KINECT_GRABBER_H
-#define KINECT_GRABBER_H
+#ifndef freenect_grabber_H
+#define freenect_grabber_H
 
 #include "rgbd_grabber.h"
 
@@ -89,4 +89,4 @@ typedef FreenectGrabber KinectGrabber;
 
 } // ntk
 
-#endif // KINECT_GRABBER_H
+#endif // freenect_grabber_H

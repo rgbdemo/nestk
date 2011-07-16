@@ -57,6 +57,7 @@ public:
     void getLastMousePos(int& x, int& y)
     { x = m_last_mouse_pos.x(); y = m_last_mouse_pos.y(); }
 
+    void setImage(const QImage& im);
     void setImage(const cv::Mat1f& im, double* min_val = 0, double* max_val = 0);
     void setImage(const cv::Mat1b& im);
     void setImage(const cv::Mat3b& im);

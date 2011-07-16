@@ -31,23 +31,29 @@ namespace ntk
 
 void ImageWidget :: mouseMoveEvent ( QMouseEvent * event )
 {
-  if (m_image.isNull())
-  {
-    event->ignore();
-    return;
-  }
+    if (m_image.isNull())
+    {
+        event->ignore();
+        return;
+    }
 
-  int x = event->x() * (m_image.width() / float(width()));
-  int y = event->y() * (m_image.height() / float(height()));
-  m_last_mouse_pos = QPoint(x,y);
-  emit mouseMoved(x,y);
+    int x = event->x() * (m_image.width() / float(width()));
+    int y = event->y() * (m_image.height() / float(height()));
+    m_last_mouse_pos = QPoint(x,y);
+    emit mouseMoved(x,y);
+}
+
+void ImageWidget :: setImage(const QImage& im)
+{
+    m_image = im;
+    update();
 }
 
 void ImageWidget :: setRects(const std::list<cv::Rect>& rects, const cv::Vec3b& color)
 {
-  m_rects = rects;
-  m_rect_color = color;
-  update();
+    m_rects = rects;
+    m_rect_color = color;
+    update();
 }
 
 void ImageWidget :: setTexts(const std::vector<TextData> texts)
@@ -58,90 +64,90 @@ void ImageWidget :: setTexts(const std::vector<TextData> texts)
 
 void ImageWidget :: setImage(const cv::Mat1b& im)
 {
-  if (m_image.width() != im.cols
-      || m_image.height() != im.rows)
-    m_image = QImage(im.cols, im.rows, QImage::Format_RGB32);
+    if (m_image.width() != im.cols
+            || m_image.height() != im.rows)
+        m_image = QImage(im.cols, im.rows, QImage::Format_RGB32);
 
-  for (int r = 0; r < im.rows; ++r)
-  {
-    QRgb* ptr = (QRgb*) m_image.scanLine(r);
-    for (int c = 0; c < im.cols; ++c)
+    for (int r = 0; r < im.rows; ++r)
     {
-      int v = im(r,c);
-      *ptr = qRgb(v,v,v);
-      ++ptr;
+        QRgb* ptr = (QRgb*) m_image.scanLine(r);
+        for (int c = 0; c < im.cols; ++c)
+        {
+            int v = im(r,c);
+            *ptr = qRgb(v,v,v);
+            ++ptr;
+        }
     }
-  }
-  update();
+    update();
 }
 
 void ImageWidget :: setImage(const cv::Mat1f& im, double* i_min_val, double* i_max_val)
 {
-  if (m_image.width() != im.cols
-      || m_image.height() != im.rows)
-    m_image = QImage(im.cols, im.rows, QImage::Format_RGB32);
+    if (m_image.width() != im.cols
+            || m_image.height() != im.rows)
+        m_image = QImage(im.cols, im.rows, QImage::Format_RGB32);
 
-  double min_val, max_val;
-  if (i_min_val && i_max_val)
-  {
-    min_val = *i_min_val;
-    max_val = *i_max_val;
-  }
-  else
-    minMaxLoc(im, &min_val, &max_val);
-  if (min_val == max_val)
-  {
-    m_image.fill(qRgb(0,0,0));
-    return;
-  }
-
-  for (int r = 0; r < im.rows; ++r)
-  {
-    QRgb* ptr = (QRgb*) m_image.scanLine(r);
-    const float* cv_ptr = im.ptr<float>(r);
-    for (int c = 0; c < im.cols; ++c)
+    double min_val, max_val;
+    if (i_min_val && i_max_val)
     {
-      int v = 255*(*cv_ptr-min_val)/(max_val-min_val);
-      v = ntk::saturate_to_range(v, 0, 255);
-      int rgb = (0xff << 24) + (v << 16) + (v << 8) + v;
-      *ptr = rgb;
-      ++ptr;
-      ++cv_ptr;
+        min_val = *i_min_val;
+        max_val = *i_max_val;
     }
-  }
-  update();
+    else
+        minMaxLoc(im, &min_val, &max_val);
+    if (min_val == max_val)
+    {
+        m_image.fill(qRgb(0,0,0));
+        return;
+    }
+
+    for (int r = 0; r < im.rows; ++r)
+    {
+        QRgb* ptr = (QRgb*) m_image.scanLine(r);
+        const float* cv_ptr = im.ptr<float>(r);
+        for (int c = 0; c < im.cols; ++c)
+        {
+            int v = 255*(*cv_ptr-min_val)/(max_val-min_val);
+            v = ntk::saturate_to_range(v, 0, 255);
+            int rgb = (0xff << 24) + (v << 16) + (v << 8) + v;
+            *ptr = rgb;
+            ++ptr;
+            ++cv_ptr;
+        }
+    }
+    update();
 }
 
 void ImageWidget :: setImage(const cv::Mat3b& im)
 {
     if (m_image.width() != im.cols
-      || m_image.height() != im.rows)
-    m_image = QImage(im.cols, im.rows, QImage::Format_RGB32);
+            || m_image.height() != im.rows)
+        m_image = QImage(im.cols, im.rows, QImage::Format_RGB32);
 
-  for (int r = 0; r < im.rows; ++r)
-  {
-    QRgb* ptr = (QRgb*) m_image.scanLine(r);
-    const uchar* cv_ptr = im.ptr(r);
-    for (int i = 0; i < im.cols; ++i)
+    for (int r = 0; r < im.rows; ++r)
     {
-      int rgb = 0xff << 24;
-      rgb |= (*cv_ptr++);
-      rgb |= ((*cv_ptr++) << 8);
-      rgb |= ((*cv_ptr++) << 16);
-      *ptr++ = rgb;
+        QRgb* ptr = (QRgb*) m_image.scanLine(r);
+        const uchar* cv_ptr = im.ptr(r);
+        for (int i = 0; i < im.cols; ++i)
+        {
+            int rgb = 0xff << 24;
+            rgb |= (*cv_ptr++);
+            rgb |= ((*cv_ptr++) << 8);
+            rgb |= ((*cv_ptr++) << 16);
+            *ptr++ = rgb;
+        }
     }
-  }
-  update();
+    update();
 }
 
 double ImageWidget :: scaleX() const
 {
-  return double(rect().width())/m_image.rect().width();
+    return double(rect().width())/m_image.rect().width();
 }
 
 double ImageWidget :: scaleY() const
 {
-  return double(rect().height())/m_image.rect().height();
+    return double(rect().height())/m_image.rect().height();
 }
 
 void ImageWidget :: setPen(QPen pen)
@@ -152,38 +158,38 @@ void ImageWidget :: setPen(QPen pen)
 
 void ImageWidget :: paintEvent(QPaintEvent * event)
 {
-  double sx = scaleX();
-  double sy = scaleY();
+    double sx = scaleX();
+    double sy = scaleY();
 
-  if (m_pen.data_ptr() == NULL){
-      QPen p;
-      m_pen = p;
-      m_pen.setColor(Qt::white);
-      m_pen.setWidth(2);
-  }
+    if (m_pen.data_ptr() == NULL){
+        QPen p;
+        m_pen = p;
+        m_pen.setColor(Qt::white);
+        m_pen.setWidth(2);
+    }
 
-  QPainter painter(this);
-  painter.drawImage(rect(), m_image, m_image.rect());
+    QPainter painter(this);
+    painter.drawImage(rect(), m_image, m_image.rect());
 
-  m_pen.setColor(qRgb(m_rect_color[0], m_rect_color[1], m_rect_color[2]));
-  painter.setPen(m_pen);
-  foreach_const_it(it, m_rects, std::list<cv::Rect>)
-  {
-    const cv::Rect& r = *it;
-    QRect qr (r.x*sx, r.y*sy, r.width*sx, r.height*sy);
-    painter.drawRect(qr);
-  }
+    m_pen.setColor(qRgb(m_rect_color[0], m_rect_color[1], m_rect_color[2]));
+    painter.setPen(m_pen);
+    foreach_const_it(it, m_rects, std::list<cv::Rect>)
+    {
+        const cv::Rect& r = *it;
+        QRect qr (r.x*sx, r.y*sy, r.width*sx, r.height*sy);
+        painter.drawRect(qr);
+    }
 
-  foreach_idx(i, m_texts)
-  {
-      const cv::Vec3b& c = m_texts[i].color;
-      m_pen.setColor(qRgb(c[0], c[1], c[2]));
-      painter.setFont(QFont("Helvetica", 14));
-      painter.setPen(m_pen);
-      QString s (m_texts[i].text.c_str());
-      QPoint p (m_texts[i].x*sx, m_texts[i].y*sy);
-      painter.drawText(p, s);
-  }
+    foreach_idx(i, m_texts)
+    {
+        const cv::Vec3b& c = m_texts[i].color;
+        m_pen.setColor(qRgb(c[0], c[1], c[2]));
+        painter.setFont(QFont("Helvetica", 14));
+        painter.setPen(m_pen);
+        QString s (m_texts[i].text.c_str());
+        QPoint p (m_texts[i].x*sx, m_texts[i].y*sy);
+        painter.drawText(p, s);
+    }
 }
 
 } // ntk

@@ -29,7 +29,7 @@
 #include <ntk/utils/opencv_utils.h>
 #include <ntk/mesh/mesh.h>
 
-#ifdef NESTK_USE_PCL
+#if defined(NESTK_USE_PCL) || defined(USE_PCL)
 # include <pcl/registration/icp.h>
 # include <ntk/mesh/pcl_utils.h>
 # include <pcl/filters/voxel_grid.h>
@@ -409,7 +409,7 @@ void RelativePoseEstimatorFromImage::reset()
   m_current_pose = Pose3D();
 }
 
-#ifdef NESTK_USE_PCL
+#if defined(NESTK_USE_PCL) || defined(USE_PCL)
 
 bool RelativePoseEstimatorFromImage::optimizeWithICP(const RGBDImage& image,
                                                      Pose3D& depth_pose,

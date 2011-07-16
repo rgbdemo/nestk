@@ -26,6 +26,9 @@
 #include <XnVCircleDetector.h>
 #include <XnLog.h>
 
+#include <QTemporaryFile>
+#include <string>
+
 using namespace cv;
 using namespace ntk;
 
@@ -69,8 +72,104 @@ void XN_CALLBACK_TYPE UserCalibration_CalibrationEnd(xn::SkeletonCapability& cap
 
 } // namespace anonymous
 
+extern const char* xn_modules_file;
+
 namespace ntk
 {
+
+struct OpenniGrabber::Config
+{
+    Config (OpenniGrabber* that)
+        : that(that)
+    {
+        if(!configFile.open() || !modulesFile.open())
+        {
+            // Device full?
+            assert(false);
+            return;
+        }
+
+        configFile.write(configText);
+        configFile.flush();
+
+        modulesFile.write(modulesText);
+        modulesFile.flush();
+
+        modulesPath = modulesFile.fileName().toStdString();
+
+        xn_modules_file = modulesPath.c_str();
+    }
+
+    static const char* configText;
+    static const char* modulesText;
+
+    QTemporaryFile configFile;
+    QTemporaryFile modulesFile;
+    std::string modulesPath;
+    OpenniGrabber* that;
+};
+
+const char*
+OpenniGrabber::Config::configText = "\
+<OpenNI>\n\
+<Licenses>\n\
+<License vendor=\"PrimeSense\" key=\"0KOIk2JeIBYClPWVnMoRKn5cdY4=\" />\n\
+</Licenses>\n\
+<Log writeToConsole=\"false\" writeToFile=\"true\">\n\
+<!-- 0 - Verbose, 1 - Info, 2 - Warning, 3 - Error (default) -->\n\
+<LogLevel value=\"0\"/>\n\
+<Masks>\n\
+<Mask name=\"ALL\" on=\"true\"/>\n\
+</Masks>\n\
+<Dumps>\n\
+</Dumps>\n\
+</Log>\n\
+<ProductionNodes>\n\
+<Node type=\"Image\" name=\"Image1\">\n\
+<Configuration>\n\
+<MapOutputMode xRes=\"640\" yRes=\"480\" FPS=\"30\"/>\n\
+<Mirror on=\"true\"/>\n\
+</Configuration>\n\
+</Node>\n\
+<Node type=\"Depth\" name=\"Depth1\">\n\
+<Configuration>\n\
+<MapOutputMode xRes=\"640\" yRes=\"480\" FPS=\"30\"/>\n\
+<Mirror on=\"true\"/>\n\
+</Configuration>\n\
+</Node>\n\
+<Node type=\"User\" />\n\
+<Node type=\"Gesture\" />\n\
+<Node type=\"Hands\" />\n\
+</ProductionNodes>\n\
+</OpenNI>\n\
+";
+
+const char*
+OpenniGrabber::Config::modulesText = "\
+<Modules>\n\
+<Module path=\"libnimMockNodes.dylib\" />\n\
+<Module path=\"libnimCodecs.dylib\" />\n\
+<Module path=\"libnimRecorder.dylib\" />\n\
+<Module path=\"libXnDevicesSensorV2.dylib\" configDir=\"config\"/>\n\
+<Module path=\"libXnDeviceFile.dylib\" configDir=\"config\"/>\n\
+<Module path=\"libXnVFeatures.dylib\" configDir=\"config/XnVFeatures\"/>\n\
+<Module path=\"libXnVHandGenerator.dylib\" configDir=\"config/XnVHandGenerator\"/>\n\
+</Modules>\n\
+";
+
+OpenniGrabber :: OpenniGrabber(int camera_id) :
+    m_config(new Config(this)),
+    m_camera_id(camera_id),
+    m_need_pose_to_calibrate(false),
+    m_max_num_users(15),
+    m_body_event_detector(0),
+    m_high_resolution(false),
+    m_mirrored(false),
+    m_custom_bayer_decoding(true),
+    m_xml_config_file(DEFAULT_XML_CONFIG_FILE),
+    m_track_users(true)
+{
+}
 
 void OpenniGrabber :: check_error(const XnStatus& status, const char* what) const
 {
@@ -130,7 +229,7 @@ bool OpenniGrabber :: connectToDevice()
     xn::NodeInfoList::Iterator nodeIt = device_node_info_list.Begin();
     for (int i = 0; nodeIt != device_node_info_list.End () && i < m_camera_id; ++nodeIt, ++i)
     {
-    }        
+    }
 
     if (nodeIt == device_node_info_list.End())
     {
@@ -152,8 +251,8 @@ bool OpenniGrabber :: connectToDevice()
     strcpy(license.strKey, "0KOIk2JeIBYClPWVnMoRKn5cdY4=");
     m_ni_context.AddLicense(license);
 
-    check_error(status, "Create depth generator");
     status = m_ni_depth_generator.Create(m_ni_context, &query);
+    check_error(status, "Create depth generator");
     XnMapOutputMode depth_mode;
     depth_mode.nXRes = 640;
     depth_mode.nYRes = 480;
@@ -237,6 +336,8 @@ bool OpenniGrabber :: connectToDevice()
     m_ni_context.WaitAndUpdateAll();
     if (!m_calib_data)
         estimateCalibration();
+
+    m_connected = true;
     return true;
 }
 
@@ -247,7 +348,8 @@ bool OpenniGrabber :: disconnectFromDevice()
     if (m_body_event_detector)
         m_body_event_detector->shutDown();
     m_ni_context.Shutdown();
-	return true;
+    m_connected = false;
+    return true;
 }
 
 void OpenniGrabber :: estimateCalibration()

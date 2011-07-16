@@ -129,7 +129,7 @@ namespace ntk
     m_user_labels.copyTo(other.m_user_labels);
     other.m_calibration = m_calibration;    
     other.m_directory = m_directory;
-#ifdef NESTK_USE_OPENNI
+#if defined(NESTK_USE_OPENNI) || defined(USE_OPENNI)
     if (m_skeleton)
     {
       if (!other.m_skeleton)

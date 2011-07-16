@@ -26,7 +26,7 @@
 #include <ntk/image/sift_gpu.h>
 #include <ntk/image/feature.h>
 
-#ifdef NESTK_USE_PCL
+#if defined(NESTK_USE_PCL) || defined(USE_PCL)
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #endif

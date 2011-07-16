@@ -24,7 +24,7 @@
 #include <ntk/utils/debug.h>
 #include <ntk/utils/opencv_utils.h>
 
-#ifdef NESTK_USE_QT
+#if defined(NESTK_USE_QT) || defined(USE_QT)
 # include <QPolygonF>
 #endif
 
@@ -64,7 +64,7 @@ ntk::Polygon2d project_bounding_box_to_image(const Pose3D& pose, const ntk::Rect
 cv::Rect_<float> bounding_box(const ntk::Polygon2d& polygon);
 ntk::Rect3f bounding_box(const std::vector<cv::Point3f>& points);
 
-#ifdef NESTK_USE_QT
+#if defined(NESTK_USE_QT) || defined(USE_QT)
 inline QPolygonF toQt(const ntk::Polygon2d& polygon)
 {
   QPolygonF output;
