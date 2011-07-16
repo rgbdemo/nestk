@@ -35,20 +35,9 @@
 //---------------------------------------------------------------------------
 // Defines
 //---------------------------------------------------------------------------
-#define XN_SENSOR_VENDOR_ID			0x1D27
-#define XN_SENSOR_VENDOR_ID_KINECT	0x045E
-#define XN_SENSOR_2_0_PRODUCT_ID	0x0200
-#define XN_SENSOR_5_0_PRODUCT_ID	0x0500
-#define XN_SENSOR_6_0_PRODUCT_ID	0x0600
-#define XN_SENSOR_KINECT_PRODUCT_ID	0x02AE
-
-#if XN_PLATFORM == XN_PLATFORM_WIN32
-	#include <initguid.h>
-	DEFINE_GUID(GUID_CLASS_PSDRV_USB, 0xc3b5f022, 0x5a42, 0x1980, 0x19, 0x09, 0xea, 0x72, 0x09, 0x56, 0x01, 0xb1);
-	#define USB_DEVICE_EXTRA_PARAM (void*)&GUID_CLASS_PSDRV_USB
-#else
-	#define USB_DEVICE_EXTRA_PARAM NULL
-#endif
+// --avin mod--
+#define XN_SENSOR_VENDOR_ID_KINECT		0x045E
+#define XN_SENSOR_PRODUCT_ID_KINECT		0x02AE
 
 //---------------------------------------------------------------------------
 // Enums
@@ -65,7 +54,8 @@ typedef enum
 
 XnSensorIO::XnSensorIO(XN_SENSOR_HANDLE* pSensorHandle) :
 	m_pSensorHandle(pSensorHandle),
-	m_bMiscSupported(FALSE)
+	m_bMiscSupported(FALSE),
+	m_bIsLowBandwidth(FALSE)
 {
 }
 
@@ -132,7 +122,10 @@ XnStatus XnSensorIO::OpenDevice(const XnChar* strPath)
 		m_pSensorHandle->ControlConnection.bIsBulk = TRUE;
 	}
 
-	xnLogInfo(XN_MASK_DEVICE_IO, "Connected to USB device");
+	nRetVal = IsSensorLowBandwidth(strPath, &m_bIsLowBandwidth);
+	XN_IS_STATUS_OK(nRetVal);
+
+	xnLogInfo(XN_MASK_DEVICE_IO, "Connected to USB device%s", m_bIsLowBandwidth ? " (LowBand)" : "");
 
 	strcpy(m_strDeviceName, strPath);
 
@@ -368,14 +361,15 @@ XnStatus XnSensorIO::CloseDevice()
 	return (XN_STATUS_OK);
 }
 
-XnStatus Enumerate(XnUInt16 nVendor, XnUInt16 nProduct, XnStringsHash& devicesSet)
+XnStatus Enumerate(XnUInt16 nProduct, XnStringsHash& devicesSet)
 {
 	XnStatus nRetVal = XN_STATUS_OK;
 	
 	const XnUSBConnectionString* astrDevicePaths;
 	XnUInt32 nCount;
 
-	nRetVal = xnUSBEnumerateDevices(nVendor, nProduct, &astrDevicePaths, &nCount);
+	// --avin mod--
+	nRetVal = xnUSBEnumerateDevices(XN_SENSOR_VENDOR_ID_KINECT, nProduct, &astrDevicePaths, &nCount);
 	XN_IS_STATUS_OK(nRetVal);
 
 	for (XnUInt32 i = 0; i < nCount; ++i)
@@ -400,25 +394,10 @@ XnStatus XnSensorIO::EnumerateSensors(XnConnectionString* aConnectionStrings, Xn
 
 	XnStringsHash devicesSet;
 
-	// search for a Kinect device
-	nRetVal = Enumerate(XN_SENSOR_VENDOR_ID_KINECT, XN_SENSOR_KINECT_PRODUCT_ID, devicesSet);
-	XN_IS_STATUS_OK(nRetVal);	
-	
-#if 0 // comment out older devices compatibility to speedup init on Mac.
-
-	// search for a v6.0 device
-	nRetVal = Enumerate(XN_SENSOR_VENDOR_ID, XN_SENSOR_6_0_PRODUCT_ID, devicesSet);
+	// --avin mod--
+	// search for a kinect device
+	nRetVal = Enumerate(XN_SENSOR_PRODUCT_ID_KINECT, devicesSet);
 	XN_IS_STATUS_OK(nRetVal);
-
-	// search for a v5.0 device
-	nRetVal = Enumerate(XN_SENSOR_VENDOR_ID, XN_SENSOR_5_0_PRODUCT_ID, devicesSet);
-	XN_IS_STATUS_OK(nRetVal);
-
-	// try searching for an older device
-	nRetVal = Enumerate(XN_SENSOR_VENDOR_ID, XN_SENSOR_2_0_PRODUCT_ID, devicesSet);
-	XN_IS_STATUS_OK(nRetVal);
-
-#endif
 
 	// now copy back
 	XnUInt32 nCount = 0;
@@ -441,11 +420,42 @@ XnStatus XnSensorIO::EnumerateSensors(XnConnectionString* aConnectionStrings, Xn
 	return (XN_STATUS_OK);
 }
 
+XnStatus XnSensorIO::IsSensorLowBandwidth(const XnConnectionString connectionString, XnBool* pbIsLowBandwidth)
+{
+	XnStatus nRetVal = XN_STATUS_OK;
+	XnConnectionString cpMatchString;
+
+	*pbIsLowBandwidth = FALSE;
+
+#if (XN_PLATFORM == XN_PLATFORM_WIN32)
+	// WAVI Detection:
+	//   Normal USB string: \\?\usb#vid_1d27&pid_0600#6&XXXXXXXX&0&2
+	//   WAVI USB String:   \\?\usb#vid_1d27&pid_0600#1&1d270600&2&3
+	//                                                  ^^^^^^^^ - VID/PID is always repeated here with the WAVI.
+	//                                                             Regular USB devices will have the port/hub chain instead.
+	if ((xnOSStrCaseCmp(connectionString, "\\\\?\\usb#vid_") >= 0) && (xnOSStrLen(connectionString) > 25))
+	{
+		strncpy(&cpMatchString[0], &connectionString[12], 4); //VID
+		strncpy(&cpMatchString[4], &connectionString[21], 4); //PID
+		cpMatchString[8] = 0;
+
+		if (strstr ((char*)connectionString,cpMatchString) != 0)
+		{
+			*pbIsLowBandwidth = TRUE;
+		}
+	}
+#endif
+
+	return (XN_STATUS_OK);
+}
+
 XnStatus XnSensorIO::SetCallback(XnUSBEventCallbackFunctionPtr pCallbackPtr, void* pCallbackData)
 {
 	//TODO: Support multiple sensors - this won't work for more than one.
 	XnStatus nRetVal = XN_STATUS_OK;
-	
+
+// --avin mod--
+/*	
 	// try to register callback to a 5.0 device
 	nRetVal = xnUSBSetCallbackHandler(XN_SENSOR_VENDOR_ID, XN_SENSOR_5_0_PRODUCT_ID, NULL, pCallbackPtr, pCallbackData);
 	if (nRetVal == XN_STATUS_USB_DEVICE_NOT_FOUND)
@@ -453,7 +463,7 @@ XnStatus XnSensorIO::SetCallback(XnUSBEventCallbackFunctionPtr pCallbackPtr, voi
 		// if not found, see if we have a 2.0 - 4.0 devices
 		nRetVal = xnUSBSetCallbackHandler(XN_SENSOR_VENDOR_ID, XN_SENSOR_2_0_PRODUCT_ID, NULL, pCallbackPtr, pCallbackData);
 	}
-
+*/
 	return nRetVal;
 }
 

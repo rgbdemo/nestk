@@ -1,27 +1,28 @@
-/*****************************************************************************
-*                                                                            *
-*  OpenNI 1.0 Alpha                                                          *
-*  Copyright (C) 2010 PrimeSense Ltd.                                        *
-*                                                                            *
-*  This file is part of OpenNI.                                              *
-*                                                                            *
-*  OpenNI is free software: you can redistribute it and/or modify            *
-*  it under the terms of the GNU Lesser General Public License as published  *
-*  by the Free Software Foundation, either version 3 of the License, or      *
-*  (at your option) any later version.                                       *
-*                                                                            *
-*  OpenNI is distributed in the hope that it will be useful,                 *
-*  but WITHOUT ANY WARRANTY; without even the implied warranty of            *
-*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the              *
-*  GNU Lesser General Public License for more details.                       *
-*                                                                            *
-*  You should have received a copy of the GNU Lesser General Public License  *
-*  along with OpenNI. If not, see <http://www.gnu.org/licenses/>.            *
-*                                                                            *
-*****************************************************************************/
+#ifndef MANCTL_CHANGES
+#    define MANCTL_CHANGES 1
+#endif
 
-
-
+/****************************************************************************
+*                                                                           *
+*  OpenNI 1.1 Alpha                                                         *
+*  Copyright (C) 2011 PrimeSense Ltd.                                       *
+*                                                                           *
+*  This file is part of OpenNI.                                             *
+*                                                                           *
+*  OpenNI is free software: you can redistribute it and/or modify           *
+*  it under the terms of the GNU Lesser General Public License as published *
+*  by the Free Software Foundation, either version 3 of the License, or     *
+*  (at your option) any later version.                                      *
+*                                                                           *
+*  OpenNI is distributed in the hope that it will be useful,                *
+*  but WITHOUT ANY WARRANTY; without even the implied warranty of           *
+*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the             *
+*  GNU Lesser General Public License for more details.                      *
+*                                                                           *
+*  You should have received a copy of the GNU Lesser General Public License *
+*  along with OpenNI. If not, see <http://www.gnu.org/licenses/>.           *
+*                                                                           *
+****************************************************************************/
 
 #ifndef _XN_HASH_H
 #define _XN_HASH_H
@@ -62,7 +63,7 @@ static XnHashValue XnDefaultHashFunction(const XnKey& key)
 */
 static XnInt32 XnDefaultCompareFunction(const XnKey& key1, const XnKey& key2)
 {
-	return XnSizeT(key1)-XnSizeT(key2);
+	return XnInt32(XnSizeT(key1)-XnSizeT(key2));
 }
 
 /**
@@ -81,7 +82,7 @@ public:
 
 		/**
 		* Copy constructor
-		* 
+		*
 		* @param	other	[in]	instance to copy from
 		*/
 		ConstIterator(const ConstIterator& other) :
@@ -126,7 +127,7 @@ public:
 			while (m_Iterator == m_pHash->m_Bins[m_nCurrentBin]->end() &&
 				m_Iterator != m_pHash->m_Bins[XN_HASH_LAST_BIN]->end())
 			{
-				do 
+				do
 				{
 					if (m_nCurrentBin == 0)
 					{
@@ -153,7 +154,7 @@ public:
 
 		/**
 		* Operator to check if 2 iterators point to the same object
-		* 
+		*
 		* @param	other	[in]	instance to compare with
 		*/
 		XnBool operator==(const ConstIterator& other) const
@@ -163,7 +164,7 @@ public:
 
 		/**
 		* Operator to check if 2 iterators point to different objects
-		* 
+		*
 		* @param	other	[in]	instance to compare with
 		*/
 		XnBool operator!=(const ConstIterator& other) const
@@ -206,7 +207,7 @@ public:
 	protected:
 		/**
 		* constructor to be used from inside the XnHash
-		* 
+		*
 		* @param	pHash			[in]	The hash to which the iterator belongs
 		* @param	nBin			[in]	The bin of the current object
 		* @param	listIterator	[in]	Iterator on the bin (each bin is a XnList)
@@ -228,10 +229,10 @@ public:
 
 		/**
 		* constructor to be used from inside the XnHash. It points to the first value in the hash.
-		* 
+		*
 		* @param	pHash	[in]	The hash to which the iterator belongs
 		*/
-		ConstIterator(const XnHash* pHash) : 
+		ConstIterator(const XnHash* pHash) :
 			 m_pHash(pHash), m_nCurrentBin(0), m_Iterator(m_pHash->m_Bins[XN_HASH_LAST_BIN]->end()) {}
 
 		/** The hash to which the iterator belongs */
@@ -252,7 +253,7 @@ public:
 
 		/**
 		* Copy constructor
-		* 
+		*
 		* @param	other	[in]	instance to copy from
 		*/
 		inline Iterator(const Iterator& other) : ConstIterator(other) {}
@@ -260,34 +261,34 @@ public:
 		/**
 		* Support ++iterator, go to the next object in the list
 		*/
-		inline Iterator& operator++() 
-		{ 
+		inline Iterator& operator++()
+		{
 			++(*(ConstIterator*)this);
 			return (*this);
 		}
 		/**
 		* Support iterator++, go to the next object in the list, returning the old value
 		*/
-		inline Iterator operator++(int) 
-		{ 
+		inline Iterator operator++(int)
+		{
 			Iterator result = *this;
 			++*this;
 			return (result);
 		}
-		
+
 		/**
 		* Support --iterator, go to the next object in the list
 		*/
-		inline Iterator& operator--() 
-		{ 
-			--(*(ConstIterator*)this); 
+		inline Iterator& operator--()
+		{
+			--(*(ConstIterator*)this);
 			return (*this);
 		}
 		/**
 		* Support iterator--, go to the next object in the list, returning the old value
 		*/
 		inline Iterator operator--(int)
-		{ 
+		{
 			Iterator result = *this;
 			--*this;
 			return (result);
@@ -306,7 +307,7 @@ public:
 	protected:
 		/**
 		* constructor to be used from inside the XnHash
-		* 
+		*
 		* @param	pHash			[in]	The hash to which the iterator belongs
 		* @param	nBin			[in]	The bin of the current object
 		* @param	listIterator	[in]	Iterator on the bin (each bin is a XnList)
@@ -317,7 +318,7 @@ public:
 
 		/**
 		* constructor to be used from inside the XnHash. It points to the first value in the hash.
-		* 
+		*
 		* @param	pHash	[in]	The hash to which the iterator belongs
 		*/
 		Iterator(const XnHash* pHash) : ConstIterator(pHash) {}
@@ -325,7 +326,7 @@ public:
 		Iterator(const ConstIterator& other) : ConstIterator(other) {}
 	};
 
-	friend class Iterator;
+	friend class ConstIterator;
 
 public:
 	/**
@@ -389,7 +390,7 @@ public:
 
 	/**
 	* Returns the status of the initialization of the hash.
-	* @returns XN_STATUS_OK if the hash was initialized successfully, or an error code otherwise 
+	* @returns XN_STATUS_OK if the hash was initialized successfully, or an error code otherwise
 	* (e.g. if memory could not be allocated).
 	*/
 	XnStatus GetInitStatus() const
@@ -399,7 +400,7 @@ public:
 
 	/**
 	* Set a new key-value entry. If key exists, will replace value.
-	* 
+	*
 	* @param	key		[in]	The key to which to associate the value
 	* @param	value	[in]	The value to add to the XnHash
 	*/
@@ -466,7 +467,7 @@ public:
 
 	/**
 	* Get the value associated with the supplied key
-	* 
+	*
 	* @param	key		[in]	The key of the entry
 	* @param	value	[out]	The retrieved value
 	*
@@ -489,11 +490,11 @@ public:
 
 	/**
 	* Remove a key-value entry from the XnHash
-	* 
+	*
 	* @param	key		[in]	The key of the entry
 	* @param	value	[out]	The value that was in the removed entry
 
-	* @return	XN_STATUS_NO_MATCH	if no such key exists	
+	* @return	XN_STATUS_NO_MATCH	if no such key exists
 	*/
 	XnStatus Remove(const XnKey& key, XnValue& value)
 	{
@@ -514,7 +515,7 @@ public:
 
 	/**
 	* Remove an entry from the XnHash by iterator
-	* 
+	*
 	* @param	iter	[in]	Iterator pointing to an entry in the hash
 	* @param	key		[out]	The key that was in the removed entry
 	* @param	value	[out]	The value that was in the removed entry
@@ -538,7 +539,7 @@ public:
 
 	/**
 	* Remove an entry from the XnHash by iterator
-	* 
+	*
 	* @param	iter	[in]	Iterator pointing to an entry in the hash
 	*
 	* @return	XN_STATUS_ILLEGAL_POSITION	if iterator is invalid
@@ -602,7 +603,7 @@ public:
 
 	/**
 	* Get an iterator pointing to the entry to which the key belongs
-	* 
+	*
 	* @param	key		[in]	The key of the entry
 	* @param	hiter	[out]	Iterator to the entry described by key
 	*
@@ -610,13 +611,12 @@ public:
 	*/
 	XnStatus Find(const XnKey& key, ConstIterator& hiter) const
 	{
-		XnHashValue HashValue = (*m_HashFunction)(key);
-		return Find(key, HashValue, hiter);
+		return ConstFind(key, hiter);
 	}
 
 	/**
 	* Get an iterator pointing to the entry to which the key belongs
-	* 
+	*
 	* @param	key		[in]	The key of the entry
 	* @param	hiter	[out]	Iterator to the entry described by key
 	*
@@ -627,7 +627,7 @@ public:
 		XnStatus nRetVal = XN_STATUS_OK;
 
 		ConstIterator& it = hiter;
-		nRetVal = Find(key, it);
+		nRetVal = ConstFind(key, it);
 		XN_IS_STATUS_OK(nRetVal);
 
 		return (XN_STATUS_OK);
@@ -667,7 +667,7 @@ public:
 
 	/**
 	* Change the hash function. The XnHash must be empty for this to succeed.
-	* 
+	*
 	* @param	hashFunction	[in]	The new hash function
 	*
 	* @return XN_STATUS_IS_NOT_EMPTY	if the XnHash isn't empty
@@ -684,7 +684,7 @@ public:
 
 	/**
 	* Change the comparison function. The XnHash must be empty for this to succeed.
-	* 
+	*
 	* @param	compareFunction	[in]	The new hash function
 	*
 	* @return XN_STATUS_IS_NOT_EMPTY	if the XnHash isn't empty
@@ -722,7 +722,7 @@ protected:
 
 	/**
 	* Get an iterator pointing to the entry to which the key belongs
-	* 
+	*
 	* @param	key			[in]	The key of the entry
 	* @param	hashValue	[in]	The hash value of the key
 	* @param	hiter		[out]	Iterator to the entry described by key
@@ -758,6 +758,13 @@ protected:
 	XnHashFunction m_HashFunction;
 	/** The current comparison function */
 	XnCompareFunction m_CompareFunction;
+
+private:
+	XnStatus ConstFind(const XnKey& key, ConstIterator& hiter) const
+	{
+		XnHashValue HashValue = (*m_HashFunction)(key);
+		return Find(key, HashValue, hiter);
+	}
 };
 
 /**
@@ -787,6 +794,12 @@ protected:
 */
 #define XN_DECLARE_DEFAULT_KEY_MANAGER(KeyType, ClassName, KeyTranslator)	\
 	XN_DECLARE_DEFAULT_KEY_MANAGER_DECL(, KeyType, ClassName, KeyTranslator)
+
+#if MANCTL_CHANGES
+#    define MANCTL_XNHASH_COPY_CONSTRUCTOR_CHANGE : XnHash()
+#else
+#    define MANCTL_XNHASH_COPY_CONSTRUCTOR_CHANGE
+#endif
 
 /**
 * Declares a hash table from @a KeyType to @a ValueType named @a ClassName. The hash table uses
@@ -880,7 +893,7 @@ protected:
 			SetHashFunction(Hash);																	\
 			SetCompareFunction(Compare);															\
 		}																							\
-		ClassName(const ClassName& other)															\
+		ClassName(const ClassName& other) MANCTL_XNHASH_COPY_CONSTRUCTOR_CHANGE                     \
 		{																							\
 			SetHashFunction(Hash);																	\
 			SetCompareFunction(Compare);															\

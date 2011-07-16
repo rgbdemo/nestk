@@ -1,28 +1,25 @@
-/*****************************************************************************
-*                                                                            *
-*  OpenNI 1.0 Alpha                                                          *
-*  Copyright (C) 2010 PrimeSense Ltd.                                        *
-*                                                                            *
-*  This file is part of OpenNI.                                              *
-*                                                                            *
-*  OpenNI is free software: you can redistribute it and/or modify            *
-*  it under the terms of the GNU Lesser General Public License as published  *
-*  by the Free Software Foundation, either version 3 of the License, or      *
-*  (at your option) any later version.                                       *
-*                                                                            *
-*  OpenNI is distributed in the hope that it will be useful,                 *
-*  but WITHOUT ANY WARRANTY; without even the implied warranty of            *
-*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the              *
-*  GNU Lesser General Public License for more details.                       *
-*                                                                            *
-*  You should have received a copy of the GNU Lesser General Public License  *
-*  along with OpenNI. If not, see <http://www.gnu.org/licenses/>.            *
-*                                                                            *
-*****************************************************************************/
-
-
+/****************************************************************************
+*                                                                           *
+*  OpenNI 1.1 Alpha                                                         *
+*  Copyright (C) 2011 PrimeSense Ltd.                                       *
+*                                                                           *
+*  This file is part of OpenNI.                                             *
+*                                                                           *
+*  OpenNI is free software: you can redistribute it and/or modify           *
+*  it under the terms of the GNU Lesser General Public License as published *
+*  by the Free Software Foundation, either version 3 of the License, or     *
+*  (at your option) any later version.                                      *
+*                                                                           *
+*  OpenNI is distributed in the hope that it will be useful,                *
+*  but WITHOUT ANY WARRANTY; without even the implied warranty of           *
+*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the             *
+*  GNU Lesser General Public License for more details.                      *
+*                                                                           *
+*  You should have received a copy of the GNU Lesser General Public License *
+*  along with OpenNI. If not, see <http://www.gnu.org/licenses/>.           *
+*                                                                           *
+****************************************************************************/
 #include "XnPlayerImpl.h"
-#include <cstdio>
 #include <XnModuleInterface.h>
 #include <XnLog.h>
 #include <XnContext.h>
@@ -31,7 +28,7 @@
 #include "XnPropNames.h"
 #include <XnCppWrapper.h>
 
-using namespace std;
+#define XN_PLAYBACK_SPEED_SANITY_SLEEP 2000
 
 namespace xn
 {
@@ -100,9 +97,16 @@ void PlayerImpl::BeforeNodeDestroy()
 XnStatus PlayerImpl::SetSource(XnRecordMedium sourceType, const XnChar* strSource)
 {
 	XnStatus nRetVal = XN_STATUS_OK;
-	m_sourceType = sourceType;
+
+	// NOTE: we don't want playback speed to affect getting to the first frame, so perform this
+	// without playback speed
+	XnDouble dPlaybackSpeed = GetPlaybackSpeed();
+	SetPlaybackSpeed(XN_PLAYBACK_SPEED_FASTEST);
+
 	//Right now the only record medium we support is a file
 	
+	m_sourceType = sourceType;
+
 	switch (m_sourceType)
 	{
 		case XN_RECORD_MEDIUM_FILE:
@@ -117,6 +121,11 @@ XnStatus PlayerImpl::SetSource(XnRecordMedium sourceType, const XnChar* strSourc
 			XN_ASSERT(FALSE);
 			return XN_STATUS_BAD_PARAM;
 	}
+
+	// now re-set playback speed
+	nRetVal = SetPlaybackSpeed(dPlaybackSpeed);
+	XN_IS_STATUS_OK(nRetVal);
+
 	return XN_STATUS_OK;
 }
 
@@ -132,6 +141,15 @@ XnStatus PlayerImpl::GetSource(XnRecordMedium &sourceType, XnChar* strSource, Xn
 void PlayerImpl::Destroy()
 {
 	CloseFileImpl();
+
+	for (PlayedNodesHash::Iterator it = m_playedNodes.begin(); it != m_playedNodes.end(); ++it)
+	{
+		PlayedNodeInfo& nodeInfo = it.Value();
+		xnUnlockNodeForChanges(nodeInfo.hNode, nodeInfo.hLock);
+		xnProductionNodeRelease(nodeInfo.hNode);
+	}
+
+	m_playedNodes.Clear();
 }
 
 XnStatus PlayerImpl::EnumerateNodes(XnNodeInfoList** ppList)
@@ -250,7 +268,7 @@ XnStatus PlayerImpl::OpenFileImpl()
 XnStatus PlayerImpl::ReadFileImpl(void* pData, XnUInt32 nSize, XnUInt32 &nBytesRead)
 {
 	XN_VALIDATE_PTR(m_pInFile, XN_STATUS_ERROR);
-	nBytesRead = fread(pData, 1, nSize, m_pInFile);
+	nBytesRead = (XnUInt32)fread(pData, 1, nSize, m_pInFile);
 	if (ferror(m_pInFile))
 	{
 		return XN_STATUS_OS_FILE_READ_FAILED;
@@ -371,18 +389,35 @@ XnStatus PlayerImpl::AddNode(const XnChar* strNodeName, XnProductionNodeType typ
 	}
 
 	// check if we need to create it (maybe it's a rewind...)
-	if (xnGetNodeHandleByName(m_hPlayer->pContext, strNodeName, &playedNodeInfo.hNode) != XN_STATUS_OK)
+	if (xnGetRefNodeHandleByName(m_hPlayer->pContext, strNodeName, &playedNodeInfo.hNode) != XN_STATUS_OK)
 	{
 		XnStatus nRetVal = xnCreateMockNode(m_hPlayer->pContext, type, strNodeName, &playedNodeInfo.hNode);
 		XN_IS_STATUS_OK(nRetVal);
+
+		// mark this node as needed node. We need this in order to make sure if xnForceShutdown() is called,
+		// the player will be destroyed *before* mock node is (so we can release it).
+		nRetVal = xnAddNeededNode(m_hPlayer, playedNodeInfo.hNode);
+		if (nRetVal != XN_STATUS_OK)
+		{
+			xnProductionNodeRelease(playedNodeInfo.hNode);
+			return (nRetVal);
+		}
 	}
 
 	// lock it, so no one can change configuration (this is a file recording)
 	nRetVal = xnLockNodeForChanges(playedNodeInfo.hNode, &playedNodeInfo.hLock);
-	XN_IS_STATUS_OK(nRetVal);
+	if (nRetVal != XN_STATUS_OK)
+	{
+		xnProductionNodeRelease(playedNodeInfo.hNode);
+		return (nRetVal);
+	}
 
 	nRetVal = m_playedNodes.Set(strNodeName, playedNodeInfo);
-	XN_IS_STATUS_OK(nRetVal);
+	if (nRetVal != XN_STATUS_OK)
+	{
+		xnProductionNodeRelease(playedNodeInfo.hNode);
+		return (nRetVal);
+	}
 
 	return XN_STATUS_OK;
 }
@@ -397,10 +432,15 @@ XnStatus PlayerImpl::RemoveNode(const XnChar* strNodeName)
 	XN_IS_STATUS_OK(nRetVal);
 
 	nRetVal = xnUnlockNodeForChanges(playedNodeInfo.hNode, playedNodeInfo.hLock);
-	XN_IS_STATUS_OK(nRetVal);
-	
+	if (nRetVal != XN_STATUS_OK)
+	{
+		xnLogWarning(XN_MASK_OPEN_NI, "Failed to unlock node when removing from playing: %s", xnGetStatusString(nRetVal));
+	}
+
 	nRetVal = m_playedNodes.Remove(strNodeName);
-	XN_IS_STATUS_OK(nRetVal);
+	XN_ASSERT(nRetVal == XN_STATUS_OK);
+
+	xnProductionNodeRelease(playedNodeInfo.hNode);
 
 	return (XN_STATUS_OK);
 }
@@ -515,24 +555,30 @@ XnStatus PlayerImpl::SetNodeNewData(const XnChar* strNodeName, XnUInt64 nTimeSta
 
 		m_bHasTimeReference = TRUE;
 	}
-
-	if (m_dPlaybackSpeed != XN_PLAYBACK_SPEED_FASTEST)
+	else if (m_dPlaybackSpeed != XN_PLAYBACK_SPEED_FASTEST)
 	{
 		// check this data timestamp compared to when we started
 		XnInt64 nTimestampDiff = nTimeStamp - m_nStartTimestamp;
-		XnInt64 nTimeDiff = nNow - m_nStartTime;
-
-		// check if we need to wait some time
-		XnInt64 nRequestedTimeDiff = (XnInt64)(nTimestampDiff / m_dPlaybackSpeed);
-		if (nTimeDiff < nRequestedTimeDiff)
+		
+		// in some recordings, frames are not ordered by timestamp. Make sure this does not break the mechanism
+		if (nTimestampDiff > 0)
 		{
-			xnOSSleep(XnUInt32((nRequestedTimeDiff - nTimeDiff)/1000));
-		}
+			XnInt64 nTimeDiff = nNow - m_nStartTime;
 
-		// update reference to current frame (this will handle cases in which application
-		// stopped reading frames and continued after a while)
-		m_nStartTimestamp = nTimeStamp;
-		xnOSGetHighResTimeStamp(&m_nStartTime);
+			// check if we need to wait some time
+			XnInt64 nRequestedTimeDiff = (XnInt64)(nTimestampDiff / m_dPlaybackSpeed);
+			if (nTimeDiff < nRequestedTimeDiff)
+			{
+				XnUInt32 nSleep = XnUInt32((nRequestedTimeDiff - nTimeDiff)/1000);
+				nSleep = XN_MIN(nSleep, XN_PLAYBACK_SPEED_SANITY_SLEEP);
+				xnOSSleep(nSleep);
+			}
+
+			// update reference to current frame (this will handle cases in which application
+			// stopped reading frames and continued after a while)
+			m_nStartTimestamp = nTimeStamp;
+			xnOSGetHighResTimeStamp(&m_nStartTime);
+		}
 	}
 
 	PlayedNodeInfo playedNode;
@@ -584,6 +630,9 @@ XnStatus PlayerImpl::SetNodeStateReady(const XnChar* strNodeName)
 		xnLockedNodeEndChanges(playedNode.hNode, playedNode.hLock);
 		return (nRetVal);
 	}
+
+	nRetVal = xnLockedNodeEndChanges(playedNode.hNode, playedNode.hLock);
+	XN_IS_STATUS_OK(nRetVal);
 
 	//TODO: When we move the codec handling to PlayerImpl this notification will be more useful for PlayerImpl.
 	

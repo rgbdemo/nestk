@@ -1,28 +1,24 @@
-/*****************************************************************************
-*                                                                            *
-*  OpenNI 1.0 Alpha                                                          *
-*  Copyright (C) 2010 PrimeSense Ltd.                                        *
-*                                                                            *
-*  This file is part of OpenNI.                                              *
-*                                                                            *
-*  OpenNI is free software: you can redistribute it and/or modify            *
-*  it under the terms of the GNU Lesser General Public License as published  *
-*  by the Free Software Foundation, either version 3 of the License, or      *
-*  (at your option) any later version.                                       *
-*                                                                            *
-*  OpenNI is distributed in the hope that it will be useful,                 *
-*  but WITHOUT ANY WARRANTY; without even the implied warranty of            *
-*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the              *
-*  GNU Lesser General Public License for more details.                       *
-*                                                                            *
-*  You should have received a copy of the GNU Lesser General Public License  *
-*  along with OpenNI. If not, see <http://www.gnu.org/licenses/>.            *
-*                                                                            *
-*****************************************************************************/
-
-
-
-
+/****************************************************************************
+*                                                                           *
+*  OpenNI 1.1 Alpha                                                         *
+*  Copyright (C) 2011 PrimeSense Ltd.                                       *
+*                                                                           *
+*  This file is part of OpenNI.                                             *
+*                                                                           *
+*  OpenNI is free software: you can redistribute it and/or modify           *
+*  it under the terms of the GNU Lesser General Public License as published *
+*  by the Free Software Foundation, either version 3 of the License, or     *
+*  (at your option) any later version.                                      *
+*                                                                           *
+*  OpenNI is distributed in the hope that it will be useful,                *
+*  but WITHOUT ANY WARRANTY; without even the implied warranty of           *
+*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the             *
+*  GNU Lesser General Public License for more details.                      *
+*                                                                           *
+*  You should have received a copy of the GNU Lesser General Public License *
+*  along with OpenNI. If not, see <http://www.gnu.org/licenses/>.           *
+*                                                                           *
+****************************************************************************/
 //---------------------------------------------------------------------------
 // Includes
 //---------------------------------------------------------------------------
@@ -30,7 +26,11 @@
 #include <errno.h>
 #include <sys/stat.h>
 #include <sys/ipc.h>
+#include <XnLog.h>
+
+#ifndef XN_PLATFORM_LINUX_NO_SYSV
 #include <sys/sem.h>
+#endif
 
 //---------------------------------------------------------------------------
 // Types
@@ -83,6 +83,10 @@ XnStatus xnOSNamedMutexCreate(XnMutex* pMutex, const XnChar* csMutexName)
 	XnStatus nRetVal = XN_STATUS_OK;
 	int rc;
 
+#ifdef XN_PLATFORM_LINUX_NO_SYSV
+	xnLogError(XN_MASK_OS, "Named mutex is not implemented for this platform!");
+	return XN_STATUS_OS_MUTEX_CREATION_FAILED;
+#else
 	// tanslate mutex name to key file name
 	XnUInt32 nBytesWritten;
 	xnOSStrFormat(pMutex->csSemFileName, XN_FILE_MAX_PATH, &nBytesWritten, "/tmp/XnCore.Mutex.%s.key", csMutexName);
@@ -158,6 +162,7 @@ XnStatus xnOSNamedMutexCreate(XnMutex* pMutex, const XnChar* csMutexName)
 		xnOSCloseMutex(&pMutex);
 		return (XN_STATUS_OS_MUTEX_CREATION_FAILED);
 	}
+#endif
 
 	return (XN_STATUS_OK);
 }
@@ -230,6 +235,8 @@ XN_C_API XnStatus xnOSCloseMutex(XN_MUTEX_HANDLE* pMutexHandle)
 	// check the kind of mutex
 	if (pMutex->bIsNamed)
 	{
+#ifndef XN_PLATFORM_LINUX_NO_SYSV
+
 		// decrement second sem
 		struct sembuf op;
 		op.sem_num = 1;
@@ -253,6 +260,7 @@ XN_C_API XnStatus xnOSCloseMutex(XN_MUTEX_HANDLE* pMutexHandle)
 		
 		// in any case, close the file
 		close(pMutex->hSemFile);
+#endif
 	}
 	else
 	{
@@ -279,21 +287,25 @@ XN_C_API XnStatus xnOSLockMutex(const XN_MUTEX_HANDLE MutexHandle, XnUInt32 nMil
 	// Make sure the actual mutex handle isn't NULL
 	XN_RET_IF_NULL(MutexHandle, XN_STATUS_OS_INVALID_MUTEX);
 
+#ifndef XN_PLATFORM_LINUX_NO_SYSV
 	struct sembuf op;
 	// try to decrease it by 1 (if it's 0, we'll wait)
 	op.sem_num = 0;
 	op.sem_op = -1;
 	op.sem_flg = SEM_UNDO;
+#endif
 
 	if (nMilliseconds == XN_WAIT_INFINITE)
 	{
 		// lock via the OS
 		if (MutexHandle->bIsNamed)
 		{
+#ifndef XN_PLATFORM_LINUX_NO_SYSV
 			if (0 != semop(MutexHandle->NamedSem, &op, 1))
 			{
 				rc = errno;
 			}
+#endif
 		}
 		else
 		{
@@ -302,14 +314,18 @@ XN_C_API XnStatus xnOSLockMutex(const XN_MUTEX_HANDLE MutexHandle, XnUInt32 nMil
 	}
 	else
 	{
-		// calculate timeout absolute time. First we take current time
 		struct timespec time;
-		time.tv_sec = (nMilliseconds / 1000);
-		time.tv_nsec = ((nMilliseconds % 1000) * 1000000);
 		
 		// lock via the OS
 		if (MutexHandle->bIsNamed)
 		{
+#ifndef XN_PLATFORM_LINUX_NO_SYSV
+			nRetVal = xnOSGetTimeout(&time, nMilliseconds);
+			if (nRetVal != XN_STATUS_OK)
+			{
+				return XN_STATUS_OS_MUTEX_LOCK_FAILED;
+			}
+
 #ifndef XN_PLATFORM_HAS_NO_TIMED_OPS
 			if (0 != semtimedop(MutexHandle->NamedSem, &op, 1, &time))
 #else
@@ -318,9 +334,17 @@ XN_C_API XnStatus xnOSLockMutex(const XN_MUTEX_HANDLE MutexHandle, XnUInt32 nMil
 			{
 				rc = errno;
 			}
+#endif
 		}
 		else
 		{
+			// calculate timeout absolute time. First we take current time
+			nRetVal = xnOSGetAbsTimeout(&time, nMilliseconds);
+			if (nRetVal != XN_STATUS_OK)
+			{
+				return XN_STATUS_OS_MUTEX_LOCK_FAILED;
+			}
+			
 #ifndef XN_PLATFORM_HAS_NO_TIMED_OPS
 			rc = pthread_mutex_timedlock(&MutexHandle->ThreadMutex, &time);
 #else
@@ -355,6 +379,7 @@ XN_C_API XnStatus xnOSUnLockMutex(const XN_MUTEX_HANDLE MutexHandle)
 	// unlock via the OS
 	if (MutexHandle->bIsNamed)
 	{
+#ifndef XN_PLATFORM_LINUX_NO_SYSV
 		struct sembuf op;
 		op.sem_num = 0;
 		op.sem_op = 1; // increase by 1
@@ -364,6 +389,7 @@ XN_C_API XnStatus xnOSUnLockMutex(const XN_MUTEX_HANDLE MutexHandle)
 		{
 			rc = errno;
 		}
+#endif
 	}
 	else
 	{

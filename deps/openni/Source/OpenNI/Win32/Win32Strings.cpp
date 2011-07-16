@@ -1,32 +1,29 @@
-/*****************************************************************************
-*                                                                            *
-*  OpenNI 1.0 Alpha                                                          *
-*  Copyright (C) 2010 PrimeSense Ltd.                                        *
-*                                                                            *
-*  This file is part of OpenNI.                                              *
-*                                                                            *
-*  OpenNI is free software: you can redistribute it and/or modify            *
-*  it under the terms of the GNU Lesser General Public License as published  *
-*  by the Free Software Foundation, either version 3 of the License, or      *
-*  (at your option) any later version.                                       *
-*                                                                            *
-*  OpenNI is distributed in the hope that it will be useful,                 *
-*  but WITHOUT ANY WARRANTY; without even the implied warranty of            *
-*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the              *
-*  GNU Lesser General Public License for more details.                       *
-*                                                                            *
-*  You should have received a copy of the GNU Lesser General Public License  *
-*  along with OpenNI. If not, see <http://www.gnu.org/licenses/>.            *
-*                                                                            *
-*****************************************************************************/
-
-
-
-
+/****************************************************************************
+*                                                                           *
+*  OpenNI 1.1 Alpha                                                         *
+*  Copyright (C) 2011 PrimeSense Ltd.                                       *
+*                                                                           *
+*  This file is part of OpenNI.                                             *
+*                                                                           *
+*  OpenNI is free software: you can redistribute it and/or modify           *
+*  it under the terms of the GNU Lesser General Public License as published *
+*  by the Free Software Foundation, either version 3 of the License, or     *
+*  (at your option) any later version.                                      *
+*                                                                           *
+*  OpenNI is distributed in the hope that it will be useful,                *
+*  but WITHOUT ANY WARRANTY; without even the implied warranty of           *
+*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the             *
+*  GNU Lesser General Public License for more details.                      *
+*                                                                           *
+*  You should have received a copy of the GNU Lesser General Public License *
+*  along with OpenNI. If not, see <http://www.gnu.org/licenses/>.           *
+*                                                                           *
+****************************************************************************/
 //---------------------------------------------------------------------------
 // Includes
 //---------------------------------------------------------------------------
 #include <XnOS.h>
+#include <XnLog.h>
 
 //---------------------------------------------------------------------------
 // Globals
@@ -106,7 +103,7 @@ XN_C_API XnStatus xnOSStrPrefix(const XnChar* cpPrefixString, XnChar* cpDestStri
 {
 	// Local function variables
 	XnChar* cpTempBuffer = NULL;
-	XnUInt32 nOutStringLength = 0;
+	XnSizeT nOutStringLength = 0;
 
 	// Validate the input/output pointers (to make sure none of them is NULL)
 	XN_VALIDATE_INPUT_PTR(cpPrefixString);
@@ -179,7 +176,7 @@ XN_C_API XnStatus xnOSStrCopy(XnChar* cpDestString, const XnChar* cpSrcString, c
 XN_C_API XnUInt32 xnOSStrLen(const XnChar* cpString)
 {
 	XN_VALIDATE_PTR(cpString, 0);
-	return strlen(cpString);
+	return (XnUInt32)strlen(cpString);
 }
 
 XN_C_API XnStatus xnOSStrNCopy(XnChar* cpDestString, const XnChar* cpSrcString, const XnUInt32 nCopyLength, const XnUInt32 nDestLength)
@@ -205,7 +202,7 @@ XN_C_API XnStatus xnOSStrCRC32(const XnChar* cpString, XnUInt32* nCRC32)
 {
 	// Local function variables
 	XnUInt32 nTempCRC32 = 0xffffffff;
-	XnUInt32 nStrLen = 0;
+	XnSizeT nStrLen = 0;
 	XnUInt32 nIdx = 0;
 
 	// Validate the input/output pointers (to make sure none of them is NULL)
@@ -283,21 +280,63 @@ XN_C_API void xnOSItoA(XnInt32 nValue, XnChar* cpStr, XnInt32 nBase)
 	_itoa(nValue, cpStr, nBase);
 }
 
-XN_C_API XnStatus xnOSExpandEnvironmentStrings(const XnChar* strSrc, XnChar* strDest, XnUInt32 nDestSize)
+XN_C_API XnStatus XN_C_DECL xnOSGetEnvironmentVariable(const XnChar* strEnv, XnChar* strDest, XnUInt32 nDestSize)
 {
-	if (0 == ::ExpandEnvironmentStrings(strSrc, strDest, nDestSize))
+	XN_VALIDATE_INPUT_PTR(strEnv);
+	XN_VALIDATE_INPUT_PTR(strDest);
+	
+	DWORD ret = ::GetEnvironmentVariable(strEnv, strDest, nDestSize);
+	if (ret > nDestSize)
 	{
 		return (XN_STATUS_OUTPUT_BUFFER_OVERFLOW);
 	}
+	else if (ret == 0)
+	{
+		if (ERROR_ENVVAR_NOT_FOUND == GetLastError())
+		{
+			return (XN_STATUS_OS_ENV_VAR_NOT_FOUND);
+		}
+		else
+		{
+			xnLogWarning(XN_MASK_OS, "Could not get environment variable (%d)", GetLastError());
+			return (XN_STATUS_ERROR);
+		}
+	}
+	else
+	{
+		return (XN_STATUS_OK);
+	}
+}
 
-	return (XN_STATUS_OK);
+XN_C_API XnStatus xnOSExpandEnvironmentStrings(const XnChar* strSrc, XnChar* strDest, XnUInt32 nDestSize)
+{
+	XN_VALIDATE_INPUT_PTR(strSrc);
+	XN_VALIDATE_INPUT_PTR(strDest);
+	
+	DWORD ret = ::ExpandEnvironmentStrings(strSrc, strDest, nDestSize);
+	if (ret > nDestSize)
+	{
+		return (XN_STATUS_OUTPUT_BUFFER_OVERFLOW);
+	}
+	else if (ret == 0)
+	{
+		xnLogWarning(XN_MASK_OS, "Could not expand environment variables (%d)", GetLastError());
+		return (XN_STATUS_ERROR);
+	}
+	else
+	{
+		return (XN_STATUS_OK);
+	}
 }
 
 XN_C_API XnInt32 xnOSStrCmp(const XnChar* cpFirstString, const XnChar* cpSecondString)
 {
 	// Validate the input/output pointers (to make sure none of them is NULL)
-	XN_VALIDATE_INPUT_PTR(cpFirstString);
-	XN_VALIDATE_INPUT_PTR(cpSecondString);
+	if ((cpFirstString == NULL) || (cpSecondString == NULL))
+	{
+		XN_ASSERT(FALSE);
+		return 1;
+	}
 
 	return strcmp(cpFirstString, cpSecondString);
 }
@@ -305,8 +344,11 @@ XN_C_API XnInt32 xnOSStrCmp(const XnChar* cpFirstString, const XnChar* cpSecondS
 XN_C_API XnInt32 xnOSStrCaseCmp(const XnChar* cpFirstString, const XnChar* cpSecondString)
 {
 	// Validate the input/output pointers (to make sure none of them is NULL)
-	XN_VALIDATE_INPUT_PTR(cpFirstString);
-	XN_VALIDATE_INPUT_PTR(cpSecondString);
+	if ((cpFirstString == NULL) || (cpSecondString == NULL))
+	{
+		XN_ASSERT(FALSE);
+		return 1;
+	}
 
 	return _stricmp(cpFirstString, cpSecondString);
 }

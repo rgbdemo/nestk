@@ -1,27 +1,24 @@
-/*****************************************************************************
-*                                                                            *
-*  OpenNI 1.0 Alpha                                                          *
-*  Copyright (C) 2010 PrimeSense Ltd.                                        *
-*                                                                            *
-*  This file is part of OpenNI.                                              *
-*                                                                            *
-*  OpenNI is free software: you can redistribute it and/or modify            *
-*  it under the terms of the GNU Lesser General Public License as published  *
-*  by the Free Software Foundation, either version 3 of the License, or      *
-*  (at your option) any later version.                                       *
-*                                                                            *
-*  OpenNI is distributed in the hope that it will be useful,                 *
-*  but WITHOUT ANY WARRANTY; without even the implied warranty of            *
-*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the              *
-*  GNU Lesser General Public License for more details.                       *
-*                                                                            *
-*  You should have received a copy of the GNU Lesser General Public License  *
-*  along with OpenNI. If not, see <http://www.gnu.org/licenses/>.            *
-*                                                                            *
-*****************************************************************************/
-
-
-#include <cstdio>
+/****************************************************************************
+*                                                                           *
+*  OpenNI 1.1 Alpha                                                         *
+*  Copyright (C) 2011 PrimeSense Ltd.                                       *
+*                                                                           *
+*  This file is part of OpenNI.                                             *
+*                                                                           *
+*  OpenNI is free software: you can redistribute it and/or modify           *
+*  it under the terms of the GNU Lesser General Public License as published *
+*  by the Free Software Foundation, either version 3 of the License, or     *
+*  (at your option) any later version.                                      *
+*                                                                           *
+*  OpenNI is distributed in the hope that it will be useful,                *
+*  but WITHOUT ANY WARRANTY; without even the implied warranty of           *
+*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the             *
+*  GNU Lesser General Public License for more details.                      *
+*                                                                           *
+*  You should have received a copy of the GNU Lesser General Public License *
+*  along with OpenNI. If not, see <http://www.gnu.org/licenses/>.           *
+*                                                                           *
+****************************************************************************/
 #include <XnCppWrapper.h>
 #include <XnLog.h>
 #include "XnRecorderImpl.h"
@@ -31,8 +28,6 @@
 #include "XnInternalTypes.h"
 #include "XnPropNames.h"
 #include <XnCodecIDs.h>
-
-using namespace std;
 
 namespace xn 
 {
@@ -48,7 +43,8 @@ XnRecorderOutputStreamInterface RecorderImpl::s_fileOutputStream =
 
 RecorderImpl::RecorderImpl() : 
 	m_hRecorder(NULL),
-	m_pOutFile(NULL)
+	m_pOutFile(NULL),
+	m_destType(XN_RECORD_MEDIUM_FILE)
 {
 	xnOSMemSet(m_strFileName, 0, sizeof(m_strFileName));
 }
@@ -95,6 +91,12 @@ XnStatus RecorderImpl::AddNode(ProductionNode &node, XnCodecID compression)
 		return XN_STATUS_BAD_PARAM;		
 	}
 
+	NodeWatchersMap::ConstIterator it = m_nodeWatchersMap.end();
+	if (m_nodeWatchersMap.Find(node.GetHandle(), it) == XN_STATUS_OK)
+	{
+		return XN_STATUS_NODE_ALREADY_RECORDED;
+	}
+
 	if (compression == XN_CODEC_NULL)
 	{
 		compression = GetDefaultCodecID(node);
@@ -111,7 +113,7 @@ XnStatus RecorderImpl::AddNode(ProductionNode &node, XnCodecID compression)
 		return nRetVal;
 	}
 
-	nRetVal = NotifyNodeAdded(node, type, compression);
+	nRetVal = NotifyNodeAdded(node.GetHandle(), type, compression);
 	XN_IS_STATUS_OK(nRetVal);
 	nRetVal = pNodeWatcher->NotifyState();
 	if (nRetVal != XN_STATUS_OK)
@@ -120,7 +122,7 @@ XnStatus RecorderImpl::AddNode(ProductionNode &node, XnCodecID compression)
 		return nRetVal;
 	}
 
-	nRetVal = m_nodeWatchersMap.Set(node, pNodeWatcher);
+	nRetVal = m_nodeWatchersMap.Set(node.GetHandle(), pNodeWatcher);
 	if (nRetVal != XN_STATUS_OK)
 	{
 		XN_DELETE(pNodeWatcher);
@@ -137,7 +139,7 @@ XnStatus RecorderImpl::RemoveNode(ProductionNode &node)
 		return XN_STATUS_BAD_PARAM;		
 	}
 
-	XnStatus nRetVal = NotifyNodeRemoved(node);
+	XnStatus nRetVal = NotifyNodeRemoved(node.GetHandle());
 	XN_IS_STATUS_OK(nRetVal);
 	nRetVal = RemoveNodeImpl(node);
 	XN_IS_STATUS_OK(nRetVal);
@@ -156,12 +158,13 @@ XnStatus RecorderImpl::AddRawNode(const XnChar* strNodeName)
 
 	XnNodeHandle hNode = NULL;
 	NodeWatcher* pNodeWatcher = NULL;
-	if ((xnGetNodeHandleByName(m_hRecorder->pContext, strNodeName, &hNode) == XN_STATUS_OK) &&
+	if ((xnGetRefNodeHandleByName(m_hRecorder->pContext, strNodeName, &hNode) == XN_STATUS_OK) &&
 		(m_nodeWatchersMap.Get(hNode, pNodeWatcher) == XN_STATUS_OK))
 	{
 		//There's a node by that name and we're already watching it
 		xnLogWarning(XN_MASK_OPEN_NI, "Attempted to add a raw node by name of '%s' but there is already another node by that name that is being recorded", strNodeName);
 		XN_ASSERT(FALSE);
+		xnProductionNodeRelease(hNode);
 		return XN_STATUS_INVALID_OPERATION;
 	}
 
@@ -265,7 +268,8 @@ XnStatus RecorderImpl::SetRawNodeNewData(const XnChar* strNodeName, XnUInt64 nTi
 XnStatus RecorderImpl::RemoveNodeImpl(ProductionNode &node)
 {
 	NodeWatcher* pNodeWatcher = NULL;
-	XnStatus nRetVal = m_nodeWatchersMap.Remove(node, pNodeWatcher);
+	XnNodeHandle hNode = node.GetHandle();
+	XnStatus nRetVal = m_nodeWatchersMap.Remove(hNode, pNodeWatcher);
 	XN_DELETE(pNodeWatcher);
 	XN_IS_STATUS_OK(nRetVal);
 	return XN_STATUS_OK;
@@ -301,11 +305,18 @@ XnStatus RecorderImpl::NotifyNodeRemoved(XnNodeHandle hNode)
 XnStatus RecorderImpl::SetDestination(XnRecordMedium destType, const XnChar* strDest)
 {
 	XnStatus nRetVal = XN_STATUS_OK;
+
 	switch (destType)
 	{
 		//Right now only file destination is supported
 		case XN_RECORD_MEDIUM_FILE:
 		{
+			if (m_pOutFile != NULL)
+			{
+				XN_LOG_WARNING_RETURN(XN_STATUS_INVALID_OPERATION, XN_MASK_OPEN_NI, "Recorder destination is already set!");
+			}
+
+			m_destType = destType;
 			nRetVal = xnOSStrCopy(m_strFileName, strDest, sizeof(m_strFileName));
 			XN_IS_STATUS_OK(nRetVal);
 			nRetVal = ModuleRecorder().SetOutputStream(ModuleHandle(), this, &s_fileOutputStream);
@@ -320,14 +331,92 @@ XnStatus RecorderImpl::SetDestination(XnRecordMedium destType, const XnChar* str
 	return XN_STATUS_OK;
 }
 
+XnStatus RecorderImpl::GetDestination(XnRecordMedium& destType, XnChar* strDest, XnUInt32 nBufSize)
+{
+	XnStatus nRetVal = XN_STATUS_OK;
+	switch (m_destType)
+	{
+		case XN_RECORD_MEDIUM_FILE:
+			destType = m_destType;
+			nRetVal = xnOSStrCopy(strDest, m_strFileName, nBufSize);
+			XN_IS_STATUS_OK(nRetVal);
+			break;
+
+		default:
+			XN_ASSERT(FALSE);
+			return XN_STATUS_ERROR;
+	}
+
+	return XN_STATUS_OK;
+}
+
+typedef struct 
+{
+	NodeWatcher* pWatcher;
+	XnUInt64 nTimestamp;
+} WatcherData;
+
+static void SortWatchersByTimestamp(WatcherData aWatchers[], XnUInt32 nCount)
+{
+	// use bubble sort
+	XnUInt32 n = nCount;
+	XnBool bSwapped;
+	WatcherData temp;
+
+	if (nCount == 0)
+		return;
+
+	do
+	{
+		bSwapped = FALSE;
+		for (XnUInt32 i = 0; i < n - 1; ++i)
+		{
+			if (aWatchers[i].nTimestamp > aWatchers[i+1].nTimestamp)
+			{
+				// swap
+				temp = aWatchers[i];
+				aWatchers[i] = aWatchers[i+1];
+				aWatchers[i+1] = temp;
+
+				bSwapped = TRUE;
+			}
+		}
+
+		n -= 1;
+
+	} while (bSwapped);
+}
+
 XnStatus RecorderImpl::Record()
 {
 	XnStatus nRetVal = XN_STATUS_OK;
+
+	// We need to sort the watchers according to their timestamp, so that data buffers will be sorted in the
+	// file.
+	const XnUInt32 MAX_SUPPORTED_NODES = 200;
+	WatcherData watchers[MAX_SUPPORTED_NODES];
+	XnUInt32 nCount = 0;
+
 	for (NodeWatchersMap::Iterator it = m_nodeWatchersMap.begin(); it != m_nodeWatchersMap.end(); it++)
 	{
-		nRetVal = it.Value()->Watch();
+		watchers[nCount].pWatcher = it.Value();
+		watchers[nCount].nTimestamp = it.Value()->GetTimestamp();
+		++nCount;
+
+		if (nCount > MAX_SUPPORTED_NODES)
+		{
+			XN_LOG_ERROR_RETURN(XN_STATUS_ERROR, XN_MASK_OPEN_NI, "OpenNI recorder does not support more than %u nodes.", MAX_SUPPORTED_NODES);
+		}
+	}
+
+	SortWatchersByTimestamp(watchers, nCount);
+
+	for (XnUInt32 i = 0; i < nCount; ++i)
+	{
+		nRetVal = watchers[i].pWatcher->Watch();
 		XN_IS_STATUS_OK(nRetVal);
 	}
+
 	return XN_STATUS_OK;
 }
 
@@ -453,26 +542,27 @@ XnCodecID RecorderImpl::GetDefaultCodecID(ProductionNode& node)
 	XN_ASSERT(node.IsValid());
 	XnProductionNodeType type = node.GetInfo().GetDescription().Type;
 
-	switch (type)
+	if (xnIsTypeDerivedFrom(type, XN_NODE_TYPE_DEPTH))
 	{
-		case XN_NODE_TYPE_DEPTH:
-			return XN_CODEC_16Z_EMB_TABLES;
-		case XN_NODE_TYPE_IMAGE:
+		return XN_CODEC_16Z_EMB_TABLES;
+	}
+	else if (xnIsTypeDerivedFrom(type, XN_NODE_TYPE_IMAGE))
+	{
+		ImageGenerator gen(node);
+		XnPixelFormat format = gen.GetPixelFormat();
+		switch (format)
 		{
-			ImageGenerator gen(node);
-			XnPixelFormat format = gen.GetPixelFormat();
-			switch (format)
-			{
-				case XN_PIXEL_FORMAT_RGB24:
-					return XN_CODEC_JPEG;
-				case XN_PIXEL_FORMAT_GRAYSCALE_8_BIT:
-					return XN_CODEC_8Z;
-				default:
-					return XN_CODEC_UNCOMPRESSED;
-			}
+			case XN_PIXEL_FORMAT_RGB24:
+				return XN_CODEC_JPEG;
+			case XN_PIXEL_FORMAT_GRAYSCALE_8_BIT:
+				return XN_CODEC_8Z;
+			default:
+				return XN_CODEC_UNCOMPRESSED;
 		}
-		default:
-			return XN_CODEC_UNCOMPRESSED;
+	}
+	else
+	{
+		return XN_CODEC_UNCOMPRESSED;
 	}
 }
 

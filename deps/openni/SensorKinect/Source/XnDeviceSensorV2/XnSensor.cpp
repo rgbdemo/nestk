@@ -45,7 +45,8 @@
 #define XN_SENSOR_MAX_STREAM_COUNT						5
 #define XN_SENSOR_FRAME_SYNC_MAX_DIFF					3
 #define XN_SENSOR_DEFAULT_CLOSE_STREAMS_ON_SHUTDOWN		TRUE
-#define XN_GLOBAL_CONFIG_FILE_NAME						"GlobalDefaults.ini"
+// --avin mod--
+#define XN_GLOBAL_CONFIG_FILE_NAME						"GlobalDefaultsKinect.ini"
 
 //---------------------------------------------------------------------------
 // Types
@@ -83,6 +84,8 @@ XnSensor::XnSensor() :
 	m_pThis(this),
 	m_InstancePointer(XN_SENSOR_PROPERTY_INSTANCE_POINTER, &m_pThis, sizeof(m_pThis), NULL),
 	m_USBPath(XN_MODULE_PROPERTY_USB_PATH),
+	m_DeviceName(XN_MODULE_PROPERTY_PHYSICAL_DEVICE_NAME),
+	m_VendorSpecificData(XN_MODULE_PROPERTY_VENDOR_SPECIFIC_DATA),
 	m_Firmware(&m_DevicePrivateData),
 	m_FixedParams(&m_Firmware, &m_DevicePrivateData),
 	m_SensorIO(&m_DevicePrivateData.SensorHandle),
@@ -237,6 +240,25 @@ XnStatus XnSensor::InitSensor(const XnDeviceConfig* pDeviceConfig)
 	nRetVal = m_FixedParams.Init();
 	XN_IS_STATUS_OK(nRetVal);
 
+	XnDeviceInformation deviceInfo;
+	strcpy(deviceInfo.strDeviceName, "PrimeSense Sensor");
+	strcpy(deviceInfo.strVendorData, "");
+
+	// try to take device information (only supported from 5.3.25)
+	if (pDevicePrivateData->Version.nMajor > 5 ||
+		(pDevicePrivateData->Version.nMajor == 5 && pDevicePrivateData->Version.nMinor > 3) ||
+		(pDevicePrivateData->Version.nMajor == 5 && pDevicePrivateData->Version.nMinor == 3 && pDevicePrivateData->Version.nBuild >= 25))
+	{
+		nRetVal = XnHostProtocolAlgorithmParams(pDevicePrivateData, XN_HOST_PROTOCOL_ALGORITHM_DEVICE_INFO, 
+			&deviceInfo, sizeof(deviceInfo), (XnResolutions)0, 0);
+		XN_IS_STATUS_OK(nRetVal);
+	}
+
+	nRetVal = m_DeviceName.UnsafeUpdateValue(deviceInfo.strDeviceName);
+	XN_IS_STATUS_OK(nRetVal);
+	nRetVal = m_VendorSpecificData.UnsafeUpdateValue(deviceInfo.strVendorData);
+	XN_IS_STATUS_OK(nRetVal);
+
 	// update serial number
 	nRetVal = m_ID.UnsafeUpdateValue(m_FixedParams.GetSensorSerial());
 	XN_IS_STATUS_OK(nRetVal);
@@ -290,6 +312,12 @@ XnStatus XnSensor::Destroy()
 		pDevicePrivateData->hExecuteMutex = NULL;
 	}
 
+	// Register USB event callback
+#if WIN32
+	nRetVal = m_SensorIO.SetCallback(NULL, this);
+	XN_IS_STATUS_OK(nRetVal);
+#endif
+
 	XnDeviceBase::Destroy();
 
 	// close dumps
@@ -319,7 +347,7 @@ XnStatus XnSensor::CreateDeviceModule(XnDeviceModuleHolder** ppModuleHolder)
 		&m_ReadFromEP2, &m_ReadFromEP3, &m_ReadData, &m_NumberOfBuffers, &m_FirmwareParam, 
 		&m_CmosBlankingUnits, &m_CmosBlankingTime, &m_Reset, &m_FirmwareMode, &m_Version, 
 		&m_FixedParam, &m_FrameSync, &m_CloseStreamsOnShutdown, &m_InstancePointer, &m_ID,
-		&m_USBPath,
+		&m_USBPath, &m_DeviceName, &m_VendorSpecificData,
 	};
 
 	nRetVal = pModule->AddProperties(pProps, sizeof(pProps)/sizeof(XnProperty*));
@@ -796,7 +824,7 @@ XnStatus XnSensor::ValidateSensorID(XnChar* csSensorID)
 XnStatus XnSensor::ResolveGlobalConfigFileName(XnChar* strConfigFile, XnUInt32 nBufSize, const XnChar* strConfigDir)
 {
 	XnUInt32 nWritten = 0;
-	return xnOSStrFormat(strConfigFile, nBufSize, &nWritten, "%s%s%s", "config/" /*strConfigDir*/, XN_FILE_DIR_SEP, XN_GLOBAL_CONFIG_FILE_NAME);
+	return xnOSStrFormat(strConfigFile, nBufSize, &nWritten, "%s%s%s", strConfigDir, XN_FILE_DIR_SEP, XN_GLOBAL_CONFIG_FILE_NAME);
 }
 
 XnStatus XnSensor::SetGlobalConfigFile(const XnChar* strConfigFile)

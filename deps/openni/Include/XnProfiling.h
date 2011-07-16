@@ -1,28 +1,24 @@
-/*****************************************************************************
-*                                                                            *
-*  OpenNI 1.0 Alpha                                                          *
-*  Copyright (C) 2010 PrimeSense Ltd.                                        *
-*                                                                            *
-*  This file is part of OpenNI.                                              *
-*                                                                            *
-*  OpenNI is free software: you can redistribute it and/or modify            *
-*  it under the terms of the GNU Lesser General Public License as published  *
-*  by the Free Software Foundation, either version 3 of the License, or      *
-*  (at your option) any later version.                                       *
-*                                                                            *
-*  OpenNI is distributed in the hope that it will be useful,                 *
-*  but WITHOUT ANY WARRANTY; without even the implied warranty of            *
-*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the              *
-*  GNU Lesser General Public License for more details.                       *
-*                                                                            *
-*  You should have received a copy of the GNU Lesser General Public License  *
-*  along with OpenNI. If not, see <http://www.gnu.org/licenses/>.            *
-*                                                                            *
-*****************************************************************************/
-
-
-
-
+/****************************************************************************
+*                                                                           *
+*  OpenNI 1.1 Alpha                                                         *
+*  Copyright (C) 2011 PrimeSense Ltd.                                       *
+*                                                                           *
+*  This file is part of OpenNI.                                             *
+*                                                                           *
+*  OpenNI is free software: you can redistribute it and/or modify           *
+*  it under the terms of the GNU Lesser General Public License as published *
+*  by the Free Software Foundation, either version 3 of the License, or     *
+*  (at your option) any later version.                                      *
+*                                                                           *
+*  OpenNI is distributed in the hope that it will be useful,                *
+*  but WITHOUT ANY WARRANTY; without even the implied warranty of           *
+*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the             *
+*  GNU Lesser General Public License for more details.                      *
+*                                                                           *
+*  You should have received a copy of the GNU Lesser General Public License *
+*  along with OpenNI. If not, see <http://www.gnu.org/licenses/>.           *
+*                                                                           *
+****************************************************************************/
 #ifndef _XN_PROFILING_H_
 #define _XN_PROFILING_H_
 
@@ -51,7 +47,7 @@ typedef XnInt32 XnProfilingHandle;
 * @param	nProfilingInterval	[in]	The number of milliseconds between profiler printings. A value
 *										of zero means profiling is off.
 */
-XN_C_API XnStatus xnProfilingInit(XnUInt32 nProfilingInterval = 0);
+XN_C_API XnStatus XN_C_DECL xnProfilingInit(XnUInt32 nProfilingInterval = 0);
 
 /**
 * Initializes using INI file.
@@ -59,17 +55,17 @@ XN_C_API XnStatus xnProfilingInit(XnUInt32 nProfilingInterval = 0);
 * @param	cpINIFileName	[in]	Name of INI file.
 * @param	cpSectionName	[in]	Name of section in INI file.
 */
-XN_C_API XnStatus xnProfilingInitFromINI(const XnChar* cpINIFileName, const XnChar* cpSectionName);
+XN_C_API XnStatus XN_C_DECL xnProfilingInitFromINI(const XnChar* cpINIFileName, const XnChar* cpSectionName);
 
 /**
 * Shuts down profiling.
 */
-XN_C_API XnStatus xnProfilingShutdown();
+XN_C_API XnStatus XN_C_DECL xnProfilingShutdown();
 
 /**
 * Returns TRUE if profiling is active, or FALSE otherwise.
 */
-XN_C_API XnBool xnProfilingIsActive();
+XN_C_API XnBool XN_C_DECL xnProfilingIsActive();
 
 /**
 * Start a profiled section. This function is not meant to be used directly. Please use the 
@@ -79,7 +75,7 @@ XN_C_API XnBool xnProfilingIsActive();
 * @param	bMT				[in]		TRUE if this section is multi-threaded, FALSE otherwise.
 * @param	pHandle			[out]		A handle to be used each time this section executes again.
 */
-XN_C_API XnStatus xnProfilingSectionStart(const char* csSectionName, XnBool bMT, XnProfilingHandle* pHandle);
+XN_C_API XnStatus XN_C_DECL xnProfilingSectionStart(const char* csSectionName, XnBool bMT, XnProfilingHandle* pHandle);
 
 /**
 * Ends a profiled section. This function is not meant to be used directly. Please use the 
@@ -87,7 +83,7 @@ XN_C_API XnStatus xnProfilingSectionStart(const char* csSectionName, XnBool bMT,
 *
 * @param	pHandle		[in]	A handle returned from xnProfilingSectionStart.
 */
-XN_C_API XnStatus xnProfilingSectionEnd(XnProfilingHandle* pHandle);
+XN_C_API XnStatus XN_C_DECL xnProfilingSectionEnd(XnProfilingHandle* pHandle);
 
 
 /**

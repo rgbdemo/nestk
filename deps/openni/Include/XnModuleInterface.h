@@ -1,28 +1,24 @@
-/*****************************************************************************
-*                                                                            *
-*  OpenNI 1.0 Alpha                                                          *
-*  Copyright (C) 2010 PrimeSense Ltd.                                        *
-*                                                                            *
-*  This file is part of OpenNI.                                              *
-*                                                                            *
-*  OpenNI is free software: you can redistribute it and/or modify            *
-*  it under the terms of the GNU Lesser General Public License as published  *
-*  by the Free Software Foundation, either version 3 of the License, or      *
-*  (at your option) any later version.                                       *
-*                                                                            *
-*  OpenNI is distributed in the hope that it will be useful,                 *
-*  but WITHOUT ANY WARRANTY; without even the implied warranty of            *
-*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the              *
-*  GNU Lesser General Public License for more details.                       *
-*                                                                            *
-*  You should have received a copy of the GNU Lesser General Public License  *
-*  along with OpenNI. If not, see <http://www.gnu.org/licenses/>.            *
-*                                                                            *
-*****************************************************************************/
-
-
-
-
+/****************************************************************************
+*                                                                           *
+*  OpenNI 1.1 Alpha                                                         *
+*  Copyright (C) 2011 PrimeSense Ltd.                                       *
+*                                                                           *
+*  This file is part of OpenNI.                                             *
+*                                                                           *
+*  OpenNI is free software: you can redistribute it and/or modify           *
+*  it under the terms of the GNU Lesser General Public License as published *
+*  by the Free Software Foundation, either version 3 of the License, or     *
+*  (at your option) any later version.                                      *
+*                                                                           *
+*  OpenNI is distributed in the hope that it will be useful,                *
+*  but WITHOUT ANY WARRANTY; without even the implied warranty of           *
+*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the             *
+*  GNU Lesser General Public License for more details.                      *
+*                                                                           *
+*  You should have received a copy of the GNU Lesser General Public License *
+*  along with OpenNI. If not, see <http://www.gnu.org/licenses/>.           *
+*                                                                           *
+****************************************************************************/
 #ifndef __XN_MODULE_INTERFACE_H__
 #define __XN_MODULE_INTERFACE_H__
 
@@ -58,6 +54,8 @@ struct XnModuleRecorderInterface;
 struct XnModulePlayerInterface;
 struct XnModuleGeneratorInterface;
 struct XnModuleCodecInterface;
+struct XnModuleScriptNodeInterface;
+struct XnModuleMapGeneratorInterface;
 
 //---------------------------------------------------------------------------
 // Types
@@ -65,16 +63,28 @@ struct XnModuleCodecInterface;
 
 typedef void (XN_CALLBACK_TYPE* XnModuleGetExportedInterfacePtr)(XnModuleExportedProductionNodeInterface* pInterface);
 typedef XnStatus (XN_C_DECL* XnModuleLoadPtr)();
-typedef XnStatus (XN_C_DECL* XnModuleUnloadPtr)();
+typedef void (XN_C_DECL* XnModuleUnloadPtr)();
 typedef XnUInt32 (XN_C_DECL* XnModuleGetExportedNodesCountPtr)();
 typedef XnStatus (XN_C_DECL* XnModuleGetExportedNodesEntryPointsPtr)(XnModuleGetExportedInterfacePtr* aEntryPoints, XnUInt32 nCount);
 typedef void (XN_C_DECL* XnModuleGetOpenNIVersionPtr)(XnVersion* pVersion);
+
+typedef struct XnOpenNIModuleInterface
+{
+	XnModuleLoadPtr pLoadFunc;
+	XnModuleUnloadPtr pUnloadFunc;
+	XnModuleGetExportedNodesCountPtr pGetCountFunc;
+	XnModuleGetExportedNodesEntryPointsPtr pGetEntryPointsFunc;
+	XnModuleGetOpenNIVersionPtr pGetVersionFunc;
+} XnOpenNIModuleInterface;
 
 /** Prototype for state change callback function. **/
 typedef void (XN_CALLBACK_TYPE* XnModuleStateChangedHandler)(void* pCookie);
 
 // User
 typedef void (XN_CALLBACK_TYPE* XnModuleUserHandler)(XnUserID user, void* pCookie);
+
+// Hand touching FOV edge
+typedef void (XN_CALLBACK_TYPE* XnModuleHandTouchingFOVEdge)(XnUserID user, const XnPoint3D* pPosition, XnFloat fTime, XnDirection eDir, void* pCookie);
 
 // UI
 typedef void (XN_CALLBACK_TYPE* XnModuleHandCreate)(XnUserID user, const XnPoint3D* pPosition, XnFloat fTime, void* pCookie);
@@ -84,13 +94,18 @@ typedef void (XN_CALLBACK_TYPE* XnModuleHandDestroy)(XnUserID user, XnFloat fTim
 // Gesture Module
 typedef void (XN_CALLBACK_TYPE* XnModuleGestureRecognized)(const XnChar* strGesture, const XnPoint3D* pIDPosition, const XnPoint3D* pEndPosition, void* pCookie);
 typedef void (XN_CALLBACK_TYPE* XnModuleGestureProgress)(const XnChar* strGesture, const XnPoint3D* pPosition, XnFloat fProgress, void* pCookie);
+typedef void (XN_CALLBACK_TYPE* XnModuleGestureIntermediateStageCompleted)(const XnChar* strGesture, const XnPoint3D* pPosition, void* pCookie);
+typedef void (XN_CALLBACK_TYPE* XnModuleGestureReadyForNextIntermediateStage)(const XnChar* strGesture, const XnPoint3D* pPosition, void* pCookie);
 
 // Skeleton
 typedef void (XN_CALLBACK_TYPE* XnModuleCalibrationStart)(XnUserID user, void* pCookie);
 typedef void (XN_CALLBACK_TYPE* XnModuleCalibrationEnd)(XnUserID user, XnBool bSuccess, void* pCookie);
+typedef void (XN_CALLBACK_TYPE* XnModuleCalibrationInProgress)(XnUserID user, XnCalibrationStatus calibrationError, void* pCookie);
+typedef void (XN_CALLBACK_TYPE* XnModuleCalibrationComplete)(XnUserID user, XnCalibrationStatus calibrationError, void* pCookie);
 
 // Pose Detection
 typedef void (XN_CALLBACK_TYPE* XnModulePoseDetectionCallback)(const XnChar* strPose, XnUserID user, void* pCookie);
+typedef void (XN_CALLBACK_TYPE* XnModulePoseDetectionInProgressCallback)(const XnChar* strPose, XnUserID user, XnPoseDetectionStatus poseError, void* pCookie);
 
 typedef struct XnModuleExportedProductionNodeInterface
 {
@@ -149,20 +164,24 @@ typedef struct XnModuleExportedProductionNodeInterface
 	 */
 	union
 	{
-		void (XN_CALLBACK_TYPE* Device)(XnModuleDeviceInterface* pInterface);
-		void (XN_CALLBACK_TYPE* Depth)(XnModuleDepthGeneratorInterface* pInterface);
-		void (XN_CALLBACK_TYPE* Image)(XnModuleImageGeneratorInterface* pInterface);
-		void (XN_CALLBACK_TYPE* IR)(XnModuleIRGeneratorInterface* pInterface);
-		void (XN_CALLBACK_TYPE* User)(XnModuleUserGeneratorInterface* pInterface);
-		void (XN_CALLBACK_TYPE* Hands)(XnModuleHandsGeneratorInterface* pInterace);
-		void (XN_CALLBACK_TYPE* Gesture)(XnModuleGestureGeneratorInterface* pInterface);
-		void (XN_CALLBACK_TYPE* Scene)(XnModuleSceneAnalyzerInterface* pInterface);
-		void (XN_CALLBACK_TYPE* Audio)(XnModuleAudioGeneratorInterface* pInterface);
-		void (XN_CALLBACK_TYPE* Recorder)(XnModuleRecorderInterface* pInterface);
-		void (XN_CALLBACK_TYPE* Player)(XnModulePlayerInterface* pInterface);
-		void (XN_CALLBACK_TYPE* Codec)(XnModuleCodecInterface* pInterface);
+		void (XN_CALLBACK_TYPE* ProductionNode)(struct XnModuleProductionNodeInterface* pInterface);
+		void (XN_CALLBACK_TYPE* Device)(struct XnModuleDeviceInterface* pInterface);
+		void (XN_CALLBACK_TYPE* Generator)(struct XnModuleGeneratorInterface* pInterface);
+		void (XN_CALLBACK_TYPE* MapGenerator)(struct XnModuleMapGeneratorInterface* pInterface);
+		void (XN_CALLBACK_TYPE* Depth)(struct XnModuleDepthGeneratorInterface* pInterface);
+		void (XN_CALLBACK_TYPE* Image)(struct XnModuleImageGeneratorInterface* pInterface);
+		void (XN_CALLBACK_TYPE* IR)(struct XnModuleIRGeneratorInterface* pInterface);
+		void (XN_CALLBACK_TYPE* User)(struct XnModuleUserGeneratorInterface* pInterface);
+		void (XN_CALLBACK_TYPE* Hands)(struct XnModuleHandsGeneratorInterface* pInterace);
+		void (XN_CALLBACK_TYPE* Gesture)(struct XnModuleGestureGeneratorInterface* pInterface);
+		void (XN_CALLBACK_TYPE* Scene)(struct XnModuleSceneAnalyzerInterface* pInterface);
+		void (XN_CALLBACK_TYPE* Audio)(struct XnModuleAudioGeneratorInterface* pInterface);
+		void (XN_CALLBACK_TYPE* Recorder)(struct XnModuleRecorderInterface* pInterface);
+		void (XN_CALLBACK_TYPE* Player)(struct XnModulePlayerInterface* pInterface);
+		void (XN_CALLBACK_TYPE* Codec)(struct XnModuleCodecInterface* pInterface);
+		void (XN_CALLBACK_TYPE* Script)(struct XnModuleScriptNodeInterface* pInterface);
 
-		void (XN_CALLBACK_TYPE* General)(void*);
+		void (XN_CALLBACK_TYPE* General)(void* pInterface);
 	} GetInterface;
 
 } XnModuleExportedProductionNodeInterface;
@@ -246,6 +265,64 @@ typedef struct XnModuleErrorStateInterface
 
 } XnModuleErrorStateInterface;
 
+typedef struct XnModuleGeneralIntInterface
+{
+	/**
+	 * Gets the range of this capability values
+	 *
+	 * @param	hGenerator			[in]	A handle to the instance
+	 * @param	strCap				[in]	Name of the capability
+	 * @param	pnMin				[out]	Minimum value
+	 * @param	pnMax				[out]	Maximum value	
+	 * @param	pnStep				[out]	Step size
+	 * @param	pnDefault			[out]	Default value
+	 * @param	pbIsAutoSupported	[out]	TRUE if auto adjustment is supported, FALSE otherwise
+	 */
+	XnStatus (XN_CALLBACK_TYPE* GetRange)(XnModuleNodeHandle hGenerator, const XnChar* strCap, XnInt32* pnMin, XnInt32* pnMax, XnInt32* pnStep, XnInt32* pnDefault, XnBool* pbIsAutoSupported);
+
+	/**
+	 * Gets the current value of this capability
+	 *
+	 * @param	hGenerator			[in]	A handle to the instance
+	 * @param	strCap				[in]	Name of the capability
+	 * @param	pnValue				[out]	Current value
+	 */
+	XnStatus (XN_CALLBACK_TYPE* Get)(XnModuleNodeHandle hGenerator, const XnChar* strCap, XnInt32* pnValue);
+
+	/**
+	 * Sets the current value of this capability
+	 *
+	 * @param	hGenerator			[in]	A handle to the instance
+	 * @param	strCap				[in]	Name of the capability
+	 * @param	nValue				[in]	Value to set
+	 */
+	XnStatus (XN_CALLBACK_TYPE* Set)(XnModuleNodeHandle hGenerator, const XnChar* strCap, XnInt32 nValue);
+
+	/**
+	 * Registers a callback function to values changes.
+	 *
+	 * @param	hGenerator	[in]	A handle to the instance.
+	 * @param	strCap		[in]	Name of the capability
+	 * @param	handler		[in]	A pointer to a function that will be called when value changes.
+	 * @param	pCookie		[in]	A user cookie that will be passed to the callback function.
+	 * @param	phCallback	[out]	Optional. Will be filled with a handle to be passed to @ref UnregisterFromValueChange().
+	 */
+	XnStatus (XN_CALLBACK_TYPE* RegisterToValueChange)
+		(XnModuleNodeHandle hGenerator, const XnChar* strCap, XnModuleStateChangedHandler handler,
+		void* pCookie, XnCallbackHandle* phCallback);
+
+	/**
+	 * Unregisters a callback function which was registered using @ref RegisterToValueChange().
+	 *
+	 * @param	hGenerator	[in]	A handle to the instance.
+	 * @param	strCap		[in]	Name of the capability
+	 * @param	hCallback	[in]	The handle to the callback returned from @ref RegisterToValueChange().
+	 */
+	void (XN_CALLBACK_TYPE* UnregisterFromValueChange)
+		(XnModuleNodeHandle hGenerator, const XnChar* strCap, XnCallbackHandle hCallback);
+
+} XnModuleGeneralIntInterface;
+
 typedef struct XnModuleProductionNodeInterface
 {
 	/** 
@@ -286,12 +363,59 @@ typedef struct XnModuleProductionNodeInterface
 	XnModuleExtendedSerializationInterface* pExtendedSerializationInterface;
 	XnModuleLockAwareInterface* pLockAwareInterface;
 	XnModuleErrorStateInterface* pErrorStateInterface;
+	XnModuleGeneralIntInterface* pGeneralIntInterface;
 
 } XnModuleProductionNodeInterface;
+
+typedef struct XnModuleDeviceIdentificationInterface
+{
+	/**
+	 * Gets the device name.
+	 *
+	 * @param	hInstance		[in]		A handle to the instance.
+	 * @param	strBuffer		[in]		A buffer to accept the device name.
+	 * @param	pnBufferSize	[in/out]	Size of the buffer.
+	 *
+	 * @returns XN_STATUS_OK if succeeded, or XN_STATUS_OUTPUT_BUFFER_OVERFLOW if buffer is not sufficient.
+	 * in such a case, the device name should be truncated to fit in the buffer, and pnBufferSize should be
+	 * updated to the required size.
+	 */
+	XnStatus (XN_CALLBACK_TYPE* GetDeviceName)(XnModuleNodeHandle hInstance, XnChar* strBuffer, XnUInt32* pnBufferSize);
+
+	/**
+	 * Gets a vendor-specific string.
+	 *
+	 * @param	hInstance		[in]		A handle to the instance.
+	 * @param	strBuffer		[in]		A buffer to accept the string.
+	 * @param	pnBufferSize	[in/out]	Size of the buffer.
+	 *
+	 * @returns XN_STATUS_OK if succeeded, or XN_STATUS_OUTPUT_BUFFER_OVERFLOW if buffer is not sufficient.
+	 * in such a case, the string should be truncated to fit in the buffer, and pnBufferSize should be
+	 * updated to the required size.
+	 */
+	XnStatus (XN_CALLBACK_TYPE* GetVendorSpecificData)(XnModuleNodeHandle hInstance, XnChar* strBuffer, XnUInt32* pnBufferSize);
+
+	/**
+	 * Gets the serial number of the device.
+	 *
+	 * @param	hInstance		[in]		A handle to the instance.
+	 * @param	strBuffer		[in]		A buffer to accept the string.
+	 * @param	pnBufferSize	[in/out]	Size of the buffer.
+	 *
+	 * @returns XN_STATUS_OK if succeeded, or XN_STATUS_OUTPUT_BUFFER_OVERFLOW if buffer is not sufficient.
+	 * in such a case, the string should be truncated to fit in the buffer, and pnBufferSize should be
+	 * updated to the required size.
+	 */
+	XnStatus (XN_CALLBACK_TYPE* GetSerialNumber)(XnModuleNodeHandle hInstance, XnChar* strBuffer, XnUInt32* pnBufferSize);
+	
+} XnModuleDeviceIdentificationInterface;
 
 typedef struct XnModuleDeviceInterface
 {
 	XnModuleProductionNodeInterface* pProductionNode;
+
+	XnModuleDeviceIdentificationInterface* pDeviceIdentificationInterface;
+
 } XnModuleDeviceInterface;
 
 typedef struct XnModuleMirrorInterface
@@ -446,14 +570,6 @@ typedef struct XnModuleFrameSyncInterface
 
 } XnModuleFrameSyncInterface;
 
-typedef struct XnModuleSeekingInterface
-{
-	XnUInt64 (XN_CALLBACK_TYPE* GetMinTimestamp)(XnModuleNodeHandle hGenerator);
-	XnUInt64 (XN_CALLBACK_TYPE* GetMaxTimestamp)(XnModuleNodeHandle hGenerator);
-	XnStatus (XN_CALLBACK_TYPE* SeekToTimestamp)(XnModuleNodeHandle hGenerator, XnUInt64 nTimestamp);
-
-} XnModuleSeekingInterface;
-
 /** The interface of a generator. */
 typedef struct XnModuleGeneratorInterface
 {
@@ -568,8 +684,16 @@ typedef struct XnModuleGeneratorInterface
 
 	XnModuleMirrorInterface* pMirrorInterface;
 	XnModuleAlternativeViewPointInterface* pAlternativeViewPointInterface;
-	XnModuleSeekingInterface* pSeekingInterface;
+	void* pObsolete1; // used to be pSeekingInterface (removed in 1.0.0.28)
 	XnModuleFrameSyncInterface* pFrameSyncInterface;
+
+	//Note: The GetData() function was added in version 1.0.0.28
+	/**
+	 * Gets pointer to current data. 
+	 *
+	 * @param	hGenerator	[in]	A handle to the instance.
+	 */
+	const void* (XN_CALLBACK_TYPE* GetData)(XnModuleNodeHandle hGenerator);
 
 } XnModuleGeneratorInterface;
 
@@ -674,7 +798,8 @@ typedef struct XnModulePlayerInterface
 		(XnModuleNodeHandle hGenerator, XnCallbackHandle hCallback);
 
 	XnModuleProductionNodeInterface* pProductionNode;
-	XnModuleSeekingInterface* pSeekingInterface;
+	void* pObsolete1; // used to be pSeekingInterface (removed in 1.0.0.28)
+
 } XnModulePlayerInterface;
 
 typedef struct XnModuleCroppingInterface
@@ -717,6 +842,46 @@ typedef struct XnModuleCroppingInterface
 		(XnModuleNodeHandle hGenerator, XnCallbackHandle hCallback);
 
 } XnModuleCroppingInterface;
+
+typedef struct XnModuleAntiFlickerInterface
+{
+	/** 
+	 * Sets the power line frequency: 50 Hz, 60 Hz, or 0 to turn off anti-flicker.
+	 *
+	 * @param	hGenerator	[in]	A handle to the instance.
+	 * @param	nFrequency	[in]	The frequency to be used.
+	 */
+	XnStatus (XN_CALLBACK_TYPE* SetPowerLineFrequency)(XnModuleNodeHandle hGenerator, XnPowerLineFrequency nFrequency);
+
+	/** 
+	 * Gets the power line frequency.
+	 *
+	 * @param	hGenerator	[in]	A handle to the instance.
+	 */
+	XnPowerLineFrequency (XN_CALLBACK_TYPE* GetPowerLineFrequency)(XnModuleNodeHandle hGenerator);
+
+	/**
+	 * Registers a callback function to power line frequency changes.
+	 *
+	 * @param	hGenerator	[in]	A handle to the instance.
+	 * @param	handler		[in]	A pointer to a function that will be called when power line frequency changes.
+	 * @param	pCookie		[in]	A user cookie that will be passed to the callback function.
+	 * @param	phCallback	[out]	Optional. Will be filled with a handle to be passed to @ref UnregisterFromPowerLineFrequencyChange().
+	 */
+	XnStatus (XN_CALLBACK_TYPE* RegisterToPowerLineFrequencyChange)
+		(XnModuleNodeHandle hGenerator, XnModuleStateChangedHandler handler,
+		void* pCookie, XnCallbackHandle* phCallback);
+
+	/**
+	 * Unregisters a callback function which was registered using @ref RegisterToPowerLineFrequencyChange().
+	 *
+	 * @param	hGenerator	[in]	A handle to the instance.
+	 * @param	hCallback	[in]	The handle to the callback returned from @ref RegisterToPowerLineFrequencyChange().
+	 */
+	void (XN_CALLBACK_TYPE* UnregisterFromPowerLineFrequencyChange)
+		(XnModuleNodeHandle hGenerator, XnCallbackHandle hCallback);
+
+} XnModuleAntiFlickerInterface;
 
 typedef struct XnModuleMapGeneratorInterface
 {
@@ -787,6 +952,17 @@ typedef struct XnModuleMapGeneratorInterface
 		(XnModuleNodeHandle hGenerator, XnCallbackHandle hCallback);
 
 	XnModuleCroppingInterface* pCroppingInterface;
+
+	// NOTE: GetBytesPerPixel() was added in OpenNI 1.0.0.30
+	/** 
+	 * Gets the number of bytes per pixel
+	 * 
+	 * @param	hGenerator	[in]	A handle to the instance.
+	 */
+	XnUInt32 (XN_CALLBACK_TYPE* GetBytesPerPixel)
+		(XnModuleNodeHandle hGenerator);
+
+	XnModuleAntiFlickerInterface* pAntiFlickerInterface;
 
 } XnModuleMapGeneratorInterface;
 
@@ -998,6 +1174,12 @@ typedef struct XnModuleGestureGeneratorInterface
 
 	XnStatus (XN_CALLBACK_TYPE* GetAllActiveGestures)(XnModuleNodeHandle hGenerator, XnChar** pstrGestures, XnUInt32 nNameLength, XnUInt16* nGestures);
 	XnStatus (XN_CALLBACK_TYPE* EnumerateAllGestures)(XnModuleNodeHandle hGenerator, XnChar** pstrGestures, XnUInt32 nNameLength, XnUInt16* nGestures);
+
+	XnStatus (XN_CALLBACK_TYPE* RegisterToGestureIntermediateStageCompleted)(XnModuleNodeHandle hGenerator, XnModuleGestureIntermediateStageCompleted GestureIntermediateStageCompletedCB, void* pCookie, XnCallbackHandle* phCallback);
+	void (XN_CALLBACK_TYPE* UnregisterFromGestureIntermediateStageCompleted)(XnModuleNodeHandle hGenerator, XnCallbackHandle hCallback);
+	XnStatus (XN_CALLBACK_TYPE* RegisterToGestureReadyForNextIntermediateStage)(XnModuleNodeHandle hGenerator, XnModuleGestureReadyForNextIntermediateStage ReadyForNextIntermediateStageCB, void* pCookie, XnCallbackHandle* phCallback);
+	void (XN_CALLBACK_TYPE* UnregisterFromGestureReadyForNextIntermediateStage)(XnModuleNodeHandle hGenerator, XnCallbackHandle hCallback);
+
 } XnModuleGestureGeneratorInterface;
 
 /** Scene Analyzer Interface. */
@@ -1012,6 +1194,12 @@ typedef struct XnModuleSceneAnalyzerInterface
 /**
 * A set of functions supported by user generators who supports the UI capability.
 */
+typedef struct XnModuleHandTouchingFOVEdgeCapabilityInterface
+{
+	XnStatus (XN_CALLBACK_TYPE* RegisterToHandTouchingFOVEdge)(XnModuleNodeHandle hGenerator, XnModuleHandTouchingFOVEdge, void* pCookie, XnCallbackHandle* phCallback);
+	void (XN_CALLBACK_TYPE* UnregisterFromHandTouchingFOVEdge)(XnModuleNodeHandle hGenerator, XnCallbackHandle hCallback);
+} XnModuleHandTouchingFOVEdgeCapabilityInterface;
+
 typedef struct XnModuleHandsGeneratorInterface
 {
 	XnModuleGeneratorInterface* pGeneratorInterface;
@@ -1022,6 +1210,9 @@ typedef struct XnModuleHandsGeneratorInterface
 	XnStatus (XN_CALLBACK_TYPE* StopTrackingAll)(XnModuleNodeHandle hGenerator);
 	XnStatus (XN_CALLBACK_TYPE* StartTracking)(XnModuleNodeHandle hGenerator, const XnPoint3D* pPosition);
 	XnStatus (XN_CALLBACK_TYPE* SetSmoothing)(XnModuleNodeHandle hGenerator, XnFloat fSmoothingFactor);
+
+	XnModuleHandTouchingFOVEdgeCapabilityInterface* pHandTouchingFOVEdgeInterface;
+
 } XnModuleHandsGeneratorInterface;
 
 /**
@@ -1058,6 +1249,16 @@ typedef struct XnModuleSkeletonCapabilityInterface
 	XnStatus (XN_CALLBACK_TYPE* RegisterCalibrationCallbacks)(XnModuleNodeHandle hGenerator, XnModuleCalibrationStart CalibrationStartCB, XnModuleCalibrationEnd CalibrationEndCB, void* pCookie, XnCallbackHandle* phCallback);
 	void (XN_CALLBACK_TYPE* UnregisterCalibrationCallbacks)(XnModuleNodeHandle hGenerator, XnCallbackHandle hCallback);
 
+	XnStatus (XN_CALLBACK_TYPE* SaveCalibrationDataToFile)(XnModuleNodeHandle hGenerator, XnUserID user, const XnChar* strFileName);
+	XnStatus (XN_CALLBACK_TYPE* LoadCalibrationDataFromFile)(XnModuleNodeHandle hGenerator, XnUserID user, const XnChar* strFileName);
+
+	XnStatus (XN_CALLBACK_TYPE* RegisterToCalibrationInProgress)(XnModuleNodeHandle hGenerator, XnModuleCalibrationInProgress CalibrationInProgressCB, void* pCookie, XnCallbackHandle* phCallback);
+	void (XN_CALLBACK_TYPE* UnregisterFromCalibrationInProgress)(XnModuleNodeHandle hGenerator, XnCallbackHandle hCallback);
+	XnStatus (XN_CALLBACK_TYPE* RegisterToCalibrationComplete)(XnModuleNodeHandle hGenerator, XnModuleCalibrationComplete CalibrationCompleteCB, void* pCookie, XnCallbackHandle* phCallback);
+	void (XN_CALLBACK_TYPE* UnregisterFromCalibrationComplete)(XnModuleNodeHandle hGenerator, XnCallbackHandle hCallback);
+
+	XnStatus (XN_CALLBACK_TYPE* RegisterToCalibrationStart)(XnModuleNodeHandle hGenerator, XnModuleCalibrationStart handler, void* pCookie, XnCallbackHandle* phCallback);
+	void (XN_CALLBACK_TYPE* UnregisterFromCalibrationStart)(XnModuleNodeHandle hGenerator, XnCallbackHandle hCallback);
 } XnModuleSkeletonCapabilityInterface;
 
 typedef struct XnModulePoseDetectionCapabilityInterface
@@ -1070,6 +1271,14 @@ typedef struct XnModulePoseDetectionCapabilityInterface
 	void (XN_CALLBACK_TYPE* UnregisterFromPoseCallbacks)(XnModuleNodeHandle hGenerator, XnCallbackHandle hCallback);
 
 	XnStatus (XN_CALLBACK_TYPE* GetAllAvailablePoses)(XnModuleNodeHandle hGenerator, XnChar** pstrPoses, XnUInt32 nNameLength, XnUInt32* pnPoses);
+
+	XnStatus (XN_CALLBACK_TYPE* RegisterToPoseDetectionInProgress)(XnModuleNodeHandle hGenerator, XnModulePoseDetectionInProgressCallback PoseProgressCB, void* pCookie, XnCallbackHandle* phCallback);
+	void (XN_CALLBACK_TYPE* UnregisterFromPoseDetectionInProgress)(XnModuleNodeHandle hGenerator, XnCallbackHandle hCallback);
+
+	XnStatus (XN_CALLBACK_TYPE* RegisterToPoseDetected)(XnModuleNodeHandle hGenerator, XnModulePoseDetectionCallback handler, void* pCookie, XnCallbackHandle* phCallback);
+	void (XN_CALLBACK_TYPE* UnregisterFromPoseDetected)(XnModuleNodeHandle hGenerator, XnCallbackHandle hCallback);
+	XnStatus (XN_CALLBACK_TYPE* RegisterToOutOfPose)(XnModuleNodeHandle hGenerator, XnModulePoseDetectionCallback handler, void* pCookie, XnCallbackHandle* phCallback);
+	void (XN_CALLBACK_TYPE* UnregisterFromOutOfPose)(XnModuleNodeHandle hGenerator, XnCallbackHandle hCallback);
 } XnModulePoseDetectionCapabilityInterface;
 
 /** User generator Interface. */
@@ -1091,7 +1300,12 @@ typedef struct XnModuleUserGeneratorInterface
 	/**
 	* Contains Pose Detection Capability interface
 	*/
-	XnModulePoseDetectionCapabilityInterface* pPoseDetectionInteface;
+	XnModulePoseDetectionCapabilityInterface* pPoseDetectionInterface;
+
+	XnStatus (XN_CALLBACK_TYPE* RegisterToUserExit)(XnModuleNodeHandle hGenerator, XnModuleUserHandler UserExitCB, void* pCookie, XnCallbackHandle* phCallback);
+	void (XN_CALLBACK_TYPE* UnregisterFromUserExit)(XnModuleNodeHandle hGenerator, XnCallbackHandle hCallback);
+	XnStatus (XN_CALLBACK_TYPE* RegisterToUserReEnter)(XnModuleNodeHandle hGenerator, XnModuleUserHandler UserReEnterCB, void* pCookie, XnCallbackHandle* phCallback);
+	void (XN_CALLBACK_TYPE* UnregisterFromUserReEnter)(XnModuleNodeHandle hGenerator, XnCallbackHandle hCallback);
 
 } XnModuleUserGeneratorInterface;
 
@@ -1119,6 +1333,18 @@ typedef struct XnModuleCodecInterface
 	XnStatus (XN_CALLBACK_TYPE* Init)(XnModuleNodeHandle hCodec, XnNodeHandle hNode);
 	XnStatus (XN_CALLBACK_TYPE* CompressData)(XnModuleNodeHandle hCodec, const void* pSrc, XnUInt32 nSrcSize, void* pDst, XnUInt32 nDstSize, XnUInt* pnBytesWritten);
 	XnStatus (XN_CALLBACK_TYPE* DecompressData)(XnModuleNodeHandle hCodec, const void* pSrc, XnUInt32 nSrcSize, void* pDst, XnUInt32 nDstSize, XnUInt* pnBytesWritten);
+
 } XnModuleCodecInterface;
+
+typedef struct XnModuleScriptNodeInterface
+{
+	XnModuleProductionNodeInterface* pProductionNode;
+
+	const XnChar* (XN_CALLBACK_TYPE* GetSupportedFormat)(XnModuleNodeHandle hScript);
+	XnStatus (XN_CALLBACK_TYPE* LoadScriptFromFile)(XnModuleNodeHandle hScript, const XnChar* strFileName);
+	XnStatus (XN_CALLBACK_TYPE* LoadScriptFromString)(XnModuleNodeHandle hScript, const XnChar* strScript);
+	XnStatus (XN_CALLBACK_TYPE* Run)(XnModuleNodeHandle hScript, XnNodeInfoList* pCreatedNodes, XnEnumerationErrors* pErrors);
+
+} XnModuleScriptNodeInterface;
 
 #endif // __XN_MODULE_INTERFACE_H__

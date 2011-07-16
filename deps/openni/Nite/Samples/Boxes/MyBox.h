@@ -285,7 +285,7 @@ private:
 	}
 
 	// Steady detector
-	static void XN_CALLBACK_TYPE Steady_OnSteady(XnFloat fVelocity, void* cxt)
+	static void XN_CALLBACK_TYPE Steady_OnSteady(XnUInt32, XnFloat fVelocity, void* cxt)
 	{
 		printf("Steady\n");
 		MyBox* box = (MyBox*)(cxt);

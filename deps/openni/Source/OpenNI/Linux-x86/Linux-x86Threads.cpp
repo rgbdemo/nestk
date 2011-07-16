@@ -1,28 +1,24 @@
-/*****************************************************************************
-*                                                                            *
-*  OpenNI 1.0 Alpha                                                          *
-*  Copyright (C) 2010 PrimeSense Ltd.                                        *
-*                                                                            *
-*  This file is part of OpenNI.                                              *
-*                                                                            *
-*  OpenNI is free software: you can redistribute it and/or modify            *
-*  it under the terms of the GNU Lesser General Public License as published  *
-*  by the Free Software Foundation, either version 3 of the License, or      *
-*  (at your option) any later version.                                       *
-*                                                                            *
-*  OpenNI is distributed in the hope that it will be useful,                 *
-*  but WITHOUT ANY WARRANTY; without even the implied warranty of            *
-*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the              *
-*  GNU Lesser General Public License for more details.                       *
-*                                                                            *
-*  You should have received a copy of the GNU Lesser General Public License  *
-*  along with OpenNI. If not, see <http://www.gnu.org/licenses/>.            *
-*                                                                            *
-*****************************************************************************/
-
-
-
-
+/****************************************************************************
+*                                                                           *
+*  OpenNI 1.1 Alpha                                                         *
+*  Copyright (C) 2011 PrimeSense Ltd.                                       *
+*                                                                           *
+*  This file is part of OpenNI.                                             *
+*                                                                           *
+*  OpenNI is free software: you can redistribute it and/or modify           *
+*  it under the terms of the GNU Lesser General Public License as published *
+*  by the Free Software Foundation, either version 3 of the License, or     *
+*  (at your option) any later version.                                      *
+*                                                                           *
+*  OpenNI is distributed in the hope that it will be useful,                *
+*  but WITHOUT ANY WARRANTY; without even the implied warranty of           *
+*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the             *
+*  GNU Lesser General Public License for more details.                      *
+*                                                                           *
+*  You should have received a copy of the GNU Lesser General Public License *
+*  along with OpenNI. If not, see <http://www.gnu.org/licenses/>.           *
+*                                                                           *
+****************************************************************************/
 //---------------------------------------------------------------------------
 // Includes
 //---------------------------------------------------------------------------
@@ -68,8 +64,12 @@ XN_C_API XnStatus xnOSTerminateThread(XN_THREAD_HANDLE* pThreadHandle)
 	
 	XN_THREAD_HANDLE handle = *pThreadHandle;
 
-	// send the KILL signal to the thread
+#ifndef XN_PLATFORM_LINUX_NO_PTHREAD_CANCEL
 	if (0 != pthread_cancel(*handle))
+#else
+	// send the KILL signal to the thread
+	if (0 != pthread_kill(*handle, SIGUSR1))
+#endif
 	{
 		return (XN_STATUS_OS_THREAD_TERMINATION_FAILED);
 	}
@@ -114,14 +114,11 @@ XN_C_API XnStatus xnOSWaitForThreadExit(XN_THREAD_HANDLE ThreadHandle, XnUInt32 
 	{
 		// calculate timeout absolute time. First we take current time
 		struct timespec time;
-		if (XN_STATUS_OK != xnOSGetMonoTime(&time))
+		XnStatus nRetVal = xnOSGetAbsTimeout(&time, nMilliseconds);
+		if (nRetVal != XN_STATUS_OK)
 		{
-			return (XN_STATUS_OS_EVENT_SET_FAILED);
+			return XN_STATUS_OS_THREAD_TERMINATION_FAILED;
 		}
-	
-		// add timeout to this time
-		time.tv_sec += (nMilliseconds / 1000);
-		time.tv_nsec += ((nMilliseconds % 1000) * 1000000);
 		
 		// join via the OS
 		void* pReturnValue;
@@ -131,7 +128,7 @@ XN_C_API XnStatus xnOSWaitForThreadExit(XN_THREAD_HANDLE ThreadHandle, XnUInt32 
 		rc = pthread_join(*ThreadHandle, &pReturnValue);
 #endif
 	}
-	
+
 	// check for failures
 	if (rc == ETIMEDOUT)
 	{
@@ -170,7 +167,7 @@ XN_C_API XnStatus xnOSSetThreadPriority(XN_THREAD_HANDLE ThreadHandle, XnThreadP
 	rc = pthread_setschedparam(*ThreadHandle, nPolicy, &param);
 	if (rc != 0)
 	{
-		xnLogWarning(XN_MASK_OS, "Failed to set thread priority: %s", sys_errlist[rc]);
+		xnLogWarning(XN_MASK_OS, "Failed to set thread priority (%d)", errno);
 		return (XN_STATUS_OS_THREAD_SET_PRIORITY_FAILED);
 	}
 	

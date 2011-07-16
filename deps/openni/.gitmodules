@@ -1,3 +1,0 @@
-[submodule "SensorKinect"]
-	path = SensorKinect
-	url = git@github.com:nburrus/SensorKinect.git

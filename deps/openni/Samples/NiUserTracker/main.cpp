@@ -1,28 +1,24 @@
-/*****************************************************************************
-*                                                                            *
-*  OpenNI 1.0 Alpha                                                          *
-*  Copyright (C) 2010 PrimeSense Ltd.                                        *
-*                                                                            *
-*  This file is part of OpenNI.                                              *
-*                                                                            *
-*  OpenNI is free software: you can redistribute it and/or modify            *
-*  it under the terms of the GNU Lesser General Public License as published  *
-*  by the Free Software Foundation, either version 3 of the License, or      *
-*  (at your option) any later version.                                       *
-*                                                                            *
-*  OpenNI is distributed in the hope that it will be useful,                 *
-*  but WITHOUT ANY WARRANTY; without even the implied warranty of            *
-*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the              *
-*  GNU Lesser General Public License for more details.                       *
-*                                                                            *
-*  You should have received a copy of the GNU Lesser General Public License  *
-*  along with OpenNI. If not, see <http://www.gnu.org/licenses/>.            *
-*                                                                            *
-*****************************************************************************/
-
-
-
-
+/****************************************************************************
+*                                                                           *
+*  OpenNI 1.1 Alpha                                                         *
+*  Copyright (C) 2011 PrimeSense Ltd.                                       *
+*                                                                           *
+*  This file is part of OpenNI.                                             *
+*                                                                           *
+*  OpenNI is free software: you can redistribute it and/or modify           *
+*  it under the terms of the GNU Lesser General Public License as published *
+*  by the Free Software Foundation, either version 3 of the License, or     *
+*  (at your option) any later version.                                      *
+*                                                                           *
+*  OpenNI is distributed in the hope that it will be useful,                *
+*  but WITHOUT ANY WARRANTY; without even the implied warranty of           *
+*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the             *
+*  GNU Lesser General Public License for more details.                      *
+*                                                                           *
+*  You should have received a copy of the GNU Lesser General Public License *
+*  along with OpenNI. If not, see <http://www.gnu.org/licenses/>.           *
+*                                                                           *
+****************************************************************************/
 //---------------------------------------------------------------------------
 // Includes
 //---------------------------------------------------------------------------
@@ -35,8 +31,10 @@
 // Globals
 //---------------------------------------------------------------------------
 xn::Context g_Context;
+xn::ScriptNode g_scriptNode;
 xn::DepthGenerator g_DepthGenerator;
 xn::UserGenerator g_UserGenerator;
+xn::Player g_Player;
 
 XnBool g_bNeedPose = FALSE;
 XnChar g_strPose[20] = "";
@@ -46,10 +44,20 @@ XnBool g_bDrawSkeleton = TRUE;
 XnBool g_bPrintID = TRUE;
 XnBool g_bPrintState = TRUE;
 
+#ifndef USE_GLES
 #if (XN_PLATFORM == XN_PLATFORM_MACOSX)
 	#include <GLUT/glut.h>
 #else
 	#include <GL/glut.h>
+#endif
+#else
+	#include "opengles.h"
+#endif
+
+#ifdef USE_GLES
+static EGLDisplay display = EGL_NO_DISPLAY;
+static EGLSurface surface = EGL_NO_SURFACE;
+static EGLContext context = EGL_NO_CONTEXT;
 #endif
 
 #define GL_WIN_SIZE_X 720
@@ -66,7 +74,11 @@ XnBool g_bQuit = false;
 
 void CleanupExit()
 {
-	g_Context.Shutdown();
+	g_scriptNode.Release();
+	g_DepthGenerator.Release();
+	g_UserGenerator.Release();
+	g_Player.Release();
+	g_Context.Release();
 
 	exit (1);
 }
@@ -126,6 +138,72 @@ void XN_CALLBACK_TYPE UserCalibration_CalibrationEnd(xn::SkeletonCapability& cap
 	}
 }
 
+void XN_CALLBACK_TYPE UserCalibration_CalibrationComplete(xn::SkeletonCapability& capability, XnUserID nId, XnCalibrationStatus eStatus, void* pCookie)
+{
+	if (eStatus == XN_CALIBRATION_STATUS_OK)
+	{
+		// Calibration succeeded
+		printf("Calibration complete, start tracking user %d\n", nId);
+		g_UserGenerator.GetSkeletonCap().StartTracking(nId);
+	}
+	else
+	{
+		// Calibration failed
+		printf("Calibration failed for user %d\n", nId);
+		if (g_bNeedPose)
+		{
+			g_UserGenerator.GetPoseDetectionCap().StartPoseDetection(g_strPose, nId);
+		}
+		else
+		{
+			g_UserGenerator.GetSkeletonCap().RequestCalibration(nId, TRUE);
+		}
+	}
+}
+
+#define XN_CALIBRATION_FILE_NAME "UserCalibration.bin"
+
+// Save calibration to file
+void SaveCalibration()
+{
+	XnUserID aUserIDs[20] = {0};
+	XnUInt16 nUsers = 20;
+	g_UserGenerator.GetUsers(aUserIDs, nUsers);
+	for (int i = 0; i < nUsers; ++i)
+	{
+		// Find a user who is already calibrated
+		if (g_UserGenerator.GetSkeletonCap().IsCalibrated(aUserIDs[i]))
+		{
+			// Save user's calibration to file
+			g_UserGenerator.GetSkeletonCap().SaveCalibrationDataToFile(aUserIDs[i], XN_CALIBRATION_FILE_NAME);
+			break;
+		}
+	}
+}
+// Load calibration from file
+void LoadCalibration()
+{
+	XnUserID aUserIDs[20] = {0};
+	XnUInt16 nUsers = 20;
+	g_UserGenerator.GetUsers(aUserIDs, nUsers);
+	for (int i = 0; i < nUsers; ++i)
+	{
+		// Find a user who isn't calibrated or currently in pose
+		if (g_UserGenerator.GetSkeletonCap().IsCalibrated(aUserIDs[i])) continue;
+		if (g_UserGenerator.GetSkeletonCap().IsCalibrating(aUserIDs[i])) continue;
+
+		// Load user's calibration from file
+		XnStatus rc = g_UserGenerator.GetSkeletonCap().LoadCalibrationDataFromFile(aUserIDs[i], XN_CALIBRATION_FILE_NAME);
+		if (rc == XN_STATUS_OK)
+		{
+			// Make sure state is coherent
+			g_UserGenerator.GetPoseDetectionCap().StopPoseDetection(aUserIDs[i]);
+			g_UserGenerator.GetSkeletonCap().StartTracking(aUserIDs[i]);
+		}
+		break;
+	}
+}
+
 // this function is called each frame
 void glutDisplay (void)
 {
@@ -140,14 +218,18 @@ void glutDisplay (void)
 	xn::SceneMetaData sceneMD;
 	xn::DepthMetaData depthMD;
 	g_DepthGenerator.GetMetaData(depthMD);
+#ifndef USE_GLES
 	glOrtho(0, depthMD.XRes(), depthMD.YRes(), 0, -1.0, 1.0);
+#else
+	glOrthof(0, depthMD.XRes(), depthMD.YRes(), 0, -1.0, 1.0);
+#endif
 
 	glDisable(GL_TEXTURE_2D);
 
 	if (!g_bPause)
 	{
 		// Read next available data
-		g_Context.WaitAndUpdateAll();
+		g_Context.WaitOneUpdateAll(g_DepthGenerator);
 	}
 
 		// Process the data
@@ -155,9 +237,12 @@ void glutDisplay (void)
 		g_UserGenerator.GetUserPixels(0, sceneMD);
 		DrawDepthMap(depthMD, sceneMD);
 
+#ifndef USE_GLES
 	glutSwapBuffers();
+#endif
 }
 
+#ifndef USE_GLES
 void glutIdle (void)
 {
 	if (g_bQuit) {
@@ -197,6 +282,12 @@ void glutKeyboard (unsigned char key, int x, int y)
 	case'p':
 		g_bPause = !g_bPause;
 		break;
+	case 'S':
+		SaveCalibration();
+		break;
+	case 'L':
+		LoadCalibration();
+		break;
 	}
 }
 void glInit (int * pargc, char ** argv)
@@ -218,6 +309,7 @@ void glInit (int * pargc, char ** argv)
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glDisableClientState(GL_COLOR_ARRAY);
 }
+#endif // USE_GLES
 
 #ifdef CUSTOM_SAMPLE_XML_PATH
   #define SAMPLE_XML_PATH CUSTOM_SAMPLE_XML_PATH
@@ -240,7 +332,7 @@ int main(int argc, char **argv)
 	{
 		nRetVal = g_Context.Init();
 		CHECK_RC(nRetVal, "Init");
-		nRetVal = g_Context.OpenFileRecording(argv[1]);
+		nRetVal = g_Context.OpenFileRecording(argv[1], g_Player);
 		if (nRetVal != XN_STATUS_OK)
 		{
 			printf("Can't open recording %s: %s\n", argv[1], xnGetStatusString(nRetVal));
@@ -250,7 +342,7 @@ int main(int argc, char **argv)
 	else
 	{
 		xn::EnumerationErrors errors;
-		nRetVal = g_Context.InitFromXmlFile(SAMPLE_XML_PATH, &errors);
+		nRetVal = g_Context.InitFromXmlFile(SAMPLE_XML_PATH, g_scriptNode, &errors);
 		if (nRetVal == XN_STATUS_NO_NODE_PRESENT)
 		{
 			XnChar strError[1024];
@@ -274,14 +366,18 @@ int main(int argc, char **argv)
 		CHECK_RC(nRetVal, "Find user generator");
 	}
 
-	XnCallbackHandle hUserCallbacks, hCalibrationCallbacks, hPoseCallbacks;
+	XnCallbackHandle hUserCallbacks, hCalibrationStart, hCalibrationComplete, hPoseDetected, hCalibrationInProgress, hPoseInProgress;
 	if (!g_UserGenerator.IsCapabilitySupported(XN_CAPABILITY_SKELETON))
 	{
 		printf("Supplied user generator doesn't support skeleton\n");
 		return 1;
 	}
-	g_UserGenerator.RegisterUserCallbacks(User_NewUser, User_LostUser, NULL, hUserCallbacks);
-	g_UserGenerator.GetSkeletonCap().RegisterCalibrationCallbacks(UserCalibration_CalibrationStart, UserCalibration_CalibrationEnd, NULL, hCalibrationCallbacks);
+	nRetVal = g_UserGenerator.RegisterUserCallbacks(User_NewUser, User_LostUser, NULL, hUserCallbacks);
+	CHECK_RC(nRetVal, "Register to user callbacks");
+	nRetVal = g_UserGenerator.GetSkeletonCap().RegisterToCalibrationStart(UserCalibration_CalibrationStart, NULL, hCalibrationStart);
+	CHECK_RC(nRetVal, "Register to calibration start");
+	nRetVal = g_UserGenerator.GetSkeletonCap().RegisterToCalibrationComplete(UserCalibration_CalibrationComplete, NULL, hCalibrationComplete);
+	CHECK_RC(nRetVal, "Register to calibration complete");
 
 	if (g_UserGenerator.GetSkeletonCap().NeedPoseForCalibration())
 	{
@@ -291,16 +387,44 @@ int main(int argc, char **argv)
 			printf("Pose required, but not supported\n");
 			return 1;
 		}
-		g_UserGenerator.GetPoseDetectionCap().RegisterToPoseCallbacks(UserPose_PoseDetected, NULL, NULL, hPoseCallbacks);
+		nRetVal = g_UserGenerator.GetPoseDetectionCap().RegisterToPoseDetected(UserPose_PoseDetected, NULL, hPoseDetected);
+		CHECK_RC(nRetVal, "Register to Pose Detected");
 		g_UserGenerator.GetSkeletonCap().GetCalibrationPose(g_strPose);
 	}
 
 	g_UserGenerator.GetSkeletonCap().SetSkeletonProfile(XN_SKEL_PROFILE_ALL);
 
+	nRetVal = g_UserGenerator.GetSkeletonCap().RegisterToCalibrationInProgress(MyCalibrationInProgress, NULL, hCalibrationInProgress);
+	CHECK_RC(nRetVal, "Register to calibration in progress");
+
+	nRetVal = g_UserGenerator.GetPoseDetectionCap().RegisterToPoseInProgress(MyPoseInProgress, NULL, hPoseInProgress);
+	CHECK_RC(nRetVal, "Register to pose in progress");
+
 	nRetVal = g_Context.StartGeneratingAll();
 	CHECK_RC(nRetVal, "StartGenerating");
 
+#ifndef USE_GLES
 	glInit(&argc, argv);
 	glutMainLoop();
+#else
+	if (!opengles_init(GL_WIN_SIZE_X, GL_WIN_SIZE_Y, &display, &surface, &context))
+	{
+		printf("Error initializing opengles\n");
+		CleanupExit();
+	}
 
+	glDisable(GL_DEPTH_TEST);
+	glEnable(GL_TEXTURE_2D);
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glDisableClientState(GL_COLOR_ARRAY);
+
+	while (!g_bQuit)
+	{
+		glutDisplay();
+		eglSwapBuffers(display, surface);
+	}
+	opengles_shutdown(display, surface, context);
+
+	CleanupExit();
+#endif
 }

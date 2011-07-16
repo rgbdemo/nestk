@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using xn;
+using OpenNI;
 
 namespace SimpleRead.net
 {
@@ -12,7 +12,8 @@ namespace SimpleRead.net
 		{
 			string SAMPLE_XML_FILE = @"../../../../Data/SamplesConfig.xml";
 
-			Context context = new Context(SAMPLE_XML_FILE);
+			ScriptNode scriptNode;
+			Context context = Context.CreateFromXmlFile(SAMPLE_XML_FILE, out scriptNode);
 
 			DepthGenerator depth = context.FindExistingNode(NodeType.Depth) as DepthGenerator;
 			if (depth == null)
@@ -21,7 +22,7 @@ namespace SimpleRead.net
 				return;
 			}
 
-			MapOutputMode mapMode = depth.GetMapOutputMode();
+			MapOutputMode mapMode = depth.MapOutputMode;
 
 			DepthMetaData depthMD = new DepthMetaData();
 
@@ -33,7 +34,7 @@ namespace SimpleRead.net
 
 				depth.GetMetaData(depthMD);
 
-				Console.WriteLine("Frame {0} Middle point is: {1}.", depthMD.FrameID, depthMD[(int)mapMode.nXRes/2, (int)mapMode.nYRes/2]);
+				Console.WriteLine("Frame {0} Middle point is: {1}.", depthMD.FrameID, depthMD[(int)mapMode.XRes/2, (int)mapMode.YRes/2]);
 			}
 		}
 

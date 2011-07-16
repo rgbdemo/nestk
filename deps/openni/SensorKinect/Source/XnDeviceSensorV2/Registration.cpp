@@ -480,6 +480,7 @@ void XnRegistration::Apply1000(XnDepthPixel* pInput, XnDepthPixel* pOutput)
 			nNewX = (XnInt32)(XnDouble(*pRegTable)/XN_REG_X_SCALE + XnInt32(pDepth2ShiftTable[nValue]/XN_REG_PARAB_COEFF - nConstShift) * dShiftFactor);
 			nNewY = *(pRegTable+1);
 
+			// --avin mod--
 			if ( nNewX < nDepthXRes && nNewY < nDepthYRes )
 			{
 				nArrPos = nNewY * nDepthXRes + nNewX;

@@ -1,15 +1,21 @@
-PrimeSensor Modules for OpenNI (Unstable branch)
-------------------------------------------------
+PrimeSense Sensor Module for OpenNI (Version 5.0.3.3 Stable version - Jul 5th 2011)
+-----------------------------------------------------------------------------------
 
 Kinect Mod:
 -----------
 
 ***** Important notice: *****
-You must use this kinect mode version with the unstable OpenNI release which is available at:
-http://www.openni.org/downloadfiles/openni-binaries/20-latest-unstable
-
+You must use this kinect mod version with the unstable OpenNI release which is available at:
+http://www.openni.org/downloadfiles/opennimodules/openni-binaries/20-latest-unstable
 
 Changes:
+v0.6:
+	1) Updated codebase to the latest OpenNI / Sensor version (1.3.2.1 / 5.0.3.33)
+
+v0.5:
+	1) Updated codebase to the latest OpenNI / Sensor version (1.1.0.39 / 5.0.1.32)
+	2) Changed to install directory from Sensor to SensorKinect to co-exist with the orignal PrimeSense Sensor module.
+
 v0.4:
 	1) Merged code with the new unstable sensor driver from PrimeSense that adds MacOSX and multiple sensor support.
 	2) Added precompiled binaries for Linux & MacOSX.
@@ -31,11 +37,11 @@ v0.1:
 	4) Fixed the software depth-to-RGB registration. (Thanks ROS.org for that!)
 
 Install notes:
-	1) Install unstable OpenNI (http://www.openni.org/downloadfiles/openni-binaries/20-latest-unstable)
+	1) Install unstable OpenNI (http://www.openni.org/downloadfiles/opennimodules/openni-binaries/20-latest-unstable)
 	   On Linux/Mac please do: ./sudo install.sh
 	2) Install Sensor (this version...)
 	   On Linux/Mac please do: ./sudo install.sh
-	3) Install unstable NITE (http://www.openni.org/downloadfiles/openni-compliant-middleware-binaries/33-latest-unstable)
+	3) Install unstable NITE (http://www.openni.org/downloadfiles/opennimodules/openni-compliant-middleware-binaries/33-latest-unstable)
 	   On Linux/Mac please do: ./sudo install.sh
 	   Use this license when asked during the installation: 0KOIk2JeIBYClPWVnMoRKn5cdY4=
 	4) Test #1: Run the NiViewer sample to make sure depth & image streams are working.
@@ -52,14 +58,9 @@ Install notes:
 		3) Run: sudo port install libusb-devel +universal
 		   Note: Do not forget the +universal, it's very important!!
 		   If you're previously already installed libusb-devel then use "sudo port uninstall libusb-devel" and reinstall it again with the +universal flag.
-	
-	Note: All of the NITE samples are using 320x240 resolution. You need to change it to 640x480 in the XML files inside the Data directory.
-	      I have prepared preconfigured XMLs in the "NITE\Data" dir. Just copy them to "c:\Program Files\Prime Sense\NITE\Data".
-
 TIPs:
-	1) If you want to see the IR stream, edit the "OpenNI\Data\SamplesConfig.xml" file and change all the "Image" words into "IR".
-	2) If the driver is installed correctly you should see "Kinect Camera" and "Kinect Motor" under the "PrimeSensor" category in the device manager.
-	   Please note that the audio device is not supported yet.
+	1) If the driver is installed correctly you should see "Kinect Camera" and "Kinect Motor" under the "PrimeSensor" category in the device manager.
+	   If not, try to install the driver manually by running the dp-inst files from the Driver directory.
 	
 Todo:
 	1) Add motor & led control.
@@ -74,26 +75,14 @@ Website: www.primesense.com
 Forum: http://groups.google.com/group/openni-dev
 Wiki: Coming soon!
 
-Unstable branch new features:
-* Audio streams are now supported.
-* Sensor Server now supports multiple sensors. 
-* Added MacOSX platform support.
-* Improved README! (much more detailed instructions...)
-
-Unstable branch fixes:
-* Server: a potential dead lock was solved.
-* GetStringProperty would always return XN_STATUS_ERROR.
-* Bug fix: infinite loop in server when a client tries to disconnect and streams can't be closed (usb timeout for example).
-
 Binaries are available at:
-http://www.openni.org/downloadfiles/openni-compliant-hardware/31-latest-unstable
+http://www.openni.org/downloadfiles/opennimodules/openni-compliant-hardware-binaries/32-stable
 
 Please use this with the OpenNI unstable branch located at:
 Source:
-https://github.com/OpenNI/OpenNI/tree/unstable
+https://github.com/OpenNI/OpenNI
 Binaries:
-http://www.openni.org/downloadfiles/openni-binaries/20-latest-unstable
-
+http://www.openni.org/downloadfiles/opennimodules/openni-binaries/21-stable
 
 Release Notes:
 --------------
@@ -122,14 +111,10 @@ Windows:
 		3) PyWin32
 		   From: http://sourceforge.net/projects/pywin32/files/pywin32/
 		   Please make sure you download the version that matches your exact python version.
-		4) NSIS 2.46
-		   From: http://sourceforge.net/projects/nsis/files/NSIS%202/2.46/
-		5) NSIS-2.46-strlen_8192.zip patch
-		   From: http://sourceforge.net/projects/nsis/files/NSIS%202/2.46/
-		   This is a required patch to fix a critical bug in NSIS with long environment variables.
-		   Simply unpack it into the directory where NSIS is installed and overwrite all files.
-		6) OpenNI v1.x
-		   From: http://www.openni.org/?q=node/2	
+		4) WIX 3.5
+		   From: http://wix.codeplex.com/releases/view/60102
+		5) OpenNI v1.1.x.x
+		   From: http://www.openni.org/downloadfiles	
 
 	Optional Requirements (To build the documentation):
 		1) Doxygen
@@ -158,8 +143,8 @@ Linux:
 		   From: http://www.python.org/download/
 		   Or via apt:
 		   sudo apt-get install python
-		3) OpenNI v1.x
-		   From: http://www.openni.org/?q=node/2
+		3) OpenNI v1.1.x.x
+		   From: http://www.openni.org/downloadfiles
 		   
 	Building Sensor:
 		1) Go into the directory: "Platform/Linux-x86/CreateRedist".
@@ -182,13 +167,13 @@ Linux:
 
 MacOSX:
 	Requirements:
-		1) Xcode 3.2.5
+		1) Xcode 3.2.6
 		   From: http://developer.apple.com/devcenter/mac/index.action
-		   https://developer.apple.com/ios/download.action?path=/ios/ios_sdk_4.2__final/xcode_3.2.5_and_ios_sdk_4.2_final.dmg
-		   Please note that you need to register as a mac developer (It's free!).
-		2) OpenNI v1.x
-		   From: http://www.openni.org/?q=node/2	   
-	   
+		   http://developer.apple.com/devcenter/download.action?path=/Developer_Tools/xcode_3.2.6_and_ios_sdk_4.3__final/xcode_3.2.6_and_ios_sdk_4.3.dmg
+		   Please note that you need to register as a mac developer (It's free!).		   
+		2) OpenNI v1.1.x.x
+		   From: http://www.openni.org/downloadfiles	
+		   	   
 	Building Sensor:
 		1) Go into the directory: "Platform/Linux-x86/CreateRedist".
 		   Run the script: "./RedistMaker".

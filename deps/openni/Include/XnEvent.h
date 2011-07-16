@@ -1,27 +1,24 @@
-/*****************************************************************************
-*                                                                            *
-*  OpenNI 1.0 Alpha                                                          *
-*  Copyright (C) 2010 PrimeSense Ltd.                                        *
-*                                                                            *
-*  This file is part of OpenNI.                                              *
-*                                                                            *
-*  OpenNI is free software: you can redistribute it and/or modify            *
-*  it under the terms of the GNU Lesser General Public License as published  *
-*  by the Free Software Foundation, either version 3 of the License, or      *
-*  (at your option) any later version.                                       *
-*                                                                            *
-*  OpenNI is distributed in the hope that it will be useful,                 *
-*  but WITHOUT ANY WARRANTY; without even the implied warranty of            *
-*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the              *
-*  GNU Lesser General Public License for more details.                       *
-*                                                                            *
-*  You should have received a copy of the GNU Lesser General Public License  *
-*  along with OpenNI. If not, see <http://www.gnu.org/licenses/>.            *
-*                                                                            *
-*****************************************************************************/
-
-
-
+/****************************************************************************
+*                                                                           *
+*  OpenNI 1.1 Alpha                                                         *
+*  Copyright (C) 2011 PrimeSense Ltd.                                       *
+*                                                                           *
+*  This file is part of OpenNI.                                             *
+*                                                                           *
+*  OpenNI is free software: you can redistribute it and/or modify           *
+*  it under the terms of the GNU Lesser General Public License as published *
+*  by the Free Software Foundation, either version 3 of the License, or     *
+*  (at your option) any later version.                                      *
+*                                                                           *
+*  OpenNI is distributed in the hope that it will be useful,                *
+*  but WITHOUT ANY WARRANTY; without even the implied warranty of           *
+*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the             *
+*  GNU Lesser General Public License for more details.                      *
+*                                                                           *
+*  You should have received a copy of the GNU Lesser General Public License *
+*  along with OpenNI. If not, see <http://www.gnu.org/licenses/>.           *
+*                                                                           *
+****************************************************************************/
 #ifndef __XN_EVENT_H__
 #define __XN_EVENT_H__
 
@@ -56,7 +53,7 @@ public:
 		xnOSCreateCriticalSection(&m_hLock);
 	}
 
-	~XnEvent()
+	virtual ~XnEvent()
 	{
 		Clear();
 		xnOSCloseCriticalSection(&m_hLock);
@@ -69,7 +66,7 @@ public:
 		XN_VALIDATE_INPUT_PTR(pFunc);
 
 		XnCallback* pCallback = NULL;
-		XN_VALIDATE_NEW(pCallback, XnCallback, (void*)pFunc, pCookie);
+		XN_VALIDATE_NEW(pCallback, XnCallback, (XnFuncPtr)pFunc, pCookie);
 
 		// always add to list of added (actual list will be updated in Raise method, to allow registering 
 		// from a callback).
@@ -103,7 +100,13 @@ public:
 		// function).
 		{
 			XnAutoCSLocker lock(m_hLock);
-			nRetVal = m_ToBeRemoved.AddLast(pObject);
+
+			// try to remove it from the ToBeAdded list.
+			if (!RemoveCallback(m_ToBeAdded, pObject))
+			{
+				// it's not in this list, so it's probably in the main list
+				nRetVal = m_ToBeRemoved.AddLast(pObject);
+			}
 		}
 		XN_IS_STATUS_OK(nRetVal);
 
@@ -129,8 +132,6 @@ public:
 protected:
 	XnStatus ApplyListChanges()
 	{
-		XnStatus nRetVal = XN_STATUS_OK;
-
 		// first add all
 		for (XnCallbackPtrList::ConstIterator it = m_ToBeAdded.begin(); it != m_ToBeAdded.end(); ++it)
 		{
@@ -142,27 +143,42 @@ protected:
 		for (XnCallbackPtrList::ConstIterator it = m_ToBeRemoved.begin(); it != m_ToBeRemoved.end(); ++it)
 		{
 			XnCallback* pCallback = *it;
-
-			// check if it's in the list
-			XnCallbackPtrList::Iterator handlerIt = m_Handlers.Find(pCallback);
-			if (handlerIt != m_Handlers.end())
-			{
-				m_Handlers.Remove(handlerIt);
-			}
-
-			XN_DELETE(pCallback);
+			RemoveCallback(m_Handlers, pCallback);
 		}
 		m_ToBeRemoved.Clear();
 
 		return (XN_STATUS_OK);
 	}
 
+#if (XN_PLATFORM == XN_PLATFORM_WIN32)
+#pragma warning (push)
+#pragma warning (disable: 4127)
+#endif
+
 	XN_DECLARE_LIST(XnCallback*, XnCallbackPtrList)
+
+#if (XN_PLATFORM == XN_PLATFORM_WIN32)
+#pragma warning (pop)
+#endif
 
 	XN_CRITICAL_SECTION_HANDLE m_hLock;
 	XnCallbackPtrList m_Handlers;
 	XnCallbackPtrList m_ToBeAdded;
 	XnCallbackPtrList m_ToBeRemoved;
+
+private:
+	XnBool RemoveCallback(XnCallbackPtrList& list, XnCallback* pCallback)
+	{
+		XnCallbackPtrList::Iterator handlerIt = list.Find(pCallback);
+		if (handlerIt != list.end())
+		{
+			list.Remove(handlerIt);
+			XN_DELETE(pCallback);
+			return TRUE;
+		}
+
+		return FALSE;
+	}
 };
 
 #define _XN_RAISE_WITH_RET_CODE(args)			\
@@ -242,8 +258,16 @@ protected:
 #define _XN_ARGS_5ARG(_name1, _name2, _name3, _name4, _name5) _name1, _name2, _name3, _name4, _name5,
 
 /** Declares an event class */
-#define XN_DECLARE_EVENT_0ARG(_class, _interface)											\
-	_XN_DECLARE_EVENT_CLASS(_class, _interface, void, _XN_RAISE_NO_RET_CODE(_XN_ARGS_0ARG()), _XN_FULL_SIGNATURE_0ARG(), _XN_SIGNATURE_0ARG())
+#if XN_PLATFORM == XN_PLATFORM_WIN32
+	#define XN_DECLARE_EVENT_0ARG(_class, _interface)											\
+	__pragma(warning(push))\
+	__pragma(warning(disable:4189))\
+		_XN_DECLARE_EVENT_CLASS(_class, _interface, void, _XN_RAISE_NO_RET_CODE(_XN_ARGS_0ARG()), _XN_FULL_SIGNATURE_0ARG(), _XN_SIGNATURE_0ARG())\
+	__pragma(warning(pop))
+#else
+	#define XN_DECLARE_EVENT_0ARG(_class, _interface)											\
+		_XN_DECLARE_EVENT_CLASS(_class, _interface, void, _XN_RAISE_NO_RET_CODE(_XN_ARGS_0ARG()), _XN_FULL_SIGNATURE_0ARG(), _XN_SIGNATURE_0ARG())
+#endif
 
 #define XN_DECLARE_EVENT_0ARG_RETVAL(_class, _interface)									\
 	_XN_DECLARE_EVENT_CLASS(_class, _interface, XnStatus, _XN_RAISE_WITH_RET_CODE(_XN_ARGS_0ARG()), _XN_FULL_SIGNATURE_0ARG(), _XN_SIGNATURE_0ARG())

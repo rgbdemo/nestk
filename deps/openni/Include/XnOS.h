@@ -1,28 +1,24 @@
-/*****************************************************************************
-*                                                                            *
-*  OpenNI 1.0 Alpha                                                          *
-*  Copyright (C) 2010 PrimeSense Ltd.                                        *
-*                                                                            *
-*  This file is part of OpenNI.                                              *
-*                                                                            *
-*  OpenNI is free software: you can redistribute it and/or modify            *
-*  it under the terms of the GNU Lesser General Public License as published  *
-*  by the Free Software Foundation, either version 3 of the License, or      *
-*  (at your option) any later version.                                       *
-*                                                                            *
-*  OpenNI is distributed in the hope that it will be useful,                 *
-*  but WITHOUT ANY WARRANTY; without even the implied warranty of            *
-*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the              *
-*  GNU Lesser General Public License for more details.                       *
-*                                                                            *
-*  You should have received a copy of the GNU Lesser General Public License  *
-*  along with OpenNI. If not, see <http://www.gnu.org/licenses/>.            *
-*                                                                            *
-*****************************************************************************/
-
-
-
-
+/****************************************************************************
+*                                                                           *
+*  OpenNI 1.1 Alpha                                                         *
+*  Copyright (C) 2011 PrimeSense Ltd.                                       *
+*                                                                           *
+*  This file is part of OpenNI.                                             *
+*                                                                           *
+*  OpenNI is free software: you can redistribute it and/or modify           *
+*  it under the terms of the GNU Lesser General Public License as published *
+*  by the Free Software Foundation, either version 3 of the License, or     *
+*  (at your option) any later version.                                      *
+*                                                                           *
+*  OpenNI is distributed in the hope that it will be useful,                *
+*  but WITHOUT ANY WARRANTY; without even the implied warranty of           *
+*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the             *
+*  GNU Lesser General Public License for more details.                      *
+*                                                                           *
+*  You should have received a copy of the GNU Lesser General Public License *
+*  along with OpenNI. If not, see <http://www.gnu.org/licenses/>.           *
+*                                                                           *
+****************************************************************************/
 #ifndef __XN_OS_H__
 #define __XN_OS_H__
 
@@ -32,6 +28,8 @@
 #include "XnPlatform.h"
 #include "XnMacros.h"
 #include "XnStatusCodes.h"
+#include "XnOSStrings.h"
+#include "XnOSMemory.h"
 
 //---------------------------------------------------------------------------
 // Defines
@@ -46,8 +44,10 @@
 //---------------------------------------------------------------------------
 #if (XN_PLATFORM == XN_PLATFORM_WIN32)
 	#include "Win32/XnOSWin32.h"
-#elif (XN_PLATFORM == XN_PLATFORM_LINUX_X86 || XN_PLATFORM == XN_PLATFORM_LINUX_ARM || XN_PLATFORM == XN_PLATFORM_MACOSX)
+#elif (XN_PLATFORM == XN_PLATFORM_LINUX_X86 || XN_PLATFORM == XN_PLATFORM_LINUX_ARM || XN_PLATFORM == XN_PLATFORM_MACOSX || XN_PLATFORM == XN_PLATFORM_ANDROID_ARM)
         #include "Linux-x86/XnOSLinux-x86.h"
+#elif defined(_ARC)
+	#include "ARC/XnOSARC.h"
 #else
 	#error OpenNI OS Abstraction Layer - Unsupported Platform!
 #endif
@@ -162,16 +162,21 @@ typedef enum {
 			x = NULL;			\
 		}
 
+
 /** Creates a new type object and validates that allocation succeeded. */
 #if XN_PLATFORM_VAARGS_TYPE == XN_PLATFORM_USE_WIN32_VAARGS_STYLE
 	#define XN_VALIDATE_NEW(ptr, type, ...)						\
+		__pragma(warning (push))								\
+		__pragma(warning (disable: 4127))						\
 		do {													\
 			(ptr) = XN_NEW(type, __VA_ARGS__);					\
 			if ((ptr) == NULL)									\
 			{													\
 				return (XN_STATUS_ALLOC_FAILED);				\
 			}													\
-		} while (0)
+		} while (0)												\
+		__pragma(warning (pop))
+
 #elif XN_PLATFORM_VAARGS_TYPE == XN_PLATFORM_USE_GCC_VAARGS_STYLE
 	#define XN_VALIDATE_NEW(ptr, type, ...)						\
 		do {													\
@@ -315,28 +320,10 @@ typedef enum {
 // Exported Function Declaration
 //---------------------------------------------------------------------------
 // Common
-XN_C_API XnStatus xnOSInit();
-XN_C_API XnStatus xnOSShutdown();
-XN_C_API XnStatus xnOSGetInfo(xnOSInfo* pOSInfo);
+XN_C_API XnStatus XN_C_DECL xnOSInit();
+XN_C_API XnStatus XN_C_DECL xnOSShutdown();
+XN_C_API XnStatus XN_C_DECL xnOSGetInfo(xnOSInfo* pOSInfo);
 
-// Memory
-XN_C_API void* xnOSMalloc(const XnSizeT nAllocSize);
-XN_C_API void* xnOSMallocAligned(const XnSizeT nAllocSize, const XnSizeT nAlignment);
-XN_C_API void* xnOSCalloc(const XnSizeT nAllocNum, const XnSizeT nAllocSize);
-XN_C_API void* xnOSCallocAligned(const XnSizeT nAllocNum, const XnSizeT nAllocSize, const XnSizeT nAlignment);
-XN_C_API void* xnOSRealloc(void* pMemory, const XnSizeT nAllocSize);
-XN_C_API void* xnOSReallocAligned(void* pMemory, const XnSizeT nAllocSize, const XnSizeT nAlignment);
-XN_C_API void* xnOSRecalloc(void* pMemory, const XnSizeT nAllocNum, const XnSizeT nAllocSize);
-XN_C_API void xnOSFree(const void* pMemBlock);
-XN_C_API void xnOSFreeAligned(const void* pMemBlock);
-XN_C_API void xnOSMemCopy(void* pDest, const void* pSource, XnSizeT nCount);
-XN_C_API XnInt32 xnOSMemCmp(const void *pBuf1, const void *pBuf2, XnSizeT nCount);
-XN_C_API void xnOSMemSet(void* pDest, XnUInt8 nValue, XnSizeT nCount);
-XN_C_API void xnOSMemMove(void* pDest, const void* pSource, XnSizeT nCount);
-XN_C_API XnUInt64 xnOSEndianSwapUINT64(XnUInt64 nValue);
-XN_C_API XnUInt32 xnOSEndianSwapUINT32(XnUInt32 nValue);
-XN_C_API XnUInt16 xnOSEndianSwapUINT16(XnUInt16 nValue);
-XN_C_API XnFloat xnOSEndianSwapFLOAT(XnFloat fValue);
 
 #if XN_PLATFORM_VAARGS_TYPE == XN_PLATFORM_USE_WIN32_VAARGS_STYLE
 	#define XN_NEW(type, ...)		new type(__VA_ARGS__)
@@ -365,17 +352,17 @@ typedef enum
 /**
 * Memory Profiling - Logs an allocation of memory.
 */
-XN_C_API void* xnOSLogMemAlloc(void* pMemBlock, XnAllocationType nAllocType, XnUInt32 nBytes, const XnChar* csFunction, const XnChar* csFile, XnUInt32 nLine, const XnChar* csAdditional);
+XN_C_API void* XN_C_DECL xnOSLogMemAlloc(void* pMemBlock, XnAllocationType nAllocType, XnUInt32 nBytes, const XnChar* csFunction, const XnChar* csFile, XnUInt32 nLine, const XnChar* csAdditional);
 
 /**
 * Memory Profiling - Logs freeing of memory.
 */
-XN_C_API void xnOSLogMemFree(const void* pMemBlock);
+XN_C_API void XN_C_DECL xnOSLogMemFree(const void* pMemBlock);
 
 /**
 * Memory Profiling - Prints a current memory report to requested file.
 */
-XN_C_API void xnOSWriteMemoryReport(const XnChar* csFileName);
+XN_C_API void XN_C_DECL xnOSWriteMemoryReport(const XnChar* csFileName);
 
 // for memory profiling, replace all malloc/calloc/free/new/delete calls
 #if (defined XN_MEM_PROFILING) && (!defined(XN_OS_IMPL))
@@ -388,6 +375,16 @@ XN_C_API void xnOSWriteMemoryReport(const XnChar* csFileName);
 
 	#ifdef __cplusplus
 		#include <new>
+		static void* operator new(size_t size)
+		{
+			void* p = xnOSMalloc(size);
+			return xnOSLogMemAlloc(p, XN_ALLOCATION_NEW, size, "", "", 0, "");
+		}
+		static void* operator new[](size_t size)
+		{
+			void* p = xnOSMalloc(size);
+			return xnOSLogMemAlloc(p, XN_ALLOCATION_NEW, size, "", "", 0, "");
+		}
 		static void* operator new(size_t size, const XnChar* csFunction, const XnChar* csFile, XnUInt32 nLine, const XnChar* csAdditional)
 		{
 			void* p = xnOSMalloc(size);
@@ -450,70 +447,57 @@ XN_C_API void xnOSWriteMemoryReport(const XnChar* csFileName);
 #endif
 
 // Files
-XN_C_API XnStatus xnOSGetFileList(const XnChar* cpSearchPattern, const XnChar* cpPrefixPath, XnChar cpFileList[][XN_FILE_MAX_PATH], const XnUInt32 nMaxFiles, XnUInt32* pnFoundFiles);
-XN_C_API XnStatus xnOSOpenFile(const XnChar* cpFileName, const XnUInt32 nFlags, XN_FILE_HANDLE* pFile);
-XN_C_API XnStatus xnOSCloseFile(XN_FILE_HANDLE* pFile);
-XN_C_API XnStatus xnOSReadFile(const XN_FILE_HANDLE File, void* pBuffer, XnUInt32* pnBufferSize);
-XN_C_API XnStatus xnOSWriteFile(const XN_FILE_HANDLE File, const void* pBuffer, const XnUInt32 nBufferSize);
-XN_C_API XnStatus xnOSSeekFile(const XN_FILE_HANDLE File, const XnOSSeekType SeekType, const XnInt32 nOffset);
-XN_C_API XnStatus xnOSTellFile(const XN_FILE_HANDLE File, XnUInt32* nFilePos);
-XN_C_API XnStatus xnOSFlushFile(const XN_FILE_HANDLE File);
-XN_C_API XnStatus xnOSDoesFileExist(const XnChar* cpFileName, XnBool* pbResult);
-XN_C_API XnStatus xnOSDoesDirecotyExist(const XnChar* cpDirName, XnBool* pbResult);
-XN_C_API XnStatus xnOSLoadFile(const XnChar* cpFileName, void* pBuffer, const XnUInt32 nBufferSize);
-XN_C_API XnStatus xnOSSaveFile(const XnChar* cpFileName, const void* pBuffer, const XnUInt32 nBufferSize);
-XN_C_API XnStatus xnOSAppendFile(const XnChar* cpFileName, const void* pBuffer, const XnUInt32 nBufferSize);
-XN_C_API XnStatus xnOSGetFileSize(const XnChar* cpFileName, XnUInt32* pnFileSize);
-XN_C_API XnStatus xnOSCreateDirectory(const XnChar* cpDirName);
-XN_C_API XnStatus xnOSGetDirName(const XnChar* cpFilePath, XnChar* cpDirName, const XnUInt32 nBufferSize);
-XN_C_API XnStatus xnOSGetFileName(const XnChar* cpFilePath, XnChar* cpFileName, const XnUInt32 nBufferSize);
-XN_C_API XnStatus xnOSGetFullPathName(const XnChar* strFilePath, XnChar* strFullPath, XnUInt32 nBufferSize);
-XN_C_API XnStatus xnOSGetCurrentDir(XnChar* cpDirName, const XnUInt32 nBufferSize);
-XN_C_API XnStatus xnOSSetCurrentDir(const XnChar* cpDirName);
-XN_C_API XnStatus xnOSDeleteFile(const XnChar* cpFileName);
+XN_C_API XnStatus XN_C_DECL xnOSGetFileList(const XnChar* cpSearchPattern, const XnChar* cpPrefixPath, XnChar cpFileList[][XN_FILE_MAX_PATH], const XnUInt32 nMaxFiles, XnUInt32* pnFoundFiles);
+XN_C_API XnStatus XN_C_DECL xnOSOpenFile(const XnChar* cpFileName, const XnUInt32 nFlags, XN_FILE_HANDLE* pFile);
+XN_C_API XnStatus XN_C_DECL xnOSCloseFile(XN_FILE_HANDLE* pFile);
+XN_C_API XnStatus XN_C_DECL xnOSReadFile(const XN_FILE_HANDLE File, void* pBuffer, XnUInt32* pnBufferSize);
+XN_C_API XnStatus XN_C_DECL xnOSWriteFile(const XN_FILE_HANDLE File, const void* pBuffer, const XnUInt32 nBufferSize);
+XN_C_API XnStatus XN_C_DECL xnOSSeekFile(const XN_FILE_HANDLE File, const XnOSSeekType SeekType, const XnInt32 nOffset);
+XN_C_API XnStatus XN_C_DECL xnOSTellFile(const XN_FILE_HANDLE File, XnUInt32* nFilePos);
+XN_C_API XnStatus XN_C_DECL xnOSFlushFile(const XN_FILE_HANDLE File);
+XN_C_API XnStatus XN_C_DECL xnOSDoesFileExist(const XnChar* cpFileName, XnBool* pbResult);
+XN_C_API XnStatus XN_C_DECL xnOSDoesDirecotyExist(const XnChar* cpDirName, XnBool* pbResult);
+XN_C_API XnStatus XN_C_DECL xnOSLoadFile(const XnChar* cpFileName, void* pBuffer, const XnUInt32 nBufferSize);
+XN_C_API XnStatus XN_C_DECL xnOSSaveFile(const XnChar* cpFileName, const void* pBuffer, const XnUInt32 nBufferSize);
+XN_C_API XnStatus XN_C_DECL xnOSAppendFile(const XnChar* cpFileName, const void* pBuffer, const XnUInt32 nBufferSize);
+XN_C_API XnStatus XN_C_DECL xnOSGetFileSize(const XnChar* cpFileName, XnUInt32* pnFileSize);
+XN_C_API XnStatus XN_C_DECL xnOSCreateDirectory(const XnChar* cpDirName);
+XN_C_API XnStatus XN_C_DECL xnOSGetDirName(const XnChar* cpFilePath, XnChar* cpDirName, const XnUInt32 nBufferSize);
+XN_C_API XnStatus XN_C_DECL xnOSGetFileName(const XnChar* cpFilePath, XnChar* cpFileName, const XnUInt32 nBufferSize);
+XN_C_API XnStatus XN_C_DECL xnOSGetFullPathName(const XnChar* strFilePath, XnChar* strFullPath, XnUInt32 nBufferSize);
+XN_C_API XnStatus XN_C_DECL xnOSGetCurrentDir(XnChar* cpDirName, const XnUInt32 nBufferSize);
+XN_C_API XnStatus XN_C_DECL xnOSSetCurrentDir(const XnChar* cpDirName);
+XN_C_API XnStatus XN_C_DECL xnOSDeleteFile(const XnChar* cpFileName);
 
 // INI
-XN_C_API XnStatus xnOSReadStringFromINI(const XnChar* cpINIFile, const XnChar* cpSection, const XnChar* cpKey, XnChar* cpDest, const XnUInt32 nDestLength);
-XN_C_API XnStatus xnOSReadFloatFromINI(const XnChar* cpINIFile, const XnChar* cpSection, const XnChar* cpKey, XnFloat* fDest);
-XN_C_API XnStatus xnOSReadDoubleFromINI(const XnChar* cpINIFile, const XnChar* cpSection, const XnChar* cpKey, XnDouble* fDest);
-XN_C_API XnStatus xnOSReadIntFromINI(const XnChar* cpINIFile, const XnChar* cpSection, const XnChar* cpKey, XnUInt32* nDest);
-XN_C_API XnStatus xnOSWriteStringToINI(const XnChar* cpINIFile, const XnChar* cpSection, const XnChar* cpKey, const XnChar* cpSrc);
-XN_C_API XnStatus xnOSWriteFloatToINI(const XnChar* cpINIFile, const XnChar* cpSection, const XnChar* cpKey, const XnFloat fSrc);
-XN_C_API XnStatus xnOSWriteDoubleToINI(const XnChar* cpINIFile, const XnChar* cpSection, const XnChar* cpKey, const XnDouble fSrc);
-XN_C_API XnStatus xnOSWriteIntToINI(const XnChar* cpINIFile, const XnChar* cpSection, const XnChar* cpKey, const XnUInt32 nSrc);
+XN_C_API XnStatus XN_C_DECL xnOSReadStringFromINI(const XnChar* cpINIFile, const XnChar* cpSection, const XnChar* cpKey, XnChar* cpDest, const XnUInt32 nDestLength);
+XN_C_API XnStatus XN_C_DECL xnOSReadFloatFromINI(const XnChar* cpINIFile, const XnChar* cpSection, const XnChar* cpKey, XnFloat* fDest);
+XN_C_API XnStatus XN_C_DECL xnOSReadDoubleFromINI(const XnChar* cpINIFile, const XnChar* cpSection, const XnChar* cpKey, XnDouble* fDest);
+XN_C_API XnStatus XN_C_DECL xnOSReadIntFromINI(const XnChar* cpINIFile, const XnChar* cpSection, const XnChar* cpKey, XnUInt32* nDest);
+XN_C_API XnStatus XN_C_DECL xnOSWriteStringToINI(const XnChar* cpINIFile, const XnChar* cpSection, const XnChar* cpKey, const XnChar* cpSrc);
+XN_C_API XnStatus XN_C_DECL xnOSWriteFloatToINI(const XnChar* cpINIFile, const XnChar* cpSection, const XnChar* cpKey, const XnFloat fSrc);
+XN_C_API XnStatus XN_C_DECL xnOSWriteDoubleToINI(const XnChar* cpINIFile, const XnChar* cpSection, const XnChar* cpKey, const XnDouble fSrc);
+XN_C_API XnStatus XN_C_DECL xnOSWriteIntToINI(const XnChar* cpINIFile, const XnChar* cpSection, const XnChar* cpKey, const XnUInt32 nSrc);
 
 // Shared libraries
-XN_C_API XnStatus xnOSLoadLibrary(const XnChar* cpFileName, XN_LIB_HANDLE* pLibHandle);
-XN_C_API XnStatus xnOSFreeLibrary(const XN_LIB_HANDLE LibHandle);
-XN_C_API XnStatus xnOSGetProcAddress(const XN_LIB_HANDLE LibHandle, const XnChar* cpProcName, XnFarProc* pProcAddr);
+XN_C_API XnStatus XN_C_DECL xnOSLoadLibrary(const XnChar* cpFileName, XN_LIB_HANDLE* pLibHandle);
+XN_C_API XnStatus XN_C_DECL xnOSFreeLibrary(const XN_LIB_HANDLE LibHandle);
+XN_C_API XnStatus XN_C_DECL xnOSGetProcAddress(const XN_LIB_HANDLE LibHandle, const XnChar* cpProcName, XnFarProc* pProcAddr);
 
-// Strings
-XN_C_API XnStatus xnOSStrPrefix(const XnChar* cpPrefixString, XnChar* cpDestString, const XnUInt32 nDestLength);
-XN_C_API XnStatus xnOSStrAppend(XnChar* cpDestString, const XnChar* cpSrcString, const XnUInt32 nDestLength);
-XN_C_API XnStatus xnOSStrCopy(XnChar* cpDestString, const XnChar* cpSrcString, const XnUInt32 nDestLength);
-XN_C_API XnUInt32 xnOSStrLen(const XnChar* cpString);
-XN_C_API XnStatus xnOSStrNCopy(XnChar* cpDestString, const XnChar* cpSrcString, const XnUInt32 nCopyLength, const XnUInt32 nDestLength);
-XN_C_API XnStatus xnOSStrCRC32(const XnChar* cpString, XnUInt32* nCRC32);
-XN_C_API XnStatus xnOSStrNCRC32(XnUChar* cpBuffer, XnUInt32 nBufferSize, XnUInt32* nCRC32);
-XN_C_API XnStatus xnOSStrFormat(XnChar* cpDestString, const XnUInt32 nDestLength, XnUInt32* pnCharsWritten, const XnChar* cpFormat, ...);
-XN_C_API XnStatus xnOSStrFormatV(XnChar* cpDestString, const XnUInt32 nDestLength, XnUInt32* pnCharsWritten, const XnChar* cpFormat, va_list args);
-XN_C_API XnInt32  xnOSStrCmp(const XnChar* cpFirstString, const XnChar* cpSecondString);
-XN_C_API XnInt32  xnOSStrCaseCmp(const XnChar* cpFirstString, const XnChar* cpSecondString);
-XN_C_API void     xnOSItoA(XnInt32 nValue, XnChar* cpStr, XnInt32 nBase);
-/** Should be freed using @ref xnOSFree() */
-XN_C_API XnChar* xnOSStrDup(const XnChar* strSource);
-XN_C_API XnStatus xnOSExpandEnvironmentStrings(const XnChar* strSrc, XnChar* strDest, XnUInt32 nDestSize);
-
+struct timespec;
+	
 // Time
-XN_C_API XnStatus xnOSGetEpochTime(XnUInt32* nEpochTime);
-XN_C_API XnStatus xnOSGetTimeStamp(XnUInt64* nTimeStamp);
-XN_C_API XnStatus xnOSGetHighResTimeStamp(XnUInt64* nTimeStamp);
-XN_C_API XnStatus xnOSSleep(XnUInt32 nMilliseconds);
-XN_C_API XnStatus xnOSStartTimer(XnOSTimer* pTimer);
-XN_C_API XnStatus xnOSStartHighResTimer(XnOSTimer* pTimer);
-XN_C_API XnStatus xnOSQueryTimer(XnOSTimer Timer, XnUInt64* pnTimeSinceStart);
-XN_C_API XnStatus xnOSStopTimer(XnOSTimer* pTimer);
-XN_C_API XnStatus xnOSGetMonoTime(struct timespec* pTime);
+XN_C_API XnStatus XN_C_DECL xnOSGetEpochTime(XnUInt32* nEpochTime);
+XN_C_API XnStatus XN_C_DECL xnOSGetTimeStamp(XnUInt64* nTimeStamp);
+XN_C_API XnStatus XN_C_DECL xnOSGetHighResTimeStamp(XnUInt64* nTimeStamp);
+XN_C_API XnStatus XN_C_DECL xnOSSleep(XnUInt32 nMilliseconds);
+XN_C_API XnStatus XN_C_DECL xnOSStartTimer(XnOSTimer* pTimer);
+XN_C_API XnStatus XN_C_DECL xnOSStartHighResTimer(XnOSTimer* pTimer);
+XN_C_API XnStatus XN_C_DECL xnOSQueryTimer(XnOSTimer Timer, XnUInt64* pnTimeSinceStart);
+XN_C_API XnStatus XN_C_DECL xnOSStopTimer(XnOSTimer* pTimer);
+XN_C_API XnStatus XN_C_DECL xnOSGetMonoTime(struct timespec* pTime);
+XN_C_API XnStatus XN_C_DECL xnOSGetTimeout(struct timespec* pTime, XnUInt32 nMilliseconds);
+XN_C_API XnStatus XN_C_DECL xnOSGetAbsTimeout(struct timespec* pTime, XnUInt32 nMilliseconds);
 
 // Threads
 typedef enum XnThreadPriority
@@ -524,40 +508,46 @@ typedef enum XnThreadPriority
 	XN_PRIORITY_CRITICAL
 } XnThreadPriority;
 
-XN_C_API XnStatus xnOSCreateThread(XN_THREAD_PROC_PROTO pThreadProc, const XN_THREAD_PARAM pThreadParam, XN_THREAD_HANDLE* pThreadHandle);
-XN_C_API XnStatus xnOSTerminateThread(XN_THREAD_HANDLE* pThreadHandle);
-XN_C_API XnStatus xnOSCloseThread(XN_THREAD_HANDLE* pThreadHandle);
-XN_C_API XnStatus xnOSWaitForThreadExit(XN_THREAD_HANDLE ThreadHandle, XnUInt32 nMilliseconds);
-XN_C_API XnStatus xnOSSetThreadPriority(XN_THREAD_HANDLE ThreadHandle, XnThreadPriority nPriority);
-XN_C_API XnStatus xnOSGetCurrentThreadID(XN_THREAD_ID* pThreadID);
-XN_C_API XnStatus xnOSWaitAndTerminateThread(XN_THREAD_HANDLE* pThreadHandle, XnUInt32 nMilliseconds);
+XN_C_API XnStatus XN_C_DECL xnOSCreateThread(XN_THREAD_PROC_PROTO pThreadProc, const XN_THREAD_PARAM pThreadParam, XN_THREAD_HANDLE* pThreadHandle);
+XN_C_API XnStatus XN_C_DECL xnOSTerminateThread(XN_THREAD_HANDLE* pThreadHandle);
+XN_C_API XnStatus XN_C_DECL xnOSCloseThread(XN_THREAD_HANDLE* pThreadHandle);
+XN_C_API XnStatus XN_C_DECL xnOSWaitForThreadExit(XN_THREAD_HANDLE ThreadHandle, XnUInt32 nMilliseconds);
+XN_C_API XnStatus XN_C_DECL xnOSSetThreadPriority(XN_THREAD_HANDLE ThreadHandle, XnThreadPriority nPriority);
+XN_C_API XnStatus XN_C_DECL xnOSGetCurrentThreadID(XN_THREAD_ID* pThreadID);
+XN_C_API XnStatus XN_C_DECL xnOSWaitAndTerminateThread(XN_THREAD_HANDLE* pThreadHandle, XnUInt32 nMilliseconds);
 
 // Processes
-XN_C_API XnStatus xnOSGetCurrentProcessID(XN_PROCESS_ID* pProcID);
-XN_C_API XnStatus xnOSCreateProcess(const XnChar* strExecutable, XnUInt32 nArgs, const XnChar** pstrArgs, XN_PROCESS_ID* pProcID);
+XN_C_API XnStatus XN_C_DECL xnOSGetCurrentProcessID(XN_PROCESS_ID* pProcID);
+XN_C_API XnStatus XN_C_DECL xnOSCreateProcess(const XnChar* strExecutable, XnUInt32 nArgs, const XnChar** pstrArgs, XN_PROCESS_ID* pProcID);
 
 // Mutex
-XN_C_API XnStatus xnOSCreateMutex(XN_MUTEX_HANDLE* pMutexHandle);
-XN_C_API XnStatus xnOSCreateNamedMutex(XN_MUTEX_HANDLE* pMutexHandle, const XnChar* cpMutexName);
-XN_C_API XnStatus xnOSCloseMutex(XN_MUTEX_HANDLE* pMutexHandle);
-XN_C_API XnStatus xnOSLockMutex(const XN_MUTEX_HANDLE MutexHandle, XnUInt32 nMilliseconds);
-XN_C_API XnStatus xnOSUnLockMutex(const XN_MUTEX_HANDLE MutexHandle);
+XN_C_API XnStatus XN_C_DECL xnOSCreateMutex(XN_MUTEX_HANDLE* pMutexHandle);
+XN_C_API XnStatus XN_C_DECL xnOSCreateNamedMutex(XN_MUTEX_HANDLE* pMutexHandle, const XnChar* cpMutexName);
+XN_C_API XnStatus XN_C_DECL xnOSCloseMutex(XN_MUTEX_HANDLE* pMutexHandle);
+XN_C_API XnStatus XN_C_DECL xnOSLockMutex(const XN_MUTEX_HANDLE MutexHandle, XnUInt32 nMilliseconds);
+XN_C_API XnStatus XN_C_DECL xnOSUnLockMutex(const XN_MUTEX_HANDLE MutexHandle);
 
 // Critical Sections
-XN_C_API XnStatus xnOSCreateCriticalSection(XN_CRITICAL_SECTION_HANDLE* pCriticalSectionHandle);
-XN_C_API XnStatus xnOSCloseCriticalSection(XN_CRITICAL_SECTION_HANDLE* pCriticalSectionHandle);
-XN_C_API XnStatus xnOSEnterCriticalSection(XN_CRITICAL_SECTION_HANDLE* pCriticalSectionHandle);
-XN_C_API XnStatus xnOSLeaveCriticalSection(XN_CRITICAL_SECTION_HANDLE* pCriticalSectionHandle);
+XN_C_API XnStatus XN_C_DECL xnOSCreateCriticalSection(XN_CRITICAL_SECTION_HANDLE* pCriticalSectionHandle);
+XN_C_API XnStatus XN_C_DECL xnOSCloseCriticalSection(XN_CRITICAL_SECTION_HANDLE* pCriticalSectionHandle);
+XN_C_API XnStatus XN_C_DECL xnOSEnterCriticalSection(XN_CRITICAL_SECTION_HANDLE* pCriticalSectionHandle);
+XN_C_API XnStatus XN_C_DECL xnOSLeaveCriticalSection(XN_CRITICAL_SECTION_HANDLE* pCriticalSectionHandle);
 
 // Events
-XN_C_API XnStatus xnOSCreateEvent(XN_EVENT_HANDLE* pEventHandle, XnBool bManualReset);
-XN_C_API XnStatus xnOSCreateNamedEvent(XN_EVENT_HANDLE* pEventHandle, const XnChar* cpEventName, XnBool bManualReset);
-XN_C_API XnStatus xnOSOpenNamedEvent(XN_EVENT_HANDLE* pEventHandle, const XnChar* cpEventName);
-XN_C_API XnStatus xnOSCloseEvent(XN_EVENT_HANDLE* pEventHandle);
-XN_C_API XnStatus xnOSSetEvent(const XN_EVENT_HANDLE EventHandle);
-XN_C_API XnStatus xnOSResetEvent(const XN_EVENT_HANDLE EventHandle);
-XN_C_API XnStatus xnOSWaitEvent(const XN_EVENT_HANDLE EventHandle, XnUInt32 nMilliseconds);
-XN_C_API XnBool xnOSIsEventSet(const XN_EVENT_HANDLE EventHandle);
+XN_C_API XnStatus XN_C_DECL xnOSCreateEvent(XN_EVENT_HANDLE* pEventHandle, XnBool bManualReset);
+XN_C_API XnStatus XN_C_DECL xnOSCreateNamedEvent(XN_EVENT_HANDLE* pEventHandle, const XnChar* cpEventName, XnBool bManualReset);
+XN_C_API XnStatus XN_C_DECL xnOSOpenNamedEvent(XN_EVENT_HANDLE* pEventHandle, const XnChar* cpEventName);
+XN_C_API XnStatus XN_C_DECL xnOSCloseEvent(XN_EVENT_HANDLE* pEventHandle);
+XN_C_API XnStatus XN_C_DECL xnOSSetEvent(const XN_EVENT_HANDLE EventHandle);
+XN_C_API XnStatus XN_C_DECL xnOSResetEvent(const XN_EVENT_HANDLE EventHandle);
+XN_C_API XnStatus XN_C_DECL xnOSWaitEvent(const XN_EVENT_HANDLE EventHandle, XnUInt32 nMilliseconds);
+XN_C_API XnBool XN_C_DECL xnOSIsEventSet(const XN_EVENT_HANDLE EventHandle);
+
+// Semaphores
+XN_C_API XnStatus XN_C_DECL xnOSCreateSemaphore(XN_SEMAPHORE_HANDLE* pSemaphoreHandle, XnUInt32 nInitialCount);
+XN_C_API XnStatus XN_C_DECL xnOSLockSemaphore(XN_SEMAPHORE_HANDLE hSemaphore, XnUInt32 nMilliseconds);
+XN_C_API XnStatus XN_C_DECL xnOSUnlockSemaphore(XN_SEMAPHORE_HANDLE hSemaphore);
+XN_C_API XnStatus XN_C_DECL xnOSCloseSemaphore(XN_SEMAPHORE_HANDLE* pSemaphoreHandle);
 
 /** 
 * Waits for a condition to be met. The condition is evaluated every time an event is set.
@@ -567,25 +557,25 @@ XN_C_API XnBool xnOSIsEventSet(const XN_EVENT_HANDLE EventHandle);
 * @param	pConditionFunc	[in]	A function that should be called to evaluate condition.
 * @param	pConditionData	[in]	A cookie to be passed to the condition functions.
 */
-XN_C_API XnStatus xnOSWaitForCondition(const XN_EVENT_HANDLE EventHandle, XnUInt32 nMilliseconds, XnConditionFunc pConditionFunc, void* pConditionData);
+XN_C_API XnStatus XN_C_DECL xnOSWaitForCondition(const XN_EVENT_HANDLE EventHandle, XnUInt32 nMilliseconds, XnConditionFunc pConditionFunc, void* pConditionData);
 
 // Network
 struct xnOSSocket;
 typedef struct xnOSSocket* XN_SOCKET_HANDLE;
 
-XN_C_API XnStatus xnOSInitNetwork();
-XN_C_API XnStatus xnOSShutdownNetwork();
-XN_C_API XnStatus xnOSCreateSocket(const XnOSSocketType SocketType, const XnChar* cpIPAddress, const XnUInt16 nPort, XN_SOCKET_HANDLE* SocketPtr);
-XN_C_API XnStatus xnOSCloseSocket(XN_SOCKET_HANDLE Socket);
-XN_C_API XnStatus xnOSBindSocket(XN_SOCKET_HANDLE Socket);
-XN_C_API XnStatus xnOSListenSocket(XN_SOCKET_HANDLE Socket);
-XN_C_API XnStatus xnOSAcceptSocket(XN_SOCKET_HANDLE ListenSocket, XN_SOCKET_HANDLE* AcceptSocketPtr, XnUInt32 nMillisecsTimeout);
-XN_C_API XnStatus xnOSConnectSocket(XN_SOCKET_HANDLE Socket, XnUInt32 nMillisecsTimeout);
-XN_C_API XnStatus xnOSSetSocketBufferSize(XN_SOCKET_HANDLE Socket, const XnUInt32 nSocketBufferSize);
-XN_C_API XnStatus xnOSSendNetworkBuffer(XN_SOCKET_HANDLE Socket, const XnChar* cpBuffer, const XnUInt32 nBufferSize);
-XN_C_API XnStatus xnOSSendToNetworkBuffer(XN_SOCKET_HANDLE Socket, const XnChar* cpBuffer, const XnUInt32 nBufferSize, XN_SOCKET_HANDLE SocketTo);
-XN_C_API XnStatus xnOSReceiveNetworkBuffer(XN_SOCKET_HANDLE Socket, XnChar* cpBuffer, XnUInt32* pnBufferSize, XnUInt32 nMillisecsTimeout);
-XN_C_API XnStatus xnOSReceiveFromNetworkBuffer(XN_SOCKET_HANDLE Socket, XnChar* cpBuffer, XnUInt32* pnBufferSize, XN_SOCKET_HANDLE* SocketFrom);
+XN_C_API XnStatus XN_C_DECL xnOSInitNetwork();
+XN_C_API XnStatus XN_C_DECL xnOSShutdownNetwork();
+XN_C_API XnStatus XN_C_DECL xnOSCreateSocket(const XnOSSocketType SocketType, const XnChar* cpIPAddress, const XnUInt16 nPort, XN_SOCKET_HANDLE* SocketPtr);
+XN_C_API XnStatus XN_C_DECL xnOSCloseSocket(XN_SOCKET_HANDLE Socket);
+XN_C_API XnStatus XN_C_DECL xnOSBindSocket(XN_SOCKET_HANDLE Socket);
+XN_C_API XnStatus XN_C_DECL xnOSListenSocket(XN_SOCKET_HANDLE Socket);
+XN_C_API XnStatus XN_C_DECL xnOSAcceptSocket(XN_SOCKET_HANDLE ListenSocket, XN_SOCKET_HANDLE* AcceptSocketPtr, XnUInt32 nMillisecsTimeout);
+XN_C_API XnStatus XN_C_DECL xnOSConnectSocket(XN_SOCKET_HANDLE Socket, XnUInt32 nMillisecsTimeout);
+XN_C_API XnStatus XN_C_DECL xnOSSetSocketBufferSize(XN_SOCKET_HANDLE Socket, const XnUInt32 nSocketBufferSize);
+XN_C_API XnStatus XN_C_DECL xnOSSendNetworkBuffer(XN_SOCKET_HANDLE Socket, const XnChar* cpBuffer, const XnUInt32 nBufferSize);
+XN_C_API XnStatus XN_C_DECL xnOSSendToNetworkBuffer(XN_SOCKET_HANDLE Socket, const XnChar* cpBuffer, const XnUInt32 nBufferSize, XN_SOCKET_HANDLE SocketTo);
+XN_C_API XnStatus XN_C_DECL xnOSReceiveNetworkBuffer(XN_SOCKET_HANDLE Socket, XnChar* cpBuffer, XnUInt32* pnBufferSize, XnUInt32 nMillisecsTimeout);
+XN_C_API XnStatus XN_C_DECL xnOSReceiveFromNetworkBuffer(XN_SOCKET_HANDLE Socket, XnChar* cpBuffer, XnUInt32* pnBufferSize, XN_SOCKET_HANDLE* SocketFrom);
 
 // Shared Memory
 typedef struct XnOSSharedMemory XnOSSharedMemory, *XN_SHARED_MEMORY_HANDLE;
@@ -598,7 +588,7 @@ typedef struct XnOSSharedMemory XnOSSharedMemory, *XN_SHARED_MEMORY_HANDLE;
  * @param	nAccessFlags	[in]	Creation flags. Can contain XN_OS_FILE_READ, XN_OS_FILE_WRITE or both.
  * @param	phSharedMem		[out]	A handle to the shared-memory block.
  */
-XN_C_API XnStatus xnOSCreateSharedMemory(const XnChar* strName, XnUInt32 nSize, XnUInt32 nAccessFlags, XN_SHARED_MEMORY_HANDLE* phSharedMem);
+XN_C_API XnStatus XN_C_DECL xnOSCreateSharedMemory(const XnChar* strName, XnUInt32 nSize, XnUInt32 nAccessFlags, XN_SHARED_MEMORY_HANDLE* phSharedMem);
 
 /**
  * Opens a shared memory block, and returns the address in which it was mapped to the process' memory.
@@ -607,14 +597,14 @@ XN_C_API XnStatus xnOSCreateSharedMemory(const XnChar* strName, XnUInt32 nSize, 
  * @param	nAccessFlags	[in]	Creation flags. Must contain XN_OS_FILE_READ, and optionally XN_OS_FILE_WRITE.
  * @param	phSharedMem		[out]	A handle to the shared-memory block.
  */
-XN_C_API XnStatus xnOSOpenSharedMemory(const XnChar* strName, XnUInt32 nAccessFlags, XN_SHARED_MEMORY_HANDLE* phSharedMem);
+XN_C_API XnStatus XN_C_DECL xnOSOpenSharedMemory(const XnChar* strName, XnUInt32 nAccessFlags, XN_SHARED_MEMORY_HANDLE* phSharedMem);
 
 /**
  * Closes a shared memory block.
  *
  * @param	hSharedMem		[in]	A handle to the block to be closed.
  */
-XN_C_API XnStatus xnOSCloseSharedMemory(XN_SHARED_MEMORY_HANDLE hSharedMem);
+XN_C_API XnStatus XN_C_DECL xnOSCloseSharedMemory(XN_SHARED_MEMORY_HANDLE hSharedMem);
 
 /**
  * Gets the address in which the shared-memory block is mapped in this process.
@@ -622,14 +612,14 @@ XN_C_API XnStatus xnOSCloseSharedMemory(XN_SHARED_MEMORY_HANDLE hSharedMem);
  * @param	hSharedMem		[in]	A handle to the shared memory block.
  * @param	ppAddress		[out]	The address.
  */
-XN_C_API XnStatus xnOSSharedMemoryGetAddress(XN_SHARED_MEMORY_HANDLE hSharedMem, void** ppAddress);
+XN_C_API XnStatus XN_C_DECL xnOSSharedMemoryGetAddress(XN_SHARED_MEMORY_HANDLE hSharedMem, void** ppAddress);
 
 // Keyboard
-XN_C_API XnBool xnOSWasKeyboardHit();
-XN_C_API XnChar xnOSReadCharFromInput();
+XN_C_API XnBool XN_C_DECL xnOSWasKeyboardHit();
+XN_C_API XnChar XN_C_DECL xnOSReadCharFromInput();
 
 // Debug Utilities
-XN_C_API XnStatus xnOSGetCurrentCallStack(XnUInt32 nFramesToSkip, XnChar** astrFrames, XnUInt32 nMaxNameLength, XnUInt32* pnFrames);
+XN_C_API XnStatus XN_C_DECL xnOSGetCurrentCallStack(XnUInt32 nFramesToSkip, XnChar** astrFrames, XnUInt32 nMaxNameLength, XnUInt32* pnFrames);
 
 XN_STATUS_MESSAGE_MAP_START(XN_ERROR_GROUP_OS)
 XN_STATUS_MESSAGE(XN_STATUS_ALLOC_FAILED, "Memory allocation failed!")
@@ -765,6 +755,14 @@ XN_STATUS_MESSAGE(XN_STATUS_USB_FAILED_TO_REGISTER_CALLBACK, "Failed to register
 XN_STATUS_MESSAGE(XN_STATUS_OS_NETWORK_CONNECTION_CLOSED, "The network connection has been closed!")
 XN_STATUS_MESSAGE(XN_STATUS_OS_EVENT_OPEN_FAILED, "Xiron OS failed to open an event!")
 XN_STATUS_MESSAGE(XN_STATUS_OS_PROCESS_CREATION_FAILED, "Xiron OS failed to create a process!")
+XN_STATUS_MESSAGE(XN_STATUS_OS_SEMAPHORE_CREATION_FAILED, "Xiron OS Failed to create a semaphore!")
+XN_STATUS_MESSAGE(XN_STATUS_OS_SEMAPHORE_CLOSE_FAILED, "Xiron OS failed to close a semaphore!")
+XN_STATUS_MESSAGE(XN_STATUS_OS_SEMAPHORE_LOCK_FAILED, "Xiron OS failed to lock a semaphore!")
+XN_STATUS_MESSAGE(XN_STATUS_OS_SEMAPHORE_UNLOCK_FAILED, "Xiron OS failed to unlock a semaphore!")
+XN_STATUS_MESSAGE(XN_STATUS_OS_SEMAPHORE_TIMEOUT, "Xiron OS got a semaphore timeout!")
+XN_STATUS_MESSAGE(XN_STATUS_OS_INVALID_SEMAPHORE, "This Xiron OS semaphore is invalid!")
+XN_STATUS_MESSAGE(XN_STATUS_OS_ENV_VAR_NOT_FOUND, "The environment variable could not be found!")
+XN_STATUS_MESSAGE(XN_STATUS_USB_NO_REQUEST_PENDING, "There is no request pending!")
 XN_STATUS_MESSAGE_MAP_END(XN_ERROR_GROUP_OS)
 
 #endif //__XN_OS_H__

@@ -1,34 +1,18 @@
-OpenNI (Unstable branch)
-------------------------
+OpenNI (Version 1.3.2.1 Stable version - Jul 4th 2011)
+------------------------------------------------------
+
 Website: www.openni.org
 Forum: http://groups.google.com/group/openni-dev
 Wiki: Coming soon!
 
-Unstable branch new features:
-* Added support for multiple sensors.
-* Added a brand new .NET wrapper and .NET samples (with full support for Mono as well).
-  OpenNI.net is now also installed to the GAC.
-* Added a new "PlaybackSpeed" functionality to the Player.
-* ONI files seek optimization: added a data index for each node in ONI files. Seeking can be now done a lot faster!
-* Added MacOSX platform support.
-* Improved README! (much more detailed instructions...)
-
-Unstable branch fixes:
-* Linux: xnOSCreateProcess() would cause zombie processes.
-* When using WaitXUpdateAll, the MetaData of a non-updated node would not change its IsDataNew flag.
-* C++ wrappers: RegisterToGestureChange would register to pixel format change.
-* Shared memory: creating shared memory failed if the name contained slashes.
-* Xml query for max version checked the min version by mistake.
-
 Binaries are available at:
-http://www.openni.org/downloadfiles/openni-binaries/20-latest-unstable
+http://www.openni.org/downloadfiles/opennimodules/openni-binaries/21-stable
 
-Please use this with the sensor unstable branch located at:
+Please use this with the sensor stable branch located at:
 Source:
-https://github.com/PrimeSense/Sensor/tree/unstable
+https://github.com/PrimeSense/Sensor
 Binaries:
-http://www.openni.org/downloadfiles/openni-compliant-hardware/31-latest-unstable
-
+http://www.openni.org/downloadfiles/opennimodules/openni-compliant-hardware-binaries/32-stable
 
 Release Notes:
 --------------
@@ -36,7 +20,7 @@ Release Notes:
   If you have a CPU without such support, please remove the sse compiler flags from the make files.
   (A good hint for this error is that you encounter an "illegal instructions" messages)
 * MacOSX: Only OSX 10.6 (Snow Leopard) with an Intel based CPU is currently supported.
-
+* MacOSX: Drawing the depth/image maps via the mono .NET wrapper can be slow and will cause the FPS to drop.
   
 Build Notes:
 ------------
@@ -49,12 +33,12 @@ Windows:
 		3) PyWin32
 		   From: http://sourceforge.net/projects/pywin32/files/pywin32/
 		   Please make sure you download the version that matches your exact python version.
-		4) NSIS 2.46
-		   From: http://sourceforge.net/projects/nsis/files/NSIS%202/2.46/
-		5) NSIS-2.46-strlen_8192.zip patch
-		   From: http://sourceforge.net/projects/nsis/files/NSIS%202/2.46/
-		   This is a required patch to fix a critical bug in NSIS with long environment variables.
-		   Simply unpack it into the directory where NSIS is installed and overwrite all files.
+		4) WIX 3.5
+		   From: http://wix.codeplex.com/releases/view/60102
+		5) JDK 6.0
+           From: http://www.oracle.com/technetwork/java/javase/downloads/jdk-6u26-download-400750.html
+		   You must also define an environment variable called "JAVA_HOME" that points to the JDK installation directory.
+		   For example: set JAVA_HOME=c:\Program Files\Java\jdk1.6.0_26
 
 	Optional requirements (To build the USB device driver):
 		1) Microsoft WDK
@@ -69,10 +53,12 @@ Windows:
 		   From: http://www.graphviz.org/Download_windows.php
 	
 	Building OpenNI:
-		1) Go to the directory: "Platform\Win32\CreateRedist".
-		   Run the script: "RedistMaker.bat".
+	    1) Uninstall the previous version.
+		2) Go to the directory: "Platform\Win32\CreateRedist".
+		   x86 32-bit - Run the script: "RedistMaker.bat".
+		   x64 64-bit - Run the script: "RedistMaker.bat y 64 y".
 		   This will compile and prepare the redist exe files that includes everything.
-		2) Install the exe you've just made which is located in Platform\Win32\CreateRedist\Final\OPENNI-Win32-1.x.x.x.exe 
+		3) Install the exe you've just made which is located in Platform\Win32\CreateRedist\Final\OPENNI-WinXX-1.X.X.X.exe 
 		   The installer will also create the necessary environment variables (OPEN_NI_xxx), add the DLLs to the system path and register the internal modules with NiReg.
 		   
 		The visual studio solution is located in: Platform\Win32\Build\OpenNI.sln.
@@ -80,7 +66,7 @@ Windows:
 		When doing development it is recommended that you change the environment variables to point to your development directory instead of the default C:\Program Files\OpenNI.
 		(This can save you lots back and forth file copying...)
 
-		Important: Please note that even though the directory is called Win32, you can also use it to compile it for 64-bit targets (AMD64/x64).
+		Important: Please note that even though the directory is called Win32, you can also use it to compile it for 64-bit targets (Win64/AMD64/x64).
 	
 	Building the USB driver (Optional):
 		Simply go into the directory "OpenNI\Platform\Win32\Driver\Build" and run the "BuildAll.bat" script.
@@ -105,6 +91,12 @@ Linux:
 		   From: http://freeglut.sourceforge.net/index.php#download
 		   Or via apt:
 		   sudo apt-get install freeglut3-dev
+		5) JDK 6.0
+		   From: http://www.oracle.com/technetwork/java/javase/downloads/jdk-6u26-download-400750.html
+		   Or via apt:
+		   sudo add-apt-repository "deb http://archive.canonical.com/ lucid partner"
+		   sudo apt-get update
+		   sudo apt-get install sun-java6-jdk
 		   
 	Optional Requirements (To build the documentation):
 		1) Doxygen
@@ -143,22 +135,32 @@ Linux:
 	
 MacOSX:
 	Requirements:
-		1) Xcode 3.2.5
+		1) Xcode 3.2.6
 		   From: http://developer.apple.com/devcenter/mac/index.action
-		   https://developer.apple.com/ios/download.action?path=/ios/ios_sdk_4.2__final/xcode_3.2.5_and_ios_sdk_4.2_final.dmg
+		   http://developer.apple.com/devcenter/download.action?path=/Developer_Tools/xcode_3.2.6_and_ios_sdk_4.3__final/xcode_3.2.6_and_ios_sdk_4.3.dmg
 		   Please note that you need to register as a mac developer (It's free!).
-		2) MacPorts
-		   From: http://www.macports.org/install.php
-		   http://distfiles.macports.org/MacPorts/MacPorts-1.9.2-10.6-SnowLeopard.dmg
-		3) LibTool
-		   Installed vis MacPorts: 
-		   sudo port install libtool
-		4) LibUSB 1.0.8 (The patched development tree)
-		   Installed vis MacPorts:
-		   sudo port install libusb-devel +universal
-		   Note: Do not forget the +universal, it's very important!!
-		         If you're previously already installed libusb-devel then use "sudo port uninstall libusb-devel" and reinstall it again with the +universal flag.
-
+		2) LibUSB 1.0.8 (The patched development tree)
+		   This can be installed by two ways:		   
+		   A) MacPorts:      
+		      From: http://www.macports.org/install.php
+		      http://distfiles.macports.org/MacPorts/MacPorts-1.9.2-10.6-SnowLeopard.dmg			  
+			  * You will also need to install LibTool:
+			      sudo port install libtool			  
+			  * And finally, LibUSB itself:
+			      sudo port install libusb-devel +universal
+		      Note: Do not forget the +universal, it's very important!!
+		            If you're previously already installed libusb-devel then use "sudo port uninstall libusb-devel" and reinstall it again with the +universal flag.
+					
+		   B) Compile the source & install LibUSB yourself:
+			  * Change the working directory to the prerequisites directory: "cd Platform\Linux-x86\Build\Prerequisites"
+			  * Extract the tar file by running: "tar -xvjf libusb-1.0.8-osx.tar.bz2"
+			  * Change the working directory to the libusb directory: "cd libusb"
+			  * Run the following commands to build and install libusb:
+			      /autogen.sh
+			      ./configure LDFLAGS='-framework IOKit -framework CoreFoundation -arch i386 -arch x86_64 ' CFLAGS='-arch i386 -arch x86_64' --disable-dependency-tracking --prefix=/opt/local
+			      make
+			      sudo make install
+				 
 	Optional Requirements (To build the documentation):
 		1) Doxygen
 		   Installed vis MacPorts:

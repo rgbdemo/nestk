@@ -1,12 +1,3 @@
 set(${TINYXML_LIB_NAME}_sources tinyxml.cpp tinystr.cpp tinyxmlerror.cpp tinyxmlparser.cpp)
 
-# No exports symbols, must be static with MSVC.
-IF (WIN32)
-  add_library(${TINYXML_LIB_NAME} STATIC ${${TINYXML_LIB_NAME}_sources})
-ELSE()
-  add_library(${TINYXML_LIB_NAME} SHARED ${${TINYXML_LIB_NAME}_sources})
-ENDIF()
-SET_TARGET_PROPERTIES(${TINYXML_LIB_NAME} PROPERTIES
-  ARCHIVE_OUTPUT_DIRECTORY "${LIBRARY_OUTPUT_PATH}"
-  RUNTIME_OUTPUT_DIRECTORY "${EXECUTABLE_OUTPUT_PATH}")
-INSTALL(TARGETS ${TINYXML_LIB_NAME} DESTINATION lib)
+add_library(${TINYXML_LIB_NAME} STATIC ${${TINYXML_LIB_NAME}_sources})

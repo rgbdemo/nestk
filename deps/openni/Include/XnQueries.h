@@ -1,28 +1,24 @@
-/*****************************************************************************
-*                                                                            *
-*  OpenNI 1.0 Alpha                                                          *
-*  Copyright (C) 2010 PrimeSense Ltd.                                        *
-*                                                                            *
-*  This file is part of OpenNI.                                              *
-*                                                                            *
-*  OpenNI is free software: you can redistribute it and/or modify            *
-*  it under the terms of the GNU Lesser General Public License as published  *
-*  by the Free Software Foundation, either version 3 of the License, or      *
-*  (at your option) any later version.                                       *
-*                                                                            *
-*  OpenNI is distributed in the hope that it will be useful,                 *
-*  but WITHOUT ANY WARRANTY; without even the implied warranty of            *
-*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the              *
-*  GNU Lesser General Public License for more details.                       *
-*                                                                            *
-*  You should have received a copy of the GNU Lesser General Public License  *
-*  along with OpenNI. If not, see <http://www.gnu.org/licenses/>.            *
-*                                                                            *
-*****************************************************************************/
-
-
-
-
+/****************************************************************************
+*                                                                           *
+*  OpenNI 1.1 Alpha                                                         *
+*  Copyright (C) 2011 PrimeSense Ltd.                                       *
+*                                                                           *
+*  This file is part of OpenNI.                                             *
+*                                                                           *
+*  OpenNI is free software: you can redistribute it and/or modify           *
+*  it under the terms of the GNU Lesser General Public License as published *
+*  by the Free Software Foundation, either version 3 of the License, or     *
+*  (at your option) any later version.                                      *
+*                                                                           *
+*  OpenNI is distributed in the hope that it will be useful,                *
+*  but WITHOUT ANY WARRANTY; without even the implied warranty of           *
+*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the             *
+*  GNU Lesser General Public License for more details.                      *
+*                                                                           *
+*  You should have received a copy of the GNU Lesser General Public License *
+*  along with OpenNI. If not, see <http://www.gnu.org/licenses/>.           *
+*                                                                           *
+****************************************************************************/
 #ifndef __XN_QUERIES_H__
 #define __XN_QUERIES_H__
 
@@ -47,14 +43,14 @@
  *
  * @param	ppQuery		[out]	Created query object.
  */
-XN_C_API XnStatus xnNodeQueryAllocate(XnNodeQuery** ppQuery);
+XN_C_API XnStatus XN_C_DECL xnNodeQueryAllocate(XnNodeQuery** ppQuery);
 
 /**
  * Frees a query object previously created using @ref xnNodeQueryAllocate().
  *
  * @param	pQuery		[in]	Query object.
  */
-XN_C_API void xnNodeQueryFree(XnNodeQuery* pQuery);
+XN_C_API void XN_C_DECL xnNodeQueryFree(XnNodeQuery* pQuery);
 
 /**
  * Sets the requested vendor.
@@ -62,7 +58,7 @@ XN_C_API void xnNodeQueryFree(XnNodeQuery* pQuery);
  * @param	pQuery		[in]	Query object.
  * @param	strVendor	[in]	Vendor Name.
  */
-XN_C_API XnStatus xnNodeQuerySetVendor(XnNodeQuery* pQuery, const XnChar* strVendor);
+XN_C_API XnStatus XN_C_DECL xnNodeQuerySetVendor(XnNodeQuery* pQuery, const XnChar* strVendor);
 
 /**
  * Sets the requested name.
@@ -70,7 +66,7 @@ XN_C_API XnStatus xnNodeQuerySetVendor(XnNodeQuery* pQuery, const XnChar* strVen
  * @param	pQuery		[in]	Query object.
  * @param	strName		[in]	Product Name.
  */
-XN_C_API XnStatus xnNodeQuerySetName(XnNodeQuery* pQuery, const XnChar* strName);
+XN_C_API XnStatus XN_C_DECL xnNodeQuerySetName(XnNodeQuery* pQuery, const XnChar* strName);
 
 /**
  * Sets the minimum required version.
@@ -78,7 +74,7 @@ XN_C_API XnStatus xnNodeQuerySetName(XnNodeQuery* pQuery, const XnChar* strName)
  * @param	pQuery		[in]	Query object.
  * @param	pMinVersion	[in]	Min Version. 
  */
-XN_C_API XnStatus xnNodeQuerySetMinVersion(XnNodeQuery* pQuery, const XnVersion* pMinVersion);
+XN_C_API XnStatus XN_C_DECL xnNodeQuerySetMinVersion(XnNodeQuery* pQuery, const XnVersion* pMinVersion);
 
 /**
  * Sets the maximum required version. 
@@ -86,7 +82,7 @@ XN_C_API XnStatus xnNodeQuerySetMinVersion(XnNodeQuery* pQuery, const XnVersion*
  * @param	pQuery		[in]	Query object.
  * @param	pMaxVersion	[in]	Max Version. 
  */
-XN_C_API XnStatus xnNodeQuerySetMaxVersion(XnNodeQuery* pQuery, const XnVersion* pMaxVersion);
+XN_C_API XnStatus XN_C_DECL xnNodeQuerySetMaxVersion(XnNodeQuery* pQuery, const XnVersion* pMaxVersion);
 
 /**
  * Adds a capability that the node must support. Note that for checking if a capability is supported, 
@@ -95,7 +91,7 @@ XN_C_API XnStatus xnNodeQuerySetMaxVersion(XnNodeQuery* pQuery, const XnVersion*
  * @param	pQuery				[in]	Query object.
  * @param	strNeededCapability	[in]	A needed capability name.
  */
-XN_C_API XnStatus xnNodeQueryAddSupportedCapability(XnNodeQuery* pQuery, const XnChar* strNeededCapability);
+XN_C_API XnStatus XN_C_DECL xnNodeQueryAddSupportedCapability(XnNodeQuery* pQuery, const XnChar* strNeededCapability);
 
 /**
  * Adds a MapOutputMode that the node must support. Note that for checking if a capability is supported, 
@@ -105,7 +101,7 @@ XN_C_API XnStatus xnNodeQueryAddSupportedCapability(XnNodeQuery* pQuery, const X
  * @param	pMapOutputMode	[in]	A map output mode. Each field of the mode can be set to (-1), meaning 
  * results will not be filtered by this field. 
  */
-XN_C_API XnStatus xnNodeQueryAddSupportedMapOutputMode(XnNodeQuery* pQuery, const XnMapOutputMode* pMapOutputMode);
+XN_C_API XnStatus XN_C_DECL xnNodeQueryAddSupportedMapOutputMode(XnNodeQuery* pQuery, const XnMapOutputMode* pMapOutputMode);
 
 /**
  * Sets the minimum required user positions this node supports. Note that for checking if a capability is supported, 
@@ -114,7 +110,7 @@ XN_C_API XnStatus xnNodeQueryAddSupportedMapOutputMode(XnNodeQuery* pQuery, cons
  * @param	pQuery		[in]	Query object.
  * @param	nCount		[in]	The number of required positions.
  */
-XN_C_API XnStatus xnNodeQuerySetSupportedMinUserPositions(XnNodeQuery* pQuery, const XnUInt32 nCount);
+XN_C_API XnStatus XN_C_DECL xnNodeQuerySetSupportedMinUserPositions(XnNodeQuery* pQuery, const XnUInt32 nCount);
 
 /**
  * Filter results so that only existing nodes will be returned.
@@ -122,7 +118,15 @@ XN_C_API XnStatus xnNodeQuerySetSupportedMinUserPositions(XnNodeQuery* pQuery, c
  * @param	pQuery			[in]	Query object.
  * @param	bExistingNode	[in]	TRUE to return only existing ones, FALSE otherwise.
  */
-XN_C_API XnStatus xnNodeQuerySetExistingNodeOnly(XnNodeQuery* pQuery, XnBool bExistingNode);
+XN_C_API XnStatus XN_C_DECL xnNodeQuerySetExistingNodeOnly(XnNodeQuery* pQuery, XnBool bExistingNode);
+
+/**
+ * Filter results so that only non-existing nodes will be returned.
+ *
+ * @param	pQuery			 [in]	Query object.
+ * @param	bNonExistingNode [in]	TRUE to return only non-existing ones, FALSE otherwise.
+ */
+XN_C_API XnStatus XN_C_DECL xnNodeQuerySetNonExistingNodeOnly(XnNodeQuery* pQuery, XnBool bNonExistingNode);
 
 /**
  * Adds a needed node.
@@ -130,7 +134,7 @@ XN_C_API XnStatus xnNodeQuerySetExistingNodeOnly(XnNodeQuery* pQuery, XnBool bEx
  * @param	pQuery			[in]	Query object.
  * @param	strInstanceName	[in]	The name of the needed instance.
  */
-XN_C_API XnStatus xnNodeQueryAddNeededNode(XnNodeQuery* pQuery, const XnChar* strInstanceName);
+XN_C_API XnStatus XN_C_DECL xnNodeQueryAddNeededNode(XnNodeQuery* pQuery, const XnChar* strInstanceName);
 
 /**
  * Sets the creation info field of a query object.
@@ -138,7 +142,7 @@ XN_C_API XnStatus xnNodeQueryAddNeededNode(XnNodeQuery* pQuery, const XnChar* st
  * @param	pQuery			[in]	Query object.
  * @param	strCreationInfo	[in]	The creation info to set in the query.
  */
-XN_C_API XnStatus xnNodeQuerySetCreationInfo(XnNodeQuery* pQuery, const XnChar* strCreationInfo);
+XN_C_API XnStatus XN_C_DECL xnNodeQuerySetCreationInfo(XnNodeQuery* pQuery, const XnChar* strCreationInfo);
 
 /**
  * Filters a list of nodes according to query. The list will contain only nodes that match all query terms.
@@ -148,7 +152,7 @@ XN_C_API XnStatus xnNodeQuerySetCreationInfo(XnNodeQuery* pQuery, const XnChar* 
  * @param	pQuery		[in]		Query object.
  * @param	pList		[in]		The list to be filtered.
  */
-XN_C_API XnStatus xnNodeQueryFilterList(XnContext* pContext, const XnNodeQuery* pQuery, XnNodeInfoList* pList);
+XN_C_API XnStatus XN_C_DECL xnNodeQueryFilterList(XnContext* pContext, const XnNodeQuery* pQuery, XnNodeInfoList* pList);
 
 /** @} */
 

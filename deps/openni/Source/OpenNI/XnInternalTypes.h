@@ -1,26 +1,24 @@
-/*****************************************************************************
-*                                                                            *
-*  OpenNI 1.0 Alpha                                                          *
-*  Copyright (C) 2010 PrimeSense Ltd.                                        *
-*                                                                            *
-*  This file is part of OpenNI.                                              *
-*                                                                            *
-*  OpenNI is free software: you can redistribute it and/or modify            *
-*  it under the terms of the GNU Lesser General Public License as published  *
-*  by the Free Software Foundation, either version 3 of the License, or      *
-*  (at your option) any later version.                                       *
-*                                                                            *
-*  OpenNI is distributed in the hope that it will be useful,                 *
-*  but WITHOUT ANY WARRANTY; without even the implied warranty of            *
-*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the              *
-*  GNU Lesser General Public License for more details.                       *
-*                                                                            *
-*  You should have received a copy of the GNU Lesser General Public License  *
-*  along with OpenNI. If not, see <http://www.gnu.org/licenses/>.            *
-*                                                                            *
-*****************************************************************************/
-
-
+/****************************************************************************
+*                                                                           *
+*  OpenNI 1.1 Alpha                                                         *
+*  Copyright (C) 2011 PrimeSense Ltd.                                       *
+*                                                                           *
+*  This file is part of OpenNI.                                             *
+*                                                                           *
+*  OpenNI is free software: you can redistribute it and/or modify           *
+*  it under the terms of the GNU Lesser General Public License as published *
+*  by the Free Software Foundation, either version 3 of the License, or     *
+*  (at your option) any later version.                                      *
+*                                                                           *
+*  OpenNI is distributed in the hope that it will be useful,                *
+*  but WITHOUT ANY WARRANTY; without even the implied warranty of           *
+*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the             *
+*  GNU Lesser General Public License for more details.                      *
+*                                                                           *
+*  You should have received a copy of the GNU Lesser General Public License *
+*  along with OpenNI. If not, see <http://www.gnu.org/licenses/>.           *
+*                                                                           *
+****************************************************************************/
 #ifndef __XN_INTERNAL_TYPES_H__
 #define __XN_INTERNAL_TYPES_H__
 
@@ -30,6 +28,8 @@
 #include <XnTypes.h>
 #include <XnStringsHash.h>
 #include <XnFPSCalculator.h>
+#include <XnBitSet.h>
+#include <XnDump.h>
 
 #define XN_OPEN_NI_XML_ROOT_NAME	"OpenNI"
 
@@ -89,7 +89,7 @@ XN_DECLARE_DEFAULT_HASH(XnModuleStateCookie*, XnModuleStateCookie*, XnModuleStat
 
 struct XnInternalNodeData
 {
-	XnProductionNodeType type;
+	XnBitSet typeHierarchy;
 	XnModuleInstance* pModuleInstance;
 	XnNodeInfo* pNodeInfo;
 	XnUInt32 nRefCount;
@@ -116,9 +116,9 @@ struct XnInternalNodeData
 	XnBool* pbMetaDataIsNewFlag;
 	xn::NodePrivateData* pPrivateData;
 	XnBool bWasDataRead; // Changes to TRUE on the first UpdateData() called.
+	XN_CRITICAL_SECTION_HANDLE hLock;
+	XnBool bIsOwnedByContext;
 };
-
-#pragma pack(push, 1)
 
 struct XnGestureRecognizedParams
 {
@@ -154,6 +154,7 @@ XN_DECLARE_STRINGS_HASH(XnInternalNodeData*, XnNodesMap)
 XN_DECLARE_DEFAULT_HASH(const XnNodeInfo*, XnValue, XnProductionNodesSet)
 
 XN_DECLARE_EVENT_1ARG(XnErrorStateChangedEvent, IXnErrorStateChangedEvent, XnStatus, errorState)
+XN_DECLARE_EVENT_1ARG(XnContextShuttingDownEvent, IXnContextShuttingDownEvent, XnContext*, pContext);
 
 class XnModuleLoader;
 
@@ -170,6 +171,11 @@ struct XnContext
 	XN_EVENT_HANDLE hNewDataEvent;
 	XnUInt32 nLastLockID;
 	XnFPSData readFPS;
+	XnUInt32 nRefCount;
+	XN_CRITICAL_SECTION_HANDLE hLock;
+	XnNodeInfoList* pOwnedNodes;
+	XnDump dumpRefCount;
+	XnContextShuttingDownEvent* pShutdownEvent;
 };
 
 struct XnNodeInfo
@@ -194,6 +200,12 @@ struct XnNodeInfo
 
 	/** Ref count */
 	XnUInt32 nRefCount;
+
+	/** additional data */
+	const void* pAdditionalData;
+
+	/** Callback function to be called before freeing the object. */
+	XnFreeHandler pAdditionalDataFreeFunc;
 };
 
 struct XnNodeInfoListNode
@@ -213,9 +225,5 @@ struct XnNodeInfoList
 	XnNodeInfoListNode* pFirst;
 	XnNodeInfoListNode* pLast;
 };
-
-//////////////////////////////////////////////////////////////////////////////////////////
-
-#pragma pack(pop)
 
 #endif //__XN_INTERNAL_TYPES_H__

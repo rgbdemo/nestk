@@ -1,17 +1,24 @@
 cmake_minimum_required(VERSION 2.8)
 
-project(OpenNI)
+if(NOT DEFINED MANCTL_CHANGES)
+    set(MANCTL_CHANGES ON)
+endif()
 
-OPTION(OPENNI_BUILD_SAMPLES "Build OpenNI samples" 0)
+project(OpenNI)
 
 # Options
 # ---------
 add_definitions(-DCUSTOM_SAMPLE_XML_PATH="config/SamplesConfig.xml")
 add_definitions(-DCUSTOM_SAMPLE_USER_XML_PATH="config/Sample-User.xml")
+if(MANCTL_CHANGES)
+add_definitions(-DXN_USE_CUSTOM_MODULES_FILE=xn_modules_file)
+else()
 add_definitions(-DXN_USE_CUSTOM_MODULES_FILE="config/modules.xml")
+endif()
+
 ADD_DEFINITIONS(-DUSE_GLUT)
 
-# Find platform 
+# Find platform
 # -------------
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 	set(OPENNI_PLATFORM_LINUX true)
@@ -44,11 +51,10 @@ INCLUDE_DIRECTORIES(${OPENNI_INCLUDE_DIR})
 IF (APPLE)
   LINK_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/Nite/Lib/MacOSX)
 ELSEIF (UNIX)
-  IF(ARCHITECTURE_IS_X86_64)
-    LINK_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/Nite/Lib/Linux64)
-  ELSE()
-    LINK_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/Nite/Lib/Linux32)
+  IF(ARCHITECURE_IS_X86_64)
+    MESSAGE("WARNING: 64 bit architecture is not guaranteed on Linux.")
   ENDIF()
+  LINK_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/Nite/Lib/Linux32)
 ENDIF()
 
 # Find JPEG system lib
@@ -58,13 +64,12 @@ if(NOT JPEG_FOUND)
 	# when not found use the one in the externals folder, so we can compile!
 	set(JPEG_FOUND true)
 	set(JPEG_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Source/External/LibJPEG/")
-        set(JPEG_LIBRARY "jpeg")
 	add_subdirectory("./Source/External/LibJPEG/")
 endif()
 
 # Find USB lib
 # -------------
-if(NOT WIN32) 
+if(NOT WIN32)
   SET(USB_INCLUDE_DIR "${LIBUSB_1_INCLUDE_DIR}")
   SET(USB_LIBRARY ${LIBUSB_1_LIBRARY})
 endif()
@@ -78,13 +83,12 @@ endif()
 
 # Use external libraries.
 # -----------------------
-add_subdirectory("./Source/External/TinyXml/") # @todo only when lib was not found 
+add_subdirectory("./Source/External/TinyXml/") # @todo only when lib was not found
 add_subdirectory("./Source/OpenNI/")
 add_subdirectory("./Source/Modules/")
 
 # Add samples
 # ---------------------------
-IF (OPENNI_BUILD_SAMPLES)
 add_subdirectory("./Samples/NiAudioSample") #Compiles and runs on Mac
 add_subdirectory("./Samples/NiBackRecorder") #Compiles and runs on Mac
 add_subdirectory("./Samples/NiConvertXToONI") #Compiles and runs on Mac
@@ -94,9 +98,9 @@ add_subdirectory("./Samples/NiSampleModule") #Library compiles on Mac
 add_subdirectory("./Samples/NiSimpleCreate") #Compiles and runs on Mac
 add_subdirectory("./Samples/NiSimpleRead")  #Compiles and runs on Mac
 add_subdirectory("./Samples/NiSimpleViewer") #Compiles and runs on Mac
-add_subdirectory("./Samples/NiUserTracker") #Compiles and runs on Mac
+#Disable because of opengles.
+#add_subdirectory("./Samples/NiUserTracker") #Compiles and runs on Mac
 add_subdirectory("./Samples/NiViewer") #Compiles and runs on Mac
-ENDIF()
 
 # Utils
 # ---------------------------
@@ -119,7 +123,4 @@ ELSEIF(UNIX)
                   WORKING_DIRECTORY ${EXECUTABLE_OUTPUT_PATH}/config)
 ENDIF()
 
-foreach(dir . MacOSX Linux-x86 Linux-Arm Win32)
-  file(GLOB HEADERS "Include/${dir}/*.h")
-  INSTALL(FILES ${HEADERS} DESTINATION include/${dir})
-endforeach()
+install(DIRECTORY ${EXECUTABLE_OUTPUT_PATH}/config DESTINATION bin/)

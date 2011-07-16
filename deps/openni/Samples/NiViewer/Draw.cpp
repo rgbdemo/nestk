@@ -1,28 +1,24 @@
-/*****************************************************************************
-*                                                                            *
-*  OpenNI 1.0 Alpha                                                          *
-*  Copyright (C) 2010 PrimeSense Ltd.                                        *
-*                                                                            *
-*  This file is part of OpenNI.                                              *
-*                                                                            *
-*  OpenNI is free software: you can redistribute it and/or modify            *
-*  it under the terms of the GNU Lesser General Public License as published  *
-*  by the Free Software Foundation, either version 3 of the License, or      *
-*  (at your option) any later version.                                       *
-*                                                                            *
-*  OpenNI is distributed in the hope that it will be useful,                 *
-*  but WITHOUT ANY WARRANTY; without even the implied warranty of            *
-*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the              *
-*  GNU Lesser General Public License for more details.                       *
-*                                                                            *
-*  You should have received a copy of the GNU Lesser General Public License  *
-*  along with OpenNI. If not, see <http://www.gnu.org/licenses/>.            *
-*                                                                            *
-*****************************************************************************/
-
-
-
-
+/****************************************************************************
+*                                                                           *
+*  OpenNI 1.1 Alpha                                                         *
+*  Copyright (C) 2011 PrimeSense Ltd.                                       *
+*                                                                           *
+*  This file is part of OpenNI.                                             *
+*                                                                           *
+*  OpenNI is free software: you can redistribute it and/or modify           *
+*  it under the terms of the GNU Lesser General Public License as published *
+*  by the Free Software Foundation, either version 3 of the License, or     *
+*  (at your option) any later version.                                      *
+*                                                                           *
+*  OpenNI is distributed in the hope that it will be useful,                *
+*  but WITHOUT ANY WARRANTY; without even the implied warranty of           *
+*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the             *
+*  GNU Lesser General Public License for more details.                      *
+*                                                                           *
+*  You should have received a copy of the GNU Lesser General Public License *
+*  along with OpenNI. If not, see <http://www.gnu.org/licenses/>.           *
+*                                                                           *
+****************************************************************************/
 // --------------------------------
 // Includes
 // --------------------------------
@@ -120,7 +116,7 @@ typedef struct DrawUserInput
 
 DrawUserInput g_DrawUserInput;
 
-float g_fMaxDepth;
+float g_fMaxDepth = 0;
 
 DrawConfigPreset g_Presets[PRESET_COUNT] = 
 {
@@ -531,11 +527,6 @@ void drawInit()
 
 	TextureMapUpdate(&g_texBackground);
 
-	if (getDepthGenerator() != NULL)
-	{
-		g_fMaxDepth = getDepthGenerator()->GetDeviceMaxDepth();
-	}
-
 	mouseInputRegisterForSelectionRectangle(drawSelectionChanged);
 	mouseInputRegisterForCursorMovement(drawCursorMoved);
 }
@@ -772,17 +763,17 @@ void drawClosedStream(UIntRect* pLocation, const char* csStreamName)
 
 void drawColorImage(UIntRect* pLocation, UIntPair* pPointer)
 {
-	if (!isImageOn() && !isIROn())
-	{
-		drawClosedStream(pLocation, "Image");
-		return;
-	}
-
 	if (g_DrawConfig.Streams.bBackground)
 		TextureMapDraw(&g_texBackground, pLocation);
 
 	if (g_DrawConfig.Streams.Image.Coloring == IMAGE_OFF)
 		return;
+
+	if (!isImageOn() && !isIROn())
+	{
+		drawClosedStream(pLocation, "Image");
+		return;
+	}
 
 	const MapMetaData* pImageMD;
 	const XnUInt8* pImage = NULL;
@@ -1132,6 +1123,7 @@ void drawPointerMode(UIntPair* pPointer)
 	}
 
 	int nYLocation = WIN_SIZE_Y - 88;
+	glColor3f(1,0,0);
 	glRasterPos2i(10,nYLocation);
 	glPrintString(GLUT_BITMAP_HELVETICA_18, buf);
 	nYLocation -= 26;
@@ -1176,6 +1168,7 @@ void drawCenteredMessage(void* font, int y, const char* message, float fRed, flo
 	const XnUInt32 nMaxLines = 5;
 	XnChar buf[512];
 	XnChar* aLines[nMaxLines];
+	XnUInt32 anLinesWidths[nMaxLines];
 	XnUInt32 nLine = 0;
 	XnUInt32 nLineLengthChars = 0;
 	XnUInt32 nLineLengthPixels = 0;
@@ -1193,6 +1186,7 @@ void drawCenteredMessage(void* font, int y, const char* message, float fRed, flo
 			{
 				aLines[nLine][nLineLengthChars++] = '\0';
 				aLines[nLine+1] = &aLines[nLine][nLineLengthChars];
+				anLinesWidths[nLine] = nLineLengthPixels;
 				nLine++;
 				if (nLineLengthPixels > nMaxLineLength)
 				{
@@ -1237,7 +1231,7 @@ void drawCenteredMessage(void* font, int y, const char* message, float fRed, flo
 	glColor3f(fRed, fGreen, fBlue);
 	for (XnUInt32 i = 0; i < nLine; ++i)
 	{
-		glRasterPos2i(nXLocation, nYLocation + i * nHeight);
+		glRasterPos2i(nXLocation + (nMaxLineLength - anLinesWidths[i])/2, nYLocation + i * nHeight);
 		glPrintString(font, aLines[i]);
 	}
 }
@@ -1474,10 +1468,14 @@ void drawPlaybackSpeed()
 	XnDouble dSpeed = getPlaybackSpeed();
 	if (dSpeed != 1.0)
 	{
-		XnChar strSpeed[20];
-		sprintf(strSpeed, "x%.3f", dSpeed);
+		XnChar strSpeed[30];
+		int len = sprintf(strSpeed, "x%g", dSpeed);
+		int width = 0;
+		for (int i = 0; i < len; ++i)
+			width += glutBitmapWidth(GLUT_BITMAP_TIMES_ROMAN_24, strSpeed[i]);
+
 		glColor3f(0, 1, 0);
-		glRasterPos2i(WIN_SIZE_X - 80, 30);
+		glRasterPos2i(WIN_SIZE_X - width - 3, 30);
 		glPrintString(GLUT_BITMAP_TIMES_ROMAN_24, strSpeed);
 	}
 }
@@ -1507,6 +1505,7 @@ void drawFrame()
 	const DepthMetaData* pDepthMD = getDepthMetaData();
 	if (isDepthOn())
 	{
+		g_fMaxDepth = getDepthGenerator()->GetDeviceMaxDepth();
 		TextureMapInit(&g_texDepth, pDepthMD->FullXRes(), pDepthMD->FullYRes(), 4, pDepthMD->XRes(), pDepthMD->YRes());
 		fixLocation(&g_DrawConfig.DepthLocation, pDepthMD->FullXRes(), pDepthMD->FullYRes());
 	}

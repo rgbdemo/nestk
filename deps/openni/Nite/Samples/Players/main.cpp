@@ -1,3 +1,7 @@
+#ifndef MANCTL_CHANGES
+#    define MANCTL_CHANGES 1
+#endif
+
 /****************************************************************************
 *                                                                           *
 *   Nite 1.3 - Players Sample                                               *
@@ -68,7 +72,13 @@ void StopCapture()
 	if (g_pRecorder != NULL)
 	{
 		g_pRecorder->RemoveNodeFromRecording(g_DepthGenerator);
+
+#if MANCTL_CHANGES
+		g_pRecorder->Release();
+#else
 		g_pRecorder->Unref();
+#endif
+
 		delete g_pRecorder;
 	}
 	g_pRecorder = NULL;

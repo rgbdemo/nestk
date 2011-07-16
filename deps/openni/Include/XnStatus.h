@@ -1,30 +1,26 @@
-/*****************************************************************************
-*                                                                            *
-*  OpenNI 1.0 Alpha                                                          *
-*  Copyright (C) 2010 PrimeSense Ltd.                                        *
-*                                                                            *
-*  This file is part of OpenNI.                                              *
-*                                                                            *
-*  OpenNI is free software: you can redistribute it and/or modify            *
-*  it under the terms of the GNU Lesser General Public License as published  *
-*  by the Free Software Foundation, either version 3 of the License, or      *
-*  (at your option) any later version.                                       *
-*                                                                            *
-*  OpenNI is distributed in the hope that it will be useful,                 *
-*  but WITHOUT ANY WARRANTY; without even the implied warranty of            *
-*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the              *
-*  GNU Lesser General Public License for more details.                       *
-*                                                                            *
-*  You should have received a copy of the GNU Lesser General Public License  *
-*  along with OpenNI. If not, see <http://www.gnu.org/licenses/>.            *
-*                                                                            *
-*****************************************************************************/
-
-
-
-
-#ifndef __XN_OPEN_NITE_STATUS_H__
-#define __XN_OPEN_NITE_STATUS_H__
+/****************************************************************************
+*                                                                           *
+*  OpenNI 1.1 Alpha                                                         *
+*  Copyright (C) 2011 PrimeSense Ltd.                                       *
+*                                                                           *
+*  This file is part of OpenNI.                                             *
+*                                                                           *
+*  OpenNI is free software: you can redistribute it and/or modify           *
+*  it under the terms of the GNU Lesser General Public License as published *
+*  by the Free Software Foundation, either version 3 of the License, or     *
+*  (at your option) any later version.                                      *
+*                                                                           *
+*  OpenNI is distributed in the hope that it will be useful,                *
+*  but WITHOUT ANY WARRANTY; without even the implied warranty of           *
+*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the             *
+*  GNU Lesser General Public License for more details.                      *
+*                                                                           *
+*  You should have received a copy of the GNU Lesser General Public License *
+*  along with OpenNI. If not, see <http://www.gnu.org/licenses/>.           *
+*                                                                           *
+****************************************************************************/
+#ifndef __XN_OPEN_NI_STATUS_H__
+#define __XN_OPEN_NI_STATUS_H__
 
 #include "XnPlatform.h"
 
@@ -38,7 +34,7 @@
 typedef XnUInt32 XnStatus;
 
 /** Definition of the OK error code. */
-static const XnStatus XN_STATUS_OK = 0;
+#define XN_STATUS_OK ((XnStatus)0)
 
 //---------------------------------------------------------------------------
 // API
@@ -51,7 +47,7 @@ static const XnStatus XN_STATUS_OK = 0;
  *
  * @return A string representation of the Xiron status.
  */
-XN_C_API const XnChar* xnGetStatusString(const XnStatus Status);
+XN_C_API const XnChar* XN_C_DECL xnGetStatusString(const XnStatus Status);
 
 /**
 * Gets the name of a Xiron Status as a string.
@@ -60,7 +56,7 @@ XN_C_API const XnChar* xnGetStatusString(const XnStatus Status);
 *
 * @return A string representation of the Xiron status name.
 */
-XN_C_API const XnChar* xnGetStatusName(const XnStatus Status);
+XN_C_API const XnChar* XN_C_DECL xnGetStatusName(const XnStatus Status);
 
 /**
 * Prints a user message with a description of the error.
@@ -69,7 +65,7 @@ XN_C_API const XnChar* xnGetStatusName(const XnStatus Status);
 * @param	csUserMessage	[in]	A user message.
 *
 */
-XN_C_API void xnPrintError(const XnStatus Status, const XnChar* csUserMessage);
+XN_C_API void XN_C_DECL xnPrintError(const XnStatus Status, const XnChar* csUserMessage);
 
 //---------------------------------------------------------------------------
 // Enums

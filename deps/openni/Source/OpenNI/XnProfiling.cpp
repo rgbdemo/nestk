@@ -1,28 +1,28 @@
-/*****************************************************************************
-*                                                                            *
-*  OpenNI 1.0 Alpha                                                          *
-*  Copyright (C) 2010 PrimeSense Ltd.                                        *
-*                                                                            *
-*  This file is part of OpenNI.                                              *
-*                                                                            *
-*  OpenNI is free software: you can redistribute it and/or modify            *
-*  it under the terms of the GNU Lesser General Public License as published  *
-*  by the Free Software Foundation, either version 3 of the License, or      *
-*  (at your option) any later version.                                       *
-*                                                                            *
-*  OpenNI is distributed in the hope that it will be useful,                 *
-*  but WITHOUT ANY WARRANTY; without even the implied warranty of            *
-*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the              *
-*  GNU Lesser General Public License for more details.                       *
-*                                                                            *
-*  You should have received a copy of the GNU Lesser General Public License  *
-*  along with OpenNI. If not, see <http://www.gnu.org/licenses/>.            *
-*                                                                            *
-*****************************************************************************/
+#ifndef MANCTL_CHANGES
+#    define MANCTL_CHANGES 1
+#endif
 
-
-
-
+/****************************************************************************
+*                                                                           *
+*  OpenNI 1.1 Alpha                                                         *
+*  Copyright (C) 2011 PrimeSense Ltd.                                       *
+*                                                                           *
+*  This file is part of OpenNI.                                             *
+*                                                                           *
+*  OpenNI is free software: you can redistribute it and/or modify           *
+*  it under the terms of the GNU Lesser General Public License as published *
+*  by the Free Software Foundation, either version 3 of the License, or     *
+*  (at your option) any later version.                                      *
+*                                                                           *
+*  OpenNI is distributed in the hope that it will be useful,                *
+*  but WITHOUT ANY WARRANTY; without even the implied warranty of           *
+*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the             *
+*  GNU Lesser General Public License for more details.                      *
+*                                                                           *
+*  You should have received a copy of the GNU Lesser General Public License *
+*  along with OpenNI. If not, see <http://www.gnu.org/licenses/>.           *
+*                                                                           *
+****************************************************************************/
 //---------------------------------------------------------------------------
 // Includes
 //---------------------------------------------------------------------------
@@ -59,7 +59,7 @@ typedef struct
 	XnUInt32 nSectionCount;
 	XN_THREAD_HANDLE hThread;
 	XN_CRITICAL_SECTION_HANDLE hCriticalSection;
-	XnUInt32 nMaxSectionName;
+	XnSizeT nMaxSectionName;
 	XnUInt32 nProfilingInterval;
 	XnBool bKillThread;
 } XnProfilingData;
@@ -91,8 +91,13 @@ XN_THREAD_PROC xnProfilingThread(XN_THREAD_PARAM /*pThreadParam*/)
 		// print profiled sections
 		nReportChars = 0;
 		nReportChars += sprintf(csReport + nReportChars, "Profiling Report:\n");
+#ifdef MANCTL_CHANGES
+		nReportChars += sprintf(csReport + nReportChars, "%-*s %-5s %-6s %-9s %-7s\n", (int)g_ProfilingData.nMaxSectionName, "TaskName", "Times", "% Time", "TotalTime", "AvgTime");
+		nReportChars += sprintf(csReport + nReportChars, "%-*s %-5s %-6s %-9s %-7s\n", (int)g_ProfilingData.nMaxSectionName, "========", "=====", "======", "=========", "=======");
+#else
 		nReportChars += sprintf(csReport + nReportChars, "%-*s %-5s %-6s %-9s %-7s\n", g_ProfilingData.nMaxSectionName, "TaskName", "Times", "% Time", "TotalTime", "AvgTime");
 		nReportChars += sprintf(csReport + nReportChars, "%-*s %-5s %-6s %-9s %-7s\n", g_ProfilingData.nMaxSectionName, "========", "=====", "======", "=========", "=======");
+#endif
 
 		XnUInt64 nTotalTime = 0;
 
@@ -108,8 +113,13 @@ XN_THREAD_PROC xnProfilingThread(XN_THREAD_PARAM /*pThreadParam*/)
 				nAvgTime = pSection->nTotalTime / pSection->nTimesExecuted;
 			}
 
+#ifdef MANCTL_CHANGES
+			nReportChars += sprintf(csReport + nReportChars, "%-*s %5u %6.2f %9llu %7llu\n", (int)g_ProfilingData.nMaxSectionName,
+				pSection->csName, pSection->nTimesExecuted, dCPUPercentage, pSection->nTotalTime, nAvgTime);
+#else
 			nReportChars += sprintf(csReport + nReportChars, "%-*s %5u %6.2f %9llu %7llu\n", g_ProfilingData.nMaxSectionName, 
 				pSection->csName, pSection->nTimesExecuted, dCPUPercentage, pSection->nTotalTime, nAvgTime);
+#endif
 
 			if (pSection->nIndentation == 0)
 				nTotalTime += pSection->nTotalTime;
@@ -121,8 +131,13 @@ XN_THREAD_PROC xnProfilingThread(XN_THREAD_PARAM /*pThreadParam*/)
 
 		// print total
 		XnDouble dCPUPercentage = ((XnDouble)nTotalTime) / (nNow - nLastTime) * 100.0;
+#ifdef MANCTL_CHANGES
+		nReportChars += sprintf(csReport + nReportChars, "%-*s %5s %6.2f %9llu %7s\n",
+			(int)g_ProfilingData.nMaxSectionName, "*** Total ***", "-", dCPUPercentage, nTotalTime, "-");
+#else
 		nReportChars += sprintf(csReport + nReportChars, "%-*s %5s %6.2f %9llu %7s\n", 
 			g_ProfilingData.nMaxSectionName, "*** Total ***", "-", dCPUPercentage, nTotalTime, "-");
+#endif
 
 		xnLogVerbose(XN_MASK_PROFILING, "%s", csReport);
 

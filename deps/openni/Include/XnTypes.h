@@ -1,27 +1,24 @@
-/*****************************************************************************
-*                                                                            *
-*  OpenNI 1.0 Alpha                                                          *
-*  Copyright (C) 2010 PrimeSense Ltd.                                        *
-*                                                                            *
-*  This file is part of OpenNI.                                              *
-*                                                                            *
-*  OpenNI is free software: you can redistribute it and/or modify            *
-*  it under the terms of the GNU Lesser General Public License as published  *
-*  by the Free Software Foundation, either version 3 of the License, or      *
-*  (at your option) any later version.                                       *
-*                                                                            *
-*  OpenNI is distributed in the hope that it will be useful,                 *
-*  but WITHOUT ANY WARRANTY; without even the implied warranty of            *
-*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the              *
-*  GNU Lesser General Public License for more details.                       *
-*                                                                            *
-*  You should have received a copy of the GNU Lesser General Public License  *
-*  along with OpenNI. If not, see <http://www.gnu.org/licenses/>.            *
-*                                                                            *
-*****************************************************************************/
-
-
-
+/****************************************************************************
+*                                                                           *
+*  OpenNI 1.1 Alpha                                                         *
+*  Copyright (C) 2011 PrimeSense Ltd.                                       *
+*                                                                           *
+*  This file is part of OpenNI.                                             *
+*                                                                           *
+*  OpenNI is free software: you can redistribute it and/or modify           *
+*  it under the terms of the GNU Lesser General Public License as published *
+*  by the Free Software Foundation, either version 3 of the License, or     *
+*  (at your option) any later version.                                      *
+*                                                                           *
+*  OpenNI is distributed in the hope that it will be useful,                *
+*  but WITHOUT ANY WARRANTY; without even the implied warranty of           *
+*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the             *
+*  GNU Lesser General Public License for more details.                      *
+*                                                                           *
+*  You should have received a copy of the GNU Lesser General Public License *
+*  along with OpenNI. If not, see <http://www.gnu.org/licenses/>.           *
+*                                                                           *
+****************************************************************************/
 #ifndef __XN_TYPES_H__
 #define __XN_TYPES_H__
 
@@ -30,6 +27,10 @@
 //---------------------------------------------------------------------------
 #include <XnStatus.h>
 #include <XnOS.h>
+
+#ifdef MANCTL_CHANGES
+#define XN_PLATFORM_SUPPORTS_DYNAMIC_LIBS 1
+#endif
 
 //---------------------------------------------------------------------------
 // Defines
@@ -52,8 +53,14 @@
 /** The name of the OpenNI recording format. **/
 #define XN_FORMAT_NAME_ONI	"oni"
 
+/** The name of the OpenNI XML script format. **/
+#define XN_SCRIPT_FORMAT_XML	"xml"
+
 /** represents playback speed which does not consider file timestamps. **/
 #define XN_PLAYBACK_SPEED_FASTEST	0.0
+
+/** represents a value for automatic control for nodes supporting it, as part of the @ref general_int. **/
+#define XN_AUTO_CONTROL				XN_MIN_INT32
 
 //---------------------------------------------------------------------------
 // Forward Declarations
@@ -64,7 +71,9 @@ struct XnInternalNodeData;
 // Types
 //---------------------------------------------------------------------------
 
+#if XN_PLATFORM != XN_PLATFORM_ARC
 #pragma pack (push, 1)
+#endif
 
 /**
  * The context of an OpenNI library.
@@ -84,8 +93,16 @@ typedef XnUInt32 XnLockHandle;
 /**
  * Type of the production node.
  */
-typedef enum XnProductionNodeType
+typedef XnInt32 XnProductionNodeType;
+
+/**
+ * Predefined types of production nodes.
+ */
+typedef enum XnPredefinedProductionNodeType
 {
+	/** An invalid node type **/
+	XN_NODE_TYPE_INVALID = -1,
+
 	/** A device node **/
 	XN_NODE_TYPE_DEVICE = 1,
 	
@@ -121,7 +138,16 @@ typedef enum XnProductionNodeType
 
 	/** A Codec **/
 	XN_NODE_TYPE_CODEC = 12,
-} XnProductionNodeType;
+
+	/** Abstract types **/
+	XN_NODE_TYPE_PRODUCTION_NODE = 13,
+	XN_NODE_TYPE_GENERATOR = 14,
+	XN_NODE_TYPE_MAP_GENERATOR = 15,
+	XN_NODE_TYPE_SCRIPT = 16,
+
+	XN_NODE_TYPE_FIRST_EXTENSION,
+
+} XnPredefinedProductionNodeType;
 
 /** 
  * A Version. 
@@ -212,11 +238,19 @@ typedef void (XN_CALLBACK_TYPE* XnStateChangedHandler)(XnNodeHandle hNode, void*
  **/
 typedef void (XN_CALLBACK_TYPE* XnErrorStateChangedHandler)(XnStatus errorState, void* pCookie);
 
+/** 
+ * Prototype for freeing data callbacks.
+ *
+ * @param	pData	[in]	The data to be freed.
+ **/
+typedef void (XN_CALLBACK_TYPE* XnFreeHandler)(const void* pData);
+
+typedef void (XN_CALLBACK_TYPE* XnContextShuttingDownHandler)(XnContext* pContext, void* pCookie);
+
 /** Handle to a registered callback function. **/
 typedef void* XnCallbackHandle;
 
 typedef struct XnModuleExportedProductionNodeInterface XnModuleExportedProductionNodeInterface; // Forward Declaration
-
 
 //---------------------------------------------------------------------------
 // 3D Vision Types
@@ -269,6 +303,34 @@ typedef XnUInt16 XnLabel;
 #define XN_CAPABILITY_LOCK_AWARE				"LockAware"
 #define XN_CAPABILITY_ERROR_STATE				"ErrorState"
 #define XN_CAPABILITY_FRAME_SYNC				"FrameSync"
+#define XN_CAPABILITY_DEVICE_IDENTIFICATION		"DeviceIdentification"
+#define XN_CAPABILITY_BRIGHTNESS				"Brightness"
+#define XN_CAPABILITY_CONTRAST					"Contrast"
+#define XN_CAPABILITY_HUE						"Hue"
+#define XN_CAPABILITY_SATURATION				"Saturation"
+#define XN_CAPABILITY_SHARPNESS					"Sharpness"
+#define XN_CAPABILITY_GAMMA						"Gamma"
+#define XN_CAPABILITY_COLOR_TEMPERATURE			"ColorTemperature"
+#define XN_CAPABILITY_BACKLIGHT_COMPENSATION	"BacklightCompensation"
+#define XN_CAPABILITY_GAIN						"Gain"
+#define XN_CAPABILITY_PAN						"Pan"
+#define XN_CAPABILITY_TILT						"Tilt"
+#define XN_CAPABILITY_ROLL						"Roll"
+#define XN_CAPABILITY_ZOOM						"Zoom"
+#define XN_CAPABILITY_EXPOSURE					"Exposure"
+#define XN_CAPABILITY_IRIS						"Iris"
+#define XN_CAPABILITY_FOCUS						"Focus"
+#define XN_CAPABILITY_LOW_LIGHT_COMPENSATION	"LowLightCompensation"
+#define XN_CAPABILITY_ANTI_FLICKER				"AntiFlicker"
+#define XN_CAPABILITY_HAND_TOUCHING_FOV_EDGE	"Hands::HandTouchingFOVEdge"
+
+// Backwards compatibility - typo was fixed
+#define XN_CAPABILITY_ANTI_FILCKER				XN_CAPABILITY_ANTI_FLICKER
+
+// deprecated pragma is only supported in Visual Studio
+#if (XN_PLATFORM == XN_PLATFORM_WIN32)
+#pragma deprecated("XN_CAPABILITY_ANTI_FILCKER")
+#endif
 
 //---------------------------------------------------------------------------
 // Generators API Structs
@@ -304,6 +366,27 @@ typedef XnUInt16 XnLabel;
 #define XN_1080P_X_RES	1920
 #define XN_1080P_Y_RES	1080
 
+#define XN_QCIF_X_RES	176
+#define XN_QCIF_Y_RES	144
+
+#define XN_240P_X_RES	423
+#define XN_240P_Y_RES	240
+
+#define XN_CIF_X_RES	352
+#define XN_CIF_Y_RES	288
+
+#define XN_WVGA_X_RES	640
+#define XN_WVGA_Y_RES	360
+
+#define XN_480P_X_RES	864
+#define XN_480P_Y_RES	480
+
+#define XN_576P_X_RES	1024
+#define XN_576P_Y_RES	576
+
+#define XN_DV_X_RES		960
+#define XN_DV_Y_RES		720
+
 typedef enum XnResolution
 {
 	XN_RES_CUSTOM = 0,
@@ -317,6 +400,13 @@ typedef enum XnResolution
 	XN_RES_SXGA = 8,
 	XN_RES_UXGA = 9,
 	XN_RES_1080P = 10,
+	XN_RES_QCIF = 11,
+	XN_RES_240P = 12,
+	XN_RES_CIF = 13,
+	XN_RES_WVGA = 14,
+	XN_RES_480P = 15,
+	XN_RES_576P = 16,
+	XN_RES_DV = 17,
 } XnResolution;
 
 /**
@@ -407,6 +497,7 @@ typedef enum XnPixelFormat
 	XN_PIXEL_FORMAT_YUV422 = 2,
 	XN_PIXEL_FORMAT_GRAYSCALE_8_BIT = 3,
 	XN_PIXEL_FORMAT_GRAYSCALE_16_BIT = 4,
+	XN_PIXEL_FORMAT_MJPEG = 5,
 } XnPixelFormat;
 
 typedef struct XnSupportedPixelFormats
@@ -415,7 +506,8 @@ typedef struct XnSupportedPixelFormats
 	XnBool m_bYUV422 : 1;
 	XnBool m_bGrayscale8Bit : 1;
 	XnBool m_bGrayscale16Bit : 1;
-	XnUInt m_nPadding : 4;
+	XnBool m_bMJPEG : 1;
+	XnUInt m_nPadding : 3;
 	XnUInt m_nReserved : 24;
 } XnSupportedPixelFormats;
 
@@ -425,6 +517,13 @@ typedef enum XnPlayerSeekOrigin
 	XN_PLAYER_SEEK_CUR = 1,
 	XN_PLAYER_SEEK_END = 2,
 } XnPlayerSeekOrigin;
+
+typedef enum XnPowerLineFrequency
+{
+	XN_POWER_LINE_FREQUENCY_OFF = 0,
+	XN_POWER_LINE_FREQUENCY_50_HZ = 50,
+	XN_POWER_LINE_FREQUENCY_60_HZ = 60,
+} XnPowerLineFrequency;
 
 // User
 typedef XnUInt32 XnUserID;
@@ -543,6 +642,41 @@ typedef enum XnSkeletonProfile
 	XN_SKEL_PROFILE_HEAD_HANDS	= 5,
 } XnSkeletonProfile;
 
+/** Possible statuses for pose detection */
+typedef enum XnPoseDetectionStatus
+{
+	XN_POSE_DETECTION_STATUS_OK			= 0,
+	XN_POSE_DETECTION_STATUS_NO_USER	= 1,
+	XN_POSE_DETECTION_STATUS_TOP_FOV	= 2,
+	XN_POSE_DETECTION_STATUS_SIDE_FOV	= 3,
+	XN_POSE_DETECTION_STATUS_ERROR		= 4,
+} XnPoseDetectionStatus;
+
+/** Possible statuses for calibration */
+typedef enum XnCalibrationStatus
+{
+	XN_CALIBRATION_STATUS_OK		= 0,
+	XN_CALIBRATION_STATUS_NO_USER	= 1,
+	XN_CALIBRATION_STATUS_ARM		= 2,
+	XN_CALIBRATION_STATUS_LEG		= 3,
+	XN_CALIBRATION_STATUS_HEAD		= 4,
+	XN_CALIBRATION_STATUS_TORSO		= 5,
+	XN_CALIBRATION_STATUS_TOP_FOV	= 6,
+	XN_CALIBRATION_STATUS_SIDE_FOV	= 7,
+	XN_CALIBRATION_STATUS_POSE		= 8,
+} XnCalibrationStatus;
+
+typedef enum XnDirection
+{
+	XN_DIRECTION_ILLEGAL	= 0,
+	XN_DIRECTION_LEFT		= 1,
+	XN_DIRECTION_RIGHT		= 2,
+	XN_DIRECTION_UP			= 3,
+	XN_DIRECTION_DOWN		= 4,
+	XN_DIRECTION_FORWARD	= 5,
+	XN_DIRECTION_BACKWARD	= 6,
+} XnDirection;
+
 // User
 /**
  * Callback for a general user-related event. It is used for either creation or destruction of users.
@@ -586,6 +720,17 @@ typedef void (XN_CALLBACK_TYPE* XnHandUpdate)(XnNodeHandle hNode, XnUserID user,
  */
 typedef void (XN_CALLBACK_TYPE* XnHandDestroy)(XnNodeHandle hNode, XnUserID user, XnFloat fTime, void* pCookie);
 
+/**
+ * Callback for when a hand reaches the edge of the FOV
+ *
+ * @param	hNode		[in]	A handle to the hand generator that raised this event.
+ * @param	user		[in]	The id of the hand that reached FOV
+ * @param	pPosition	[in]	The current position of the hand
+ * @param	fTime		[in]	Timestamp, in seconds
+ * @param	eDir		[in]	The direction of the edge that is being reached
+ * @param	pCookie		[in]	A user-provided cookie that was given when reigstering to this event
+ */
+typedef void (XN_CALLBACK_TYPE* XnHandTouchingFOVEdge)(XnNodeHandle hNode, XnUserID user, const XnPoint3D* pPosition, XnFloat fTime, XnDirection eDir, void* pCookie);
 // Gesture Module
 /**
  * Callback for the recognition of a gesture
@@ -608,6 +753,9 @@ typedef void (XN_CALLBACK_TYPE* XnGestureRecognized)(XnNodeHandle hNode, const X
  */
 typedef void (XN_CALLBACK_TYPE* XnGestureProgress)(XnNodeHandle hNode, const XnChar* strGesture, const XnPoint3D* pPosition, XnFloat fProgress, void* pCookie);
 
+typedef void (XN_CALLBACK_TYPE* XnGestureIntermediateStageCompleted)(XnNodeHandle hNode, const XnChar* strGesture, const XnPoint3D* pPosition, void* pCookie);
+typedef void (XN_CALLBACK_TYPE* XnGestureReadyForNextIntermediateStage)(XnNodeHandle hNode, const XnChar* strGesture, const XnPoint3D* pPosition, void* pCookie);
+
 // Skeleton
 /**
  * Callback for indication that a specific user's skeleton is now starting the calibration process
@@ -627,6 +775,9 @@ typedef void (XN_CALLBACK_TYPE* XnCalibrationStart)(XnNodeHandle hNode, XnUserID
  */
 typedef void (XN_CALLBACK_TYPE* XnCalibrationEnd)(XnNodeHandle hNode, XnUserID user, XnBool bSuccess, void* pCookie);
 
+typedef void (XN_CALLBACK_TYPE* XnCalibrationInProgress)(XnNodeHandle hNode, XnUserID user, XnCalibrationStatus calibrationError, void* pCookie);
+typedef void (XN_CALLBACK_TYPE* XnCalibrationComplete)(XnNodeHandle hNode, XnUserID user, XnCalibrationStatus calibrationError, void* pCookie);
+
 // Pose Detection
 /**
  * Callback for indication that a specific user has entered a pose, or left it.
@@ -637,6 +788,8 @@ typedef void (XN_CALLBACK_TYPE* XnCalibrationEnd)(XnNodeHandle hNode, XnUserID u
  * @param	pCookie		[in]	A user-provided cookie that was given when registering to this event.
  */
 typedef void (XN_CALLBACK_TYPE* XnPoseDetectionCallback)(XnNodeHandle hNode, const XnChar* strPose, XnUserID user, void* pCookie);
+
+typedef void (XN_CALLBACK_TYPE* XnPoseDetectionInProgress)(XnNodeHandle hNode, const XnChar* strPose, XnUserID user, XnPoseDetectionStatus poseDetectionError, void* pCookie);
 
 //---------------------------------------------------------------------------
 // Recorder Types
@@ -959,6 +1112,8 @@ typedef struct XnSceneMetaData
 	const XnLabel* pData;
 } XnSceneMetaData;
 
+#if XN_PLATFORM != XN_PLATFORM_ARC
 #pragma pack (pop)
+#endif
 
 #endif //__XN_TYPES_H__

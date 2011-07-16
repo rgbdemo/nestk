@@ -1,27 +1,28 @@
-/*****************************************************************************
-*                                                                            *
-*  OpenNI 1.0 Alpha                                                          *
-*  Copyright (C) 2010 PrimeSense Ltd.                                        *
-*                                                                            *
-*  This file is part of OpenNI.                                              *
-*                                                                            *
-*  OpenNI is free software: you can redistribute it and/or modify            *
-*  it under the terms of the GNU Lesser General Public License as published  *
-*  by the Free Software Foundation, either version 3 of the License, or      *
-*  (at your option) any later version.                                       *
-*                                                                            *
-*  OpenNI is distributed in the hope that it will be useful,                 *
-*  but WITHOUT ANY WARRANTY; without even the implied warranty of            *
-*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the              *
-*  GNU Lesser General Public License for more details.                       *
-*                                                                            *
-*  You should have received a copy of the GNU Lesser General Public License  *
-*  along with OpenNI. If not, see <http://www.gnu.org/licenses/>.            *
-*                                                                            *
-*****************************************************************************/
+#ifndef MANCTL_CHANGES
+#    define MANCTL_CHANGES 1
+#endif
 
-
-
+/****************************************************************************
+*                                                                           *
+*  OpenNI 1.1 Alpha                                                         *
+*  Copyright (C) 2011 PrimeSense Ltd.                                       *
+*                                                                           *
+*  This file is part of OpenNI.                                             *
+*                                                                           *
+*  OpenNI is free software: you can redistribute it and/or modify           *
+*  it under the terms of the GNU Lesser General Public License as published *
+*  by the Free Software Foundation, either version 3 of the License, or     *
+*  (at your option) any later version.                                      *
+*                                                                           *
+*  OpenNI is distributed in the hope that it will be useful,                *
+*  but WITHOUT ANY WARRANTY; without even the implied warranty of           *
+*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the             *
+*  GNU Lesser General Public License for more details.                      *
+*                                                                           *
+*  You should have received a copy of the GNU Lesser General Public License *
+*  along with OpenNI. If not, see <http://www.gnu.org/licenses/>.           *
+*                                                                           *
+****************************************************************************/
 
 #ifndef _XN_LIST_H
 #define _XN_LIST_H
@@ -33,6 +34,7 @@
 #include <IXnNodeAllocator.h>
 #include <XnNodeAllocator.h>
 #include <XnNode.h>
+#include <XnStatusCodes.h>
 
 //---------------------------------------------------------------------------
 // Types
@@ -51,7 +53,7 @@ public:
 
 		/**
 		* Copy constructor
-		* 
+		*
 		* @param	other	[in]	instance to copy from
 		*/
 		ConstIterator(const ConstIterator& other) : m_pCurrent(other.m_pCurrent) {}
@@ -96,7 +98,7 @@ public:
 
 		/**
 		* Operator to check if 2 iterators point to the same object
-		* 
+		*
 		* @param	other	[in]	instance to compare with
 		*/
 		XnBool operator==(const ConstIterator& other) const
@@ -105,7 +107,7 @@ public:
 		}
 		/**
 		* Operator to check if 2 iterators point to different objects
-		* 
+		*
 		* @param	other	[in]	instance to compare with
 		*/
 		XnBool operator!=(const ConstIterator& other) const
@@ -141,7 +143,7 @@ public:
 	protected:
 		/**
 		* constructor to be used from inside the XnList. It points to the node supplied.
-		* 
+		*
 		* @param	pNode	[in]	The XnNode to which to currently point
 		*/
 		ConstIterator(XnNode* pNode) : m_pCurrent(pNode) {}
@@ -160,7 +162,7 @@ public:
 
 		/**
 		* Copy constructor
-		* 
+		*
 		* @param	other	[in]	instance to copy from
 		*/
 		inline Iterator(const Iterator& other) : ConstIterator(other) {}
@@ -168,34 +170,34 @@ public:
 		/**
 		* Support ++iterator, go to the next object in the list
 		*/
-		inline Iterator& operator++() 
-		{ 
+		inline Iterator& operator++()
+		{
 			++(*(ConstIterator*)this);
 			return (*this);
 		}
 		/**
 		* Support iterator++, go to the next object in the list, returning the old value
 		*/
-		inline Iterator operator++(int) 
-		{ 
+		inline Iterator operator++(int)
+		{
 			Iterator result = *this;
 			++*this;
 			return (result);
 		}
-		
+
 		/**
 		* Support --iterator, go to the next object in the list
 		*/
-		inline Iterator& operator--() 
-		{ 
-			--(*(ConstIterator*)this); 
+		inline Iterator& operator--()
+		{
+			--(*(ConstIterator*)this);
 			return (*this);
 		}
 		/**
 		* Support iterator--, go to the next object in the list, returning the old value
 		*/
 		inline Iterator operator--(int)
-		{ 
+		{
 			Iterator result = *this;
 			--*this;
 			return (result);
@@ -209,7 +211,7 @@ public:
 	protected:
 		/**
 		* constructor to be used from inside the XnList. It points to the node supplied.
-		* 
+		*
 		* @param	pNode	[in]	The XnNode to which to currently point
 		*/
 		inline Iterator(XnNode* pNode) : ConstIterator(pNode) {}
@@ -222,7 +224,7 @@ public:
 	XnList()
 	{
 		//Default node allocator is XnNodeAllocator
-		Init(new XnNodeAllocator);
+		Init(XN_NEW(XnNodeAllocator));
 		m_bOwnsAllocator = TRUE;
 	}
 
@@ -239,13 +241,13 @@ public:
 		if (m_bOwnsAllocator)
 		{
 			//We created the allocator in this object, so we must release it
-			delete m_pNodeAllocator;
+			XN_DELETE(m_pNodeAllocator);
 		}
 	}
 
 	/**
 	* Add a new value at the beginning of list
-	* 
+	*
 	* @param	value	[in]	The value to add to the head of the list
 	*
 	* @return	XN_STATUS_ALLOC_FAILED	Failed to add to the list because no nodes are available.
@@ -257,7 +259,7 @@ public:
 
 	/**
 	* Add a new value at the end of the list
-	* 
+	*
 	* @param	value	[in]	The value to add to the tail of the list
 	*
 	* @return	XN_STATUS_ALLOC_FAILED	Failed to add to the list because no nodes are available.
@@ -269,7 +271,7 @@ public:
 
 	/**
 	* Add a new value after the object pointed to by the iterator
-	* 
+	*
 	* @param	where	[in]	iterator to the position after which to add the new value
 	* @param	val		[in]	The value to add to the list
 	*
@@ -288,7 +290,7 @@ public:
 
 	/**
 	* Add a new value before the object pointed to by the iterator
-	* 
+	*
 	* @param	where	[in]	iterator to the position before which to add the new value
 	* @param	val		[in]	The value to add to the list
 	*
@@ -307,8 +309,8 @@ public:
 
 	/**
 	* Get an iterator pointing to a value in the list.
-	* 
-	* @param	value	[in]	The searched value 
+	*
+	* @param	value	[in]	The searched value
 	*
 	* @return	end()	if value doesn't exist
 	*/
@@ -331,8 +333,8 @@ public:
 
 	/**
 	* Get an iterator pointing to a value in the list.
-	* 
-	* @param	value	[in]	The searched value 
+	*
+	* @param	value	[in]	The searched value
 	*
 	* @return	end()	if value doesn't exist
 	*/
@@ -355,7 +357,7 @@ public:
 
 	/**
 	* Remove a value from the list
-	* 
+	*
 	* @param	where	[in]	Iterator pointing to an entry in the list
 	* @param	value	[out]	The value that was in the removed entry
 	*
@@ -369,7 +371,7 @@ public:
 
 	/**
 	* Remove a value from the list
-	* 
+	*
 	* @param	where	[in]	Iterator pointing to an entry in the list
 	*
 	* @return XN_STATUS_ILLEGAL_POSITION	iterator was invalid
@@ -493,10 +495,10 @@ public:
 	{
 		return ConstIterator(m_pBase);
 	}
-	
+
 protected:
 	friend class XnNodeManager;
-	
+
 	/**
 	* Constructor. Initialize internal representations
 	*/
@@ -505,7 +507,7 @@ protected:
 		Init(pNodeAllocator);
 		m_bOwnsAllocator = FALSE;
 	}
-	
+
 	void Init(INiNodeAllocator* pNodeAllocator)
 	{
 		m_pNodeAllocator = pNodeAllocator;
@@ -521,7 +523,7 @@ protected:
 
 	/**
 	* Add a new value to the list
-	* 
+	*
 	* @param	pWhere	[in]	The XnNode after which to add the new value
 	* @param	val		[in]	The value to add to the list
 	*
@@ -548,10 +550,16 @@ protected:
 
 	/** The base node for the list */
 	XnNode* m_pBase;
-	
+
 	INiNodeAllocator* m_pNodeAllocator;
 	XnBool m_bOwnsAllocator;
 };
+
+#if MANCTL_CHANGES
+#    define MANCTL_XNLIST_COPY_CONSTRUCTOR_CHANGE : XnList()
+#else
+#    define MANCTL_XNLIST_COPY_CONSTRUCTOR_CHANGE
+#endif
 
 /**
 * Declares a list of type @a Type, which is named @a ClassName. The list uses translator @a Translator,
@@ -636,7 +644,7 @@ protected:
 		ClassName()																				\
 		{																						\
 		}																						\
-		ClassName(const ClassName& other)														\
+		ClassName(const ClassName& other) MANCTL_XNLIST_COPY_CONSTRUCTOR_CHANGE			        \
 		{																						\
 			*this = other;																		\
 		}																						\
@@ -716,6 +724,11 @@ protected:
 			Translator::FreeValue(val);															\
 			return XN_STATUS_OK;																\
 		}																						\
+		inline XnStatus Remove(Type const& value)												\
+		{																						\
+			Iterator it = Find(value);															\
+			return Remove(it);																	\
+		}																						\
 		inline Iterator begin() { return XnList::begin(); }										\
 		inline ConstIterator begin() const { return XnList::begin(); }							\
 		inline Iterator end() { return XnList::end(); }											\
@@ -750,6 +763,6 @@ protected:
 */
 #define XN_DECLARE_LIST(Type, ClassName)		\
 	XN_DECLARE_LIST_DECL(, Type, ClassName)
-																							
-#endif // _XN_LIST_H																		
-																						
+
+#endif // _XN_LIST_H
+

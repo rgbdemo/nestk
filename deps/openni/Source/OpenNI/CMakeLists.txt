@@ -15,36 +15,28 @@ if(OPENNI_PLATFORM_LINUX)
 	file(GLOB ${OPENNI_LIB_NAME}_platform_sources ./Linux-x86/*.cpp)
 elseif(OPENNI_PLATFORM_APPLE)
 	file(GLOB ${OPENNI_LIB_NAME}_platform_sources ./Linux-x86/*.cpp)
-        set(OPENNI_LINK_LIBRARIES "-framework CoreFoundation -framework IOKit")
-elseif(OPENNI_PLATFORM_WIN32)
-        #SET(OPENNI_DRIVER_DIR ${OpenNI_SOURCE_DIR}/Platform/Win32/Driver/Build/sys)
-        file(GLOB ${OPENNI_LIB_NAME}_platform_sources ./Win32/*.cpp ${OPENNI_DRIVER_DIR}/*.c)
-        MESSAGE("SOURCE DIR" ${${OPENNI_LIB_NAME}_platform_sources})
-        #INCLUDE_DIRECTORIES(${OPENNI_DRIVER_DIR})
-        #INCLUDE_DIRECTORIES("C:/WinDDK/7600.16385.1/inc/ddk" "C:/WinDDK/7600.16385.1/inc/api")
-        SET(OPENNI_LINK_LIBRARIES "wsock32")
+	message(${${OPENNI_LIB_NAME}_platform_sources})
+	set(CMAKE_EXE_LINKER_FLAGS "-framework CoreFoundation -framework IOKit")
 endif()
 
 # Set our target
 # ---------------
-
 add_library(
 	${OPENNI_LIB_NAME} 
-        SHARED ${${OPENNI_LIB_NAME}_sources}
-${${OPENNI_LIB_NAME}_platform_sources}
+	SHARED 
+	${${OPENNI_LIB_NAME}_sources} 
+	${${OPENNI_LIB_NAME}_platform_sources}
 )
 
 # Set Link libraries.
 # -------------------
-IF(UNIX)
-  find_library(LIBDL dl)
-ENDIF()
+find_library(LIBDL dl)
 target_link_libraries(
 	${OPENNI_LIB_NAME}
 	${USB_LIBRARY} 
 	${LIBDL} 
-        ${TINYXML_LIB_NAME}
-        ${OPENNI_LINK_LIBRARIES}
+	${TINYXML_LIB_NAME}
+	${CMAKE_EXE_LINKER_FLAGS}
 )
 
 # Set path where to install the target, lib, runtime. 

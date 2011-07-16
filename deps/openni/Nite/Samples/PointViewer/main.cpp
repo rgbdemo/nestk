@@ -212,7 +212,7 @@ void glInit (int * pargc, char ** argv)
 #endif
 
 // xml to initialize OpenNI
-#define SAMPLE_XML_PATH "config/Sample-Tracking.xml"
+#define SAMPLE_XML_PATH "../../Data/Sample-Tracking.xml"
 
 int main(int argc, char ** argv)
 {
