@@ -4302,10 +4302,14 @@ namespace xn
 			pSkeletonCookie->endHandler = CalibrationEndCB;
 			pSkeletonCookie->pUserCookie = pCookie;
 
+#ifdef _WIN32
 #pragma warning (push)
 #pragma warning (disable: XN_DEPRECATED_WARNING_IDS)
+#endif
 			nRetVal = xnRegisterCalibrationCallbacks(GetHandle(), CalibrationStartBundleCallback, CalibrationEndBundleCallback, pSkeletonCookie, &pSkeletonCookie->hCallback);
+#ifdef _WIN32
 #pragma warning (pop)
+#endif
 			if (nRetVal != XN_STATUS_OK)
 			{
 				xnOSFree(pSkeletonCookie);
@@ -4323,10 +4327,14 @@ namespace xn
 		inline void XN_API_DEPRECATED("Please use UnregisterFromCalibrationStart/Complete") UnregisterCalibrationCallbacks(XnCallbackHandle hCallback)
 		{
 			SkeletonCookie* pSkeletonCookie = (SkeletonCookie*)hCallback;
+#ifdef _WIN32
 #pragma warning (push)
 #pragma warning (disable: XN_DEPRECATED_WARNING_IDS)
+#endif
 			xnUnregisterCalibrationCallbacks(GetHandle(), pSkeletonCookie->hCallback);
+#ifdef _WIN32
 #pragma warning (pop)
+#endif
 			xnOSFree(pSkeletonCookie);
 		}
 
@@ -4601,10 +4609,14 @@ namespace xn
 			pPoseCookie->endHandler = PoseEndCB;
 			pPoseCookie->pPoseCookie = pCookie;
 
+#ifdef _WIN32
 #pragma warning (push)
 #pragma warning (disable: XN_DEPRECATED_WARNING_IDS)
+#endif
 			nRetVal = xnRegisterToPoseCallbacks(GetHandle(), PoseDetectionStartBundleCallback, PoseDetectionStartEndBundleCallback, pPoseCookie, &pPoseCookie->hCallback);
+#ifdef _WIN32
 #pragma warning (pop)
+#endif
 			if (nRetVal != XN_STATUS_OK)
 			{
 				xnOSFree(pPoseCookie);
@@ -4622,10 +4634,14 @@ namespace xn
 		inline void XN_API_DEPRECATED("Please use UnregisterFromPoseDetected/UnregisterFromOutOfPose instead") UnregisterFromPoseCallbacks(XnCallbackHandle hCallback)
 		{
 			PoseCookie* pPoseCookie = (PoseCookie*)hCallback;
+#ifdef _WIN32
 #pragma warning (push)
 #pragma warning (disable: XN_DEPRECATED_WARNING_IDS)
+#endif
 			xnUnregisterFromPoseCallbacks(GetHandle(), pPoseCookie->hCallback);
+#ifdef _WIN32
 #pragma warning (pop)
+#endif
 			xnOSFree(pPoseCookie);
 		}
 
@@ -5470,10 +5486,14 @@ namespace xn
 		inline XnStatus XN_API_DEPRECATED("Use other overload!") RunXmlScript(const XnChar* strScript, EnumerationErrors* pErrors = NULL)
 		{
 			m_bUsingDeprecatedAPI = TRUE;
-			#pragma warning (push)
-			#pragma warning (disable: XN_DEPRECATED_WARNING_IDS)
+#ifdef _WIN32
+#pragma warning (push)
+#pragma warning (disable: XN_DEPRECATED_WARNING_IDS)
+#endif
 			return xnContextRunXmlScript(m_pContext, strScript, pErrors == NULL ? NULL : pErrors->GetUnderlying());
-			#pragma warning (pop)
+#ifdef _WIN32
+#pragma warning (pop)
+#endif
 		}
 
 		/** @copybrief xnContextRunXmlScript
@@ -5498,10 +5518,14 @@ namespace xn
 		inline XnStatus XN_API_DEPRECATED("Use other overload!") RunXmlScriptFromFile(const XnChar* strFileName, EnumerationErrors* pErrors = NULL)
 		{
 			m_bUsingDeprecatedAPI = TRUE;
-			#pragma warning (push)
-			#pragma warning (disable: XN_DEPRECATED_WARNING_IDS)
+#ifdef _WIN32
+#pragma warning (push)
+#pragma warning (disable: XN_DEPRECATED_WARNING_IDS)
+#endif
 			return xnContextRunXmlScriptFromFile(m_pContext, strFileName, pErrors == NULL ? NULL : pErrors->GetUnderlying());
-			#pragma warning (pop)
+#ifdef _WIN32
+#pragma warning (pop)
+#endif
 		}
 
 		/** @copybrief xnContextRunXmlScriptFromFile
@@ -5528,10 +5552,14 @@ namespace xn
 			XnContext* pContext = NULL;
 			m_bUsingDeprecatedAPI = TRUE;
 
-			#pragma warning (push)
-			#pragma warning (disable: XN_DEPRECATED_WARNING_IDS)
+#ifdef _WIN32
+#pragma warning (push)
+#pragma warning (disable: XN_DEPRECATED_WARNING_IDS)
+#endif
 			XnStatus nRetVal = xnInitFromXmlFile(strFileName, &pContext, pErrors == NULL ? NULL : pErrors->GetUnderlying());
-			#pragma warning (pop)
+#ifdef _WIN32
+#pragma warning (pop)
+#endif
 			XN_IS_STATUS_OK(nRetVal);
 
 			TakeOwnership(pContext);
@@ -5564,10 +5592,14 @@ namespace xn
 		inline XnStatus XN_API_DEPRECATED("Use other overload!") OpenFileRecording(const XnChar* strFileName)
 		{
 			m_bUsingDeprecatedAPI = TRUE;
-			#pragma warning (push)
-			#pragma warning (disable: XN_DEPRECATED_WARNING_IDS)
+#ifdef _WIN32
+#pragma warning (push)
+#pragma warning (disable: XN_DEPRECATED_WARNING_IDS)
+#endif
 			return xnContextOpenFileRecording(m_pContext, strFileName);
-			#pragma warning (pop)
+#ifdef _WIN32
+#pragma warning (pop)
+#endif
 		}
 
 		/** @copybrief xnContextOpenFileRecording
@@ -5657,10 +5689,14 @@ namespace xn
 		{
 			if (m_pContext != NULL)
 			{
-				#pragma warning (push)
-				#pragma warning (disable: XN_DEPRECATED_WARNING_IDS)
+#ifdef _WIN32
+#pragma warning (push)
+#pragma warning (disable: XN_DEPRECATED_WARNING_IDS)
+#endif
 				xnShutdown(m_pContext);
+#ifdef _WIN32
 				#pragma warning (pop)
+#endif
 				m_pContext = NULL;
 			}
 		}

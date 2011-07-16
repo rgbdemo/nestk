@@ -42,8 +42,7 @@ getWorkingDirectory ()
 
 void loadModuleHook (const char* module, const char* config)
 {
-    std::cout << "DBG: Loading module: " << module
-        << " with config: " << (config == 0 ? "0" : config) << std::endl;
+    std::cout << "DBG: Loading module: " << module << std::endl;
     std::cout << "DBG: Working directory: " << getWorkingDirectory() << std::endl;
 }
 

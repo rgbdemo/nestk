@@ -1327,7 +1327,6 @@ XN_C_API XnStatus xnEnumerateProductionTrees(XnContext* pContext, XnProductionNo
 	for (XnNodesMap::Iterator it = pContext->pNodesMap->begin(); it != pContext->pNodesMap->end(); ++it)
 	{
 		XnInternalNodeData* pNodeData = it.Value();
-		printf("Existing node: %s\n", pNodeData->pNodeInfo->Description.strName);
 		if (pNodeData->pNodeInfo->Description.Type == Type)
 		{
 			nRetVal = xnNodeInfoListAddNode(pResult, pNodeData->pNodeInfo);
@@ -6570,7 +6569,7 @@ XnStatus xnGetOpenNIConfFilesPath(XnChar* strDest, XnUInt32 nBufSize)
 #else
 	nRetVal = xnOSStrAppend(strDest, XN_OPEN_NI_FILES_LOCATION, nBufSize);
 #endif
-	printf("config file = %s\n", strDest);
+	// printf("config file = %s\n", strDest);
 	XN_IS_STATUS_OK(nRetVal);
 	
 	return (XN_STATUS_OK);
