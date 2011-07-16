@@ -45,6 +45,7 @@ int main()
       // Wait for a new frame, get a local copy and postprocess it.
       grabber1.waitForNextFrame();
       grabber1.copyImageTo(image1);
+      post_processor.processImage(image1);
 
       grabber2.waitForNextFrame();
       grabber2.copyImageTo(image2);
