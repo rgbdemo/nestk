@@ -72,7 +72,13 @@ void XN_CALLBACK_TYPE UserCalibration_CalibrationEnd(xn::SkeletonCapability& cap
 
 } // namespace anonymous
 
-const char* xn_modules_file;
+// Used in openni XnModuleLoader.cpp.
+#ifdef NESTK_USE_CUSTOM_OPENNI
+    // Will be defined in OpenNI.
+    extern const char* xn_modules_file;
+#else
+    const char* xn_modules_file = "config/modules.xml";
+#endif
 
 namespace ntk
 {
