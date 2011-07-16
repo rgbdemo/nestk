@@ -163,6 +163,9 @@ namespace ntk
 {
   template <class T>
   ntk::Ptr<T> toPtr(T* ptr) { return ntk::Ptr<T>(ptr); }
+
+  template <class T>
+  inline void delete_and_zero(T*& ptr) { delete ptr; ptr = 0; }
 }
 
 #define stl_bounds(s) s.begin(), s.end()

@@ -19,7 +19,7 @@
 
 #define GL_GLEXT_PROTOTYPES
 
-#ifdef NESTK_USE_GLEW
+#if defined(NESTK_USE_GLEW) || defined(USE_GLEW)
 #include <GL/glew.h>
 #else
 // not required, qt opengl includes it
@@ -42,7 +42,7 @@ namespace ntk
 
 void MeshViewer :: initializeGL()
 {
-#ifdef NESTK_USE_GLEW
+#if defined(NESTK_USE_GLEW) || defined(USE_GLEW)
     GLenum err = glewInit();
     ntk_ensure(err == GLEW_OK, "Could not load GLEW.");
     std::cout << "Status: Using GLEW " << glewGetString(GLEW_VERSION) << std::endl;
@@ -173,7 +173,7 @@ void MeshViewer :: addMeshToDisplayList(const ntk::Mesh& mesh, const Pose3D& pos
 
 void MeshViewer :: addMeshToVertexBufferObject(const ntk::Mesh& mesh, const Pose3D& pose, MeshViewerMode mode)
 {
-#ifdef NESTK_USE_GLEW  
+#if defined(NESTK_USE_GLEW) || defined(USE_GLEW)
     GLuint vbo_id = -1, vbo_faces_id = -1;
     glGenBuffersARB(1, &vbo_id);
     if (mesh.hasFaces())
@@ -272,7 +272,7 @@ void MeshViewer :: addMesh(const ntk::Mesh& mesh, const Pose3D& pose, MeshViewer
 
 void MeshViewer :: swapScene()
 {
-#ifdef NESTK_USE_GLEW
+#if defined(NESTK_USE_GLEW) || defined(USE_GLEW)
     foreach_idx(i, m_vertex_buffer_objects) {
         GLuint vboId = m_vertex_buffer_objects[i].vertex_id;
         glDeleteBuffersARB(1, &vboId);
@@ -422,7 +422,7 @@ void MeshViewer :: paintGL()
 
     unsigned long start = ntk::Time::getMillisecondCounter();
 
-#ifdef NESTK_USE_GLEW
+#if defined(NESTK_USE_GLEW) || defined(USE_GLEW)
     if (m_use_vertex_buffer_object)
     {
         foreach_idx(i, m_vertex_buffer_objects)

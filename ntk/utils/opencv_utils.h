@@ -27,19 +27,19 @@
 class QImage;
 
 # define for_all_rc(im) \
-  for (int r = 0; r < (im).rows; ++r) \
-  for (int c = 0; c < (im).cols; ++c)
+    for (int r = 0; r < (im).rows; ++r) \
+    for (int c = 0; c < (im).cols; ++c)
 
 // depth row col iterations
 # define for_all_drc(im) \
-  for (int d = 0; d < (im).size[0]; ++d) \
-  for (int r = 0; r < (im).size[1]; ++r) \
-  for (int c = 0; c < (im).size[2]; ++c)
+    for (int d = 0; d < (im).size[0]; ++d) \
+    for (int r = 0; r < (im).size[1]; ++r) \
+    for (int c = 0; c < (im).size[2]; ++c)
 
 inline bool operator<(const cv::Point2i& p1, const cv::Point2i& p2)
 {
-  if (p1.x == p2.x) return p1.y < p2.y;
-  return p1.x < p2.x;
+    if (p1.x == p2.x) return p1.y < p2.y;
+    return p1.x < p2.x;
 }
 
 const NtkDebug& operator<<(const NtkDebug& stream, const cv::Mat1f& m);
@@ -52,49 +52,49 @@ template <class T>
 class Rect3_
 {
 public:
-  Rect3_() :
-    x(0), y(0), z(0),
-    width(-1), height(-1), depth(-1)
-  {}
+    Rect3_() :
+        x(0), y(0), z(0),
+        width(-1), height(-1), depth(-1)
+    {}
 
-  void extendToInclude(const cv::Point3f& p)
-  {
-    if (width < T(0) || height < T(0) || depth < T(0))
+    void extendToInclude(const cv::Point3f& p)
     {
-      x = p.x;
-      y = p.y;
-      z = p.z;
-      width = 1e-5;
-      height = 1e-5;
-      depth = 1e-5;
+        if (width < T(0) || height < T(0) || depth < T(0))
+        {
+            x = p.x;
+            y = p.y;
+            z = p.z;
+            width = 1e-5;
+            height = 1e-5;
+            depth = 1e-5;
+        }
+        else
+        {
+            T min_x = std::min(x, p.x);
+            T max_x = std::max(x+width, p.x);
+            T min_y = std::min(y, p.y);
+            T max_y = std::max(y+height, p.y);
+            T min_z = std::min(z, p.z);
+            T max_z = std::max(z+depth, p.z);
+
+            x = min_x; width = max_x - min_x;
+            y = min_y; height = max_y - min_y;
+            z = min_z; depth = max_z - min_z;
+        }
     }
-    else
+
+    bool isEmpty() const
     {
-      T min_x = std::min(x, p.x);
-      T max_x = std::max(x+width, p.x);
-      T min_y = std::min(y, p.y);
-      T max_y = std::max(y+height, p.y);
-      T min_z = std::min(z, p.z);
-      T max_z = std::max(z+depth, p.z);
-
-      x = min_x; width = max_x - min_x;
-      y = min_y; height = max_y - min_y;
-      z = min_z; depth = max_z - min_z;
+        return width < 0 || height < 0 || depth < 0;
     }
-  }
 
-  bool isEmpty() const
-  {
-    return width < 0 || height < 0 || depth < 0;
-  }
-
-  cv::Point3_<T> centroid() const
-  {
-    return cv::Point3_<T>(x+(width/T(2)), y+(height/T(2)), z + (depth / T(2)));
-  }
+    cv::Point3_<T> centroid() const
+    {
+        return cv::Point3_<T>(x+(width/T(2)), y+(height/T(2)), z + (depth / T(2)));
+    }
 
 public:
-  T x,y,z,width,height,depth;
+    T x,y,z,width,height,depth;
 };
 
 typedef Rect3_<float> Rect3f;
@@ -102,22 +102,22 @@ typedef Rect3_<float> Rect3f;
 template < typename StreamType, typename Type >
 StreamType& operator>>(StreamType& input, Rect3_<Type>& box)
 {
-  Type xmin=0,ymin=0,zmin=0,xmax=0,ymax=0,zmax=0;
-  input >> xmin >> ymin >> zmin >> xmax >> ymax >> zmax;
-  box.x = xmin; box.width = xmax-xmin;
-  box.y = ymin; box.height = ymax-ymin;
-  box.z = zmin; box.depth = zmax-zmin;
-  return input;
+    Type xmin=0,ymin=0,zmin=0,xmax=0,ymax=0,zmax=0;
+    input >> xmin >> ymin >> zmin >> xmax >> ymax >> zmax;
+    box.x = xmin; box.width = xmax-xmin;
+    box.y = ymin; box.height = ymax-ymin;
+    box.z = zmin; box.depth = zmax-zmin;
+    return input;
 }
 
 template < typename StreamType, typename Type >
 StreamType& operator<<(StreamType& output, const Rect3_<Type>& box)
 {
-  output << box.x << ntk::sep() << box.y << ntk::sep() << box.z
-      << ntk::sep() << (box.x + box.width)
-      << ntk::sep() << (box.y + box.height)
-      << ntk::sep() << (box.z + box.depth);
-  return output;
+    output << box.x << ntk::sep() << box.y << ntk::sep() << box.z
+           << ntk::sep() << (box.x + box.width)
+           << ntk::sep() << (box.y + box.height)
+           << ntk::sep() << (box.z + box.depth);
+    return output;
 }
 
 ntk::Rect3f bounding_box(const std::vector<cv::Point3f>& points);
@@ -127,33 +127,37 @@ ntk::Rect3f bounding_box(const std::vector<cv::Point3f>& points);
 namespace ntk
 {
 
-  inline cv::Point2f box_center(const cv::Rect_<float>& bbox)
-  {
+inline cv::Point2f toPoint2f(const cv::Point& p)
+{ return cv::Point2f(p.x, p.y); }
+
+
+inline cv::Point2f box_center(const cv::Rect_<float>& bbox)
+{
     return cv::Point2f(bbox.x + bbox.width/2.0, bbox.y + bbox.height/2.0);
-  }
+}
 
 template <class ScalarType>
 cv::Vec3d toVec3d(const cv::Mat_<ScalarType>& m)
 {
-  ntk_assert(m.rows == 3 && m.cols == 1, "m is not a vector.");
-  return cv::Vec3d(m(0,0), m(1,0), m(2,0));
+    ntk_assert(m.rows == 3 && m.cols == 1, "m is not a vector.");
+    return cv::Vec3d(m(0,0), m(1,0), m(2,0));
 }
 
 template <class ScalarType>
 cv::Vec2f toVec2f(const cv::Mat_<ScalarType>& m)
 {
-  ntk_assert((m.rows == 2 || m.rows == 3) && m.cols == 1, "m is not a vector.");
-  return cv::Vec2f(m(0,0), m(1,0));
+    ntk_assert((m.rows == 2 || m.rows == 3) && m.cols == 1, "m is not a vector.");
+    return cv::Vec2f(m(0,0), m(1,0));
 }
 
 template <class ScalarType1, class ScalarType2>
 void copyMatWithCast(cv::Mat_<ScalarType1>& dest, const cv::Mat_<ScalarType2>& src)
 {
-  ntk_assert(dest.size == src.size, "Size mismatch");
-  for_all_rc(src)
-  {
-    dest(r,c) = src(r,c);
-  }
+    ntk_assert(dest.size == src.size, "Size mismatch");
+    for_all_rc(src)
+    {
+        dest(r,c) = src(r,c);
+    }
 }
 
 cv::Mat1b qimage_to_opencv(const QImage& im);
@@ -222,7 +226,7 @@ inline bool is_zyx_in_range(const cv::Mat& image, int z, int y, int x)
 
 inline void normalize(cv::Vec3f& v)
 {
-  v *= float(1.0 / (sqrt(v.dot(v))));
+    v *= float(1.0 / (sqrt(v.dot(v))));
 }
 
 inline cv::Vec3b bgr_to_rgb(const cv::Vec3b& v)
@@ -238,100 +242,100 @@ namespace cv     // FIXME: has to be put in its
 
 inline QTextStream& operator<<(QTextStream& output, const cv::Point2i& point)
 {
-  output << point.x << ntk::sep() << point.y;
-  return output;
+    output << point.x << ntk::sep() << point.y;
+    return output;
 }
 
 inline QTextStream& operator>>(QTextStream& input, cv::Point2i& point)
 {
-  int x=0, y=0;
-  input >> x >> y;
-  point = cv::Point2i(x, y);
-  return input;
+    int x=0, y=0;
+    input >> x >> y;
+    point = cv::Point2i(x, y);
+    return input;
 }
 
 inline QTextStream& operator<<(QTextStream& output, const cv::Point2f& point)
 {
-  output << point.x << ntk::sep() << point.y;
-  return output;
+    output << point.x << ntk::sep() << point.y;
+    return output;
 }
 
 inline  QTextStream& operator>>(QTextStream& input, cv::Point2f& point)
 {
-  float x=0, y=0;
-  input >> x >> y;
-  point = cv::Point2f(x, y);
-  return input;
+    float x=0, y=0;
+    input >> x >> y;
+    point = cv::Point2f(x, y);
+    return input;
 }
 
 inline QTextStream& operator<<(QTextStream& output, const cv::Point3f& point)
 {
-  output << point.x << ntk::sep() << point.y << ntk::sep() << point.z;
-  return output;
+    output << point.x << ntk::sep() << point.y << ntk::sep() << point.z;
+    return output;
 }
 
 inline  QTextStream& operator>>(QTextStream& input, cv::Point3f& point)
 {
-  input >> point.x >> point.y >> point.z;
-  return input;
+    input >> point.x >> point.y >> point.z;
+    return input;
 }
 
 inline QTextStream& operator<<(QTextStream& output, const cv::Vec3f& point)
 {
-  output << point[0] << ntk::sep() << point[1] << ntk::sep() << point[2];
-  return output;
+    output << point[0] << ntk::sep() << point[1] << ntk::sep() << point[2];
+    return output;
 }
 
 inline QTextStream& operator<<(QTextStream& output, const cv::Vec2f& point)
 {
-  output << point[0] << ntk::sep() << point[1];
-  return output;
+    output << point[0] << ntk::sep() << point[1];
+    return output;
 }
 
 inline QTextStream& operator>>(QTextStream& input, cv::Vec2f& point)
 {
-  input >> point[0] >> point[1];
-  return input;
+    input >> point[0] >> point[1];
+    return input;
 }
 
 inline QTextStream& operator>>(QTextStream& input, cv::Vec3f& point)
 {
-  double x=0,y=0,z=0;
-  input >> x >> y >> z;
-  point = cv::Vec3f(x,y,z);
-  return input;
+    double x=0,y=0,z=0;
+    input >> x >> y >> z;
+    point = cv::Vec3f(x,y,z);
+    return input;
 }
 
 template <class T>
 QTextStream& operator<<(QTextStream& output, const cv::Point_<T>& point)
 {
-  output << point.x << ntk::sep() << point.y;
-  return output;
+    output << point.x << ntk::sep() << point.y;
+    return output;
 }
 
 template <class T>
 QTextStream& operator>>(QTextStream& input, cv::Point_<T>& point)
 {
-  T x=0,y=0;
-  input >> x >> y;
-  point = cv::Point_<T>(x,y);
-  return input;
+    T x=0,y=0;
+    input >> x >> y;
+    point = cv::Point_<T>(x,y);
+    return input;
 }
 
 template <class T>
 QTextStream& operator<<(QTextStream& output, const cv::Rect_<T>& r)
 {
-  output << r.x << ntk::sep() << r.y << ntk::sep() << r.width << ntk::sep() << r.height;
-  return output;
+    output << r.x << ntk::sep() << r.y << ntk::sep() << r.width << ntk::sep() << r.height;
+    return output;
 }
 
 template <class T>
 QTextStream& operator>>(QTextStream& input, cv::Rect_<T>& r)
 {
-  T x=0,y=0,width=0,height=0;
-  input >> x >> y >> width >> height;
-  r = cv::Rect_<T>(x,y,width,height);
-  return input;
+    T x=0,y=0,width=0,height=0;
+    input >> x >> y >> width >> height;
+    r = cv::Rect_<T>(x,y,width,height);
+    return input;
 }
 
 }
@@ -341,45 +345,45 @@ namespace cv
 
 inline const NtkDebug& operator<<(const NtkDebug& os, const cv::Point3f& p)
 {
-  os << "[" << p.x << " " << p.y << " " << p.z << "]";
-  return os;
+    os << "[" << p.x << " " << p.y << " " << p.z << "]";
+    return os;
 }
 
 inline const NtkDebug& operator<<(const NtkDebug& os, const cv::Vec3f& p)
 {
-  os << "[" << p[0] << " " << p[1] << " " << p[2] << "]";
-  return os;
+    os << "[" << p[0] << " " << p[1] << " " << p[2] << "]";
+    return os;
 }
 
 inline const NtkDebug& operator<<(const NtkDebug& os, const cv::Vec4f& p)
 {
-  os << "[" << p[0] << " " << p[1] << " " << p[2] << " " << p[3] << "]";
-  return os;
+    os << "[" << p[0] << " " << p[1] << " " << p[2] << " " << p[3] << "]";
+    return os;
 }
 
 inline const NtkDebug& operator<<(const NtkDebug& os, const cv::Point2f& p)
 {
-  os << "[" << p.x << " " << p.y << "]";
-  return os;
+    os << "[" << p.x << " " << p.y << "]";
+    return os;
 }
 
 inline const NtkDebug& operator<<(const NtkDebug& os, const cv::Point2i& p)
 {
-  os << "[" << p.x << " " << p.y << "]";
-  return os;
+    os << "[" << p.x << " " << p.y << "]";
+    return os;
 }
 
 inline const NtkDebug& operator<<(const NtkDebug& os, const cv::Vec2f& p)
 {
-  os << "[" << p[0] << " " << p[1] << "]";
-  return os;
+    os << "[" << p[0] << " " << p[1] << "]";
+    return os;
 }
 
 template <class T>
 const NtkDebug& operator<<(const NtkDebug& os, const cv::Rect_<T>& r)
 {
-  os << "[x=" << r.x << " y=" << r.y << " w=" << r.width << " h=" << r.height;
-  return os;
+    os << "[x=" << r.x << " y=" << r.y << " w=" << r.width << " h=" << r.height;
+    return os;
 }
 
 } // namespace cv
