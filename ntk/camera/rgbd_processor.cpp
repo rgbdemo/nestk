@@ -580,7 +580,7 @@ namespace ntk
             {
                 int v = 255*6*(depth_data[c]-min_val)/(max_val-min_val);
                 if (v < 0) v = 0;
-                char r,g,b;
+                unsigned char r,g,b;
                 int lb = v & 0xff;
                 switch (v / 256) {
                 case 0:

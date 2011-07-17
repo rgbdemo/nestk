@@ -14,6 +14,7 @@ SET(NESTK_ROOT_DIRS_HINTS ${NESTK_DEPS_DIR} ${NESTK_ROOT_DIRS_HINTS} ${CMAKE_INS
                           "$ENV{PROGRAMFILES}/PCL"
                           "$ENV{PROGRAMFILES}/boost/boost_1_46_1"
                           "$ENV{PROGRAMFILES}/flann 1.6.9"
+			  "$ENV{PROGRAMFILES}/Eigen 3.0.0"
                           "$ENV{HOME}/nestk" "$ENV{HOME}/opt/nestk"
                           /usr/local/nestk /opt/nestk /usr/local /opt)
 

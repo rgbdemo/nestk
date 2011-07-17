@@ -64,7 +64,7 @@ public:
 
 public:
   /*! Accessors to the flag values */
-  bool hasFilterFlag(ProcessorFlag flag) const { return m_flags&flag; }
+  bool hasFilterFlag(ProcessorFlag flag) const { return (m_flags&flag) != 0; }
   void setFilterFlags(int flags) { m_flags = flags; }
   void setFilterFlag(ProcessorFlag flag, bool enabled)
   { if (enabled) m_flags |= flag; else m_flags &= ~flag; }
