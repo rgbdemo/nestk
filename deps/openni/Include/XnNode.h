@@ -52,7 +52,7 @@ public:
 	/**
 	* Get the next XnNode (const version)
 	*/
-	const XnNode* const Next() const {return (const XnNode*)m_pNext;}
+        const XnNode* Next() const {return (const XnNode*)m_pNext;}
 
 	/**
 	* Get the previous XnNode (non-const version)
@@ -61,7 +61,7 @@ public:
 	/**
 	* Get the previous XnNode (non-const version)
 	*/
-	const XnNode* const Previous() const {return (const XnNode*)m_pPrevious;}
+        const XnNode* Previous() const {return (const XnNode*)m_pPrevious;}
 
 	/**
 	* Get the value in the node (non-const version)
