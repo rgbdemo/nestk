@@ -1367,8 +1367,8 @@ namespace xn
 		}
 
 	private:
-		XnNodeQuery* m_pQuery;
 		XnBool m_bAllocated;
+		XnNodeQuery* m_pQuery;
 	};
 
 	//---------------------------------------------------------------------------
@@ -4365,6 +4365,7 @@ namespace xn
 			CalibrationStartCookie* pCalibrationCookie = (CalibrationStartCookie*)hCallback;
 			xnUnregisterFromCalibrationStart(GetHandle(), pCalibrationCookie->hCallback);
 			xnOSFree(pCalibrationCookie);
+			return XN_STATUS_OK;
 		}
 
 		/**

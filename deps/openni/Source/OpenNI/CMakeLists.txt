@@ -15,7 +15,6 @@ if(OPENNI_PLATFORM_LINUX)
 	file(GLOB ${OPENNI_LIB_NAME}_platform_sources ./Linux-x86/*.cpp)
 elseif(OPENNI_PLATFORM_APPLE)
 	file(GLOB ${OPENNI_LIB_NAME}_platform_sources ./Linux-x86/*.cpp)
-	message(${${OPENNI_LIB_NAME}_platform_sources})
 	set(CMAKE_EXE_LINKER_FLAGS "-framework CoreFoundation -framework IOKit")
 endif()
 

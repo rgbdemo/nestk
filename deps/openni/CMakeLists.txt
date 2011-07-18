@@ -115,12 +115,4 @@ IF (NOT IS_DIRECTORY ${EXECUTABLE_OUTPUT_PATH}/config)
   file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/config DESTINATION ${EXECUTABLE_OUTPUT_PATH}/)
 ENDIF()
 
-IF (APPLE)
-  execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink modules.xml.mac modules.xml
-                  WORKING_DIRECTORY ${EXECUTABLE_OUTPUT_PATH}/config)
-ELSEIF(UNIX)
-  execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink modules.xml.linux modules.xml
-                  WORKING_DIRECTORY ${EXECUTABLE_OUTPUT_PATH}/config)
-ENDIF()
-
 install(DIRECTORY ${EXECUTABLE_OUTPUT_PATH}/config DESTINATION bin/)

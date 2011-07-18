@@ -24,7 +24,6 @@ target_link_libraries(
 	${LIBJPEG_LIB_NAME}
 	${XNFORMAT_LIB_NAME}
 )
-message( ${NIMCODECS_LIB_NAME})
 # Set install dir
 # ---------------
 install(

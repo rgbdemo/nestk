@@ -1,9 +1,0 @@
-<Modules>
-    <Module path="../lib/libnimMockNodes.so" />
-    <Module path="../lib/libnimCodecs.so" />
-    <Module path="../lib/libnimRecorder.so" />
-    <Module path="../lib/libXnDevicesSensorV2.so" configDir="config"/>
-    <Module path="../lib/libXnDeviceFile.so" configDir="config"/>
-    <Module path="../lib/libXnVFeatures.so" configDir="config/XnVFeatures"/>
-    <Module path="../lib/libXnVHandGenerator.so" configDir="config/XnVHandGenerator"/>
-</Modules>

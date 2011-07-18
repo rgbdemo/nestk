@@ -16,7 +16,6 @@ add_library(
 	SHARED 
 	${${XNDEVICEFILE_LIB_NAME}_sources}
 )
-message(${XNFORMAT_LIB_NAME})
 target_link_libraries(
 	${XNDEVICEFILE_LIB_NAME}
 	${XNFORMAT_LIB_NAME}
