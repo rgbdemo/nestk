@@ -150,6 +150,7 @@ OpenniGrabber::Config::configText = "\
 </OpenNI>\n\
 ";
 
+#ifdef __APPLE__
 const char*
 OpenniGrabber::Config::modulesText = "\
 <Modules>\n\
@@ -162,6 +163,20 @@ OpenniGrabber::Config::modulesText = "\
 <Module path=\"libXnVHandGenerator.dylib\" configDir=\"config/XnVHandGenerator\"/>\n\
 </Modules>\n\
 ";
+#else
+const char*
+OpenniGrabber::Config::modulesText = "\
+<Modules>\n\
+<Module path=\"../lib/libnimMockNodes.so\" />\n\
+<Module path=\"../lib/libnimCodecs.so\" />\n\
+<Module path=\"../lib/libnimRecorder.so\" />\n\
+<Module path=\"../lib/libXnDevicesSensorV2.so\" configDir=\"config\"/>\n\
+<Module path=\"../lib/libXnDeviceFile.so\" configDir=\"config\"/>\n\
+<Module path=\"../lib/libXnVFeatures.so\" configDir=\"config/XnVFeatures\"/>\n\
+<Module path=\"../lib/libXnVHandGenerator.so\" configDir=\"config/XnVHandGenerator\"/>\n\
+</Modules>\n\
+";
+#endif
 
 OpenniGrabber :: OpenniGrabber(int camera_id) :
     m_config(new Config(this)),
