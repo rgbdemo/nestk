@@ -27,6 +27,7 @@
 #if MANCTL_CHANGES
 
 #include <unistd.h>
+#include <cstdlib>
 #include <iostream>
 
 const char* xn_modules_file = "config/modules.xml";
