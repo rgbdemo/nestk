@@ -702,10 +702,6 @@ ntk::OpenniDriver::OpenniDriver() : m_config(new Config(this))
     if (status != XN_STATUS_OK && device_node_info_list.Begin () != device_node_info_list.End ())
         ntk_throw_exception(format("enumerating devices failed. Reason: %s", xnGetStatusString(status)));
 
-    // No device
-    if (device_node_info_list.IsEmpty())
-        ntk_throw_exception(format("No device connected.\n"));
-
     for (xn::NodeInfoList::Iterator nodeIt = device_node_info_list.Begin();
          nodeIt != device_node_info_list.End (); ++nodeIt)
     {
