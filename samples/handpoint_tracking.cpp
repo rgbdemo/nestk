@@ -97,8 +97,11 @@ int main(int argc, char **argv)
     BodyEventDetector detector;
     detector.addListener(&body_event_listener);
 
+    // Declare the global OpenNI driver. Only one can be instantiated in a program.
+    OpenniDriver ni_driver;
+
     // Declare the frame grabber.
-    OpenniGrabber grabber(opt::kinect_id());
+    OpenniGrabber grabber(ni_driver, opt::kinect_id());
     grabber.setBodyEventDetector(&detector);
 
     // High resolution 1280x1024 RGB Image.

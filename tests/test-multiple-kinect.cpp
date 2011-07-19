@@ -27,9 +27,13 @@
 using namespace ntk;
 
 int main()
-{    
-    OpenniGrabber grabber1(0);
-    OpenniGrabber grabber2(1);
+{
+    ntk::ntk_debug_level = 1;
+    OpenniDriver driver;
+    ntk_dbg_print(driver.numDevices(), 1);
+
+    OpenniGrabber grabber1(driver, 0);
+    OpenniGrabber grabber2(driver, 1);
 
     grabber1.connectToDevice();
     grabber2.connectToDevice();

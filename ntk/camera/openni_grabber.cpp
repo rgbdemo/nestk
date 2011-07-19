@@ -83,103 +83,8 @@ void XN_CALLBACK_TYPE UserCalibration_CalibrationEnd(xn::SkeletonCapability& cap
 namespace ntk
 {
 
-struct OpenniGrabber::Config
-{
-    Config (OpenniGrabber* that)
-        : that(that)
-    {
-        if(!configFile.open() || !modulesFile.open())
-        {
-            // Device full?
-            assert(false);
-            return;
-        }
-
-        configFile.write(configText);
-        configFile.flush();
-
-        modulesFile.write(modulesText);
-        modulesFile.flush();
-
-        modulesPath = modulesFile.fileName().toStdString();
-
-        xn_modules_file = modulesPath.c_str();
-    }
-
-    static const char* configText;
-    static const char* modulesText;
-
-    QTemporaryFile configFile;
-    QTemporaryFile modulesFile;
-    std::string modulesPath;
-    OpenniGrabber* that;
-};
-
-const char*
-OpenniGrabber::Config::configText = "\
-<OpenNI>\n\
-<Licenses>\n\
-<License vendor=\"PrimeSense\" key=\"0KOIk2JeIBYClPWVnMoRKn5cdY4=\" />\n\
-</Licenses>\n\
-<Log writeToConsole=\"false\" writeToFile=\"true\">\n\
-<!-- 0 - Verbose, 1 - Info, 2 - Warning, 3 - Error (default) -->\n\
-<LogLevel value=\"0\"/>\n\
-<Masks>\n\
-<Mask name=\"ALL\" on=\"true\"/>\n\
-</Masks>\n\
-<Dumps>\n\
-</Dumps>\n\
-</Log>\n\
-<ProductionNodes>\n\
-<Node type=\"Image\" name=\"Image1\">\n\
-<Configuration>\n\
-<MapOutputMode xRes=\"640\" yRes=\"480\" FPS=\"30\"/>\n\
-<Mirror on=\"true\"/>\n\
-</Configuration>\n\
-</Node>\n\
-<Node type=\"Depth\" name=\"Depth1\">\n\
-<Configuration>\n\
-<MapOutputMode xRes=\"640\" yRes=\"480\" FPS=\"30\"/>\n\
-<Mirror on=\"true\"/>\n\
-</Configuration>\n\
-</Node>\n\
-<Node type=\"User\" />\n\
-<Node type=\"Gesture\" />\n\
-<Node type=\"Hands\" />\n\
-</ProductionNodes>\n\
-</OpenNI>\n\
-";
-
-#ifdef __APPLE__
-const char*
-OpenniGrabber::Config::modulesText = "\
-<Modules>\n\
-<Module path=\"libnimMockNodes.dylib\" />\n\
-<Module path=\"libnimCodecs.dylib\" />\n\
-<Module path=\"libnimRecorder.dylib\" />\n\
-<Module path=\"libXnDevicesSensorV2.dylib\" configDir=\"config\"/>\n\
-<Module path=\"libXnDeviceFile.dylib\" configDir=\"config\"/>\n\
-<Module path=\"libXnVFeatures.dylib\" configDir=\"config/XnVFeatures\"/>\n\
-<Module path=\"libXnVHandGenerator.dylib\" configDir=\"config/XnVHandGenerator\"/>\n\
-</Modules>\n\
-";
-#else
-const char*
-OpenniGrabber::Config::modulesText = "\
-<Modules>\n\
-<Module path=\"../lib/libnimMockNodes.so\" />\n\
-<Module path=\"../lib/libnimCodecs.so\" />\n\
-<Module path=\"../lib/libnimRecorder.so\" />\n\
-<Module path=\"../lib/libXnDevicesSensorV2.so\" configDir=\"config\"/>\n\
-<Module path=\"../lib/libXnDeviceFile.so\" configDir=\"config\"/>\n\
-<Module path=\"../lib/libXnVFeatures.so\" configDir=\"config/XnVFeatures\"/>\n\
-<Module path=\"../lib/libXnVHandGenerator.so\" configDir=\"config/XnVHandGenerator\"/>\n\
-</Modules>\n\
-";
-#endif
-
-OpenniGrabber :: OpenniGrabber(int camera_id) :
-    m_config(new Config(this)),
+OpenniGrabber :: OpenniGrabber(OpenniDriver& driver, int camera_id) :
+    m_driver(driver),
     m_camera_id(camera_id),
     m_need_pose_to_calibrate(false),
     m_max_num_users(15),
@@ -190,15 +95,6 @@ OpenniGrabber :: OpenniGrabber(int camera_id) :
     m_xml_config_file(DEFAULT_XML_CONFIG_FILE),
     m_track_users(true)
 {
-}
-
-void OpenniGrabber :: check_error(const XnStatus& status, const char* what) const
-{
-    if (status != XN_STATUS_OK)
-    {
-        ntk_dbg(0) << "[ERROR] " << cv::format("%s failed: %s\n", what, xnGetStatusString(status));
-        ntk_throw_exception("Error in OpenniGrabber.");
-    }
 }
 
 const std::string OpenniGrabber :: DEFAULT_XML_CONFIG_FILE =  "config/NestkConfig.xml";
@@ -213,81 +109,40 @@ bool OpenniGrabber :: connectToDevice()
     QMutexLocker ni_locker(&m_ni_mutex);
     ntk_dbg(1) << format("[Kinect %x] connecting", this);
 
-    if (ntk::ntk_debug_level >= 1)
-    {
-        xnLogSetFileOutput(true);
-        xnLogSetSeverityFilter(XN_LOG_WARNING);
-        xnLogSetMaskState("ALL", true);
-    }
-    if (ntk::ntk_debug_level >= 2)
-    {
-        xnLogSetConsoleOutput(true);
-        xnLogSetSeverityFilter(XN_LOG_VERBOSE);
-    }
-    xnLogInitSystem();
-
-    XnStatus status = m_ni_context.Init();
-    check_error(status, "Initialize context");
-
+    XnStatus status;
     xn::NodeInfoList device_node_info_list;
-    status = m_ni_context.EnumerateProductionTrees(XN_NODE_TYPE_DEVICE, NULL, device_node_info_list);
-    if (status != XN_STATUS_OK && device_node_info_list.Begin () != device_node_info_list.End ())
-        ntk_throw_exception(format("enumerating devices failed. Reason: %s", xnGetStatusString(status)));
-
-    // No device
-    if (device_node_info_list.IsEmpty())
-        ntk_throw_exception(format("No device connected.\n"));
-
-    for (xn::NodeInfoList::Iterator nodeIt = device_node_info_list.Begin();
-         nodeIt != device_node_info_list.End (); ++nodeIt)
-    {
-        const xn::NodeInfo& deviceInfo = *nodeIt;
-        const XnProductionNodeDescription& description = deviceInfo.GetDescription();
-        ntk_dbg(2) << format("device: vendor %s name %s, instance %s",
-                             description.strVendor, description.strName, deviceInfo.GetInstanceName());
-    }
-
+    status = m_driver.niContext().EnumerateProductionTrees(XN_NODE_TYPE_DEVICE, NULL, device_node_info_list);
+    m_driver.checkXnError(status, "Cannot enumerate devices.");
     xn::NodeInfoList::Iterator nodeIt = device_node_info_list.Begin();
-    for (int i = 0; nodeIt != device_node_info_list.End () && i < m_camera_id; ++nodeIt, ++i)
-    {
-    }
-
-    if (nodeIt == device_node_info_list.End())
-    {
-        ntk_throw_exception(format("No device with id %d\n", m_camera_id));
-    }
-
+    int current_id = 0;
+    for (; current_id < m_camera_id && nodeIt != device_node_info_list.End (); ++nodeIt, ++current_id) {}
+    ntk_throw_exception_if(current_id != m_camera_id, "Cannot find device.");
     xn::NodeInfo deviceInfo = *nodeIt;
-    status = m_ni_context.CreateProductionTree(deviceInfo);
-    check_error(status, "Create Device");
-
+    status = m_driver.niContext().CreateProductionTree(deviceInfo, m_ni_device);
+    m_driver.checkXnError(status, "Create Device Node");
     const XnProductionNodeDescription& description = deviceInfo.GetDescription();
-    ntk_dbg(1) << format("device: vendor %s name %s, instance %s\n",
+    ntk_dbg(1) << format("device: vendor %s name %s, instance %s",
                          description.strVendor, description.strName, deviceInfo.GetInstanceName());
 
     xn::Query query;
     query.AddNeededNode(deviceInfo.GetInstanceName());
 
-    strcpy(license.strVendor, "PrimeSense");
-    strcpy(license.strKey, "0KOIk2JeIBYClPWVnMoRKn5cdY4=");
-    m_ni_context.AddLicense(license);
-
-    status = m_ni_depth_generator.Create(m_ni_context, &query);
-    check_error(status, "Create depth generator");
+    status = m_ni_depth_generator.Create(m_driver.niContext(), &query);
+    m_driver.checkXnError(status, "Create depth generator");
     XnMapOutputMode depth_mode;
     depth_mode.nXRes = 640;
     depth_mode.nYRes = 480;
     depth_mode.nFPS = 30;
     m_ni_depth_generator.SetMapOutputMode(depth_mode);
 
-    status = m_ni_rgb_generator.Create(m_ni_context, &query);
-    check_error(status, "Create image generator");
+    status = m_ni_rgb_generator.Create(m_driver.niContext(), &query);
+    m_driver.checkXnError(status, "Create image generator");
 
     status = m_ni_rgb_generator.SetIntProperty ("Resolution", 1);
-    check_error(status, "Resolution");
+    m_driver.checkXnError(status, "Resolution");
 
-    status = m_ni_context.SetGlobalMirror(m_mirrored);
-    check_error(status, "Mirror");
+    status = m_driver.niContext().SetGlobalMirror(m_mirrored);
+    m_driver.checkXnError(status, "Mirror");
 
     XnMapOutputMode rgb_mode;
     if (m_high_resolution)
@@ -309,12 +164,12 @@ bool OpenniGrabber :: connectToDevice()
 
     if (m_track_users)
     {
-        status = m_ni_user_generator.Create(m_ni_context, &query);
-        check_error(status, "Create user generator");
-        status = m_ni_hands_generator.Create(m_ni_context, &query);
-        check_error(status, "Create hands generator");
-        status = m_ni_gesture_generator.Create(m_ni_context, &query);
-        check_error(status, "Create gestures generator");
+        status = m_ni_user_generator.Create(m_driver.niContext(), &query);
+        m_driver.checkXnError(status, "Create user generator");
+        status = m_ni_hands_generator.Create(m_driver.niContext(), &query);
+        m_driver.checkXnError(status, "Create hands generator");
+        status = m_ni_gesture_generator.Create(m_driver.niContext(), &query);
+        m_driver.checkXnError(status, "Create gestures generator");
     }
 
     if (m_track_users)
@@ -338,23 +193,38 @@ bool OpenniGrabber :: connectToDevice()
         m_ni_user_generator.GetSkeletonCap().SetSkeletonProfile(XN_SKEL_PROFILE_ALL);
 
         if (m_body_event_detector)
-            m_body_event_detector->initialize(m_ni_context, m_ni_depth_generator);
+            m_body_event_detector->initialize(m_driver.niContext(), m_ni_depth_generator);
     }
 
-    status = m_ni_context.StartGeneratingAll();
-    check_error(status, "StartGenerating");
+    status = m_ni_depth_generator.StartGenerating();
+    m_driver.checkXnError(status, "Depth::StartGenerating");
+
+    status = m_ni_rgb_generator.StartGenerating();
+    m_driver.checkXnError(status, "RGB::StartGenerating");
+
+    if (m_track_users)
+    {
+        status = m_ni_user_generator.StartGenerating();
+        m_driver.checkXnError(status, "User::StartGenerating");
+
+        status = m_ni_hands_generator.StartGenerating();
+        m_driver.checkXnError(status, "Hands::StartGenerating");
+
+        status = m_ni_gesture_generator.StartGenerating();
+        m_driver.checkXnError(status, "Gesture::StartGenerating");
+    }
 
     if (m_custom_bayer_decoding)
     {
         // Grayscale to get raw Bayer pattern.
         status = m_ni_rgb_generator.SetIntProperty ("InputFormat", 6);
-        check_error(status, "Change input format");
+        m_driver.checkXnError(status, "Change input format");
 
         status = m_ni_rgb_generator.SetPixelFormat(XN_PIXEL_FORMAT_GRAYSCALE_8_BIT);
-        check_error(status, "Change pixel format");
+        m_driver.checkXnError(status, "Change pixel format");
     }
 
-    m_ni_context.WaitAndUpdateAll();
+    waitAndUpdateActiveGenerators();
     if (!m_calib_data)
         estimateCalibration();
 
@@ -366,12 +236,39 @@ bool OpenniGrabber :: disconnectFromDevice()
 {
     QMutexLocker ni_locker(&m_ni_mutex);
     ntk_dbg(1) << format("[Kinect %x] disconnecting", this);
-    m_ni_context.StopGeneratingAll();
+
+    m_ni_depth_generator.StopGenerating();
+    m_ni_rgb_generator.StopGenerating();
+    if (m_track_users)
+    {
+        m_ni_user_generator.StopGenerating();
+        m_ni_hands_generator.StopGenerating();
+        m_ni_gesture_generator.StopGenerating();
+    }
     if (m_body_event_detector)
         m_body_event_detector->shutDown();
-    m_ni_context.Shutdown();
+
+    m_ni_depth_generator.Release();
+    m_ni_rgb_generator.Release();
+    m_ni_user_generator.Release();
+    m_ni_hands_generator.Release();
+    m_ni_gesture_generator.Release();
+    m_ni_device.Release();
     m_connected = false;
     return true;
+}
+
+void OpenniGrabber :: waitAndUpdateActiveGenerators()
+{
+    m_ni_depth_generator.WaitAndUpdateData();
+    m_ni_rgb_generator.WaitAndUpdateData();
+
+    if (m_track_users)
+    {
+        m_ni_user_generator.WaitAndUpdateData();
+        m_ni_hands_generator.WaitAndUpdateData();
+        m_ni_gesture_generator.WaitAndUpdateData();
+    }
 }
 
 void OpenniGrabber :: estimateCalibration()
@@ -544,10 +441,10 @@ void OpenniGrabber :: run()
         waitForNewEvent();
         ntk_dbg(2) << format("[%x] running iteration", this);
 
-        // OpenNI calls do not seem to be thread safe.
         {
+            // OpenNI calls do not seem to be thread safe.
             QMutexLocker ni_locker(&m_ni_mutex);
-            m_ni_context.WaitAndUpdateAll();
+            waitAndUpdateActiveGenerators();
         }
 
         if (m_track_users && m_body_event_detector)
@@ -685,7 +582,102 @@ void OpenniGrabber :: calibrationFinishedCallback(XnUserID nId, bool success)
 
 } // ntk
 
-ntk::OpenniDriver::OpenniDriver()
+struct ntk::OpenniDriver::Config
+{
+    Config (OpenniDriver* that)
+        : that(that)
+    {
+        if(!configFile.open() || !modulesFile.open())
+        {
+            // Device full?
+            assert(false);
+            return;
+        }
+
+        configFile.write(configText);
+        configFile.flush();
+
+        modulesFile.write(modulesText);
+        modulesFile.flush();
+
+        modulesPath = modulesFile.fileName().toStdString();
+
+        xn_modules_file = modulesPath.c_str();
+    }
+
+    static const char* configText;
+    static const char* modulesText;
+
+    QTemporaryFile configFile;
+    QTemporaryFile modulesFile;
+    std::string modulesPath;
+    OpenniDriver* that;
+};
+
+const char*
+ntk::OpenniDriver::Config::configText = "\
+<OpenNI>\n\
+<Licenses>\n\
+<License vendor=\"PrimeSense\" key=\"0KOIk2JeIBYClPWVnMoRKn5cdY4=\" />\n\
+</Licenses>\n\
+<Log writeToConsole=\"false\" writeToFile=\"true\">\n\
+<!-- 0 - Verbose, 1 - Info, 2 - Warning, 3 - Error (default) -->\n\
+<LogLevel value=\"0\"/>\n\
+<Masks>\n\
+<Mask name=\"ALL\" on=\"true\"/>\n\
+</Masks>\n\
+<Dumps>\n\
+</Dumps>\n\
+</Log>\n\
+<ProductionNodes>\n\
+<Node type=\"Image\" name=\"Image1\">\n\
+<Configuration>\n\
+<MapOutputMode xRes=\"640\" yRes=\"480\" FPS=\"30\"/>\n\
+<Mirror on=\"true\"/>\n\
+</Configuration>\n\
+</Node>\n\
+<Node type=\"Depth\" name=\"Depth1\">\n\
+<Configuration>\n\
+<MapOutputMode xRes=\"640\" yRes=\"480\" FPS=\"30\"/>\n\
+<Mirror on=\"true\"/>\n\
+</Configuration>\n\
+</Node>\n\
+<Node type=\"User\" />\n\
+<Node type=\"Gesture\" />\n\
+<Node type=\"Hands\" />\n\
+</ProductionNodes>\n\
+</OpenNI>\n\
+";
+
+#ifdef __APPLE__
+const char*
+ntk::OpenniDriver::Config::modulesText = "\
+<Modules>\n\
+<Module path=\"libnimMockNodes.dylib\" />\n\
+<Module path=\"libnimCodecs.dylib\" />\n\
+<Module path=\"libnimRecorder.dylib\" />\n\
+<Module path=\"libXnDevicesSensorV2.dylib\" configDir=\"config\"/>\n\
+<Module path=\"libXnDeviceFile.dylib\" configDir=\"config\"/>\n\
+<Module path=\"libXnVFeatures.dylib\" configDir=\"config/XnVFeatures\"/>\n\
+<Module path=\"libXnVHandGenerator.dylib\" configDir=\"config/XnVHandGenerator\"/>\n\
+</Modules>\n\
+";
+#else
+const char*
+ntk::OpenniDriver::Config::modulesText = "\
+<Modules>\n\
+<Module path=\"../lib/libnimMockNodes.so\" />\n\
+<Module path=\"../lib/libnimCodecs.so\" />\n\
+<Module path=\"../lib/libnimRecorder.so\" />\n\
+<Module path=\"../lib/libXnDevicesSensorV2.so\" configDir=\"config\"/>\n\
+<Module path=\"../lib/libXnDeviceFile.so\" configDir=\"config\"/>\n\
+<Module path=\"../lib/libXnVFeatures.so\" configDir=\"config/XnVFeatures\"/>\n\
+<Module path=\"../lib/libXnVHandGenerator.so\" configDir=\"config/XnVHandGenerator\"/>\n\
+</Modules>\n\
+";
+#endif
+
+ntk::OpenniDriver::OpenniDriver() : m_config(new Config(this))
 {
     ntk_dbg(1) << "Initializing OpenNI driver";
 
@@ -703,7 +695,7 @@ ntk::OpenniDriver::OpenniDriver()
     xnLogInitSystem();
 
     XnStatus status = m_ni_context.Init();
-    check_error(status, "Initialize context");
+    checkXnError(status, "Initialize context");
 
     xn::NodeInfoList device_node_info_list;
     status = m_ni_context.EnumerateProductionTrees(XN_NODE_TYPE_DEVICE, NULL, device_node_info_list);
@@ -719,21 +711,27 @@ ntk::OpenniDriver::OpenniDriver()
     {
         const xn::NodeInfo& deviceInfo = *nodeIt;
         const XnProductionNodeDescription& description = deviceInfo.GetDescription();
-        ntk_dbg(2) << format("device: vendor %s name %s, instance %s",
-                             description.strVendor, description.strName, deviceInfo.GetInstanceName());
-    }
-
-
-    for (xn::NodeInfoList::Iterator nodeIt = device_node_info_list.Begin(); nodeIt != device_node_info_list.End (); ++nodeIt)
-    {
-        xn::NodeInfo deviceInfo = *nodeIt;
-        const XnProductionNodeDescription& description = deviceInfo.GetDescription();
-        ntk_dbg(1) << format("device: vendor %s name %s, instance %s\n",
-                             description.strVendor, description.strName, deviceInfo.GetInstanceName());
-        m_device_nodes.push_back(deviceInfo);
+        ntk_dbg(1) << format("Found device: vendor %s name %s", description.strVendor, description.strName);
+        m_device_nodes.push_back("kinect");
     }
 
     strcpy(m_license.strVendor, "PrimeSense");
     strcpy(m_license.strKey, "0KOIk2JeIBYClPWVnMoRKn5cdY4=");
     m_ni_context.AddLicense(m_license);
+}
+
+ntk::OpenniDriver :: ~OpenniDriver()
+{
+    m_ni_context.StopGeneratingAll();
+    m_ni_context.Release();
+    delete m_config;
+}
+
+void ntk::OpenniDriver :: checkXnError(const XnStatus& status, const char* what) const
+{
+    if (status != XN_STATUS_OK)
+    {
+        ntk_dbg(0) << "[ERROR] " << cv::format("%s failed: %s\n", what, xnGetStatusString(status));
+        ntk_throw_exception("Error in OpenniGrabber.");
+    }
 }

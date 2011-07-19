@@ -29,8 +29,9 @@ using namespace ntk;
 
 int main()
 {    
-    OpenniGrabber grabber1(0); // first id is 0
-    OpenniGrabber grabber2(1);
+    OpenniDriver ni_driver;
+    OpenniGrabber grabber1(ni_driver, 0); // first id is 0
+    OpenniGrabber grabber2(ni_driver, 1);
 
     // Will wait for all grabbers to have provided their image and
     // deliver a vector of images.

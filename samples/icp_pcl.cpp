@@ -52,8 +52,11 @@ int main(int argc, char **argv)
     QApplication app (argc, argv);
     QDir::setCurrent(QApplication::applicationDirPath());
 
+    // Declare the global OpenNI driver. Only one can be instantiated in a program.
+    OpenniDriver ni_driver;
+
     // Declare the frame grabber.
-    OpenniGrabber grabber(opt::kinect_id());
+    OpenniGrabber grabber(ni_driver, opt::kinect_id());
 
     // Start the grabber.
     grabber.connectToDevice();

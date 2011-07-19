@@ -28,8 +28,10 @@ using namespace ntk;
 
 int main()
 {    
-    OpenniGrabber grabber1(0); // first id is 0
-    OpenniGrabber grabber2(1);
+    OpenniDriver ni_driver;
+
+    OpenniGrabber grabber1(ni_driver, 0); // first id is 0
+    OpenniGrabber grabber2(ni_driver, 1);
 
     grabber1.connectToDevice();
     grabber2.connectToDevice();
