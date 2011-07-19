@@ -34,6 +34,23 @@ namespace ntk
 
 class BodyEventDetector;
 
+class OpenniDriver
+{
+public:
+    OpenniDriver();
+
+public:
+    xn::Context& niContext() { return m_ni_context; }
+    int numDevices() const { return m_device_nodes.size(); }
+    const xn::NodeInfo& getDevice(int id) { return m_device_nodes[id]; }
+    void check_error(const XnStatus& status, const char* what) const {}
+
+private:
+    xn::Context m_ni_context;
+    std::vector<xn::NodeInfo> m_device_nodes;
+    XnLicense m_license;
+};
+
 class OpenniGrabber : public ntk::RGBDGrabber
 {
 public:

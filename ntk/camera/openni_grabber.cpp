@@ -366,6 +366,7 @@ bool OpenniGrabber :: disconnectFromDevice()
 {
     QMutexLocker ni_locker(&m_ni_mutex);
     ntk_dbg(1) << format("[Kinect %x] disconnecting", this);
+    m_ni_context.StopGeneratingAll();
     if (m_body_event_detector)
         m_body_event_detector->shutDown();
     m_ni_context.Shutdown();
@@ -683,3 +684,56 @@ void OpenniGrabber :: calibrationFinishedCallback(XnUserID nId, bool success)
 }
 
 } // ntk
+
+ntk::OpenniDriver::OpenniDriver()
+{
+    ntk_dbg(1) << "Initializing OpenNI driver";
+
+    if (ntk::ntk_debug_level >= 1)
+    {
+        xnLogSetFileOutput(true);
+        xnLogSetSeverityFilter(XN_LOG_WARNING);
+        xnLogSetMaskState("ALL", true);
+    }
+    if (ntk::ntk_debug_level >= 2)
+    {
+        xnLogSetConsoleOutput(true);
+        xnLogSetSeverityFilter(XN_LOG_VERBOSE);
+    }
+    xnLogInitSystem();
+
+    XnStatus status = m_ni_context.Init();
+    check_error(status, "Initialize context");
+
+    xn::NodeInfoList device_node_info_list;
+    status = m_ni_context.EnumerateProductionTrees(XN_NODE_TYPE_DEVICE, NULL, device_node_info_list);
+    if (status != XN_STATUS_OK && device_node_info_list.Begin () != device_node_info_list.End ())
+        ntk_throw_exception(format("enumerating devices failed. Reason: %s", xnGetStatusString(status)));
+
+    // No device
+    if (device_node_info_list.IsEmpty())
+        ntk_throw_exception(format("No device connected.\n"));
+
+    for (xn::NodeInfoList::Iterator nodeIt = device_node_info_list.Begin();
+         nodeIt != device_node_info_list.End (); ++nodeIt)
+    {
+        const xn::NodeInfo& deviceInfo = *nodeIt;
+        const XnProductionNodeDescription& description = deviceInfo.GetDescription();
+        ntk_dbg(2) << format("device: vendor %s name %s, instance %s",
+                             description.strVendor, description.strName, deviceInfo.GetInstanceName());
+    }
+
+
+    for (xn::NodeInfoList::Iterator nodeIt = device_node_info_list.Begin(); nodeIt != device_node_info_list.End (); ++nodeIt)
+    {
+        xn::NodeInfo deviceInfo = *nodeIt;
+        const XnProductionNodeDescription& description = deviceInfo.GetDescription();
+        ntk_dbg(1) << format("device: vendor %s name %s, instance %s\n",
+                             description.strVendor, description.strName, deviceInfo.GetInstanceName());
+        m_device_nodes.push_back(deviceInfo);
+    }
+
+    strcpy(m_license.strVendor, "PrimeSense");
+    strcpy(m_license.strKey, "0KOIk2JeIBYClPWVnMoRKn5cdY4=");
+    m_ni_context.AddLicense(m_license);
+}
