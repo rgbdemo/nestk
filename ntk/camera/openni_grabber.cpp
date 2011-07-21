@@ -260,9 +260,19 @@ bool OpenniGrabber :: disconnectFromDevice()
 
 void OpenniGrabber :: waitAndUpdateActiveGenerators()
 {
+    // If there is only one device, call this global function.
+    if (m_driver.numDevices() == 1)
+    {
+        m_driver.niContext().WaitAndUpdateAll();
+        return;
+    }
+
+    // Multiple kinect, only wait for our stream.
     m_ni_depth_generator.WaitAndUpdateData();
     m_ni_rgb_generator.WaitAndUpdateData();
 
+    // FIXME: for some reason, hand events are not generated using this.
+    // Only WaitAndUpdateAll generates the events.
     if (m_track_users)
     {
         m_ni_user_generator.WaitAndUpdateData();
