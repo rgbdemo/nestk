@@ -54,6 +54,9 @@ namespace ntk
 template <class PointType>
 class TableObjectDetector
 {
+public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
     typedef PointType Point;
     typedef typename pcl::PointCloud<Point> PointCloud;
     typedef typename PointCloud::ConstPtr PointCloudConstPtr;
