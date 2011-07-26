@@ -4,7 +4,7 @@ if(COMMAND cmake_policy)
 endif(COMMAND cmake_policy)
 
 PROJECT(nestk)
-SET(NESTK_VERSION 0.3)
+SET(NESTK_VERSION 0.6)
 SET(NESTK_EMBEDDED_USE_FILE "${nestk_BINARY_DIR}/UseEmbeddedNestk.cmake" CACHE INTERNAL "Nestk cmake file to be included by parent project")
 SET(NESTK_DEPS_DIR "" CACHE PATH "Path to nestk deps")
 

@@ -118,14 +118,17 @@ bool OpenniGrabber :: connectToDevice()
     for (; current_id < m_camera_id && nodeIt != device_node_info_list.End (); ++nodeIt, ++current_id) {}
     ntk_throw_exception_if(current_id != m_camera_id, "Cannot find device.");
     xn::NodeInfo deviceInfo = *nodeIt;
-    status = m_driver.niContext().CreateProductionTree(deviceInfo, m_ni_device);
+
+    xn::Query query;
+    query.AddNeededNode(deviceInfo.GetInstanceName());
+
+    status = m_ni_device.Create(m_driver.niContext(), &query);
+    // FIXME: only works with OpenNI >= 1.3.2.1
+    // status = m_driver.niContext().CreateProductionTree(deviceInfo, m_ni_device);
     m_driver.checkXnError(status, "Create Device Node");
     const XnProductionNodeDescription& description = deviceInfo.GetDescription();
     ntk_dbg(1) << format("device: vendor %s name %s, instance %s",
                          description.strVendor, description.strName, deviceInfo.GetInstanceName());
-
-    xn::Query query;
-    query.AddNeededNode(deviceInfo.GetInstanceName());
 
     status = m_ni_depth_generator.Create(m_driver.niContext(), &query);
     m_driver.checkXnError(status, "Create depth generator");
@@ -729,7 +732,9 @@ ntk::OpenniDriver::OpenniDriver() : m_config(new Config(this))
 ntk::OpenniDriver :: ~OpenniDriver()
 {
     m_ni_context.StopGeneratingAll();
-    m_ni_context.Release();
+    // FIXME: Release only works with OpenNI >= 1.3.2.1
+    // m_ni_context.Release();
+    m_ni_context.Shutdown();
     delete m_config;
 }
 
