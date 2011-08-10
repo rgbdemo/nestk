@@ -20,7 +20,7 @@ add_library(
 
 target_link_libraries(
 	${XNFORMAT_LIB_NAME}
-        ${JPEG_LIB_NAME}
+        ${JPEG_LIBRARY}
 	${XNCORE_LIB_NAME}
 )
 

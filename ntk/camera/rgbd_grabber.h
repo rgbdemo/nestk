@@ -54,6 +54,9 @@ public:
   /*! Tell the grabber thread to stop grabbing. */
   virtual void setShouldExit() { m_should_exit = true; }
 
+  /*! Tell whether infrared images should be output. */
+  virtual void setIRMode(bool ir) {}
+
   /*! Set the integration time for Time-of-Flight cameras. */
   virtual void setIntegrationTime(double value) {}
   virtual double integrationTime() const { return -1; }

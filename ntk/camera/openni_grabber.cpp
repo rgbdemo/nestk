@@ -93,7 +93,8 @@ OpenniGrabber :: OpenniGrabber(OpenniDriver& driver, int camera_id) :
     m_mirrored(false),
     m_custom_bayer_decoding(true),
     m_xml_config_file(DEFAULT_XML_CONFIG_FILE),
-    m_track_users(true)
+    m_track_users(true),
+    m_get_infrared(false)
 {
 }
 
@@ -102,6 +103,41 @@ const std::string OpenniGrabber :: DEFAULT_XML_CONFIG_FILE =  "config/NestkConfi
 void OpenniGrabber :: set_xml_config_file(const std::string & xml_filename)
 {
     m_xml_config_file = xml_filename;
+}
+
+void OpenniGrabber :: setIRMode(bool ir)
+{
+    // FIXME: does not work.
+    // return;
+    QMutexLocker _(&m_ni_mutex);
+
+    if (ir == m_get_infrared)
+        return;
+
+    XnMapOutputMode dmomVGA;
+    dmomVGA.nFPS = 30;
+    dmomVGA.nXRes = 640;
+    dmomVGA.nYRes = 480;
+
+    XnMapOutputMode dmomQVGA;
+    dmomQVGA.nFPS = 30;
+    dmomQVGA.nXRes = 320;
+    dmomQVGA.nYRes = 240;
+
+    m_get_infrared = ir;
+    if (m_get_infrared)
+    {
+        m_ni_rgb_generator.StopGenerating();
+        // m_ni_depth_generator.GetAlternativeViewPointCap().ResetViewPoint();
+        // m_ni_depth_generator.SetMapOutputMode(dmomQVGA);
+        m_ni_ir_generator.StartGenerating();
+    }
+    else
+    {
+        m_ni_ir_generator.StopGenerating();
+        // m_ni_depth_generator.GetAlternativeViewPointCap().SetViewPoint(m_ni_rgb_generator);
+        m_ni_rgb_generator.StartGenerating();
+    }
 }
 
 bool OpenniGrabber :: connectToDevice()
@@ -164,6 +200,16 @@ bool OpenniGrabber :: connectToDevice()
 
     ntk_ensure(m_ni_depth_generator.IsCapabilitySupported(XN_CAPABILITY_ALTERNATIVE_VIEW_POINT), "Cannot register images.");
     m_ni_depth_generator.GetAlternativeViewPointCap().SetViewPoint(m_ni_rgb_generator);
+
+#if 1 // FIXME: does not work
+    status = m_ni_ir_generator.Create(m_driver.niContext(), &query);
+    m_driver.checkXnError(status, "Create infrared generator");
+    XnMapOutputMode ir_mode;
+    ir_mode.nFPS = 15;
+    ir_mode.nXRes = 1280;
+    ir_mode.nYRes = 1024;
+    m_ni_ir_generator.SetMapOutputMode(ir_mode);
+#endif
 
     if (m_track_users)
     {
@@ -242,6 +288,7 @@ bool OpenniGrabber :: disconnectFromDevice()
 
     m_ni_depth_generator.StopGenerating();
     m_ni_rgb_generator.StopGenerating();
+    m_ni_ir_generator.StopGenerating();
     if (m_track_users)
     {
         m_ni_user_generator.StopGenerating();
@@ -252,6 +299,7 @@ bool OpenniGrabber :: disconnectFromDevice()
         m_body_event_detector->shutDown();
 
     m_ni_depth_generator.Release();
+    m_ni_rgb_generator.Release();
     m_ni_rgb_generator.Release();
     m_ni_user_generator.Release();
     m_ni_hands_generator.Release();
@@ -266,13 +314,16 @@ void OpenniGrabber :: waitAndUpdateActiveGenerators()
     // If there is only one device, call this global function.
     if (m_driver.numDevices() == 1)
     {
-        m_driver.niContext().WaitAndUpdateAll();
+        m_driver.niContext().WaitOneUpdateAll(m_ni_depth_generator);
         return;
     }
 
     // Multiple kinect, only wait for our stream.
     m_ni_depth_generator.WaitAndUpdateData();
-    m_ni_rgb_generator.WaitAndUpdateData();
+    if (m_get_infrared)
+        m_ni_ir_generator.WaitAndUpdateData();
+    else
+        m_ni_rgb_generator.WaitAndUpdateData();
 
     // FIXME: for some reason, hand events are not generated using this.
     // Only WaitAndUpdateAll generates the events.
@@ -446,6 +497,7 @@ void OpenniGrabber :: run()
     xn::SceneMetaData sceneMD;
     xn::DepthMetaData depthMD;
     xn::ImageMetaData rgbMD;
+    xn::IRMetaData irMD;
 
     ImageBayerGRBG bayer_decoder(ImageBayerGRBG::EdgeAware);
 
@@ -464,7 +516,14 @@ void OpenniGrabber :: run()
             m_body_event_detector->update();
 
         m_ni_depth_generator.GetMetaData(depthMD);
-        m_ni_rgb_generator.GetMetaData(rgbMD);
+        if (m_get_infrared)
+        {
+            m_ni_ir_generator.GetMetaData(irMD);
+        }
+        else
+        {
+            m_ni_rgb_generator.GetMetaData(rgbMD);
+        }
 
         const XnDepthPixel* pDepth = depthMD.Data();
         ntk_assert((depthMD.XRes() == m_current_image.rawDepth().cols)
@@ -477,24 +536,37 @@ void OpenniGrabber :: run()
         for (int i = 0; i < depthMD.XRes()*depthMD.YRes(); ++i)
             raw_depth_ptr[i] = depth_correction_factor * pDepth[i]/1000.f;
 
-        if (m_custom_bayer_decoding)
+        if (m_get_infrared)
         {
-            uchar* raw_rgb_ptr = m_current_image.rawRgbRef().ptr<uchar>();
-            bayer_decoder.fillRGB(rgbMD,
-                                  m_current_image.rawRgb().cols, m_current_image.rawRgb().rows,
-                                  raw_rgb_ptr);
-            cvtColor(m_current_image.rawRgbRef(), m_current_image.rawRgbRef(), CV_RGB2BGR);
+            const XnGrayscale16Pixel* pImage = irMD.Data();
+            m_current_image.rawIntensityRef().create(irMD.YRes(), irMD.XRes());
+            float* raw_img_ptr = m_current_image.rawIntensityRef().ptr<float>();
+            for (int i = 0; i < irMD.XRes()*irMD.YRes(); ++i)
+            {
+                raw_img_ptr[i] = pImage[i];
+            }
         }
         else
         {
-            const XnUInt8* pImage = rgbMD.Data();
-            ntk_assert(rgbMD.PixelFormat() == XN_PIXEL_FORMAT_RGB24, "Invalid RGB format.");
-            uchar* raw_rgb_ptr = m_current_image.rawRgbRef().ptr<uchar>();
-            for (int i = 0; i < rgbMD.XRes()*rgbMD.YRes()*3; i += 3)
+            if (m_custom_bayer_decoding)
+            {
+                uchar* raw_rgb_ptr = m_current_image.rawRgbRef().ptr<uchar>();
+                bayer_decoder.fillRGB(rgbMD,
+                                      m_current_image.rawRgb().cols, m_current_image.rawRgb().rows,
+                                      raw_rgb_ptr);
+                cvtColor(m_current_image.rawRgbRef(), m_current_image.rawRgbRef(), CV_RGB2BGR);
+            }
+            else
+            {
+                const XnUInt8* pImage = rgbMD.Data();
+                ntk_assert(rgbMD.PixelFormat() == XN_PIXEL_FORMAT_RGB24, "Invalid RGB format.");
+                uchar* raw_rgb_ptr = m_current_image.rawRgbRef().ptr<uchar>();
+                for (int i = 0; i < rgbMD.XRes()*rgbMD.YRes()*3; i += 3)
                 for (int k = 0; k < 3; ++k)
                 {
                     raw_rgb_ptr[i+k] = pImage[i+(2-k)];
                 }
+            }
         }
 
         if (m_track_users)

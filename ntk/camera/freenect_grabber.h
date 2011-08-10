@@ -60,7 +60,7 @@ public:
   virtual void setTiltAngle(int angle);
 
   /*! Grab IR images instead of RGB images. */
-  void setIRMode(bool ir);
+  virtual void setIRMode(bool ir);
   bool irModeEnabled() const { return m_ir_mode; }
 
   /*! Special mode switching between IR and RGB after each frame. */
