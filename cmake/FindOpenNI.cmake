@@ -29,7 +29,7 @@ find_library(OPENNI_LIBRARY
              PATH_SUFFIXES lib
 )
 find_library(NITE_LIBRARY
-             NAMES XnVNite XnVNITE_1_3_1
+             NAMES XnVNite XnVNITE_1_3_1 XnVNITE_1_4_0
              HINTS ${NESTK_ROOT_DIRS_HINTS} ${PC_OPENNI_LIBDIR} ${PC_OPENNI_LIBRARY_DIRS} /usr/lib
              PATHS "$ENV{PROGRAMFILES}/PrimeSense/NITE/Lib${OPENNI_SUFFIX}" "$ENV{PROGRAMW6432}/PrimeSense/NITE/Lib${OPENNI_SUFFIX}"
              PATH_SUFFIXES lib
