@@ -78,7 +78,7 @@ namespace ntk
                                                               xnJointList(j),
                                                               joint);
      ni_p[j] = joint.position;
-     m_joints[j] = Point3f(ni_p[0].X, ni_p[0].Y, ni_p[0].Z);
+     m_joints[j] = Point3f(ni_p[j].X, ni_p[j].Y, ni_p[j].Z);
    }
 
    depth_generator.ConvertRealWorldToProjective(NumJoints, ni_p, ni_p);
