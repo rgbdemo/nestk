@@ -345,8 +345,13 @@ void FeatureSet :: buildDescriptorIndex()
 {
   if (m_locations.size() < 1)
     return;
-  m_descriptor_index = new cv::flann::Index_<float>(m_descriptors,
-                                                    cv::flann::KDTreeIndexParams(4));
+
+#ifdef HAVE_OPENCV_GREATER_THAN_2_3_0
+  cvflann::KDTreeIndexParams params(4);
+#else
+  cv::flann::KDTreeIndexParams params(4);
+#endif
+  m_descriptor_index = new IndexType(m_descriptors, params);
 }
 
 void FeatureSet :: matchWith(const FeatureSet& rhs,
@@ -368,8 +373,14 @@ void FeatureSet :: matchWith(const FeatureSet& rhs,
     std::copy(rhs_descriptors.ptr<float>(i),
               rhs_descriptors.ptr<float>(i+1),
               query.begin());
-    m_descriptor_index->knnSearch(query, indices, dists, 2,
-                                  cv::flann::SearchParams(64));
+
+#ifdef HAVE_OPENCV_GREATER_THAN_2_3_0
+    cvflann::SearchParams params(64);
+#else
+    cv::flann::SearchParams params(64);
+#endif
+
+    m_descriptor_index->knnSearch(query, indices, dists, 2, params);
     if (indices[0] < 0 || indices[1] < 0)
       continue;
     const double dist_ratio = dists[0]/dists[1];

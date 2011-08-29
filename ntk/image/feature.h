@@ -151,7 +151,12 @@ private:
   void buildDescriptorIndex();
 
 private:
-  ntk::Ptr< cv::flann::Index> m_descriptor_index;
+#ifdef HAVE_OPENCV_GREATER_THAN_2_3_0
+  typedef cv::flann::GenericIndex<cv::flann::L2<float> > IndexType;
+#else
+  typedef cv::flann::Index_<float> IndexType;
+#endif
+  ntk::Ptr< IndexType > m_descriptor_index;
   char m_feature_type;
   unsigned m_descriptor_size;
   std::vector<FeaturePoint> m_locations;
