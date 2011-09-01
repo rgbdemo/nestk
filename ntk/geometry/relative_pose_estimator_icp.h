@@ -44,7 +44,10 @@ public:
     {}
 
 public:
+    bool hasReferenceImage() const { return m_ref_cloud.points.size() > 0; }
+
     void setReferenceImage(const RGBDImage& ref_image);
+    void setReferenceCloud(const pcl::PointCloud<pcl::PointXYZ>& cloud);
 
     /*! Distance threshold to associate points. */
     void setDistanceThreshold(double th) { m_distance_threshold = th; }
