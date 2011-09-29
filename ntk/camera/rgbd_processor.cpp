@@ -519,8 +519,8 @@ namespace ntk
             }
             if (depth < 0)
                 depth = 0;
-            else if (depth > 10)
-                depth = 10;
+            else if (depth > 30)
+                depth = 30;
             depth_im(r,c) = depth;
         }
     }
@@ -538,8 +538,8 @@ namespace ntk
             }
             if (depth < 0)
                 depth = 0;
-            else if (depth > 10)
-                depth = 10;
+            else if (depth > 30)
+                depth = 30;
             depth_im(r,c) = depth;
         }
     }
