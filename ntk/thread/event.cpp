@@ -55,7 +55,7 @@ void AsyncEventListener :: newEvent(EventBroadcaster* sender)
   }
 
   if (!m_handler_running)
-    QApplication::postEvent(this, new QEvent(QEvent::User));
+    QApplication::postEvent(this, new QEvent(QEvent::User), Qt::LowEventPriority);
 }
 
 void AsyncEventListener :: customEvent(QEvent* event)
@@ -69,6 +69,8 @@ void AsyncEventListener :: customEvent(QEvent* event)
   {
     m_event_signaled = false;
     handleAsyncEvent();
+	// FIXME: this is important on Windows to avoid the application
+	// spending all its time handling these custom events.
     QApplication::processEvents();
   }
   m_handler_running = false;

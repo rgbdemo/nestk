@@ -23,6 +23,7 @@
 #include <ntk/image/sift.h>
 #include <ntk/utils/opencv_utils.h>
 #include <ntk/numeric/utils.h>
+#include <ntk/utils/time.h>
 
 using namespace cv;
 
@@ -32,6 +33,7 @@ namespace ntk
 void FeatureSet :: extractFromImage(const RGBDImage& image,
                                     const FeatureSetParams& params)
 {
+    ntk::TimeCount tc("FeatureSet::extractFromImage", 1);
     m_descriptor_index.release();
 
     if (params.detector_type == "GPUSIFT")
@@ -65,7 +67,12 @@ void FeatureSet :: extractFromImage(const RGBDImage& image,
     else if (params.detector_type == "SURF")
     {
         detector = new SurfFeatureDetector(params.threshold > 0 ? params.threshold : 400 /*hessian_threshold*/,
-                                           5/*octaves*/, 4/*octave_layers*/);
+                                           3/*octaves*/, 4/*octave_layers*/);
+    }
+    else if (params.detector_type == "SURF_BIGSCALE")
+    {
+        detector = new SurfFeatureDetector(params.threshold > 0 ? params.threshold : 400 /*hessian_threshold*/,
+                                           2/*octaves*/, 3/*octave_layers*/);
     }
     else
     {
@@ -74,6 +81,7 @@ void FeatureSet :: extractFromImage(const RGBDImage& image,
 
     std::vector<cv::KeyPoint> keypoints;
     detector->detect(image.rgbAsGray(), keypoints);
+    tc.elapsedMsecs(" -- keypoint extraction -- ");
 
     cv::DescriptorExtractor* extractor = 0;
     if (params.descriptor_type == "BRIEF32")
@@ -128,9 +136,11 @@ void FeatureSet :: extractFromImage(const RGBDImage& image,
     }
     ntk_dbg_print(filtered_keypoints.size(), 1);
     ntk_dbg_print(keypoints.size(), 1);
+    tc.elapsedMsecs(" -- filtering -- ");
 
     cv::Mat descriptors;
     extractor->compute(image.rgbAsGray(), filtered_keypoints, descriptors);
+    tc.elapsedMsecs(" -- description computation -- ");
     m_descriptor_size = extractor->descriptorSize();
     switch (extractor->descriptorType())
     {
@@ -150,6 +160,7 @@ void FeatureSet :: extractFromImage(const RGBDImage& image,
     foreach_idx(i, filtered_keypoints)
             ((KeyPoint&)m_locations[i]) = filtered_keypoints[i];
     fillDepthData(image);
+    tc.elapsedMsecs(" -- finishing -- ");
 }
 
 void FeatureSet :: extractFromImageUsingSiftGPU(const RGBDImage& image,
@@ -345,7 +356,6 @@ void FeatureSet :: buildDescriptorIndex()
 {
     if (m_locations.size() < 1)
         return;
-
 #ifdef HAVE_OPENCV_GREATER_THAN_2_3_0
     cvflann::KDTreeIndexParams params(4);
 #else
@@ -373,13 +383,11 @@ void FeatureSet :: matchWith(const FeatureSet& rhs,
         std::copy(rhs_descriptors.ptr<float>(i),
                   rhs_descriptors.ptr<float>(i+1),
                   query.begin());
-
 #ifdef HAVE_OPENCV_GREATER_THAN_2_3_0
         cvflann::SearchParams params(64);
 #else
         cv::flann::SearchParams params(64);
 #endif
-
         m_descriptor_index->knnSearch(query, indices, dists, 2, params);
         if (indices[0] < 0 || indices[1] < 0)
             continue;

@@ -99,17 +99,8 @@ OpenniGrabber :: OpenniGrabber(OpenniDriver& driver, int camera_id) :
 {
 }
 
-const std::string OpenniGrabber :: DEFAULT_XML_CONFIG_FILE =  "config/NestkConfig.xml";
-
-void OpenniGrabber :: set_xml_config_file(const std::string & xml_filename)
-{
-    m_xml_config_file = xml_filename;
-}
-
 void OpenniGrabber :: setIRMode(bool ir)
 {
-    // FIXME: does not work.
-    // return;
     QMutexLocker _(&m_ni_mutex);
 
     if (ir == m_get_infrared)
@@ -150,6 +141,13 @@ void OpenniGrabber :: setSubsamplingFactor(int factor)
     m_subsampling_factor = factor;
 }
 
+const std::string OpenniGrabber :: DEFAULT_XML_CONFIG_FILE =  "config/NestkConfig.xml";
+
+void OpenniGrabber :: set_xml_config_file(const std::string & xml_filename)
+{
+    m_xml_config_file = xml_filename;
+}
+
 bool OpenniGrabber :: connectToDevice()
 {
     QMutexLocker ni_locker(&m_ni_mutex);
@@ -164,17 +162,14 @@ bool OpenniGrabber :: connectToDevice()
     for (; current_id < m_camera_id && nodeIt != device_node_info_list.End (); ++nodeIt, ++current_id) {}
     ntk_throw_exception_if(current_id != m_camera_id, "Cannot find device.");
     xn::NodeInfo deviceInfo = *nodeIt;
-
-    xn::Query query;
-    query.AddNeededNode(deviceInfo.GetInstanceName());
-
-    status = m_ni_device.Create(m_driver.niContext(), &query);
-    // FIXME: only works with OpenNI >= 1.3.2.1
-    // status = m_driver.niContext().CreateProductionTree(deviceInfo, m_ni_device);
+    status = m_driver.niContext().CreateProductionTree(deviceInfo, m_ni_device);
     m_driver.checkXnError(status, "Create Device Node");
     const XnProductionNodeDescription& description = deviceInfo.GetDescription();
     ntk_dbg(1) << format("device: vendor %s name %s, instance %s",
                          description.strVendor, description.strName, deviceInfo.GetInstanceName());
+
+    xn::Query query;
+    query.AddNeededNode(deviceInfo.GetInstanceName());
 
     status = m_ni_depth_generator.Create(m_driver.niContext(), &query);
     m_driver.checkXnError(status, "Create depth generator");
@@ -211,7 +206,6 @@ bool OpenniGrabber :: connectToDevice()
     ntk_throw_exception_if(!m_ni_depth_generator.IsCapabilitySupported(XN_CAPABILITY_ALTERNATIVE_VIEW_POINT), "Cannot register images.");
     m_ni_depth_generator.GetAlternativeViewPointCap().SetViewPoint(m_ni_rgb_generator);
 
-#if 1 // FIXME: does not work well, sometimes hangs.
     status = m_ni_ir_generator.Create(m_driver.niContext(), &query);
     m_driver.checkXnError(status, "Create infrared generator");
     XnMapOutputMode ir_mode;
@@ -219,7 +213,6 @@ bool OpenniGrabber :: connectToDevice()
     ir_mode.nXRes = 1280;
     ir_mode.nYRes = 1024;
     m_ni_ir_generator.SetMapOutputMode(ir_mode);
-#endif
 
     if (m_track_users)
     {
@@ -310,7 +303,7 @@ bool OpenniGrabber :: disconnectFromDevice()
 
     m_ni_depth_generator.Release();
     m_ni_rgb_generator.Release();
-    m_ni_rgb_generator.Release();
+    m_ni_ir_generator.Release();
     m_ni_user_generator.Release();
     m_ni_hands_generator.Release();
     m_ni_gesture_generator.Release();
@@ -324,7 +317,7 @@ void OpenniGrabber :: waitAndUpdateActiveGenerators()
     // If there is only one device, call this global function.
     if (m_driver.numDevices() == 1)
     {
-        m_driver.niContext().WaitOneUpdateAll(m_ni_depth_generator);
+		m_driver.niContext().WaitOneUpdateAll(m_ni_depth_generator);
         return;
     }
 
@@ -334,6 +327,7 @@ void OpenniGrabber :: waitAndUpdateActiveGenerators()
         m_ni_ir_generator.WaitAndUpdateData();
     else
         m_ni_rgb_generator.WaitAndUpdateData();
+    m_ni_rgb_generator.WaitAndUpdateData();
 
     // FIXME: for some reason, hand events are not generated using this.
     // Only WaitAndUpdateAll generates the events.
@@ -571,27 +565,25 @@ void OpenniGrabber :: run()
                 raw_img_ptr[i] = pImage[i];
             }
         }
+
+        if (m_custom_bayer_decoding)
+        {
+            uchar* raw_rgb_ptr = m_current_image.rawRgbRef().ptr<uchar>();
+            bayer_decoder.fillRGB(rgbMD,
+                                  m_current_image.rawRgb().cols, m_current_image.rawRgb().rows,
+                                  raw_rgb_ptr);
+            cvtColor(m_current_image.rawRgbRef(), m_current_image.rawRgbRef(), CV_RGB2BGR);
+        }
         else
         {
-            if (m_custom_bayer_decoding)
-            {
-                uchar* raw_rgb_ptr = m_current_image.rawRgbRef().ptr<uchar>();
-                bayer_decoder.fillRGB(rgbMD,
-                                      m_current_image.rawRgb().cols, m_current_image.rawRgb().rows,
-                                      raw_rgb_ptr);
-                cvtColor(m_current_image.rawRgbRef(), m_current_image.rawRgbRef(), CV_RGB2BGR);
-            }
-            else
-            {
-                const XnUInt8* pImage = rgbMD.Data();
-                ntk_assert(rgbMD.PixelFormat() == XN_PIXEL_FORMAT_RGB24, "Invalid RGB format.");
-                uchar* raw_rgb_ptr = m_current_image.rawRgbRef().ptr<uchar>();
-                for (int i = 0; i < rgbMD.XRes()*rgbMD.YRes()*3; i += 3)
+            const XnUInt8* pImage = rgbMD.Data();
+            ntk_assert(rgbMD.PixelFormat() == XN_PIXEL_FORMAT_RGB24, "Invalid RGB format.");
+            uchar* raw_rgb_ptr = m_current_image.rawRgbRef().ptr<uchar>();
+            for (int i = 0; i < rgbMD.XRes()*rgbMD.YRes()*3; i += 3)
                 for (int k = 0; k < 3; ++k)
                 {
                     raw_rgb_ptr[i+k] = pImage[i+(2-k)];
                 }
-            }
         }
 
         if (m_track_users)
@@ -845,9 +837,7 @@ ntk::OpenniDriver::OpenniDriver() : m_config(new Config(this))
 ntk::OpenniDriver :: ~OpenniDriver()
 {
     m_ni_context.StopGeneratingAll();
-    // FIXME: Release only works with OpenNI >= 1.3.2.1
-    // m_ni_context.Release();
-    m_ni_context.Shutdown();
+    m_ni_context.Release();
     delete m_config;
 }
 

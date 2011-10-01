@@ -22,11 +22,11 @@
 
 #include <ntk/core.h>
 
-namespace xn
-{
-  class UserGenerator;
-  class DepthGenerator;
-}
+#include <XnOpenNI.h>
+#include <XnCodecIDs.h>
+#include <XnCppWrapper.h>
+#include <XnVSessionManager.h>
+#include <XnVPushDetector.h>
 
 namespace ntk
 {
@@ -41,6 +41,8 @@ public:
   /*! List of available joints. */
   enum JointName
   {
+    NTK_SKEL_NIL             = -1,
+
     NTK_SKEL_HEAD			= 0,
     NTK_SKEL_NECK,
     NTK_SKEL_TORSO,
@@ -68,23 +70,25 @@ public:
     NTK_SKEL_RIGHT_HIP,
     NTK_SKEL_RIGHT_KNEE,
     NTK_SKEL_RIGHT_ANKLE,
-    NTK_SKEL_RIGHT_FOOT,
+    NTK_SKEL_RIGHT_FOOT,   
+
+    NTK_SKEL_NUM,
   };
 
   /*! Number of available joints. */
-  enum { NumJoints = 24 };
+  enum { NumJoints = NTK_SKEL_NUM };
 
   /*! Number of available links. */
   enum { NumLinks = 16 };
 
   /*! Ordered list of joints */
-  static JointName ntkJointList(int i);
+  static const JointName ntkJointList(int i);
 
   /*! Represent a link between two joints. */
   struct Link { JointName source; JointName dest; };
 
   /*! List of links. */
-  static Link ntkLinkList(int i)
+  static const Link ntkLinkList(int i)
   {
     static const Link list[NumLinks] =  {
       {NTK_SKEL_HEAD, NTK_SKEL_NECK},
@@ -111,6 +115,10 @@ public:
     };
     return list[i];
   }
+
+private:
+  /*! Do not use it directly. Use ntkJointList. */
+  static const XnSkeletonJoint xnJointList(int i);
 
 public:
   Skeleton()
@@ -148,11 +156,47 @@ private:
   /*! WARNING: members must be POD to allow deep memcpy. */
   cv::Point3f m_joints[NumJoints];
   cv::Point3f m_projected_joints[NumJoints];
+  cv::Point3f m_primary_hand_points;
+  cv::Point3f m_projected_primary_hand_points;
   int m_user_id;
 };
 
+inline const XnSkeletonJoint Skeleton :: xnJointList(int i)
+{
+  static const XnSkeletonJoint list[NumJoints] =  {
+    XN_SKEL_HEAD,
+    XN_SKEL_NECK,
+    XN_SKEL_TORSO,
+    XN_SKEL_WAIST,
+    XN_SKEL_LEFT_COLLAR,
+    XN_SKEL_LEFT_SHOULDER,
+    XN_SKEL_LEFT_ELBOW,
+    XN_SKEL_LEFT_WRIST,
+    XN_SKEL_LEFT_HAND,
+    XN_SKEL_LEFT_FINGERTIP,
+
+    XN_SKEL_RIGHT_COLLAR,
+    XN_SKEL_RIGHT_SHOULDER,
+    XN_SKEL_RIGHT_ELBOW,
+    XN_SKEL_RIGHT_WRIST,
+    XN_SKEL_RIGHT_HAND,
+    XN_SKEL_RIGHT_FINGERTIP,
+
+    XN_SKEL_LEFT_HIP,
+    XN_SKEL_LEFT_KNEE,
+    XN_SKEL_LEFT_ANKLE,
+    XN_SKEL_LEFT_FOOT,
+
+    XN_SKEL_RIGHT_HIP,
+    XN_SKEL_RIGHT_KNEE,
+    XN_SKEL_RIGHT_ANKLE,
+    XN_SKEL_RIGHT_FOOT
+  };
+  return list[i];
+}
+
 /*! Ordered list of joints */
-inline Skeleton::JointName Skeleton :: ntkJointList(int i)
+inline const Skeleton::JointName Skeleton :: ntkJointList(int i)
 {
   static const JointName list[NumJoints] =  {
     NTK_SKEL_HEAD,

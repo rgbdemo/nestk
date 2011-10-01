@@ -98,6 +98,9 @@ public:
     /*! Grab IR images instead of RGB images. */
     virtual void setIRMode(bool ir);
 
+	/*! Set whether custom bayer decoding should be used. */
+	void setCustomBayerDecoding(bool enable) { m_custom_bayer_decoding = enable; }
+
 public:
     // Nite accessors.
     xn::DepthGenerator& niDepthGenerator() { return m_ni_depth_generator; }
@@ -160,7 +163,6 @@ private:
     bool m_get_infrared;
 
     static QMutex m_ni_mutex;
-    QMutex m_device_mutex;
 };
 
 typedef OpenniGrabber NiteRGBDGrabber;
