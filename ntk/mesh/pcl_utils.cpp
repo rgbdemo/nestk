@@ -20,6 +20,8 @@
 #include "pcl_utils.h"
 #include "pcl_utils.hpp"
 
+#include <pcl/ros/conversions.h>
+
 namespace ntk
 {
 
@@ -46,5 +48,40 @@ template void pointCloudToMesh(ntk::Mesh& mesh,
                                const pcl::PointCloud<PointXYZIndex>& cloud);
 template void pointCloudToMesh(ntk::Mesh& mesh,
                                const pcl::PointCloud<pcl::PointXYZ>& cloud);
+
+template
+void sampledRgbdImageToPointCloud(pcl::PointCloud<pcl::PointXYZ>& cloud,
+                                  const RGBDImage& image,
+                                  const Pose3D& pose,
+                                  int n_samples);
+
+void polygonMeshToMesh(ntk::Mesh& mesh, pcl::PolygonMesh& polygon)
+{
+    pcl::PointCloud<pcl::PointXYZ> cloud;
+    pcl::fromROSMsg(polygon.cloud, cloud);
+    pointCloudToMesh(mesh, cloud);
+    mesh.faces.resize(polygon.polygons.size());
+    foreach_idx(i, polygon.polygons)
+    {
+        const pcl::Vertices& vertices = polygon.polygons[i];
+        ntk_assert(vertices.vertices.size() == 3, "Must be triangles!");
+        ntk::Face& face = mesh.faces[i];
+        face.indices[0] = vertices.vertices[0];
+        face.indices[1] = vertices.vertices[1];
+        face.indices[2] = vertices.vertices[2];
+    }
+}
+
+void meshToPointCloud(pcl::PointCloud<pcl::PointXYZ>& cloud,
+                      const ntk::Mesh& mesh)
+{
+    cloud.points.resize(mesh.vertices.size());
+    cloud.height = 1;
+    cloud.width = cloud.points.size();
+    foreach_idx(i, cloud.points)
+    {
+        cloud.points[i] = toPcl(mesh.vertices[i]);
+    }
+}
 
 } // ntk

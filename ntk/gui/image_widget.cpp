@@ -29,6 +29,16 @@ using namespace cv;
 namespace ntk
 {
 
+ImageWidget::ImageWidget (QWidget* parent)
+: QWidget(parent)
+, keep_ratio(false)
+, m_last_mouse_pos(-1,-1)
+{
+    QSizePolicy sizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
+    sizePolicy.setHeightForWidth(true);
+    setSizePolicy(sizePolicy);
+}
+
 void ImageWidget :: mouseMoveEvent ( QMouseEvent * event )
 {
     if (m_image.isNull())
@@ -66,7 +76,10 @@ void ImageWidget :: setImage(const cv::Mat1b& im)
 {
     if (m_image.width() != im.cols
             || m_image.height() != im.rows)
+    {
         m_image = QImage(im.cols, im.rows, QImage::Format_RGB32);
+        updateGeometry();
+    }
 
     for (int r = 0; r < im.rows; ++r)
     {
@@ -85,7 +98,10 @@ void ImageWidget :: setImage(const cv::Mat1f& im, double* i_min_val, double* i_m
 {
     if (m_image.width() != im.cols
             || m_image.height() != im.rows)
+    {
         m_image = QImage(im.cols, im.rows, QImage::Format_RGB32);
+        updateGeometry();
+    }
 
     double min_val, max_val;
     if (i_min_val && i_max_val)
@@ -120,9 +136,13 @@ void ImageWidget :: setImage(const cv::Mat1f& im, double* i_min_val, double* i_m
 
 void ImageWidget :: setImage(const cv::Mat3b& im)
 {
-    if (m_image.width() != im.cols
+    if (m_image.isNull()
+            || m_image.width() != im.cols
             || m_image.height() != im.rows)
+    {
         m_image = QImage(im.cols, im.rows, QImage::Format_RGB32);
+        updateGeometry();
+    }
 
     for (int r = 0; r < im.rows; ++r)
     {
@@ -155,7 +175,6 @@ void ImageWidget :: setPen(QPen pen)
     m_pen = pen;
 }
 
-
 void ImageWidget :: paintEvent(QPaintEvent * event)
 {
     double sx = scaleX();
@@ -169,7 +188,10 @@ void ImageWidget :: paintEvent(QPaintEvent * event)
     }
 
     QPainter painter(this);
-    painter.drawImage(rect(), m_image, m_image.rect());
+
+    // FIXME: The image rect should be cached and recomputed on resize events.
+
+    painter.drawImage(imageRect(), m_image, m_image.rect());
 
     m_pen.setColor(qRgb(m_rect_color[0], m_rect_color[1], m_rect_color[2]));
     painter.setPen(m_pen);
@@ -190,6 +212,69 @@ void ImageWidget :: paintEvent(QPaintEvent * event)
         QPoint p (m_texts[i].x*sx, m_texts[i].y*sy);
         painter.drawText(p, s);
     }
+}
+
+void
+ImageWidget::setRatioKeeping (bool ratio_keeping)
+{
+    if (keep_ratio == ratio_keeping)
+        return;
+
+    keep_ratio = ratio_keeping;
+
+    updateGeometry();
+}
+
+QSize ImageWidget :: sizeHint() const
+{
+    if (!keep_ratio || m_image.isNull() || m_image.width() * m_image.height() == 0)
+        return QWidget::sizeHint();
+
+    return QSize(m_image.width(), m_image.height());
+}
+
+QSize ImageWidget :: minimumSizeHint () const
+{
+    if (!keep_ratio || m_image.isNull() || m_image.width() * m_image.height() == 0)
+        return QWidget::minimumSizeHint();
+
+    return QSize(m_image.width() / 8, m_image.height() / 8);
+}
+
+int ImageWidget :: heightForWidth(int width) const
+{
+    if (!keep_ratio || m_image.isNull() || m_image.width() * m_image.height() == 0)
+        return QWidget::heightForWidth(width);
+
+    return m_image.height() / m_image.width() * width;
+}
+
+QRect ImageWidget :: imageRect () const
+{
+    if (!keep_ratio || m_image.isNull() || m_image.width() * m_image.height() == 0)
+        return rect();
+
+    const QRect widgetRect = rect();
+
+    const float widgetRatio = float(widgetRect.height()) / float(widgetRect.width());
+    const float imageRatio  = float(m_image   .height()) / float(m_image   .width());
+
+    QRect ret = widgetRect;
+
+    if (imageRatio < widgetRatio)
+    {
+        const int extraHeight = widgetRect.height() - int(widgetRect.width() * imageRatio);
+
+        ret.adjust(0, extraHeight / 2, 0, -extraHeight / 2);
+    }
+    else if (widgetRatio < imageRatio)
+    {
+        const int extraWidth = widgetRect.width() - int(widgetRect.height() / imageRatio);
+
+        ret.adjust(extraWidth / 2, 0, -extraWidth / 2, 0);
+    }
+
+    return ret;
 }
 
 } // ntk

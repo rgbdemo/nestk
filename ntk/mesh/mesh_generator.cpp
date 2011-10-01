@@ -109,7 +109,6 @@ namespace ntk
     if (image.amplitude().data)
       minMaxLoc(image.amplitude(), &min_val, &max_val);
 
-    std::vector<Surfel> surfels;
     m_mesh.clear();
 
     const cv::Mat1f& depth_im = image.depth();
@@ -161,16 +160,14 @@ namespace ntk
       double normal_z = std::max(normal.z, 0.5f);
       s.radius = m_resolution_factor * ntk::math::sqrt1_2 * depth
           / (depth_pose.focalX() * normal_z);
-      surfels.push_back(s);
+      m_mesh.addSurfel(s);
     }
-
-    m_mesh.buildFromSurfels(surfels, 1);
   }
 
   void MeshGenerator :: generate(const RGBDImage& image,
                                  const Pose3D& depth_pose,
                                  const Pose3D& rgb_pose)
-  {;
+  {
     const Pose3D& real_depth_pose = depth_pose.isValid() ? depth_pose : *(image.calibration()->depth_pose);
     const Pose3D& real_rgb_pose = rgb_pose.isValid() ? rgb_pose : *(image.calibration()->rgb_pose);
 

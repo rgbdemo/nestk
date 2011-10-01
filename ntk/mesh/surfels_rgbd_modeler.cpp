@@ -28,10 +28,45 @@ using namespace cv;
 namespace ntk
 {
 
-  bool SurfelsRGBDModeler :: addNewView(const RGBDImage& image, Pose3D& relative_pose)
-  {
-    const float update_max_normal_angle = 60;
+bool SurfelsRGBDModeler :: mergeToLeftSurfel(Surfel& dest, const Surfel& src)
+{
+    dest.location = (dest.location*float(dest.n_views) + src.location*float(src.n_views))
+            * (1.0f/(dest.n_views+src.n_views));
+
+    cv::Vec3f src_color = src.color;
+    cv::Vec3f dest_color = dest.color;
+    dest.color = (dest_color*float(dest.n_views) + src_color*float(src.n_views))
+            * (1.0f/(dest.n_views+src.n_views));
+
+    if (src.min_camera_angle < dest.min_camera_angle)
+    {
+        dest.normal = src.normal;
+        dest.min_camera_angle = src.min_camera_angle;
+        dest.radius = src.radius;
+    }
+    dest.n_views = dest.n_views + src.n_views;
+    return true;
+}
+
+bool SurfelsRGBDModeler :: normalsAreCompatible(const Surfel& lhs, const Surfel& rhs)
+{
+    float normal_angle = acos(lhs.normal.dot(rhs.normal));
+    return (normal_angle < (m_update_max_normal_angle*M_PI/180.0));
+}
+
+float SurfelsRGBDModeler :: computeSurfelRadius(float depth, float camera_z, double mean_focal)
+{
+    camera_z = std::max(camera_z, 0.3f);
+    float radius = ntk::math::sqrt1_2 * depth / (mean_focal * camera_z);
+    radius = std::max(radius, m_resolution*0.5f);
+    return radius;
+}
+
+bool SurfelsRGBDModeler :: addNewView(const RGBDImage& image, Pose3D& relative_pose)
+{
+    ntk::TimeCount tc("SurfelsRGBDModeler::addNewView", 1);
     const float update_max_dist = 0.1;
+    const float max_camera_normal_angle = ntk::deg_to_rad(90);
 
     Pose3D rgb_pose = *image.calibration()->rgb_pose;
     Pose3D depth_pose = *image.calibration()->depth_pose;
@@ -46,314 +81,192 @@ namespace ntk
     Mat1b covered_pixels (depth_im.size());
     covered_pixels = 0;
 
+    std::list<Surfel> surfels_to_reinsert;
+
     // Surfel updating.
-    foreach_idx(i, m_surfels)
+    for (SurfelMap::iterator next_it = m_surfels.begin(); next_it != m_surfels.end(); )
     {
-      Surfel& surfel = m_surfels[i];
-      if (!surfel.enabled())
-        continue;
-      Point3f surfel_2d = depth_pose.projectToImage(surfel.location);
-      bool surfel_deleted = false;
-      int r = ntk::math::rnd(surfel_2d.y);
-      int c = ntk::math::rnd(surfel_2d.x);
-      int d = ntk::math::rnd(surfel_2d.z);
-      if (!is_yx_in_range(depth_im, r, c) || !image.depthMask()(r, c))
-        continue;
+        SurfelMap::iterator surfel_it = next_it;
+        ++next_it;
 
-      Vec3f camera_normal = image.normal()(r, c);
-      Vec3f world_normal = camera_to_world_normal_pose.cameraTransform(camera_normal);
-      normalize(world_normal);
+        Surfel& surfel = surfel_it->second;
+        if (!surfel.enabled())
+            continue;
 
-      Vec3f eyev = camera_eye_vector(depth_pose, r, c);
-      double camera_angle = acos(camera_normal.dot(eyev));
-
-      float normal_angle = acos(world_normal.dot(surfel.normal));
-      if (normal_angle > (update_max_normal_angle*M_PI/180.0))
-      {
-        // Removal check. If a surfel has a different normal and is closer to the camera
-        // than the new scan, remove it.
-        if (surfel_2d.z > depth_im(r,c) && surfel.n_views < 2)
-        {
-          surfel = Surfel();
-          surfel_deleted = true;
-        }
-        else
-          covered_pixels(r,c) = 1;
-        continue;
-      }
-
-      // If existing surfel is far from new depth value:
-      // - If existing one had a worst point of view, and was seen only once, remove it.
-      // - Otherwise do not include the new one.
-      if (std::abs(surfel_2d.z - depth_im(r,c)) > update_max_dist)
-      {
-        if (surfel.min_camera_angle > camera_angle && surfel.n_views < 2)
-        {
-          surfel = Surfel(); // remove the old one.
-          surfel_deleted = true;
-        }
-        else
-          covered_pixels(r,c) = 1;
-        continue;
-      }
-
-      // Compatible surfel found.
-      const float depth = depth_im(r,c) + m_global_depth_offset;
-
-      Point3f p3d = depth_pose.unprojectFromImage(Point2f(c,r), depth);
-      Point3f p_rgb = rgb_pose.projectToImage(p3d);
-      if (!is_yx_in_range(image.rgb(), p_rgb.y, p_rgb.x))
-        continue;
-
-      cv::Vec3b rgb_color = bgr_to_rgb(image.rgb()(p_rgb.y, p_rgb.x));
-
-      surfel.location = (surfel.location*float(surfel.n_views) + p3d) * (1.0f/(surfel.n_views+1));
-      surfel.normal = (surfel.normal*float(surfel.n_views) + Point3f(world_normal)) * (1.0f/(surfel.n_views+1));
-      surfel.color = (Vec3f(surfel.color)*float(surfel.n_views) + Vec3f(rgb_color)) * (1.f/(surfel.n_views+1));
-      if (camera_angle < surfel.min_camera_angle)
-      {
-        surfel.normal = world_normal;
-        surfel.min_camera_angle = camera_angle;
-      }
-      surfel.radius = std::min((double)surfel.radius,
-                               1.0 * ntk::math::sqrt1_2 * depth
-                               / (depth_pose.focalX() * camera_normal[2]));
-      surfel.n_views += 1;
-      covered_pixels(r,c) = 1;
-    }
-
-    imwrite_normalized("debug_covered.png", covered_pixels);
-    imwrite_normalized("debug_depth_mask.png", image.depthMask());
-
-    // Surfel addition
-    for (int r = 0; r < depth_im.rows; r += 1)
-    for (int c = 0; c < depth_im.cols; c += 1)
-    {
-      if (!image.depthMask()(r,c) || covered_pixels(r,c))
-        continue;
-      float depth = depth_im(r,c) + m_global_depth_offset;
-      Point3f p3d = depth_pose.unprojectFromImage(Point2f(c,r), depth);
-      Point3f p_rgb = rgb_pose.projectToImage(p3d);
-      if (!is_yx_in_range(image.rgb(), p_rgb.y, p_rgb.x))
-        continue;
-      cv::Vec3b rgb_color = bgr_to_rgb(image.rgb()(p_rgb.y, p_rgb.x));
-
-      Vec3f camera_normal = image.normal()(r, c);
-      Vec3f world_normal = camera_to_world_normal_pose.cameraTransform(camera_normal);
-      normalize(world_normal);
-
-      Vec3f eyev = camera_eye_vector(depth_pose, r, c);
-      double camera_angle = acos(camera_normal.dot(eyev));
-
-      Surfel surfel;
-      surfel.location = p3d;
-      surfel.normal = world_normal;
-      surfel.color = rgb_color;
-      // int b = 255.*(camera_angle*180./M_PI)/90.;
-      // surfel.color = Vec3b(b,b,b);
-      surfel.min_camera_angle = camera_angle;
-#if 0
-      ntk_dbg_print(eyev, 1);
-      ntk_dbg_print(camera_normal, 1);
-      ntk_dbg_print(camera_angle*180./M_PI, 1);
-      ntk_dbg_print(b, 1);
-#endif
-      // surfel.radius = ntk::math::sqrt1_2 * depth / (depth_pose.focalX() * camera_normal[2]);
-      double camera_normal_z = std::max(camera_normal[2], 0.3f);
-      surfel.radius = 2 * ntk::math::sqrt1_2 * depth / (depth_pose.focalX() * camera_normal_z);
-      surfel.n_views = 1;
-      m_surfels.push_back(surfel);
-    }
-
-    ntk_dbg_print(m_surfels.size(), 1);
-    return true;
-  }
-
-  bool ICPSurfelsRGBDModeler :: addNewView(const RGBDImage& image, Pose3D& relative_pose)
-  {
-    Pose3D corrected_relative_pose = fixRelativePose(image, relative_pose);
-    SurfelsRGBDModeler::addNewView(image, corrected_relative_pose);
-    relative_pose = corrected_relative_pose;
-    return true;
-  }
-
-  void icpIteration(Pose3D& delta_pose, Mesh& ref_cloud, Mesh& new_cloud);
-
-  Pose3D ICPSurfelsRGBDModeler :: fixRelativePose(const RGBDImage& image,
-                                                  const Pose3D& relative_pose)
-  {
-    Pose3D rgb_pose = *image.calibration()->rgb_pose;
-    Pose3D depth_pose = *image.calibration()->depth_pose;
-    Pose3D current_relative_pose = relative_pose;
-    Mesh cloud;
-    const Mat1f& depth_im = image.depth();
-
-    static int global_iteration = -1;
-    global_iteration++;
-
-    for (int iteration = 0; iteration < 5; ++iteration)
-    {
-      Pose3D rgb_pose = *image.calibration()->rgb_pose;
-      Pose3D depth_pose = *image.calibration()->depth_pose;
-      depth_pose.applyTransformBefore(current_relative_pose);
-      rgb_pose.applyTransformBefore(current_relative_pose);
-
-      Pose3D world_to_camera_normal_pose;
-      world_to_camera_normal_pose.applyTransformBefore(Vec3f(0,0,0), relative_pose.cvEulerRotation());
-      Pose3D camera_to_world_normal_pose = world_to_camera_normal_pose; camera_to_world_normal_pose.invert();
-
-      // Compute new partial mesh
-      cloud.clear();
-      for_all_rc(depth_im)
-      {
-        if (!image.depthMask()(r,c))
-          continue;
-
-        float depth = depth_im(r,c) + m_global_depth_offset;
-        Point3f p3d = depth_pose.unprojectFromImage(Point2f(c,r), depth);
-        Point3f p_rgb = rgb_pose.projectToImage(p3d);
-        if (!is_yx_in_range(image.rgb(), p_rgb.y, p_rgb.x))
-          continue;
+        Point3f surfel_2d = depth_pose.projectToImage(surfel.location);
+        bool surfel_deleted = false;
+        int r = ntk::math::rnd(surfel_2d.y);
+        int c = ntk::math::rnd(surfel_2d.x);
+        int d = ntk::math::rnd(surfel_2d.z);
+        if (!is_yx_in_range(depth_im, r, c)
+                || !image.depthMask()(r, c)
+                || !image.isValidNormal(r,c))
+            continue;
 
         Vec3f camera_normal = image.normal()(r, c);
+        normalize(camera_normal);
+
         Vec3f world_normal = camera_to_world_normal_pose.cameraTransform(camera_normal);
         normalize(world_normal);
 
-        cv::Vec3b color = bgr_to_rgb(image.rgb()(p_rgb.y, p_rgb.x));
-        cloud.vertices.push_back(p3d);
-        cloud.colors.push_back(color);
-        cloud.normals.push_back(world_normal);
-      }
+        Vec3f eyev = camera_eye_vector(depth_pose, r, c);
+        double camera_angle = acos(camera_normal.dot(-eyev));
 
-      if (m_point_cloud.vertices.size() == 0)
-        break;
+        if (camera_angle > max_camera_normal_angle)
+            continue;
 
-      Pose3D delta_pose;
-      icpIteration(delta_pose, m_point_cloud, cloud);
-      delta_pose.invert();
-      current_relative_pose.applyTransformAfter(delta_pose);
-      // cloud.saveToPlyFile(cv::format("mesh%04d-%d.ply", global_iteration, iteration).c_str());
-      // m_point_cloud.saveToPlyFile(cv::format("ref_mesh%04d-%d.ply", global_iteration, iteration).c_str());
-    } // iteration
+        float normal_angle = acos(world_normal.dot(surfel.normal));
+        if (normal_angle > (m_update_max_normal_angle*M_PI/180.0))
+        {
+            // Removal check. If a surfel has a different normal and is closer to the camera
+            // than the new scan, remove it.
+            if (surfel_2d.z > depth_im(r,c) && surfel.n_views < 2)
+            {
+                m_surfels.erase(surfel_it);
+                surfel_deleted = true;
+            }
+            else
+                covered_pixels(r,c) = 1;
+            continue;
+        }
 
-    //  cloud.saveToPlyFile(cv::format("mesh%04d.ply", global_iteration).c_str());
+        // If existing surfel is far from new depth value:
+        // - If existing one had a worst point of view, and was seen only once, remove it.
+        // - Otherwise do not include the new one.
+        if (std::abs(surfel_2d.z - depth_im(r,c)) > update_max_dist)
+        {
+            if (surfel.min_camera_angle > camera_angle && surfel.n_views < 2)
+            {
+                m_surfels.erase(surfel_it);
+                surfel_deleted = true;
+            }
+            else
+                covered_pixels(r,c) = 1;
+            continue;
+        }
 
-    m_point_cloud.vertices.insert(m_point_cloud.vertices.end(), stl_bounds(cloud.vertices));
-    m_point_cloud.normals.insert(m_point_cloud.normals.end(), stl_bounds(cloud.normals));
-    m_point_cloud.colors.insert(m_point_cloud.colors.end(), stl_bounds(cloud.colors));
-    return current_relative_pose;
-  }
+        // Compatible surfel found.
+        const float depth = depth_im(r,c) + m_global_depth_offset;
 
-  cv::RNG rgen;
+        Point3f p3d = depth_pose.unprojectFromImage(Point2f(c,r), depth);
+        cv::Vec3b rgb_color = bgr_to_rgb(image.mappedRgb()(r, c));
 
-  void computeAssociations( std::vector< std::pair<int,int> >& associations,
-                            Mesh& ref_cloud,
-                            Mesh& new_cloud)
-  {
-    const double max_dist = 0.01;
-    const double max_normal_angle = 40;
-    for (int i = 0; i < new_cloud.vertices.size(); i += new_cloud.vertices.size()/1000 + 1)
-    {
-      Point3f pnew = new_cloud.vertices[i];
-      int best_j = -1;
-      double best_dist = FLT_MAX;
-      foreach_idx(j, ref_cloud.vertices)
-      {
-        Point3f pref = ref_cloud.vertices[j];
-        Point3f dp = pnew-pref;
+        Surfel image_surfel;
+        image_surfel.location = p3d;
+        image_surfel.normal = world_normal;
+        image_surfel.color = rgb_color;
+        image_surfel.min_camera_angle = camera_angle;
+        image_surfel.n_views = 1;
+        image_surfel.radius = computeSurfelRadius(depth, camera_normal[2], depth_pose.meanFocal());
+        mergeToLeftSurfel(surfel, image_surfel);
 
-        double dist = norm(dp);
-        if (dist > max_dist || dist > best_dist)
-          continue;
-
-        if (acos(ref_cloud.normals[j].dot(new_cloud.normals[i])) > max_normal_angle)
-          continue;
-
-        best_dist = dist;
-        best_j = j;
-      }
-      if (best_j < 0)
-        continue;
-      Vec3b color (i%255, i%255, i%255);
-      //ref_cloud.colors[best_j] = color;
-      //new_cloud.colors[i] = color;
-      associations.push_back(std::make_pair(best_j, i));
-    }
-  }
-
-  class icp_fitness : public ntk::CostFunction
-  {
-  public:
-    icp_fitness(const std::vector< std::pair<int,int> >& associations,
-                const Mesh& ref_cloud, const Mesh& new_cloud)
-      : CostFunction(6, associations.size()*3),
-      associations(associations),
-      ref_cloud(ref_cloud),
-      new_cloud(new_cloud)
-    {
-
+        covered_pixels(r,c) = 1;
+        // needs to change the cell?
+        Cell new_cell = worldToCell(surfel.location);
+        if (new_cell != surfel_it->first)
+        {
+            surfels_to_reinsert.push_back(surfel);
+            m_surfels.erase(surfel_it);
+        }
     }
 
-    virtual void evaluate(const std::vector<double>& x, std::vector<double>& fx) const
+    foreach_const_it(it, surfels_to_reinsert, std::list<Surfel>)
     {
-      Pose3D delta_pose;
-      delta_pose.applyTransformBefore(Point3f(x[0],x[1],x[2]),
-                                      Vec3f(x[3],x[4],x[5]));
-      std::fill(stl_bounds(fx), 0);
-      int fx_index = 0;
-      foreach_idx(i, associations)
-      {
-        Point3f pref = ref_cloud.vertices[associations[i].first];
-        Point3f pnew = new_cloud.vertices[associations[i].second];
-        pnew = delta_pose.cameraTransform(pnew);
-        const double error_scale = 1000;
-        fx[fx_index++] = error_scale * (pref.x-pnew.x);
-        fx[fx_index++] = error_scale * (pref.y-pnew.y);
-        fx[fx_index++] = error_scale * (pref.z-pnew.z);
-      }
+        Cell new_cell = worldToCell(it->location);
+        m_surfels.insert(std::make_pair(new_cell, *it));
     }
+    tc.elapsedMsecs(" -- updating -- ");
 
-  public:
-    const std::vector< std::pair<int,int> >& associations;
-    const Mesh& ref_cloud;
-    const Mesh& new_cloud;
-  };
+    // imwrite_normalized("debug_covered.png", covered_pixels);
+    // imwrite_normalized("debug_depth_mask.png", image.depthMask());
 
-  void optimizePose(Pose3D& delta_pose,
-                    const std::vector< std::pair<int,int> >& associations,
-                    const Mesh& ref_cloud,
-                    const Mesh& new_cloud)
-  {
-    std::vector<double> x(6, 0);
-    icp_fitness f (associations, ref_cloud, new_cloud);
-    LevenbergMarquartMinimizer minimizer;
-    minimizer.minimize(f, x);
-    minimizer.diagnoseOutcome();
-    delta_pose.applyTransformBefore(Point3f(x[0],x[1],x[2]),
-                                    Vec3f(x[3],x[4],x[5]));
-    ntk_dbg_print(x[0], 1);
-    ntk_dbg_print(x[1], 1);
-    ntk_dbg_print(x[2], 1);
-    ntk_dbg_print(x[3], 1);
-    ntk_dbg_print(x[4], 1);
-    ntk_dbg_print(x[5], 1);
-  }
+    // Surfel addition
+    for (int r = 0; r < depth_im.rows; r += 1)
+        for (int c = 0; c < depth_im.cols; c += 1)
+        {
+            if (!image.depthMask()(r,c) || covered_pixels(r,c) || !image.isValidNormal(r,c))
+                continue;
+            float depth = depth_im(r,c) + m_global_depth_offset;
+            if (depth < 1e-5)
+                continue;
 
-  void icpIteration(Pose3D& delta_pose, Mesh& ref_cloud, Mesh& new_cloud)
-  {
-    std::vector< std::pair<int,int> > associations;
-    TimeCount tc_assoc("Compute Associations");
-    computeAssociations(associations, ref_cloud, new_cloud);
-    tc_assoc.stop();
+            Point3f p3d = depth_pose.unprojectFromImage(Point2f(c,r), depth);
 
-    TimeCount tc_optimize("Optimize Pose");
-    optimizePose(delta_pose, associations, ref_cloud, new_cloud);
-    tc_optimize.stop();
-  }
+            cv::Vec3b rgb_color = bgr_to_rgb(image.mappedRgb()(r,c));
 
-  void SurfelsRGBDModeler :: computeMesh()
-  {
-    m_mesh.buildFromSurfels(m_surfels, m_min_views);
-  }
+            Vec3f camera_normal = image.normal()(r, c);
+            normalize(camera_normal);
 
-} // ntk
+            Vec3f world_normal = camera_to_world_normal_pose.cameraTransform(camera_normal);
+            normalize(world_normal);
+
+            Vec3f eyev = camera_eye_vector(depth_pose, r, c);
+            double camera_angle = acos(camera_normal.dot(-eyev));
+
+            if (camera_angle > max_camera_normal_angle)
+                continue;
+
+            Surfel surfel;
+            surfel.location = p3d;
+            surfel.normal = world_normal;
+            // surfel.color = Vec3b(255,0,0);
+            surfel.color = rgb_color;
+            // int b = 255.*(camera_angle*180./M_PI)/90.;
+            // surfel.color = Vec3b(b,b,b);
+            surfel.min_camera_angle = camera_angle;
+            surfel.radius = computeSurfelRadius(depth, camera_normal[2], depth_pose.meanFocal());
+
+            surfel.n_views = 1;
+            Cell cell = worldToCell(surfel.location);
+            bool was_updated = false;
+            std::pair<SurfelMap::iterator,SurfelMap::iterator> existings = m_surfels.equal_range(cell);
+            for (SurfelMap::iterator it = existings.first; !was_updated && it != existings.second; ++it)
+            {
+                if (normalsAreCompatible(it->second, surfel))
+                {
+                    mergeToLeftSurfel(it->second, surfel);
+                    was_updated = true;
+                }
+            }
+            // FIXME: merge them!
+            if (!was_updated)
+            {
+                m_surfels.insert(std::make_pair(cell, surfel));
+            }
+        }
+    tc.elapsedMsecs(" -- adding new voxels -- ");
+
+    ntk_dbg_print(m_surfels.size(), 1);
+    return true;
+}
+
+void SurfelsRGBDModeler :: computeMesh()
+{
+    m_mesh.clear();
+
+    foreach_const_it(it, m_surfels, SurfelMap)
+    {
+        const Surfel& surfel = it->second;
+        if (!surfel.enabled())
+            continue;
+
+        if (surfel.n_views < m_min_views)
+            continue;
+
+        if (m_use_surfels)
+            m_mesh.addSurfel(surfel);
+        else
+            m_mesh.addPointFromSurfel(surfel);
+    }
+}
+
+void SurfelsRGBDModeler::setResolution(float r)
+{
+    if (flt_eq(m_resolution, r, 1e-5))
+        return;
+    m_resolution = r;
+    reset();
+}
+
+
+}  // ntk

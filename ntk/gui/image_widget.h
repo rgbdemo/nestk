@@ -47,8 +47,7 @@ public:
     };
 
 public:
-    ImageWidget(QWidget* parent) : QWidget(parent), m_last_mouse_pos(-1,-1)
-    {}
+    ImageWidget(QWidget* parent);
 
 public:
     double scaleX() const;
@@ -69,8 +68,20 @@ signals:
     void mouseMoved(int image_x, int image_y);
 
 protected:
-    virtual void mouseMoveEvent( QMouseEvent * event );
-    virtual void paintEvent(QPaintEvent * event);
+    virtual void mouseMoveEvent(QMouseEvent* event);
+    virtual void paintEvent(QPaintEvent* event);
+    virtual QSize        sizeHint() const;
+    virtual QSize minimumSizeHint() const;
+    virtual int heightForWidth(int width) const;
+
+public:
+    void setRatioKeeping (bool ratio_keeping = true);
+
+private:
+    QRect imageRect () const;
+
+private:
+    bool keep_ratio;
 
 private:
     QPoint m_last_mouse_pos;

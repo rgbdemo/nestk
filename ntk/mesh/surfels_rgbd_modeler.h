@@ -31,40 +31,83 @@ namespace ntk
 class SurfelsRGBDModeler : public RGBDModeler
 {
 public:
-  SurfelsRGBDModeler() : m_min_views(2)
-  {}
+    SurfelsRGBDModeler() : m_min_views(2), m_resolution(0.005), m_update_max_normal_angle(60)
+    {}
 
 public:
-  void setMinViewsPerSurfel(int n) { m_min_views = n; }
+    void setMinViewsPerSurfel(int n) { m_min_views = n; }
+    void setResolution(float r);
+    virtual float resolution() const { return m_resolution; }
+    virtual int numPoints() const { return m_surfels.size(); }
 
 public:
-  virtual bool addNewView(const RGBDImage& image, Pose3D& relative_pose);
-  virtual void computeMesh();
+    virtual bool addNewView(const RGBDImage& image, Pose3D& relative_pose);
+    virtual void computeMesh();
 
-  virtual void reset() { RGBDModeler::reset(); m_surfels.clear(); }
+    virtual void reset() { RGBDModeler::reset(); m_surfels.clear(); }    
 
 protected:
-  std::vector<Surfel> m_surfels;
-  int m_min_views;
+    struct Cell
+    {
+        unsigned x, y, z;
+
+        Cell(unsigned x, unsigned y, unsigned z) : x(x), y(y), z(z) {}
+        Cell() : x(0), y(0), z(0) {}
+
+        bool operator==(const Cell& rhs) const { return !(*this < rhs) && !(rhs < *this); }
+        bool operator!=(const Cell& rhs) const { return !(*this == rhs); }
+
+        bool operator<(const Cell& rhs) const
+        {
+            if (x < rhs.x) return true;
+            if (x > rhs.x) return false;
+            if (y < rhs.y) return true;
+            if (y > rhs.y) return false;
+            if (z < rhs.z) return true;
+            if (z > rhs.z) return false;
+            return false;
+        }
+    };
+
+    typedef std::multimap<Cell, Surfel> SurfelMap;
+
+    Cell worldToCell(const cv::Point3f& p)
+    { return Cell(p.x / m_resolution, p.y / m_resolution, p.z / m_resolution); }
+
+    cv::Point3f cellToWorld(const Cell& c)
+    { return cv::Point3f(c.x*m_resolution, c.y*m_resolution, c.z*m_resolution); }
+
+protected:
+    bool mergeToLeftSurfel(Surfel& dest, const Surfel& src);
+    float computeSurfelRadius(float depth, float camera_z, double mean_focal);
+    bool normalsAreCompatible(const Surfel& lhs, const Surfel& rhs);
+
+protected:
+    SurfelMap m_surfels;
+    int m_min_views;
+    float m_resolution;
+    float m_update_max_normal_angle;
+
+    friend class LocalPlaneSegmentor;
 };
 
 class ICPSurfelsRGBDModeler : public SurfelsRGBDModeler
 {
 public:
-  ICPSurfelsRGBDModeler() : SurfelsRGBDModeler()
-  {}
+    ICPSurfelsRGBDModeler() : SurfelsRGBDModeler()
+    {}
 
 public:
-  void setMinViewsPerSurfel(int n) { m_min_views = n; }
+    void setMinViewsPerSurfel(int n) { m_min_views = n; }
 
 public:
-  virtual bool addNewView(const RGBDImage& image, Pose3D& relative_pose);
+    virtual bool addNewView(const RGBDImage& image, Pose3D& relative_pose);
 
 protected:
-  Pose3D fixRelativePose(const RGBDImage& image, const Pose3D& relative_pose);
+    Pose3D fixRelativePose(const RGBDImage& image, const Pose3D& relative_pose);
 
 private:
-  ntk::Mesh m_point_cloud;
+    ntk::Mesh m_point_cloud;
 };
 
 } // ntk
