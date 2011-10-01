@@ -213,21 +213,116 @@ void Pose3D :: setOrthographic(bool ortho)
     impl->computeProjectiveTransform();
 }
 
-Vec3f estimate_normal_from_depth(const Mat1f& depth_yml, const Pose3D& pose, int r, int c)
+#if 0
+Vec3f estimate_normal_from_depth(const Mat1f& depth_yml,
+                                 const Pose3D& pose,
+                                 int r, int c,
+                                 float depth_delta_limit)
 {
-    if (!is_yx_in_range(depth_yml, r-1, c-1) || !is_yx_in_range(depth_yml, r+1, c+1))
-        return Point3f(1,0,0);
+    if (!is_yx_in_range(depth_yml, r-1, c-1)
+            || !is_yx_in_range(depth_yml, r+1, c+1))
+        return infinite_point();
 
     float depth = depth_yml(r,c);
+    float depth_L = depth_yml(r,c-1);
+    float depth_R = depth_yml(r,c+1);
+    float depth_S = depth_yml(r+1,c);
+    float depth_N = depth_yml(r-1,c);
 
-    Vec3f v1l (1.0/pose.focalX(), 0, -(depth - depth_yml(r,c-1)));
-    Vec3f v1r (1.0/pose.focalX(), 0, (depth - depth_yml(r,c+1)));
+    if (depth < 1e-5 || depth_L < 1e-5 || depth_R < 1e-5
+            || depth_S < 1e-5 || depth_N < 1e-5)
+        return infinite_point();
 
-    Vec3f v2l (0, 1.0/pose.focalY(), -(depth - depth_yml(r+1,c)));
-    Vec3f v2r (0, 1.0/pose.focalY(), (depth - depth_yml(r-1,c)));
+    if (std::abs(depth_L - depth) > depth_delta_limit)
+        return infinite_point();
+
+    if (std::abs(depth_R - depth) > depth_delta_limit)
+        return infinite_point();
+
+    if (std::abs(depth_N - depth) > depth_delta_limit)
+        return infinite_point();
+
+    if (std::abs(depth_S - depth) > depth_delta_limit)
+        return infinite_point();
+
+    dx = ((depth - depth_R) - (depth - depth_L)) * 0.5;
+    dy = ((depth - depth_N) - (depth - depth_S)) * 0.5;
+
+    Vec3f v1l (1.0/pose.focalX(), 0, -(depth - depth_L));
+    Vec3f v1r (1.0/pose.focalX(), 0, (depth - depth_R));
+
+    Vec3f v2l (0, 1.0/pose.focalY(), -(depth - depth_S));
+    Vec3f v2r (0, 1.0/pose.focalY(), (depth - depth_N));
 
     Vec3f v1 = (v1l + v1r) * 0.5f;
     Vec3f v2 = (v2l + v2r) * 0.5f;
+
+    Vec3f camera_normal = v1.cross(v2);
+    normalize(camera_normal);
+    return camera_normal;
+}
+#endif
+
+Vec3f estimate_normal_from_depth(const Mat1f& depth_yml,
+                                 const Pose3D& pose,
+                                 int r, int c,
+                                 float depth_delta_limit,
+                                 const cv::Mat1f* dx_img,
+                                 const cv::Mat1f* dy_img)
+{
+    if (!is_yx_in_range(depth_yml, r-1, c-1)
+            || !is_yx_in_range(depth_yml, r+1, c+1))
+        return infinite_point();
+
+    float depth = depth_yml(r,c);
+    if (depth < 1e-5)
+        return infinite_point();
+
+    float dx=0, dy=0;
+
+    if (dx_img == 0 || dy_img == 0)
+    {
+        float depth_L = depth_yml(r,c-1);
+        float depth_R = depth_yml(r,c+1);
+        float depth_S = depth_yml(r+1,c);
+        float depth_N = depth_yml(r-1,c);
+
+        if (depth_L < 1e-5 || depth_R < 1e-5
+                || depth_S < 1e-5 || depth_N < 1e-5)
+            return infinite_point();
+
+        if (std::abs(depth_L - depth) > depth_delta_limit)
+            return infinite_point();
+
+        if (std::abs(depth_R - depth) > depth_delta_limit)
+            return infinite_point();
+
+        if (std::abs(depth_N - depth) > depth_delta_limit)
+            return infinite_point();
+
+        if (std::abs(depth_S - depth) > depth_delta_limit)
+            return infinite_point();
+
+        dx = ((depth - depth_R) - (depth - depth_L)) * 0.5;
+        dy = ((depth - depth_N) - (depth - depth_S)) * 0.5;
+    }
+    else
+    {
+        ntk_dbg(2) << "====";
+        ntk_dbg_print(dx, 2);
+        ntk_dbg_print(dy, 2);
+        dx = -(*dx_img)(r,c); // negative to compensate opengl frame.
+        dy = (*dy_img)(r,c);
+        ntk_dbg_print(dx, 2);
+        ntk_dbg_print(dy, 2);
+        if (std::abs(dx) > depth_delta_limit)
+            return infinite_point();
+        if (std::abs(dy) > depth_delta_limit)
+            return infinite_point();
+    }
+
+    Vec3f v1 (1.0/pose.focalX(), 0, dx);
+    Vec3f v2 (0, 1.0/pose.focalY(), dy);
 
     Vec3f camera_normal = v1.cross(v2);
     normalize(camera_normal);
@@ -237,8 +332,8 @@ Vec3f estimate_normal_from_depth(const Mat1f& depth_yml, const Pose3D& pose, int
 Vec3f camera_eye_vector(const Pose3D& pose, int r, int c)
 {
     double dx = c - pose.imageCenterX();
-    double dy = r - pose.imageCenterY();
-    cv::Vec3f eyev(dx/pose.focalX(), dy/pose.focalY(), 1);
+    double dy = pose.imageCenterY() - r;
+    cv::Vec3f eyev(dx/pose.focalX(), dy/pose.focalY(), -1);
     float norm = sqrt(eyev.dot(eyev));
     // FIXME: *= is broken on opencv 2.2.
     eyev = eyev*(1.0f/norm);

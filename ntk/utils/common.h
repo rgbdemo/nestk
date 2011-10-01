@@ -35,6 +35,16 @@ typedef ntk::Ptr<const Class> Class##ConstPtr;
     #define NTK_EXPORTS
 #endif
 
+#if defined _WIN32 && defined _MSC_VER
+# define ntk_isfinite(x) _finite(x)
+# define ntk_isnan(x) _isnan(x)
+# define ntk_isinf(x) (!_finite(x))
+#else
+# define ntk_isfinite(x) std::isfinite(x)
+# define ntk_isnan(x) std::isnan(x)
+# define ntk_isinf(x) std::isinf(x)
+#endif
+
 namespace cv {
   CV_EXPORTS void* fastMalloc(size_t);
   CV_EXPORTS void fastFree(void* ptr);

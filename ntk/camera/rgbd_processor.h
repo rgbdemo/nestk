@@ -64,7 +64,7 @@ public:
 
 public:
   /*! Accessors to the flag values */
-  bool hasFilterFlag(ProcessorFlag flag) const { return (m_flags&flag) != 0; }
+  bool hasFilterFlag(ProcessorFlag flag) const { return m_flags&flag; }
   void setFilterFlags(int flags) { m_flags = flags; }
   void setFilterFlag(ProcessorFlag flag, bool enabled)
   { if (enabled) m_flags |= flag; else m_flags &= ~flag; }
@@ -100,9 +100,13 @@ public:
   void setMappingResolution(float r) { m_mapping_resolution = r; }
 
 public:
-  /*! Postprocess an RGB-D image. */
+  /*! Postprocess an RGB-D image. This function is not reentrant. */
   virtual void processImage(RGBDImage& image);
 
+  /*! Compute normals using PCL integral images. This function is reentrant. */
+  virtual void computeNormalsPCL(RGBDImage& image);
+
+protected:
   virtual void undistortImages();
   virtual void fixDepthGeometry();
   virtual void fixDepthBias();

@@ -85,6 +85,7 @@ namespace ntk
 
 OpenniGrabber :: OpenniGrabber(OpenniDriver& driver, int camera_id) :
     m_driver(driver),
+    m_subsampling_factor(1),
     m_camera_id(camera_id),
     m_need_pose_to_calibrate(false),
     m_max_num_users(15),
@@ -138,6 +139,15 @@ void OpenniGrabber :: setIRMode(bool ir)
         // m_ni_depth_generator.GetAlternativeViewPointCap().SetViewPoint(m_ni_rgb_generator);
         m_ni_rgb_generator.StartGenerating();
     }
+}
+
+void OpenniGrabber :: setSubsamplingFactor(int factor)
+{
+    if (640 % factor > 0 || 480 % factor > 0)
+    {
+        ntk_throw_exception("Invalid subsampling factor. Must give a round subsampled size.");
+    }
+    m_subsampling_factor = factor;
 }
 
 bool OpenniGrabber :: connectToDevice()
@@ -198,10 +208,10 @@ bool OpenniGrabber :: connectToDevice()
     }
     m_ni_rgb_generator.SetMapOutputMode(rgb_mode);
 
-    ntk_ensure(m_ni_depth_generator.IsCapabilitySupported(XN_CAPABILITY_ALTERNATIVE_VIEW_POINT), "Cannot register images.");
+    ntk_throw_exception_if(!m_ni_depth_generator.IsCapabilitySupported(XN_CAPABILITY_ALTERNATIVE_VIEW_POINT), "Cannot register images.");
     m_ni_depth_generator.GetAlternativeViewPointCap().SetViewPoint(m_ni_rgb_generator);
 
-#if 1 // FIXME: does not work
+#if 1 // FIXME: does not work well, sometimes hangs.
     status = m_ni_ir_generator.Create(m_driver.niContext(), &query);
     m_driver.checkXnError(status, "Create infrared generator");
     XnMapOutputMode ir_mode;
@@ -362,6 +372,11 @@ void OpenniGrabber :: estimateCalibration()
     const double cy_correction_factor = 267.0/240.0;
     cy *= cy_correction_factor;
 
+    fx /= m_subsampling_factor;
+    fy /= m_subsampling_factor;
+    cx /= m_subsampling_factor;
+    cy /= m_subsampling_factor;
+
     m_calib_data = new RGBDCalibration();
 
     xn::DepthMetaData depthMD;
@@ -370,8 +385,8 @@ void OpenniGrabber :: estimateCalibration()
     xn::ImageMetaData rgbMD;
     m_ni_rgb_generator.GetMetaData(rgbMD);
 
-    int depth_width = depthMD.XRes();
-    int depth_height = depthMD.YRes();
+    int depth_width = depthMD.XRes() / m_subsampling_factor;
+    int depth_height = depthMD.YRes() / m_subsampling_factor;
 
     int rgb_width = rgbMD.XRes();
     int rgb_height = rgbMD.YRes();
@@ -488,7 +503,7 @@ void OpenniGrabber :: run()
         m_rgbd_image.mappedRgbRef() = Vec3b(0,0,0);
         m_rgbd_image.mappedDepthRef() = Mat1f(m_calib_data->rawRgbSize());
         m_rgbd_image.mappedDepthRef() = 0.f;
-        m_current_image.mappedRgbRef() = Mat3b(m_calib_data->raw_depth_size);
+        m_current_image.mappedRgbRef() = Mat3b(m_calib_data->rawDepthSize());
         m_current_image.mappedRgbRef() = Vec3b(0,0,0);
         m_current_image.mappedDepthRef() = Mat1f(m_calib_data->rawRgbSize());
         m_current_image.mappedDepthRef() = 0.f;
@@ -500,6 +515,13 @@ void OpenniGrabber :: run()
     xn::IRMetaData irMD;
 
     ImageBayerGRBG bayer_decoder(ImageBayerGRBG::EdgeAware);
+
+    RGBDImage oversampled_image;
+    if (m_subsampling_factor != 1)
+    {
+        oversampled_image.rawDepthRef().create(m_calib_data->rawDepthSize()*m_subsampling_factor);
+        oversampled_image.userLabelsRef().create(oversampled_image.rawDepth().size());
+    }
 
     while (!m_should_exit)
     {
@@ -525,14 +547,17 @@ void OpenniGrabber :: run()
             m_ni_rgb_generator.GetMetaData(rgbMD);
         }
 
+        RGBDImage& temp_image =
+                m_subsampling_factor == 1 ? m_current_image : oversampled_image;
+
         const XnDepthPixel* pDepth = depthMD.Data();
-        ntk_assert((depthMD.XRes() == m_current_image.rawDepth().cols)
-                   && (depthMD.YRes() == m_current_image.rawDepth().rows),
+        ntk_assert((depthMD.XRes() == temp_image.rawDepth().cols)
+                   && (depthMD.YRes() == temp_image.rawDepth().rows),
                    "Invalid image size.");
 
         // Convert to meters.
         const float depth_correction_factor = 1.0;
-        float* raw_depth_ptr = m_current_image.rawDepthRef().ptr<float>();
+        float* raw_depth_ptr = temp_image.rawDepthRef().ptr<float>();
         for (int i = 0; i < depthMD.XRes()*depthMD.YRes(); ++i)
             raw_depth_ptr[i] = depth_correction_factor * pDepth[i]/1000.f;
 
@@ -572,7 +597,7 @@ void OpenniGrabber :: run()
         if (m_track_users)
         {
             m_ni_user_generator.GetUserPixels(0, sceneMD);
-            uchar* user_mask_ptr = m_current_image.userLabelsRef().ptr<uchar>();
+            uchar* user_mask_ptr = temp_image.userLabelsRef().ptr<uchar>();
             const XnLabel* pLabel = sceneMD.Data();
             for (int i = 0; i < sceneMD.XRes()*sceneMD.YRes(); ++i)
             {
@@ -593,6 +618,22 @@ void OpenniGrabber :: run()
                     break;
                 }
             }
+        }
+
+        if (m_subsampling_factor != 1)
+        {
+            // Cannot use interpolation here, since this would
+            // spread the invalid depth values.
+            cv::resize(oversampled_image.rawDepth(),
+                       m_current_image.rawDepthRef(),
+                       m_current_image.rawDepth().size(),
+                       0, 0, INTER_NEAREST);
+            // we have to repeat this, since resize can change the pointer.
+            // m_current_image.depthRef() = m_current_image.rawDepthRef();
+            cv::resize(oversampled_image.userLabels(),
+                       m_current_image.userLabelsRef(),
+                       m_current_image.userLabels().size(),
+                       0, 0, INTER_NEAREST);
         }
 
         {

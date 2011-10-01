@@ -119,7 +119,7 @@ public:
   double imageCenterY() const { return m_image_center_y; }
 
   /*! Whether pixels have square size. */
-  bool focalAreIdentical() const { return ntk::flt_eq(m_focal_x, m_focal_y, 1e-5f); }
+  bool focalAreIdentical() const { return ntk::flt_eq(m_focal_x, m_focal_y, 1e-5); }
 
   /*! Mean focal. */
   double meanFocal() const { return (m_focal_x + m_focal_y)/2.0; }
@@ -237,7 +237,12 @@ private:
 };
 
 /*! Estimate a normal vector from neighborhood depth measurements. */
-cv::Vec3f estimate_normal_from_depth(const cv::Mat1f& depth_yml, const Pose3D& pose, int r, int c);
+cv::Vec3f estimate_normal_from_depth(const cv::Mat1f& depth_yml,
+                                     const Pose3D& pose,
+                                     int r, int c,
+                                     float depth_delta_limit = 0.03,
+                                     const cv::Mat1f* dx = 0,
+                                     const cv::Mat1f* dy = 0);
 
 /*! Estimate the line of sight for the given pixel. */
 cv::Vec3f camera_eye_vector(const Pose3D& pose, int r, int c);

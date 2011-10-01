@@ -117,6 +117,8 @@ SET ( ntk_sources
      utils/debug.cpp
      utils/opencv_utils.h
      utils/opencv_utils.cpp
+     utils/progressive.h
+     utils/progressive.cpp
      utils/qt_utils.h
      utils/qt_utils.cpp
      utils/stl.h
