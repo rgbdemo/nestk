@@ -48,7 +48,8 @@ public:
           m_lookat_center(0, 0, -5),
           m_lookat_up(0, 1, 0),
           m_use_vertex_buffer_object(false),
-          m_show_grid(false)
+          m_show_grid(false),
+          m_clear_color(0.f, 0.f, 0.2f, 1.f)
     {
         cv::setIdentity(m_glcam_transform);
     }
@@ -71,6 +72,7 @@ public:
                                 const cv::Vec3f& up);
     void setShowGrid(bool show_it) { m_show_grid = show_it; }
     void setMeshOrigin(const cv::Point3f& p) { m_mesh_origin = p; }
+    void setBackgroundColor(const cv::Vec4f& color);
 
     void enableLighting();
 
@@ -80,6 +82,7 @@ protected:
     void paintGL();
     void  updateDisplayCenter();
     bool estimatePickingPoint(cv::Point3f& p, int mouse_x, int mouse_y);
+    void updateBackgroundColor();
 
 protected:
     void mousePressEvent(QMouseEvent *);
@@ -117,6 +120,7 @@ protected:
     cv::Vec3f m_lookat_eye;
     cv::Vec3f m_lookat_center;
     cv::Vec3f m_lookat_up;
+    cv::Vec4f m_clear_color;
     bool m_use_vertex_buffer_object;
     bool m_show_grid;
 };

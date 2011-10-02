@@ -59,8 +59,20 @@ void MeshViewer :: initializeGL()
     glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     // glEnable(GL_POINT_SMOOTH);
     glPointSize(1.0);
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    updateBackgroundColor();
     resetCamera();
+}
+
+void MeshViewer :: updateBackgroundColor()
+{
+    makeCurrent();
+    glClearColor(m_clear_color[0], m_clear_color[1], m_clear_color[2], m_clear_color[3]);
+}
+
+void MeshViewer :: setBackgroundColor(const cv::Vec4f& color)
+{
+    m_clear_color = color;
+    updateBackgroundColor();
 }
 
 void MeshViewer :: enableLighting()
