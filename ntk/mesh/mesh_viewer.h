@@ -47,9 +47,9 @@ public:
           m_lookat_eye(0, 0, 1),
           m_lookat_center(0, 0, -5),
           m_lookat_up(0, 1, 0),
+          m_clear_color(0.f, 0.f, 0.2f, 1.f),
           m_use_vertex_buffer_object(false),
-          m_show_grid(false),
-          m_clear_color(0.f, 0.f, 0.2f, 1.f)
+          m_show_grid(false)
     {
         cv::setIdentity(m_glcam_transform);
     }
