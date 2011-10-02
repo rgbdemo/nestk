@@ -327,7 +327,6 @@ void OpenniGrabber :: waitAndUpdateActiveGenerators()
         m_ni_ir_generator.WaitAndUpdateData();
     else
         m_ni_rgb_generator.WaitAndUpdateData();
-    m_ni_rgb_generator.WaitAndUpdateData();
 
     // FIXME: for some reason, hand events are not generated using this.
     // Only WaitAndUpdateAll generates the events.
@@ -565,25 +564,27 @@ void OpenniGrabber :: run()
                 raw_img_ptr[i] = pImage[i];
             }
         }
-
-        if (m_custom_bayer_decoding)
-        {
-            uchar* raw_rgb_ptr = m_current_image.rawRgbRef().ptr<uchar>();
-            bayer_decoder.fillRGB(rgbMD,
-                                  m_current_image.rawRgb().cols, m_current_image.rawRgb().rows,
-                                  raw_rgb_ptr);
-            cvtColor(m_current_image.rawRgbRef(), m_current_image.rawRgbRef(), CV_RGB2BGR);
-        }
         else
         {
-            const XnUInt8* pImage = rgbMD.Data();
-            ntk_assert(rgbMD.PixelFormat() == XN_PIXEL_FORMAT_RGB24, "Invalid RGB format.");
-            uchar* raw_rgb_ptr = m_current_image.rawRgbRef().ptr<uchar>();
-            for (int i = 0; i < rgbMD.XRes()*rgbMD.YRes()*3; i += 3)
-                for (int k = 0; k < 3; ++k)
-                {
-                    raw_rgb_ptr[i+k] = pImage[i+(2-k)];
-                }
+            if (m_custom_bayer_decoding)
+            {
+                uchar* raw_rgb_ptr = m_current_image.rawRgbRef().ptr<uchar>();
+                bayer_decoder.fillRGB(rgbMD,
+                                      m_current_image.rawRgb().cols, m_current_image.rawRgb().rows,
+                                      raw_rgb_ptr);
+                cvtColor(m_current_image.rawRgbRef(), m_current_image.rawRgbRef(), CV_RGB2BGR);
+            }
+            else
+            {
+                const XnUInt8* pImage = rgbMD.Data();
+                ntk_assert(rgbMD.PixelFormat() == XN_PIXEL_FORMAT_RGB24, "Invalid RGB format.");
+                uchar* raw_rgb_ptr = m_current_image.rawRgbRef().ptr<uchar>();
+                for (int i = 0; i < rgbMD.XRes()*rgbMD.YRes()*3; i += 3)
+                    for (int k = 0; k < 3; ++k)
+                    {
+                        raw_rgb_ptr[i+k] = pImage[i+(2-k)];
+                    }
+            }
         }
 
         if (m_track_users)
