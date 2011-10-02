@@ -34,9 +34,6 @@ ImageWidget::ImageWidget (QWidget* parent)
 , keep_ratio(false)
 , m_last_mouse_pos(-1,-1)
 {
-    QSizePolicy sizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
-    sizePolicy.setHeightForWidth(true);
-    setSizePolicy(sizePolicy);
 }
 
 void ImageWidget :: mouseMoveEvent ( QMouseEvent * event )
@@ -221,6 +218,19 @@ ImageWidget::setRatioKeeping (bool ratio_keeping)
         return;
 
     keep_ratio = ratio_keeping;
+
+    if (keep_ratio)
+    {
+        QSizePolicy sizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
+        sizePolicy.setHeightForWidth(true);
+        setSizePolicy(sizePolicy);
+    }
+    else
+    {
+        QSizePolicy sizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+        sizePolicy.setHeightForWidth(false);
+        setSizePolicy(sizePolicy);
+    }
 
     updateGeometry();
 }
