@@ -86,6 +86,9 @@ public:
     /*! Set whether color images should be in high resolution 1280x1024. */
     void setHighRgbResolution(bool hr) { m_high_resolution = hr; }
 
+    /*! Set an optional subsampling factor for the depth image. */
+    void setSubsamplingFactor(int factor);
+
     /*! Set whether images should be vertically mirrored. */
     void setMirrored(bool m) { m_mirrored = m; }
 
@@ -94,6 +97,9 @@ public:
 
     /*! Grab IR images instead of RGB images. */
     virtual void setIRMode(bool ir);
+
+	/*! Set whether custom bayer decoding should be used. */
+	void setCustomBayerDecoding(bool enable) { m_custom_bayer_decoding = enable; }
 
 public:
     // Nite accessors.
@@ -137,6 +143,7 @@ private:
     xn::UserGenerator m_ni_user_generator;
     xn::HandsGenerator m_ni_hands_generator;
     xn::GestureGenerator m_ni_gesture_generator;
+    int m_subsampling_factor;
     XnLicense license;
     bool m_need_pose_to_calibrate;
     XnChar m_calibration_pose[20];
@@ -156,7 +163,6 @@ private:
     bool m_get_infrared;
 
     static QMutex m_ni_mutex;
-    QMutex m_device_mutex;
 };
 
 typedef OpenniGrabber NiteRGBDGrabber;

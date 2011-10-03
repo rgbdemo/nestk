@@ -54,8 +54,25 @@ void MeshViewer :: initializeGL()
     ntk_dbg_print(m_use_vertex_buffer_object, 1);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_LINE_SMOOTH);
-    glClearColor(0.0f, 0.0f, 0.2f, 1.0f);
+    glHint (GL_LINE_SMOOTH_HINT, GL_NICEST);
+    glEnable (GL_BLEND);
+    glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    // glEnable(GL_POINT_SMOOTH);
+    glPointSize(1.0);
+    updateBackgroundColor();
     resetCamera();
+}
+
+void MeshViewer :: updateBackgroundColor()
+{
+    makeCurrent();
+    glClearColor(m_clear_color[0], m_clear_color[1], m_clear_color[2], m_clear_color[3]);
+}
+
+void MeshViewer :: setBackgroundColor(const cv::Vec4f& color)
+{
+    m_clear_color = color;
+    updateBackgroundColor();
 }
 
 void MeshViewer :: enableLighting()
@@ -222,6 +239,10 @@ void MeshViewer :: addMeshToVertexBufferObject(const ntk::Mesh& mesh, const Pose
 void MeshViewer :: addMesh(const ntk::Mesh& mesh, const Pose3D& pose, MeshViewerMode mode)
 {  
     unsigned long start = ntk::Time::getMillisecondCounter();
+	
+	if (mesh.vertices.size() < 1)
+		return;
+
     makeCurrent();
 
     // Compute new mesh center.
@@ -230,7 +251,8 @@ void MeshViewer :: addMesh(const ntk::Mesh& mesh, const Pose3D& pose, MeshViewer
         int n_sample = 0;
         for (int i = 0; i < mesh.vertices.size(); i += mesh.vertices.size()/100 + 1)
         {
-            m_mesh_center += pose.cameraTransform(mesh.vertices[i]);
+            cv::Point3f p = pose.cameraTransform(mesh.vertices[i]);
+            m_mesh_center += p;
             ++n_sample;
         }
         if (mesh.vertices.size()>0)
@@ -319,8 +341,20 @@ void MeshViewer :: resetCamera()
     makeCurrent();
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-    gluLookAt(0,0,0,0,0,-5,0,1,0);
+    gluLookAt(m_lookat_eye[0], m_lookat_eye[1], m_lookat_eye[2],
+              m_lookat_center[0], m_lookat_center[1], m_lookat_center[2],
+              m_lookat_up[0], m_lookat_up[1], m_lookat_up[2]);
     updateDisplayCenter();
+}
+
+void MeshViewer :: setDefaultCameraLookat(const cv::Vec3f& eye,
+                                          const cv::Vec3f& center,
+                                          const cv::Vec3f& up)
+{
+    m_lookat_eye = eye;
+    m_lookat_center = center;
+    m_lookat_up = up;
+    resetCamera();
 }
 
 void MeshViewer :: setCameraLookat(const cv::Vec3f& eye,
@@ -369,6 +403,27 @@ void MeshViewer :: onCameraPositionUpdate(const cv::Vec3f& translation, const cv
     glRotatef(rotation[1], 1,0,0);
     glTranslatef(-m_display_center.x,-m_display_center.y,-m_display_center.z);
     glMultMatrixd(m);
+}
+
+bool MeshViewer :: estimatePickingPoint(cv::Point3f& p, int mouse_x, int mouse_y)
+{
+    makeCurrent();
+    GLfloat wx, wy, wz;
+    GLdouble cx, cy, cz;
+    GLdouble mv[16];
+    glGetDoublev( GL_MODELVIEW_MATRIX, mv );
+    GLdouble proj[16];
+    glGetDoublev( GL_PROJECTION_MATRIX, proj );
+    GLint vp[4];
+    glGetIntegerv( GL_VIEWPORT, vp );
+    wx = ( float ) mouse_x;
+    wy = ( float ) vp[3] - ( float ) mouse_y;
+    glReadPixels( wx, wy, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &wz );
+    if (wz > 0.99999) // picked up the background.
+        return false;
+    gluUnProject( wx, wy, wz, mv, proj, vp, &cx, &cy, &cz );
+    p = Point3f( cx, cy, cz );
+    return true;
 }
 
 void MeshViewer :: mouseMoveEvent(QMouseEvent* event)
@@ -421,6 +476,9 @@ void MeshViewer :: paintGL()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     unsigned long start = ntk::Time::getMillisecondCounter();
+
+    if (m_show_grid)
+        drawGrid();
 
 #if defined(NESTK_USE_GLEW) || defined(USE_GLEW)
     if (m_use_vertex_buffer_object)
@@ -503,6 +561,30 @@ void MeshViewer :: paintGL()
 
     unsigned long end = ntk::Time::getMillisecondCounter();
     // ntk_dbg_print((end-start) / 1000., 1);
+}
+
+void MeshViewer::drawGrid()
+{
+    const float min_x = -5, max_x = 5;
+    const float min_z = -5, max_z = 5;
+    const float step_x = 0.5, step_z = 0.5;
+
+    glLineWidth(0.7);
+    glColor3f(1.0,1.0,1.0);
+    glBegin(GL_LINES);
+    for (float x = m_mesh_origin.x+min_x; x < m_mesh_origin.x + max_x + step_x*0.1; x += step_x)
+    {
+        glVertex3f(x, m_mesh_origin.y, m_mesh_origin.z + min_z);
+        glVertex3f(x, m_mesh_origin.y, m_mesh_origin.z + max_z);
+    }
+
+    for (float z = m_mesh_origin.z + min_z; z < m_mesh_origin.z + max_z + step_z*0.1; z += step_z)
+    {
+        glVertex3f(m_mesh_origin.x + min_x, m_mesh_origin.y, z);
+        glVertex3f(m_mesh_origin.x + max_x, m_mesh_origin.y, z);
+    }
+    glEnd();
+    glLineWidth(1.0);
 }
 
 } // ntk

@@ -44,6 +44,7 @@ namespace ntk
     float confidence;
     int n_views;
     float min_camera_angle;
+    bool internal_seen_; // for exploration algorithms.
   };
 
   class Face
@@ -71,9 +72,12 @@ namespace ntk
   public:
     void loadFromPlyFile(const char* filename);
     void saveToPlyFile(const char* filename) const;
-    void buildFromSurfels(const std::vector<Surfel>& surfels, int min_views = 2);
     cv::Point3f centerize();
+    cv::Point3f center() const;
     void addCube(const cv::Point3f& center, const cv::Point3f& sizes, const cv::Vec3b& color = cv::Vec3b(255,0,0));
+    void addSurfel(const Surfel& surfel);
+    void addPointFromSurfel(const Surfel& surfel);
+    void addMesh(const ntk::Mesh& rhs);
     void applyTransform(const Pose3D& pose);
 
   public:

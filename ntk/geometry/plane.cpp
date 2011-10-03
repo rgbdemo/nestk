@@ -52,6 +52,12 @@ cv::Vec3f Plane :: normal() const
   return n;
 }
 
+bool Plane :: isValid() const
+{
+    const float eps = 1e-15;
+    return (std::abs(a) > eps) || (std::abs(b) > eps) || (std::abs(c) > eps);
+}
+
 float Plane :: distanceToPlane(const Point3f& p) const
 {
     float v = a*p.x + b*p.y + c*p.z + d;

@@ -60,6 +60,7 @@ public:
   void setRawRgbSize(cv::Size s) { raw_rgb_size = s; }
 
   /*! Size of the depth image. */
+  const cv::Size& rawDepthSize() const { return raw_depth_size; }
   const cv::Size& depthSize() { return depth_size; }
 
   /*! Intrinsics 3x3 matrix for the rgb channel */

@@ -68,19 +68,27 @@ void rgbdImageToPointCloud(pcl::PointCloud<PointT>& cloud,
     std::vector<cv::Point3f> points;
     std::vector<int> indices;
 
+    PointT nan_point;
+    nan_point.getVector4fMap().setConstant (std::numeric_limits<float>::quiet_NaN());
+
+    cloud.width = image.depth().cols / subsampling_factor;
+    cloud.height = image.depth().rows / subsampling_factor;
+    cloud.points.resize(cloud.width*cloud.height, nan_point);
+    cloud.is_dense = true;
+
     for (int r = 0; r < image.depth().rows; r += subsampling_factor)
         for (int c = 0; c < image.depth().cols; c += subsampling_factor)
         {
-            float d = image.depth()(r,c);
+            float d = image.depth()(r,c);            
             bool mask_ok = !image.depthMask().data || image.depthMask()(r,c);
             if (d < 1e-5 || !mask_ok)
                 continue;
             cv::Point3f p = pose.unprojectFromImage(cv::Point2f(c,r),d);
-            points.push_back(p);
-            indices.push_back(r*image.depth().cols+c);
+            PointT& pcl_p = cloud.points[r*cloud.width+c];
+            pcl_p.x = p.x;
+            pcl_p.y = p.y;
+            pcl_p.z = p.z;
         }
-
-    vectorToPointCloud(cloud, points, indices);
 }
 
 template <class PointT>
@@ -92,6 +100,32 @@ void pointCloudToMesh(ntk::Mesh& mesh,
     foreach_idx(i, cloud.points)
     {
         mesh.vertices[i] = cv::Point3f(cloud.points[i].x, cloud.points[i].y, cloud.points[i].z);
+    }
+}
+
+template <class PointT>
+void sampledRgbdImageToPointCloud(pcl::PointCloud<PointT>& cloud,
+                                  const RGBDImage& image,
+                                  const Pose3D& pose,
+                                  int n_samples)
+{
+    cloud.width = n_samples;
+    cloud.height = 1;
+    cloud.points.resize(n_samples);
+    cv::RNG rng;
+
+    int i = 0;
+    while (i < n_samples)
+    {
+        int r = rng(image.depth().rows);
+        int c = rng(image.depth().cols);
+        if (!image.depthMask()(r,c) || image.depth()(r,c) < 1e-5)
+            continue;
+        cv::Point3f p = pose.unprojectFromImage(cv::Point2f(c,r), image.depth()(r,c));
+        cloud.points[i].x = p.x;
+        cloud.points[i].y = p.y;
+        cloud.points[i].z = p.z;
+        i += 1;
     }
 }
 

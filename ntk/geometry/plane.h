@@ -40,6 +40,8 @@ public:
   Plane() : a(0), b(0), c(0), d(0)
   {}
 
+  bool isValid() const;
+
   cv::Vec3f normal() const;
 
   void set (double a_, double b_, double c_, double d_)

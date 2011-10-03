@@ -148,6 +148,13 @@ public:
   /*! Accessors to 3D normals. */
   cv::Mat3f& normalRef() { return m_normal; }
   const cv::Mat3f& normal() const { return m_normal; }
+  bool isValidNormal(int r, int c) const
+  {
+      return m_normal.data
+              && ntk_isfinite(m_normal(r,c)[0])
+              && ntk_isfinite(m_normal(r,c)[1])
+              && ntk_isfinite(m_normal(r,c)[2]);
+  }
 
   /*! Accessors to the amplitude image. Ignored with Kinect. */
   cv::Mat1f& amplitudeRef() { return m_amplitude; }

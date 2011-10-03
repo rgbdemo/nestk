@@ -107,6 +107,17 @@ Point3f Mesh :: centerize()
     return center;
 }
 
+Point3f Mesh :: center() const
+{
+    Point3f center(0,0,0);
+    foreach_idx(i, vertices)
+    {
+        center += vertices[i];
+    }
+    center *= 1.0/vertices.size();
+    return center;
+}
+
 void Mesh::saveToPlyFile(const char* filename) const
 {
     if (texture.data)
@@ -325,89 +336,72 @@ void Mesh:: clear()
     texture = cv::Mat3b();
 }
 
-void Mesh :: buildFromSurfels(const std::vector<Surfel>& surfels, int min_views)
+void Mesh :: addPointFromSurfel(const Surfel& surfel)
 {
-    clear();
+    vertices.push_back(surfel.location);
+    colors.push_back(surfel.color);
+}
 
-    unsigned long start = ntk::Time::getMillisecondCounter();
-    int idx = 0;
+void Mesh :: addSurfel(const Surfel& surfel)
+{
+    int idx = vertices.size();
 
-    foreach_idx(i, surfels)
+    ntk_assert(cv::norm(surfel.normal)>0.9, "Normal must be normalized and valid!");
+
+    Vec3f v1, v2;
+    orthogonal_basis(v1, v2, surfel.normal);
+    Point3f p0 = surfel.location + Point3f(v1 * surfel.radius);
+    Point3f p1 = surfel.location + Point3f(v1 * (surfel.radius/2.0f) + v2 * surfel.radius);
+    Point3f p2 = surfel.location + Point3f(v1 * (-surfel.radius/2.0f) + v2 * surfel.radius);
+    Point3f p3 = surfel.location + Point3f(v1 * -surfel.radius);
+    Point3f p4 = surfel.location + Point3f(v1 * (-surfel.radius/2.0f) + v2 * (-surfel.radius));
+    Point3f p5 = surfel.location + Point3f(v1 * (surfel.radius/2.0f) + v2 * (-surfel.radius));
+    vertices.push_back(p0);
+    vertices.push_back(p1);
+    vertices.push_back(p2);
+    vertices.push_back(p3);
+    vertices.push_back(p4);
+    vertices.push_back(p5);
+
+    for (int k = 0; k < 6; ++k)
+        colors.push_back(surfel.color);
+
+    for (int k = 0; k < 6; ++k)
+        normals.push_back(surfel.normal);
+
     {
-        if (!surfels[i].enabled())
-            continue;
-
-        if (surfels[i].n_views < min_views)
-            continue;
-
-#if 1
-        // FIXME: temp
-        vertices.push_back(surfels[i].location);
-        colors.push_back(surfels[i].color);
-        normals.push_back(surfels[i].normal);
-        continue;
-#endif
-
-        const Surfel& surfel = surfels[i];
-        Vec3f v1, v2;
-        orthogonal_basis(v1, v2, surfel.normal);
-        Point3f p0 = surfel.location + Point3f(v1 * surfel.radius);
-        Point3f p1 = surfel.location + Point3f(v1 * (surfel.radius/2.0f) + v2 * surfel.radius);
-        Point3f p2 = surfel.location + Point3f(v1 * (-surfel.radius/2.0f) + v2 * surfel.radius);
-        Point3f p3 = surfel.location + Point3f(v1 * -surfel.radius);
-        Point3f p4 = surfel.location + Point3f(v1 * (-surfel.radius/2.0f) + v2 * (-surfel.radius));
-        Point3f p5 = surfel.location + Point3f(v1 * (surfel.radius/2.0f) + v2 * (-surfel.radius));
-        vertices.push_back(p0);
-        vertices.push_back(p1);
-        vertices.push_back(p2);
-        vertices.push_back(p3);
-        vertices.push_back(p4);
-        vertices.push_back(p5);
-
-        for (int k = 0; k < 6; ++k)
-            colors.push_back(surfel.color);
-
-        for (int k = 0; k < 6; ++k)
-            normals.push_back(surfel.normal);
-
-        {
-            Face f;
-            f.indices[0] = idx+5;
-            f.indices[1] = idx+0;
-            f.indices[2] = idx+1;
-            faces.push_back(f);
-        }
-
-        {
-            Face f;
-            f.indices[0] = idx+5;
-            f.indices[1] = idx+1;
-            f.indices[2] = idx+2;
-            faces.push_back(f);
-        }
-
-        {
-            Face f;
-            f.indices[0] = idx+4;
-            f.indices[1] = idx+5;
-            f.indices[2] = idx+2;
-            faces.push_back(f);
-        }
-
-        {
-            Face f;
-            f.indices[0] = idx+4;
-            f.indices[1] = idx+2;
-            f.indices[2] = idx+3;
-            faces.push_back(f);
-        }
-
-        idx += 6;
+        Face f;
+        f.indices[0] = idx+5;
+        f.indices[1] = idx+0;
+        f.indices[2] = idx+1;
+        faces.push_back(f);
     }
 
-    unsigned long end = ntk::Time::getMillisecondCounter();
-    // ntk_dbg_print((end-start) / 1000., 1);
+    {
+        Face f;
+        f.indices[0] = idx+5;
+        f.indices[1] = idx+1;
+        f.indices[2] = idx+2;
+        faces.push_back(f);
+    }
+
+    {
+        Face f;
+        f.indices[0] = idx+4;
+        f.indices[1] = idx+5;
+        f.indices[2] = idx+2;
+        faces.push_back(f);
+    }
+
+    {
+        Face f;
+        f.indices[0] = idx+4;
+        f.indices[1] = idx+2;
+        f.indices[2] = idx+3;
+        faces.push_back(f);
+    }
 }
+
 
   void generate_mesh_from_plane(Mesh& mesh, const ntk::Plane& plane, const cv::Point3f& center, float plane_size)
   {
@@ -548,6 +542,35 @@ void Mesh::addCube(const cv::Point3f& center, const cv::Point3f& sizes, const cv
         {
             face.indices[i] = first_vertex_index + links[f][i];
         }
+        faces.push_back(face);
+    }
+}
+
+void Mesh :: addMesh(const ntk::Mesh& rhs)
+{
+    if (vertices.size() < 1)
+    {
+        *this = rhs;
+        return;
+    }
+
+    // must check it before modifying it.
+    bool has_colors = hasColors();
+
+    int offset = vertices.size();
+    vertices.insert(vertices.end(), rhs.vertices.begin(), rhs.vertices.end());
+    if (has_colors)
+    {
+        ntk_throw_exception_if(!rhs.hasColors(), "Cannot merge different kind of meshes.");
+        colors.insert(colors.end(), rhs.colors.begin(), rhs.colors.end());
+    }
+
+    for (int i = 0; i < rhs.faces.size(); ++i)
+    {
+        Face face = rhs.faces[i];
+        face.indices[0] += offset;
+        face.indices[1] += offset;
+        face.indices[2] += offset;
         faces.push_back(face);
     }
 }

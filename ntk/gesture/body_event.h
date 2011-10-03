@@ -35,6 +35,8 @@
 #include <XnVPointControl.h>
 #include <XnVPointDenoiser.h>
 
+#include <algorithm>
+
 #include <QReadWriteLock>
 #include <QReadLocker>
 #include <QWriteLocker>
@@ -72,26 +74,43 @@ public:
 };
 const NtkDebug& operator<<(const NtkDebug& os, const BodyEvent& e);
 
-
 class BodyEventDetector : public XnVPointControl
 {
 public:
+    enum PointerSmoothingType {
+        POINTER_SMOOTHING_DISABLED = 0,
+        POINTER_SMOOTHING_NITE,
+        POINTER_SMOOTHING_KALMAN,
+        POINTER_SMOOTHING_DOUBLE_EXPONENTIAL
+    };
+
+public:
   BodyEventDetector()
-   : m_context(0), m_depth_generator(0), m_tracked_user_id(-1),
-     m_last_hand_position(-1,-1,-1), m_last_hand_position_2d(-1,-1,-1)
+   : m_context(0), m_depth_generator(0), m_session_manager(0),
+     m_push_detector(0), m_swipe_detector(0), m_wave_detector(0),
+     m_circle_detector(0), m_steady_detector(0), m_point_denoiser(0),
+     m_tracked_user_id(-1),
+     m_last_hand_position(-1,-1,-1), m_last_hand_position_2d(-1,-1,-1),
+     m_first_point_in_session(false),
+     m_pointer_smoothing_type(POINTER_SMOOTHING_KALMAN)
   {}
+
+  void setPointSmoothingType(PointerSmoothingType type)
+  { m_pointer_smoothing_type = type; }
 
   void initialize(xn::Context& m_context, xn::DepthGenerator& depth_generator);
   void shutDown();
 
+  void initializeKalman();
   void update();
 
-  void addListener(BodyEventListener* listener) { m_listeners.push_back(listener); }
+  void    addListener(BodyEventListener* listener) { m_listeners.push_back(listener); }
   void removeListener(BodyEventListener* listener) { m_listeners.erase(
           std::remove(m_listeners.begin(), m_listeners.end(), listener),
           m_listeners.end()); }
 
 public:
+  XnVCircleDetector* getCircleDetector() { return m_circle_detector; }
   int getTrackedUserId() const { return m_tracked_user_id; }
 
   cv::Point3f getLastHandPosition() const
@@ -113,6 +132,11 @@ public:
   virtual void OnPrimaryPointUpdate(const XnVHandPointContext* pContext);
   virtual void OnPrimaryPointCreate(const XnVHandPointContext* pContext, const XnPoint3D& ptSessionStarter);
 
+  struct RawPointListener : public XnVPointControl
+  {
+      virtual void OnPointUpdate(const XnVHandPointContext* pContext);
+  };
+
 private:
   mutable QReadWriteLock m_lock;
   std::vector<BodyEventListener*> m_listeners;
@@ -125,11 +149,19 @@ private:
   XnVCircleDetector* m_circle_detector;
   XnVSteadyDetector* m_steady_detector;
   XnVPointDenoiser* m_point_denoiser;
+  std::vector<cv::Point3f> m_prev_pos_vector;
+  cv::Point3f m_prev_raw_pos[2];
   cv::Point3f m_prev_hand_points[2];
   uint64 m_prev_timestamps[2];
   int m_tracked_user_id;
   cv::Point3f m_last_hand_position;
   cv::Point3f m_last_hand_position_2d;
+  bool m_first_point_in_session;
+  cv::KalmanFilter m_kalman;
+  RawPointListener m_raw_listener;
+  cv::Point3f m_bt; // double expo smoothing
+  cv::Point3f m_st;
+  PointerSmoothingType m_pointer_smoothing_type;
 };
 
 struct HandPointUpdate
@@ -137,6 +169,7 @@ struct HandPointUpdate
     cv::Point3f pos_3d;
     cv::Point3f pos_2d;
     cv::Point3f derivate_3d;
+    cv::Point3f derivate_2d;
     float velocity;
     float acceleration;
     int64 timestamp;
@@ -145,21 +178,16 @@ struct HandPointUpdate
 class BodyEventListener
 {
 public:
-  typedef ::ntk::BodyEvent BodyEvent;
+    typedef ::ntk::BodyEvent BodyEvent;
 
 public:
-  /*!
-   * This callback will be called when a gesture event is detected.
-   * WARNING: It will be called from the grabber thread.
-   */
-  virtual void triggerEvent(const BodyEvent& event) {}
+  virtual void triggerEvent(const BodyEvent& event) = 0;
 
   /*!
-   * This is callback comes from Nite HandsGenerator.
-   * Contrary to the skeleton joint, this does not require calibration.
-   * WARNING: It will be called from the grabber thread.
+   * This is emitted by Nite HandsGenerator.
+   * Contrary to the skeleton joint, this does not require calibration.addBodyEventListener
    */
-  virtual void triggerHandPoint(const HandPointUpdate& hand_point) {}
+  virtual void triggerHandPoint(const HandPointUpdate& hand_point) = 0;
 };
 
 } // ntk

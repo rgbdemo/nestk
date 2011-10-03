@@ -31,6 +31,7 @@
 
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
+#include <pcl/PolygonMesh.h>
 
 #include <vector>
 
@@ -41,6 +42,12 @@ typedef pcl::PointXYZRGBA PointXYZIndex;
 
 class RGBDImage;
 class Pose3D;
+
+inline pcl::PointXYZ toPcl(const cv::Point3f& p)
+{ return pcl::PointXYZ(p.x, p.y, p.z); }
+
+inline cv::Point3f toOpencv(const pcl::PointXYZ& p)
+{ return cv::Point3f(p.x, p.y, p.z); }
 
 template <class PointT>
 void vectorToPointCloud(pcl::PointCloud<PointT>& cloud,
@@ -59,6 +66,17 @@ void rgbdImageToPointCloud(pcl::PointCloud<PointT>& cloud,
 template <class PointT>
 void pointCloudToMesh(ntk::Mesh& mesh,
                       const pcl::PointCloud<PointT>& cloud);
+
+void meshToPointCloud(pcl::PointCloud<pcl::PointXYZ>& cloud,
+                      const ntk::Mesh& mesh);
+
+void polygonMeshToMesh(ntk::Mesh& mesh, pcl::PolygonMesh& polygon);
+
+template <class PointT>
+void sampledRgbdImageToPointCloud(pcl::PointCloud<PointT>& cloud,
+                                  const RGBDImage& image,
+                                  const Pose3D& pose,
+                                  int n_samples);
 
 }
 

@@ -136,6 +136,18 @@ inline cv::Point2f box_center(const cv::Rect_<float>& bbox)
     return cv::Point2f(bbox.x + bbox.width/2.0, bbox.y + bbox.height/2.0);
 }
 
+inline cv::Vec3f infinite_point()
+{
+    return cv::Vec3f(std::numeric_limits<float>::quiet_NaN(),
+                     std::numeric_limits<float>::quiet_NaN(),
+                     std::numeric_limits<float>::quiet_NaN());
+}
+
+inline void fillWithNan(cv::Mat3f& im)
+{
+    std::fill((cv::Vec3f*)im.datastart, (cv::Vec3f*)im.dataend, infinite_point());
+}
+
 template <class ScalarType>
 cv::Vec3d toVec3d(const cv::Mat_<ScalarType>& m)
 {

@@ -17,22 +17,27 @@
  * Author: Nicolas Burrus <nicolas.burrus@uc3m.es>, (C) 2010
  */
 
-#include "cost_function.h"
+#ifndef NTK_UTILS_PROGRESSIVE_H
+#define NTK_UTILS_PROGRESSIVE_H
+
+#include <ntk/core.h>
+
+#include <QObject>
 
 namespace ntk
 {
 
-double CostFunction :: outputNorm(const std::vector<double>& input) const
+class Progressive : public QObject
 {
-  std::vector<double> output(m_output_dim);
-  evaluate(input, output);
-  double err = 0;
-  foreach_idx(i, output)
-  {
-    err += output[i]*output[i];
-  }
-  err = sqrt(err);
-  return err;
-}
+    Q_OBJECT
 
-}
+public:
+    virtual void progress(const char* message, float percent) const;
+
+signals:
+    void progressChanged(QString, float) const;
+};
+
+}  // ntk
+
+#endif // NTK_UTILS_PROGRESSIVE_H
