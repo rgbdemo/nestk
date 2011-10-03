@@ -131,7 +131,8 @@ SET ( ntk_sources
 QT4_WRAP_CPP(moc_sources
   gui/image_widget.h
   mesh/mesh_viewer.h
-  thread/event.h
+  utils/progressive.h
+  thread/event.h  
 )
 
 # Workaround a bug with i386 on Mac that cannot compile this particular
