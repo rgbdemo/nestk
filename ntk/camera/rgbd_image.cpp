@@ -21,7 +21,16 @@
 #include <ntk/utils/opencv_utils.h>
 #include <ntk/utils/stl.h>
 #include <ntk/camera/rgbd_processor.h>
+
+#ifdef NESTK_USE_OPENNI
 #include <ntk/gesture/skeleton.h>
+#else
+namespace ntk
+{
+struct Skeleton
+{};
+}
+#endif
 
 using namespace cv;
 
