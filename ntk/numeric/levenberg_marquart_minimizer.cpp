@@ -63,7 +63,7 @@ public:
   }
 
 private:
-  mutable CostFunction& m_cost_function;
+  CostFunction& m_cost_function;
   mutable std::vector<double> m_current_input;
   mutable std::vector<double> m_current_output;
   int m_input_dimension;
