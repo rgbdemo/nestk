@@ -98,6 +98,13 @@ IF(NESTK_USE_PCL)
   SET(NESTK_USE_PCL 1)
   ADD_DEFINITIONS(-DNESTK_USE_PCL)
 
+  OPTION(HAVE_PCL_1_3 "Set this if you version of PCL is greater than 1.3" OFF)
+  # FIXME: PCL_VERSION is broken in latest svn.
+  IF (HAVE_PCL_1_3 OR PCL_VERSION VERSION_GREATER 1.2.5)
+    MESSAGE("PCL > 1.2.0 found, enable latest features.")
+    ADD_DEFINITIONS(-DHAVE_PCL_GREATER_THAN_1_2_0)
+  ENDIF()
+
   if(WIN32)
     set(Boost_USE_STATIC_LIBS ON)
   endif(WIN32)

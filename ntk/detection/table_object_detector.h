@@ -35,7 +35,6 @@
 #include "pcl/features/normal_3d.h"
 #include "pcl/kdtree/kdtree.h"
 #include "pcl/kdtree/kdtree_flann.h"
-#include "pcl/kdtree/organized_data.h"
 #include "pcl/sample_consensus/method_types.h"
 #include "pcl/sample_consensus/model_types.h"
 #include "pcl/segmentation/sac_segmentation.h"
@@ -60,7 +59,11 @@ public:
     typedef PointType Point;
     typedef typename pcl::PointCloud<Point> PointCloud;
     typedef typename PointCloud::ConstPtr PointCloudConstPtr;
+#ifdef HAVE_PCL_GREATER_THAN_1_2_0
+    typedef typename pcl::search::KdTree<pcl::PointXYZ>::Ptr KdTreePtr;
+#else
     typedef typename pcl::KdTree<Point>::Ptr KdTreePtr;
+#endif
 
 public:
     TableObjectDetector ();
@@ -72,6 +75,7 @@ public:
     void setBackgroundVoxelSize(float s = 0.01) { downsample_leaf_ = s; }
     void setDepthLimits(float min_z = -1.6, float max_z = -0.4) { min_z_bounds_ = min_z; max_z_bounds_ = max_z; }
     void setObjectHeightLimits(float min_h = 0.01, float max_h = 0.5) { object_min_height_ = min_h;  object_max_height_ = max_h; }
+    void setMaxDistToPlane(float d) { m_max_dist_to_plane = d; }
 
 public:
     /*! Returns true if at least one object and plane are detected. */
@@ -107,6 +111,9 @@ private:
 
     // Object cluster tolerance and minimum cluster size
     double object_cluster_tolerance_, object_cluster_min_size_;
+
+    // Maximal distance between the object and the plane.
+    double m_max_dist_to_plane;
 
     // The raw, input point cloud data
     PointCloudConstPtr cloud_;

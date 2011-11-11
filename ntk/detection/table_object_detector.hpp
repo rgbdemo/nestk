@@ -30,6 +30,7 @@ namespace ntk
 
 template <class PointType>
 TableObjectDetector<PointType> :: TableObjectDetector()
+    : m_max_dist_to_plane(0.03)
 {
     // ---[ Create all PCL objects and set their parameters
     setObjectVoxelSize();
@@ -64,17 +65,19 @@ void TableObjectDetector<PointType> :: initialize()
     grid_.setDownsampleAllData (false);
     grid_objects_.setDownsampleAllData (false);
 
+#ifdef HAVE_PCL_GREATER_THAN_1_2_0
+    normals_tree_ = boost::make_shared<pcl::search::KdTree<Point> > ();
+    clusters_tree_ = boost::make_shared<pcl::search::KdTree<Point> > ();
+#else
     normals_tree_ = boost::make_shared<pcl::KdTreeFLANN<Point> > ();
     clusters_tree_ = boost::make_shared<pcl::KdTreeFLANN<Point> > ();
+#endif
     clusters_tree_->setEpsilon (1);
     //tree_.setSearchWindowAsK (10);
     //tree_.setMaxDistance (0.5);
 
     n3d_.setKSearch (k_);
     n3d_.setSearchMethod (normals_tree_);
-
-    seg_.setDistanceThreshold (sac_distance_threshold_);
-    seg_.setMaxIterations (10000);
 
     normal_distance_weight_ = 0.1;
 
@@ -83,6 +86,8 @@ void TableObjectDetector<PointType> :: initialize()
     seg_.setModelType (pcl::SACMODEL_NORMAL_PLANE);
     seg_.setMethodType (pcl::SAC_RANSAC);
     seg_.setProbability (0.99);
+    seg_.setDistanceThreshold (sac_distance_threshold_);
+    seg_.setMaxIterations (10000);
 
     proj_.setModelType (pcl::SACMODEL_NORMAL_PLANE);
 
@@ -199,9 +204,6 @@ bool TableObjectDetector<PointType> :: detect(pcl::PointCloud<Point>& cloud)
     cluster_.extract (object_clusters);
     ntk_dbg(1) << cv::format("Number of clusters found matching the given constraints: %d.\n", (int)object_clusters.size ());
 
-    // Closest object points must be at less than 2 cm from the plane.
-    const float max_dist_to_plane_threshold = 0.03;
-
     for (size_t i = 0; i < object_clusters.size (); ++i)
     {
         std::vector<Point3f> object_points;
@@ -220,7 +222,7 @@ bool TableObjectDetector<PointType> :: detect(pcl::PointCloud<Point>& cloud)
         }
 
         ntk_dbg_print(min_dist_to_plane, 1);
-        if (min_dist_to_plane > max_dist_to_plane_threshold)
+        if (min_dist_to_plane > m_max_dist_to_plane)
             continue;
 
         m_object_clusters.push_back(object_points);
@@ -235,9 +237,6 @@ int TableObjectDetector<PointType> :: getMostCentralCluster() const
 {
     // Look for the most central cluster which is not flying.
 
-    // Closest object points must be at less than 2 cm from the plane.
-    const float max_dist_to_plane_threshold = 0.02;
-
     int selected_object = -1;
     float min_x = FLT_MAX;
     for (int i = 0; i < objectClusters().size(); ++i)
@@ -250,7 +249,7 @@ int TableObjectDetector<PointType> :: getMostCentralCluster() const
             min_dist_to_plane = std::min(plane().distanceToPlane(pobj), min_dist_to_plane);
         }
 
-        if (min_dist_to_plane > max_dist_to_plane_threshold)
+        if (min_dist_to_plane > m_max_dist_to_plane)
             continue;
 
         ntk::Rect3f bbox = bounding_box(object_points);
