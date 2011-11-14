@@ -15,7 +15,7 @@ if(OPENNI_PLATFORM_LINUX)
 	file(GLOB ${OPENNI_LIB_NAME}_platform_sources ./Linux-x86/*.cpp)
 elseif(OPENNI_PLATFORM_APPLE)
 	file(GLOB ${OPENNI_LIB_NAME}_platform_sources ./Linux-x86/*.cpp)
-	set(CMAKE_EXE_LINKER_FLAGS "-framework CoreFoundation -framework IOKit")
+	set(APPLE_FRAMEWORKS_LDFLAGS "-framework CoreFoundation -framework IOKit")
 endif()
 
 # Set our target
@@ -35,7 +35,7 @@ target_link_libraries(
 	${USB_LIBRARY} 
 	${LIBDL} 
 	${TINYXML_LIB_NAME}
-	${CMAKE_EXE_LINKER_FLAGS}
+	${APPLE_FRAMEWORKS_LDFLAGS}
 )
 
 # Set path where to install the target, lib, runtime. 
