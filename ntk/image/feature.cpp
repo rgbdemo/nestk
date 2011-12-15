@@ -381,7 +381,7 @@ void FeatureSet :: matchWith(const FeatureSet& rhs,
 
         std::vector<float> query(descriptorSize());
         std::copy(rhs_descriptors.ptr<float>(i),
-                  rhs_descriptors.ptr<float>(i+1),
+                  rhs_descriptors.ptr<float>(i) + rhs_descriptors.cols,
                   query.begin());
 #ifdef HAVE_OPENCV_GREATER_THAN_2_3_0
         cvflann::SearchParams params(64);
