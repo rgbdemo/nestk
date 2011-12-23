@@ -23,7 +23,7 @@
 #include <ntk/utils/debug.h>
 #include <ntk/utils/opencv_utils.h>
 
-#include <opencv/cv.h>
+// #include <opencv/cv.h>
 
 #include <ntk/utils/time.h>
 

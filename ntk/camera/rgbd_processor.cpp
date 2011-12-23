@@ -18,13 +18,14 @@
  */
 
 #include "rgbd_processor.h"
+
 #include <ntk/utils/opencv_utils.h>
 #include <ntk/utils/time.h>
 #include <ntk/geometry/pose_3d.h>
 
 #ifdef NESTK_USE_PCL
-#include <ntk/mesh/pcl_utils.h>
 #include <pcl/features/integral_image_normal.h>
+#include <ntk/mesh/pcl_utils.h>
 #endif
 
 using namespace cv;
@@ -770,3 +771,4 @@ namespace ntk
     }
 
 }
+

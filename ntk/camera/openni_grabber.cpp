@@ -92,7 +92,7 @@ OpenniGrabber :: OpenniGrabber(OpenniDriver& driver, int camera_id) :
     m_body_event_detector(0),
     m_high_resolution(false),
     m_mirrored(false),
-    m_custom_bayer_decoding(true),
+    m_custom_bayer_decoding(false),
     m_xml_config_file(DEFAULT_XML_CONFIG_FILE),
     m_track_users(true),
     m_get_infrared(false)

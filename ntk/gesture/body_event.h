@@ -41,6 +41,8 @@
 #include <QReadLocker>
 #include <QWriteLocker>
 
+#include <opencv2/video/tracking.hpp>
+
 namespace ntk
 {
 

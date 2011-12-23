@@ -24,6 +24,7 @@
 #include <ntk/camera/rgbd_image.h>
 #include <ntk/utils/xml_serializable.h>
 #include <ntk/geometry/pose_3d.h>
+#include <opencv/cv.h> // no PCL include, can be used safely.
 
 namespace ntk
 {

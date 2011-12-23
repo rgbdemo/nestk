@@ -36,6 +36,8 @@ SET ( ntk_sources
      geometry/pose_3d.cpp
      geometry/relative_pose_estimator.h
      geometry/relative_pose_estimator.cpp
+     geometry/relative_pose_estimator_from_image.h
+     geometry/relative_pose_estimator_from_image.cpp
      geometry/similarity_transform.h
      geometry/similarity_transform.cpp
      gui/image_widget.h
@@ -229,6 +231,7 @@ TARGET_LINK_LIBRARIES(nestk
   ${PMD_LIBRARIES}
   ${FREENECT_LIBRARIES}
   ${OPENNI_LIBRARIES}
+  ${NITE_LIBRARY}
   ${WINMM_LIBRARY}
   ${PTHREAD_LIBRARY})
 

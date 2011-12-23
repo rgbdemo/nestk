@@ -23,7 +23,7 @@
 #include <numeric>
 #include <algorithm>
 
-#include <opencv/cv.h>
+// #include <opencv/cv.h>
 
 namespace ntk
 {

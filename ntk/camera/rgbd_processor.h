@@ -21,7 +21,6 @@
 #define NTK_CAMERA_RGBD_PROCESSOR_H
 
 #include <ntk/core.h>
-#include <opencv/cv.h>
 #include <ntk/camera/rgbd_image.h>
 
 namespace ntk

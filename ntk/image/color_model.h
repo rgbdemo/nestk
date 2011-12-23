@@ -21,7 +21,6 @@
 # define NTK_COLORMODEL_H_
 
 # include <ntk/core.h>
-# include <opencv/cv.h>
 
 // TODO: use mixture of gaussians?
 class HSColorModel
