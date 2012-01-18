@@ -21,6 +21,10 @@
 #define NTK_CAMERA_RGBD_IMAGE_H
 
 #include <ntk/camera/calibration.h>
+#include <ntk/geometry/pose_3d.h>
+#include <ntk/thread/event.h>
+
+#include <QObject>
 
 namespace ntk
 {
@@ -38,12 +42,12 @@ namespace ntk
  * The other accessors refers to postprocessed data, e.g. after
  * RGBDProcessor::processImage .
  */
-class CV_EXPORTS RGBDImage
+class CV_EXPORTS RGBDImage : public ntk::EventData
 {
 public:
-  RGBDImage() : m_calibration(0), m_skeleton(0) {}
+  RGBDImage() : m_calibration(0), m_skeleton(0), m_camera_serial("unknown"), m_timestamp(0) {}
 
-  RGBDImage(const RGBDImage& rhs) : m_calibration(0), m_skeleton(0) { rhs.copyTo(*this); }
+  RGBDImage(const RGBDImage& rhs) : EventData(rhs), m_calibration(0), m_skeleton(0) { rhs.copyTo(*this); }
 
   /*! Initialize from an viewXXXX directory. */
   RGBDImage(const std::string& dir,
@@ -51,9 +55,12 @@ public:
             RGBDProcessor* processor = 0) :  m_skeleton(0)
   { loadFromDir(dir, calib, processor); }
 
-  ~RGBDImage();
+  virtual ~RGBDImage();
 
   bool withRgbDataAndCalibrated() const { return rawRgb().data && m_calibration; }
+  bool withDepthDataAndCalibrated() const { return rawDepth().data && m_calibration; }
+  bool hasRgb() const { return rawRgb().data != 0; }
+  bool hasDepth() const { return rawDepth().data != 0; }
 
   /*! Directory path if loaded from disk. */
   const std::string& directory() const { return m_directory; }
@@ -69,6 +76,14 @@ public:
   /*! Load from a single color image. No depth data. */
   void loadFromFile(const std::string& dir,
                     const RGBDCalibration* calib = 0);
+
+  /*! Return the serial number or unique id of the source camera. */
+  void setCameraSerial(const std::string& serial) { m_camera_serial = serial; }
+  const std::string& cameraSerial() const { return m_camera_serial; }
+
+  /*! Return the grabbing timestamp in seconds. */
+  void setTimestamp(float t) { m_timestamp = t; }
+  float timestamp() const { return m_timestamp; }
 
   /*! Associated optional calibration data. */
   const RGBDCalibration* calibration() const { return m_calibration; }
@@ -192,6 +207,14 @@ public:
   Skeleton* skeletonRef() { return m_skeleton; }
   void setSkeletonData(Skeleton* skeleton) { m_skeleton = skeleton; }
 
+  /*! Associate a pose with the image. */
+  const Pose3D& depthPose() { return m_depth_pose; }
+  void setDepthPose(const Pose3D& pose) { m_depth_pose = pose; }
+
+  /*! Return the rgb pose associated to the depth pose. */
+  Pose3D rgbPose() const;
+  void setRgbPose(const Pose3D& pose);
+
 private:
   cv::Mat3b m_rgb;
   cv::Mat1b m_rgb_as_gray;
@@ -211,7 +234,11 @@ private:
   const RGBDCalibration* m_calibration;
   std::string m_directory;
   Skeleton* m_skeleton;
+  ntk::Pose3D m_depth_pose;
+  std::string m_camera_serial;
+  float m_timestamp;
 };
+ntk_ptr_typedefs(RGBDImage);
 
 } // ntk
 

@@ -23,7 +23,21 @@
 #include <ntk/core.h>
 #include <ntk/mesh/mesh.h>
 
+// Qt Opengl headers include windows.h on windows without preventing
+// preprocessor namespace pollution.
+// FIXME: Factor this out.
+#ifdef _WIN32
+#   define NOMINMAX
+#   define VC_EXTRALEAN
+#   define WIN32_LEAN_AND_MEAN
+#endif
 #include <QGLWidget>
+#ifdef _WIN32
+#   undef WIN32_LEAN_AND_MEAN
+#   undef VC_EXTRALEAN
+#   undef NOMINMAX
+#endif
+
 #include <QPoint>
 
 namespace ntk
@@ -96,14 +110,21 @@ private:
         unsigned vertex_id;
         unsigned faces_id;
         int color_offset;
+        int normals_offset;
         int texture_offset;
         int nb_vertices;
         int nb_faces;
         bool has_texcoords;
         bool has_color;
         bool has_faces;
+        bool has_normals;
+        MeshViewerMode rendering_mode;
         cv::Mat_<GLfloat> model_view_matrix;
     };
+
+    void drawVertexBufferObject(VertexBufferObject& obj);
+    void enableVertexBufferObject(VertexBufferObject& obj, int index);
+    void disableVertexBufferObject(VertexBufferObject& obj);
 
 protected:
     QPoint m_last_mouse_pos;

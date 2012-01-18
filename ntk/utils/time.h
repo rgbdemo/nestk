@@ -64,14 +64,65 @@ namespace ntk
 
     void stop(const std::string& marker = "")
     {
-      uint64 tstop = ntk::Time::getMillisecondCounter();
-      ntk_dbg(m_debug_level) << "[TIME] elapsed in " << m_name << marker << ": " << (float(tstop)-m_start) << " msecs";
+      uint64 delta = ntk::Time::getMillisecondCounter() - m_start;
+      ntk_dbg(m_debug_level) << "[TIME] elapsed in " << m_name << marker << ": " << delta << " msecs";
     }
 
   private:
     std::string m_name;
     uint64 m_start;
     int m_debug_level;
+  };
+
+  class FrameRate
+  {
+  public:
+      FrameRate()
+          : m_last_tick(),
+            m_frame_counter(0),
+            m_frame_rate(-1)
+      {}
+
+  public:
+      void tick()
+      {
+          const int delta_frames = 10;
+
+          if (m_frame_counter == 0)
+          {
+              m_last_tick = cv::getTickCount();
+              ++m_frame_counter;
+              return;
+          }
+
+          if (m_frame_counter < delta_frames)
+          {
+              double current_tick = cv::getTickCount();
+              m_frame_rate = m_frame_counter / ((current_tick - m_last_tick)/cv::getTickFrequency());
+              ++m_frame_counter;
+              return;
+          }
+
+          if (m_frame_counter % delta_frames == 0)
+          {
+              double current_tick = cv::getTickCount();
+
+              m_frame_rate = delta_frames / ((current_tick - m_last_tick)/cv::getTickFrequency());
+              m_last_tick = current_tick;
+          }
+
+          ++m_frame_counter;
+      }
+
+      float currentFrameRate()
+      {
+          return m_frame_rate;
+      }
+
+  private:
+      double m_last_tick;
+      int m_frame_counter;
+      float m_frame_rate;
   };
 
 } // end of ntk

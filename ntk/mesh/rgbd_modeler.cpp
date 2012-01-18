@@ -28,40 +28,41 @@ using namespace cv;
 namespace ntk
 {
 
-  bool RGBDModeler :: addNewView(const RGBDImage& image, Pose3D& relative_pose)
-  {
-    Pose3D rgb_pose = *image.calibration()->rgb_pose;
-    Pose3D depth_pose = *image.calibration()->depth_pose;
-    depth_pose.applyTransformBefore(relative_pose);
-    rgb_pose.applyTransformBefore(relative_pose);
+bool RGBDModeler :: addNewView(const RGBDImage& image, Pose3D& depth_pose)
+{
+    Pose3D rgb_pose = depth_pose;
+    rgb_pose.toRightCamera(image.calibration()->rgb_intrinsics, image.calibration()->R, image.calibration()->T);
 
     Pose3D world_to_camera_normal_pose;
-    world_to_camera_normal_pose.applyTransformBefore(Vec3f(0,0,0), relative_pose.cvEulerRotation());
+    world_to_camera_normal_pose.applyTransformBefore(Vec3f(0,0,0), depth_pose.cvEulerRotation());
     Pose3D camera_to_world_normal_pose = world_to_camera_normal_pose; camera_to_world_normal_pose.invert();
 
     const Mat1f& depth_im = image.depth();
 
     for_all_rc(depth_im)
     {
-      if (!image.depthMask()(r,c))
-        continue;
-      float depth = depth_im(r,c) + m_global_depth_offset;
-      Point3f p3d = depth_pose.unprojectFromImage(Point2f(c,r), depth);
-      Point3f p_rgb = rgb_pose.projectToImage(p3d);
-      if (!is_yx_in_range(image.rgb(), p_rgb.y, p_rgb.x))
-        continue;
+        if (!image.depthMask()(r,c))
+            continue;
+        float depth = depth_im(r,c) + m_global_depth_offset;
+        Point3f p3d = depth_pose.unprojectFromImage(Point2f(c,r), depth);
+        Point3f p_rgb = rgb_pose.projectToImage(p3d);
+        if (!is_yx_in_range(image.rgb(), p_rgb.y, p_rgb.x))
+            continue;
 
-      Vec3f camera_normal = image.normal().data ? image.normal()(r, c) : Vec3f(0,0,1);
-      Vec3f world_normal = camera_to_world_normal_pose.cameraTransform(camera_normal);
-      normalize(world_normal);
+        if (!m_bounding_box.isEmpty() && !m_bounding_box.isPointInside(p3d))
+            continue;
 
-      cv::Vec3b color = bgr_to_rgb(image.rgb()(p_rgb.y, p_rgb.x));
-      m_mesh.vertices.push_back(p3d);
-      m_mesh.colors.push_back(color);
-      m_mesh.normals.push_back(world_normal);
+        Vec3f camera_normal = image.normal().data ? image.normal()(r, c) : Vec3f(0,0,1);
+        Vec3f world_normal = camera_to_world_normal_pose.cameraTransform(camera_normal);
+        normalize(world_normal);
+
+        cv::Vec3b color = bgr_to_rgb(image.rgb()(p_rgb.y, p_rgb.x));
+        m_mesh.vertices.push_back(p3d);
+        m_mesh.colors.push_back(color);
+        m_mesh.normals.push_back(world_normal);
     }
 
     return true;
-  }
+}
 
 } // ntk

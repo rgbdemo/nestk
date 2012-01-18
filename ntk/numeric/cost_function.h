@@ -38,6 +38,8 @@ public:
 
   virtual void evaluate(const std::vector<double>& input, std::vector<double>& output) const = 0;
   double outputNorm(const std::vector<double>& input) const;
+  double normalizedOutputNorm(const std::vector<double>& input) const
+  { return outputNorm(input) / outputDimension(); }
 
   int inputDimension() const { return m_input_dim; }
   int outputDimension() const { return m_output_dim; }

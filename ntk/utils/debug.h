@@ -32,6 +32,8 @@ namespace ntk
   class XmlSerializable;
 }
 
+class QStringList;
+
 class NtkDebug
 {
   public:
@@ -39,7 +41,7 @@ class NtkDebug
     { qDebug() << "[DBG]" << s; }
 
   public:
-    void print(const ntk::XmlSerializable& rhs) const;   
+    void print(const ntk::XmlSerializable& rhs) const;
 
   public:
     QString* stringPtr() const { return &s; }
@@ -69,6 +71,8 @@ const NtkDebug& operator<<(const NtkDebug& d, const std::string& rhs);
 
 const NtkDebug& operator<<(const NtkDebug& d, const ntk::XmlSerializable& rhs);
 
+const NtkDebug& operator<<(const NtkDebug& d, const QStringList& rhs);
+
 #ifndef NDEBUG
 # define ntk_dbg(level) if (level <= ntk::ntk_debug_level) NtkDebug()
 #else
@@ -86,7 +90,7 @@ const NtkDebug& operator<<(const NtkDebug& d, const ntk::XmlSerializable& rhs);
 #endif // ndef NDEBUG
 
 namespace ntk {
-  
+
   void assert_failure(const char* where, const char* what, const char* cond);
   void fatal_error(const char* what, int code=1);
 

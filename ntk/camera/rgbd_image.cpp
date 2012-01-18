@@ -22,8 +22,10 @@
 #include <ntk/utils/stl.h>
 #include <ntk/camera/rgbd_processor.h>
 
-#ifdef NESTK_USE_OPENNI
-#include <ntk/gesture/skeleton.h>
+#include <QDir>
+
+#if defined(USE_OPENNI) || defined(NESTK_USE_OPENNI)
+# include <ntk/gesture/skeleton.h>
 #else
 namespace ntk
 {
@@ -55,6 +57,8 @@ namespace ntk
                                 RGBDProcessor* processor)
   {
     m_directory = dir;
+    m_timestamp = 0;
+    ntk_dbg_print(dir, 2);
 
     if (!is_file(dir+"/raw/color.png") && is_file(dir+"/color.png"))
     {
@@ -67,6 +71,11 @@ namespace ntk
       if (is_file(dir + "/raw/color.png"))
       {
         rawRgbRef() = imread(dir + "/raw/color.png", 1);
+        ntk_ensure(rawRgbRef().data, ("Could not read raw color image from " + dir).c_str());
+      }
+      else if (is_file(dir + "/raw/color.bmp"))
+      {
+        rawRgbRef() = imread(dir + "/raw/color.bmp", 1);
         ntk_ensure(rawRgbRef().data, ("Could not read raw color image from " + dir).c_str());
       }
 
@@ -138,6 +147,8 @@ namespace ntk
     m_user_labels.copyTo(other.m_user_labels);
     other.m_calibration = m_calibration;    
     other.m_directory = m_directory;
+    other.m_camera_serial = m_camera_serial;
+    other.m_timestamp = m_timestamp;
 #if defined(NESTK_USE_OPENNI) || defined(USE_OPENNI)
     if (m_skeleton)
     {
@@ -176,6 +187,8 @@ namespace ntk
     std::swap(m_calibration, other.m_calibration);
     std::swap(m_directory, other.m_directory);
     std::swap(m_skeleton, other.m_skeleton);
+    std::swap(m_camera_serial, other.m_camera_serial);
+    std::swap(m_timestamp, other.m_timestamp);
   }
 
   void RGBDImage :: fillRgbFromUserLabels(cv::Mat3b& img) const
@@ -203,6 +216,21 @@ namespace ntk
       else
         img(r,c) = colors[label%nb_colors];
     }
+  }
+
+  Pose3D RGBDImage :: rgbPose() const
+  {
+      ntk_assert(m_calibration, "Calibration must be available!");
+      Pose3D pose = m_depth_pose;
+      pose.toRightCamera(m_calibration->rgb_intrinsics, m_calibration->R, m_calibration->T);
+      return pose;
+  }
+
+  void RGBDImage :: setRgbPose(const Pose3D& pose)
+  {
+      ntk_assert(m_calibration, "Calibration must be available!");
+      m_depth_pose = pose;
+      m_depth_pose.toLeftCamera(m_calibration->depth_intrinsics, m_calibration->R, m_calibration->T);
   }
 
 } // ntk

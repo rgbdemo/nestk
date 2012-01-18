@@ -131,6 +131,9 @@ public:
   void setOrthographic(bool ortho);
   bool isOrthographic() const { return m_orthographic; }
 
+  /*! Return the determinant of the projection matrix. */
+  float determinant() const;
+
 public:
   /*! Returns the camera translation as OpenCV 3x3 matrix. */
   const cv::Vec3f cvTranslation() const;
@@ -175,6 +178,9 @@ public:
 
   /*! Invert the camera transform. */
   void invert();
+
+  /*! Return the inverted transform. */
+  Pose3D inverted() const;
 
   /*! Go from OpenGL coordinate system to ROS coordinate system. */
   void fromGLToRos();

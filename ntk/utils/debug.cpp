@@ -21,18 +21,19 @@
 #include "xml_serializable.h"
 
 #include <iostream>
+#include <QStringList>
 
 namespace ntk
 {
   int ntk_debug_level = 0;
-    
+
   void assert_failure(const char* where, const char* what, const char* cond)
   {
     std::cerr << "ASSERT failure in " << where << ": " << what
         << " [" << cond << "]" << std::endl;
     abort();
   }
-  
+
   void fatal_error(const char* what, int code)
   {
     std::cerr << "FATAL failure: " << what << std::endl;
@@ -48,10 +49,25 @@ const NtkDebug& operator<<(const NtkDebug& d, const std::string& rhs)
 }
 
 const NtkDebug& operator<<(const NtkDebug& d, const ntk::XmlSerializable& rhs)
-{ 
+{
   ntk::XMLNode e = ntk::XMLNode::createXMLTopNode("debug");
   rhs.fillXmlElement(e);
   d.stringPtr()->append(e.createXMLString(true));
   return d;
 }
 
+const NtkDebug& operator<<(const NtkDebug& d, const QStringList& rhs)
+{
+        QStringList::ConstIterator i   = rhs.begin();
+  const QStringList::ConstIterator end = rhs.end();
+
+  if (i == end)
+    return d;
+
+  d << *i++;
+
+  for (; i != end; ++i)
+    d << ", " << *i;
+
+  return d;
+}

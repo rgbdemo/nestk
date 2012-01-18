@@ -29,7 +29,6 @@
 # include "opencv2/calib3d/calib3d.hpp"
 # include "opencv2/objdetect/objdetect.hpp"
 # include "opencv2/legacy/compat.hpp"
-// // #include <opencv/cv.h> // do not include flann to avoid conflicts with PCL.
 # include <opencv/highgui.h>
 
 #ifndef FLT_MAX

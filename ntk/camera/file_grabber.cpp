@@ -25,50 +25,56 @@ namespace ntk
 {
 
 FileGrabber::FileGrabber(const std::string& path, bool is_directory)
-  : RGBDGrabber(),
-    m_path(path.c_str()),
-    m_current_image_index(0),
-    m_is_directory(is_directory)
+    : RGBDGrabber(),
+      m_path(path.c_str()),
+      m_current_image_index(0),
+      m_is_directory(is_directory)
 {
-  if (!is_directory)
-  {
-    m_rgbd_image.loadFromDir(path);
-    m_rgbd_image.setDirectory(path);
-  }
-  else
-  {
-    m_image_list = m_path.entryList(QStringList("view????"), QDir::Dirs, QDir::Name);
-    ntk_ensure(!m_image_list.empty(), "No view???? images in given directory.");
-  }
+    if (!is_directory)
+    {
+        m_rgbd_image.loadFromDir(path);
+        m_rgbd_image.setDirectory(path);
+    }
+    else
+    {
+        m_image_list = m_path.entryList(QStringList("view????*"), QDir::Dirs, QDir::Name);
+        ntk_ensure(!m_image_list.empty(), "No view???? images in given directory.");
+    }
+
+    setCameraSerial(QDir(path.c_str()).dirName().toStdString());
 }
 
 void FileGrabber::run()
 {
-  m_rgbd_image.setCalibration(m_calib_data);
-  m_buffer_image.setCalibration(m_calib_data);
+    m_rgbd_image.setCalibration(m_calib_data);
+    m_buffer_image.setCalibration(m_calib_data);
 
-  while (!m_should_exit)
-  {
-    waitForNewEvent();
+    m_rgbd_image.setCameraSerial(cameraSerial());
+    m_buffer_image.setCameraSerial(cameraSerial());
 
-    if (m_is_directory)
+    while (!m_should_exit)
     {
-      QString filepath = m_path.absoluteFilePath(m_image_list[m_current_image_index]);
-      {
-        QWriteLocker locker(&m_lock);
-        m_rgbd_image.loadFromDir(filepath.toStdString(), m_calib_data);
-      }
-      ++m_current_image_index;
-      if (m_current_image_index >= m_image_list.size())
-        m_current_image_index = 0;
-      ntk::sleep(10);
+        waitForNewEvent();
+
+        if (m_is_directory)
+        {
+            QString filepath = m_path.absoluteFilePath(m_image_list[m_current_image_index]);
+            {
+                QWriteLocker locker(&m_lock);
+                m_rgbd_image.loadFromDir(filepath.toStdString(), m_calib_data);
+                m_rgbd_image.setTimestamp(getCurrentTimestamp());
+            }
+            ++m_current_image_index;
+            if (m_current_image_index >= m_image_list.size())
+                m_current_image_index = 0;
+            ntk::sleep(10);
+        }
+        else
+        {
+            ntk::sleep(30);
+        }
+        advertiseNewFrame();
     }
-    else
-    {
-      ntk::sleep(30);
-    }
-    advertiseNewFrame();
-  }
 }
 
 } // ntk

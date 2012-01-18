@@ -340,6 +340,7 @@ void Mesh :: addPointFromSurfel(const Surfel& surfel)
 {
     vertices.push_back(surfel.location);
     colors.push_back(surfel.color);
+    normals.push_back(surfel.normal);
 }
 
 void Mesh :: addSurfel(const Surfel& surfel)
@@ -572,6 +573,39 @@ void Mesh :: addMesh(const ntk::Mesh& rhs)
         face.indices[1] += offset;
         face.indices[2] += offset;
         faces.push_back(face);
+    }
+}
+
+void Mesh::
+applyScaleTransform(float x_scale, float y_scale, float z_scale)
+{
+    foreach_idx(i, vertices)
+    {
+        vertices[i].x *= x_scale;
+        vertices[i].y *= y_scale;
+        vertices[i].z *= z_scale;
+    }
+}
+
+void Mesh::computeNormalsFromFaces()
+{
+    normals.clear();
+    normals.resize(vertices.size(), Vec3f(0,0,0));
+    foreach_idx(i, faces)
+    {
+        const Face& face = faces[i];
+        Vec3f v01 = vertices[face.indices[1]] - vertices[face.indices[0]];
+        Vec3f v02 = vertices[face.indices[2]] - vertices[face.indices[0]];
+        Vec3f n = v01.cross(v02);
+        for (int k = 0; k < face.numVertices(); ++k)
+            normals[face.indices[k]] += Point3f(n);
+    }
+
+    foreach_idx(i, normals)
+    {
+        Vec3f v = normals[i];
+        ntk::normalize(v);
+        normals[i] = v;
     }
 }
 

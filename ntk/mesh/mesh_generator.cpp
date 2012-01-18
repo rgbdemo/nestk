@@ -30,7 +30,8 @@ namespace ntk
   MeshGenerator :: MeshGenerator()
     : m_use_color(false),
     m_mesh_type(PointCloudMesh),
-    m_resolution_factor(1.0)
+    m_resolution_factor(1.0),
+    m_max_delta_depth(0.05)
   {
   }
 
@@ -61,7 +62,7 @@ namespace ntk
     subsample_mask = mask_im & subsample_mask;
 
     depth_pose.unprojectFromImage(depth_im, subsample_mask, voxels);
-    if (m_use_color)
+    if (m_use_color && image.hasRgb())
       rgb_pose.projectToImage(voxels, subsample_mask, rgb_points);
 
     for (int r = 0; r < voxels.rows; ++r)
@@ -186,7 +187,6 @@ namespace ntk
                                              const Pose3D& depth_pose,
                                              const Pose3D& rgb_pose)
   {
-    const double max_delta_depth = 0.05;
     const Mat1f& depth_im = image.depth();
     const Mat1b& mask_im = image.depthMask();
     m_mesh.clear();
@@ -235,8 +235,8 @@ namespace ntk
 
       if ((c < vertice_map.cols - 1) &&  (r < vertice_map.rows - 1) &&
           (vertice_map(r+1,c)>=0) && (vertice_map(r,c+1) >= 0) &&
-          (std::abs(depth_im(r,c) - depth_im(r+1, c)) < max_delta_depth) &&
-          (std::abs(depth_im(r,c) - depth_im(r, c+1)) < max_delta_depth))
+          (std::abs(depth_im(r,c) - depth_im(r+1, c)) < m_max_delta_depth) &&
+          (std::abs(depth_im(r,c) - depth_im(r, c+1)) < m_max_delta_depth))
       {
         Face f;
         f.indices[2] = vertice_map(r,c);
@@ -247,8 +247,8 @@ namespace ntk
 
       if ((c > 0) &&  (r < vertice_map.rows - 1) &&
           (vertice_map(r+1,c)>=0) && (vertice_map(r+1,c-1) >= 0) &&
-          (std::abs(depth_im(r,c) - depth_im(r+1, c)) < max_delta_depth) &&
-          (std::abs(depth_im(r,c) - depth_im(r+1, c-1)) < max_delta_depth))
+          (std::abs(depth_im(r,c) - depth_im(r+1, c)) < m_max_delta_depth) &&
+          (std::abs(depth_im(r,c) - depth_im(r+1, c-1)) < m_max_delta_depth))
       {
         Face f;
         f.indices[2] = vertice_map(r,c);
@@ -257,6 +257,7 @@ namespace ntk
         m_mesh.faces.push_back(f);
       }
     }
+    m_mesh.computeNormalsFromFaces();
   }
 
 } // ntk

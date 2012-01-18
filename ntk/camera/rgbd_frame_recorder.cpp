@@ -20,11 +20,17 @@
 #include "rgbd_frame_recorder.h"
 
 #include <ntk/ntk.h>
+#include <ntk/geometry/pose_3d.h>
 
 #include <QDir>
 
 #include <sys/stat.h>
 #include <sys/types.h>
+
+#ifdef NESTK_USE_PCL
+#include <ntk/mesh/pcl_utils.h>
+#include <pcl/io/pcd_io.h>
+#endif
 
 using namespace cv;
 
@@ -32,7 +38,13 @@ namespace ntk
 {
 
   RGBDFrameRecorder :: RGBDFrameRecorder(const std::string& directory)
-    : m_frame_index(0), m_only_raw(true), m_use_binary_raw(false)
+      : m_frame_index(0),
+        m_only_raw(true),
+        m_use_binary_raw(false),
+        m_save_rgb_pose(false),
+        m_save_pcl_point_cloud(false),
+        m_save_intensity(true),
+        m_use_compressed_format(true)
   {
     setDirectory(directory);
   }
@@ -55,30 +67,30 @@ namespace ntk
     }
   }
 
-  std::string RGBDFrameRecorder :: getNextFrameDirectory() const
+  std::string RGBDFrameRecorder :: getNextFrameDirectory(const RGBDImage& image) const
   {
-    return format("%s/view%04d", m_dir.absolutePath().toStdString().c_str(), m_frame_index);
+    return format("%s/%s/view%04d-%f",
+                  m_dir.absolutePath().toStdString().c_str(),
+                  image.cameraSerial().c_str(),
+                  m_frame_index,
+                  image.timestamp());
   }
 
   void RGBDFrameRecorder :: saveCurrentFrames(const std::vector<RGBDImage>& images)
   {
       for (int image_i = 0; image_i < images.size(); ++image_i)
       {
-          std::string frame_dir = format("%s-%d/view%04d",
-                                         m_dir.absolutePath().toStdString().c_str(),
-                                         image_i,
-                                         m_frame_index);
+          std::string frame_dir = getNextFrameDirectory(images[image_i]);
           writeFrame(images[image_i], frame_dir);
-
       }
       ++m_frame_index;
   }
 
   void RGBDFrameRecorder :: saveCurrentFrame(const RGBDImage& image)
   {
-    std::string frame_dir = format("%s/view%04d", m_dir.absolutePath().toStdString().c_str(), m_frame_index);
-    writeFrame(image, frame_dir);
-    ++m_frame_index;
+      std::string frame_dir = getNextFrameDirectory(image);
+      writeFrame(image, frame_dir);
+      ++m_frame_index;
   }
 
   void RGBDFrameRecorder :: writeFrame(const RGBDImage& image, const std::string& frame_dir)
@@ -90,13 +102,32 @@ namespace ntk
 
       std::string filename;
 
+      if (m_save_rgb_pose && image.calibration())
+      {
+        filename = cv::format("%s/rgb_pose.avs", frame_dir.c_str());
+        image.rgbPose().saveToAvsFile(filename.c_str());
+      }
+
       if (!m_only_raw)
       {
         filename = cv::format("%s/color.png", frame_dir.c_str());
         imwrite(filename, image.rgb());
       }
 
-      filename = cv::format("%s/raw/color.png", frame_dir.c_str());
+      if (m_save_pcl_point_cloud)
+      {
+        filename = cv::format("%s/cloud.pcd", frame_dir.c_str());
+#ifdef NESTK_USE_PCL
+        pcl::PointCloud<pcl::PointXYZ> cloud;
+        rgbdImageToPointCloud(cloud, image);
+        pcl::io::savePCDFileASCII(filename.c_str(), cloud);
+#endif
+      }
+
+      if (m_use_compressed_format)
+          filename = cv::format("%s/raw/color.png", frame_dir.c_str());
+      else
+          filename = cv::format("%s/raw/color.bmp", frame_dir.c_str());
       imwrite(filename, image.rawRgb());
 
       if (!m_only_raw && image.mappedDepth().data)
@@ -123,7 +154,7 @@ namespace ntk
 
         filename = cv::format("%s/intensity.png", frame_dir.c_str());
         if (image.intensity().data)
-          imwrite_normalized(filename.c_str(), image.intensity());
+            imwrite_normalized(filename.c_str(), image.intensity());
       }
 
       if (image.rawDepth().data)
@@ -140,7 +171,7 @@ namespace ntk
         }
       }
 
-      if (image.rawIntensity().data)
+      if (m_save_intensity && image.rawIntensity().data)
       {
         if (m_use_binary_raw)
         {

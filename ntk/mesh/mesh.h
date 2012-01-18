@@ -25,6 +25,7 @@
 #include <ntk/geometry/plane.h>
 #include <ntk/geometry/pose_3d.h>
 #include <ntk/utils/opencv_utils.h>
+#include <ntk/thread/event.h>
 #include <vector>
 
 namespace ntk
@@ -59,7 +60,7 @@ namespace ntk
     static int numVertices() { return 3; };
   };
 
-  class Mesh
+  class Mesh : public ntk::EventData
   {
   public:
     std::vector<cv::Point3f> vertices;
@@ -79,6 +80,8 @@ namespace ntk
     void addPointFromSurfel(const Surfel& surfel);
     void addMesh(const ntk::Mesh& rhs);
     void applyTransform(const Pose3D& pose);
+    void applyScaleTransform(float x_scale, float y_scale, float z_scale);
+    void computeNormalsFromFaces();
 
   public:
     bool hasColors() const { return colors.size() == vertices.size(); }
@@ -89,6 +92,7 @@ namespace ntk
   public:
     void clear();
   };
+  ntk_ptr_typedefs(Mesh)
 
   void generate_mesh_from_plane(Mesh& mesh, const ntk::Plane& plane,
                                 const cv::Point3f& center, float plane_size);

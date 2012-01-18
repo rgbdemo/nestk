@@ -45,13 +45,16 @@ public:
   void saveCurrentFrames(const std::vector<RGBDImage>& image);
 
   /*! Returns the name of directory where the next frame will be written. */
-  std::string getNextFrameDirectory() const;
+  std::string getNextFrameDirectory(const RGBDImage& image) const;
 
   /*!
    * Whether the undistorted and postprocessed images should be
    * saved also.
    */
   void setSaveOnlyRaw(bool v) { m_only_raw = v; }
+
+  /*! Whether to save a point cloud of the scene. */
+  void setSavePCLPointCloud(bool saveit) { m_save_pcl_point_cloud = saveit; }
 
   /*!
    * Save float images as binary raw. Faster, but only works
@@ -67,6 +70,15 @@ public:
   void setDirectory(const std::string& directory);
   const QDir& directory() const { return m_dir; }
 
+  /*! Set whether an rgb_pose.avs file should be saved along with the image. */
+  void setSaveRgbPose(bool saveit) { m_save_rgb_pose = saveit; }
+
+  /*! Set whether the intensity image should be saved if available. */
+  void setSaveIntensity(bool saveit) { m_save_intensity = saveit; }
+
+  /*! Whether images should be saved in a compressed format. */
+  void setUseCompressedFormat(bool use_compressed) { m_use_compressed_format = use_compressed; }
+
 private:
   void writeFrame(const RGBDImage& image, const std::string& dir);
 
@@ -75,6 +87,10 @@ private:
   int m_frame_index;
   bool m_only_raw;
   bool m_use_binary_raw;
+  bool m_save_rgb_pose;
+  bool m_save_pcl_point_cloud;
+  bool m_save_intensity;
+  bool m_use_compressed_format;
 };
 
 } // ntk

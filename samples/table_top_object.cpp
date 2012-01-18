@@ -81,8 +81,8 @@ int main(int argc, char **argv)
     ntk_ensure(image.calibration(), "Uncalibrated rgbd image, cannot project to 3D!");
 
     // Initialize the object modeler.
-    PointCloud<PointXYZ> cloud;
-    rgbdImageToPointCloud(cloud, image);
+    PointCloud<PointXYZ>::Ptr cloud (new PointCloud<PointXYZ>);
+    rgbdImageToPointCloud(*cloud, image);
 
     TableObjectDetector<PointXYZ> detector;
     detector.setObjectVoxelSize(0.003); // 3 mm voxels.

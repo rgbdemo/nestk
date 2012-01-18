@@ -23,17 +23,22 @@
 #include <ntk/gesture/body_event.h>
 #include <ntk/geometry/pose_3d.h>
 
+#ifndef WIN32
+#include <libusb-1.0/libusb.h>
+#endif
+
 #include <XnVCircleDetector.h>
 #include <XnLog.h>
 
 #include <QTemporaryFile>
+#include <QDateTime>
 #include <string>
+#include <fstream>
 
 using namespace cv;
 using namespace ntk;
 
 #include "openni_grabber_internals.hxx"
-
 
 QMutex ntk::OpenniGrabber::m_ni_mutex;
 
@@ -74,10 +79,10 @@ void XN_CALLBACK_TYPE UserCalibration_CalibrationEnd(xn::SkeletonCapability& cap
 
 // Used in openni XnModuleLoader.cpp.
 #ifdef NESTK_USE_CUSTOM_OPENNI
-    // Will be defined in OpenNI.
-    extern const char* xn_modules_file;
+// Will be defined in OpenNI.
+extern const char* xn_modules_file;
 #else
-    const char* xn_modules_file = "config/modules.xml";
+const char* xn_modules_file = "config/modules.xml";
 #endif
 
 namespace ntk
@@ -85,8 +90,8 @@ namespace ntk
 
 OpenniGrabber :: OpenniGrabber(OpenniDriver& driver, int camera_id) :
     m_driver(driver),
-    m_subsampling_factor(1),
     m_camera_id(camera_id),
+    m_subsampling_factor(1),
     m_need_pose_to_calibrate(false),
     m_max_num_users(15),
     m_body_event_detector(0),
@@ -95,8 +100,49 @@ OpenniGrabber :: OpenniGrabber(OpenniDriver& driver, int camera_id) :
     m_custom_bayer_decoding(false),
     m_xml_config_file(DEFAULT_XML_CONFIG_FILE),
     m_track_users(true),
-    m_get_infrared(false)
+    m_get_infrared(false),
+    m_has_rgb(true)
 {
+    setDefaultBayerMode();
+}
+
+OpenniGrabber :: OpenniGrabber(OpenniDriver& driver, const std::string& camera_serial) :
+    m_driver(driver),
+    m_camera_id(-1),
+    m_camera_serial(camera_serial),
+    m_subsampling_factor(1),
+    m_need_pose_to_calibrate(false),
+    m_max_num_users(15),
+    m_body_event_detector(0),
+    m_high_resolution(false),
+    m_mirrored(false),
+    m_custom_bayer_decoding(false),
+    m_xml_config_file(DEFAULT_XML_CONFIG_FILE),
+    m_track_users(true),
+    m_get_infrared(false),
+    m_has_rgb(true)
+{
+    for (size_t i = 0; i < driver.numDevices(); ++i)
+    {
+        if (driver.deviceInfo(i).serial == camera_serial)
+        {
+            m_camera_id = i;
+            break;
+        }
+    }
+
+    if (m_camera_id < 0)
+    {
+        ntk_throw_exception("Could not find any device with serial " + camera_serial);
+    }
+
+    setDefaultBayerMode();
+}
+
+void OpenniGrabber :: setDefaultBayerMode()
+{
+    if (m_driver.deviceInfo(m_camera_id).camera_type == "SensorKinect")
+        setCustomBayerDecoding(true);
 }
 
 void OpenniGrabber :: setIRMode(bool ir)
@@ -157,19 +203,30 @@ bool OpenniGrabber :: connectToDevice()
     xn::NodeInfoList device_node_info_list;
     status = m_driver.niContext().EnumerateProductionTrees(XN_NODE_TYPE_DEVICE, NULL, device_node_info_list);
     m_driver.checkXnError(status, "Cannot enumerate devices.");
+
     xn::NodeInfoList::Iterator nodeIt = device_node_info_list.Begin();
-    int current_id = 0;
-    for (; current_id < m_camera_id && nodeIt != device_node_info_list.End (); ++nodeIt, ++current_id) {}
-    ntk_throw_exception_if(current_id != m_camera_id, "Cannot find device.");
+    for (; nodeIt != device_node_info_list.End (); ++nodeIt)
+    {
+        xn::NodeInfo deviceInfo = *nodeIt;
+        if (m_driver.deviceInfo(m_camera_id).creation_info == deviceInfo.GetCreationInfo())
+            break;
+    }
+    ntk_throw_exception_if(nodeIt == device_node_info_list.End (), "Cannot find device.");
+
+    setCameraSerial(m_driver.deviceInfo(m_camera_id).serial);
+
     xn::NodeInfo deviceInfo = *nodeIt;
+    ntk_assert(m_driver.deviceInfo(m_camera_id).creation_info == deviceInfo.GetCreationInfo(), "Inconsistent nodes!");
     status = m_driver.niContext().CreateProductionTree(deviceInfo, m_ni_device);
     m_driver.checkXnError(status, "Create Device Node");
     const XnProductionNodeDescription& description = deviceInfo.GetDescription();
-    ntk_dbg(1) << format("device: vendor %s name %s, instance %s",
-                         description.strVendor, description.strName, deviceInfo.GetInstanceName());
-
+    ntk_dbg(1) << format("device %d: vendor %s name %s, instance %s, serial %s",
+                         m_camera_id,
+                         description.strVendor, description.strName, deviceInfo.GetInstanceName(), m_driver.deviceInfo(m_camera_id).serial.c_str());
     xn::Query query;
     query.AddNeededNode(deviceInfo.GetInstanceName());
+
+    bool is_kinect = (std::string("SensorKinect") == description.strName);
 
     status = m_ni_depth_generator.Create(m_driver.niContext(), &query);
     m_driver.checkXnError(status, "Create depth generator");
@@ -179,40 +236,55 @@ bool OpenniGrabber :: connectToDevice()
     depth_mode.nFPS = 30;
     m_ni_depth_generator.SetMapOutputMode(depth_mode);
 
-    status = m_ni_rgb_generator.Create(m_driver.niContext(), &query);
-    m_driver.checkXnError(status, "Create image generator");
-
-    status = m_ni_rgb_generator.SetIntProperty ("Resolution", 1);
-    m_driver.checkXnError(status, "Resolution");
-
     status = m_driver.niContext().SetGlobalMirror(m_mirrored);
     m_driver.checkXnError(status, "Mirror");
 
-    XnMapOutputMode rgb_mode;
-    if (m_high_resolution)
+    status = m_ni_rgb_generator.Create(m_driver.niContext(), &query);
+    if (status != XN_STATUS_OK)
     {
-        rgb_mode.nFPS = 15;
-        rgb_mode.nXRes = 1280;
-        rgb_mode.nYRes = 1024;
+        m_has_rgb = false;
+        ntk_dbg(1) << "Warning: no color stream!";
     }
-    else
+
+    if (m_has_rgb)
     {
-        rgb_mode.nXRes = 640;
-        rgb_mode.nYRes = 480;
-        rgb_mode.nFPS = 30;
+        status = m_ni_rgb_generator.SetIntProperty ("Resolution", 1);
+        m_driver.checkXnError(status, "Resolution");
+
+        XnMapOutputMode rgb_mode;
+        if (m_high_resolution)
+        {
+            rgb_mode.nFPS = 15;
+            rgb_mode.nXRes = 1280;
+            rgb_mode.nYRes = 1024;
+        }
+        else
+        {
+            rgb_mode.nXRes = 640;
+            rgb_mode.nYRes = 480;
+            rgb_mode.nFPS = 30;
+        }
+        status = m_ni_rgb_generator.SetMapOutputMode(rgb_mode);
+        m_driver.checkXnError(status, "Set RGB mode");
+
+        ntk_throw_exception_if(!m_ni_depth_generator.IsCapabilitySupported(XN_CAPABILITY_ALTERNATIVE_VIEW_POINT), "Cannot register images.");
+        m_ni_depth_generator.GetAlternativeViewPointCap().SetViewPoint(m_ni_rgb_generator);
+
+        if (!is_kinect && m_ni_depth_generator.IsCapabilitySupported(XN_CAPABILITY_FRAME_SYNC))
+        {
+            ntk_dbg(1) << "Frame Sync supported.";
+            status = m_ni_depth_generator.GetFrameSyncCap ().FrameSyncWith (m_ni_rgb_generator);
+            m_driver.checkXnError(status, "Set Frame Sync");
+        }
+
+        status = m_ni_ir_generator.Create(m_driver.niContext(), &query);
+        m_driver.checkXnError(status, "Create infrared generator");
+        XnMapOutputMode ir_mode;
+        ir_mode.nFPS = 15;
+        ir_mode.nXRes = 1280;
+        ir_mode.nYRes = 1024;
+        m_ni_ir_generator.SetMapOutputMode(ir_mode);
     }
-    m_ni_rgb_generator.SetMapOutputMode(rgb_mode);
-
-    ntk_throw_exception_if(!m_ni_depth_generator.IsCapabilitySupported(XN_CAPABILITY_ALTERNATIVE_VIEW_POINT), "Cannot register images.");
-    m_ni_depth_generator.GetAlternativeViewPointCap().SetViewPoint(m_ni_rgb_generator);
-
-    status = m_ni_ir_generator.Create(m_driver.niContext(), &query);
-    m_driver.checkXnError(status, "Create infrared generator");
-    XnMapOutputMode ir_mode;
-    ir_mode.nFPS = 15;
-    ir_mode.nXRes = 1280;
-    ir_mode.nYRes = 1024;
-    m_ni_ir_generator.SetMapOutputMode(ir_mode);
 
     if (m_track_users)
     {
@@ -251,8 +323,21 @@ bool OpenniGrabber :: connectToDevice()
     status = m_ni_depth_generator.StartGenerating();
     m_driver.checkXnError(status, "Depth::StartGenerating");
 
-    status = m_ni_rgb_generator.StartGenerating();
-    m_driver.checkXnError(status, "RGB::StartGenerating");
+    if (m_has_rgb)
+    {
+        status = m_ni_rgb_generator.StartGenerating();
+        m_driver.checkXnError(status, "RGB::StartGenerating");
+
+        if (m_custom_bayer_decoding)
+        {
+            // Grayscale to get raw Bayer pattern.
+            status = m_ni_rgb_generator.SetIntProperty ("InputFormat", 6);
+            m_driver.checkXnError(status, "Change input format");
+
+            status = m_ni_rgb_generator.SetPixelFormat(XN_PIXEL_FORMAT_GRAYSCALE_8_BIT);
+            m_driver.checkXnError(status, "Change pixel format");
+        }
+    }
 
     if (m_track_users)
     {
@@ -264,16 +349,6 @@ bool OpenniGrabber :: connectToDevice()
 
         status = m_ni_gesture_generator.StartGenerating();
         m_driver.checkXnError(status, "Gesture::StartGenerating");
-    }
-
-    if (m_custom_bayer_decoding)
-    {
-        // Grayscale to get raw Bayer pattern.
-        status = m_ni_rgb_generator.SetIntProperty ("InputFormat", 6);
-        m_driver.checkXnError(status, "Change input format");
-
-        status = m_ni_rgb_generator.SetPixelFormat(XN_PIXEL_FORMAT_GRAYSCALE_8_BIT);
-        m_driver.checkXnError(status, "Change pixel format");
     }
 
     waitAndUpdateActiveGenerators();
@@ -315,9 +390,10 @@ bool OpenniGrabber :: disconnectFromDevice()
 void OpenniGrabber :: waitAndUpdateActiveGenerators()
 {
     // If there is only one device, call this global function.
-    if (m_driver.numDevices() == 1)
+    if (0 && m_driver.numDevices() == 1) // FIXME: does this result into unsynchronized frames?
     {
-		m_driver.niContext().WaitOneUpdateAll(m_ni_depth_generator);
+        m_driver.niContext().WaitOneUpdateAll(m_ni_depth_generator);
+        // m_driver.niContext().WaitAndUpdateAll();
         return;
     }
 
@@ -358,11 +434,13 @@ void OpenniGrabber :: estimateCalibration()
     // These factors were estimated using chessboard calibration.
     // They seem to accurately correct the bias in object sizes output by
     // the default parameters.
-    const double f_correction_factor = 528.0/575.8;
+    const double f_correction_factor = 528.0/570.34;
     fx *= f_correction_factor;
     fy *= f_correction_factor;
 
-    const double cy_correction_factor = 267.0/240.0;
+    // FIXME: this bias was not observed anymore in recent experiments.
+    // const double cy_correction_factor = 267.0/240.0;
+    const double cy_correction_factor = 1.0;
     cy *= cy_correction_factor;
 
     fx /= m_subsampling_factor;
@@ -375,14 +453,18 @@ void OpenniGrabber :: estimateCalibration()
     xn::DepthMetaData depthMD;
     m_ni_depth_generator.GetMetaData(depthMD);
 
-    xn::ImageMetaData rgbMD;
-    m_ni_rgb_generator.GetMetaData(rgbMD);
+    int rgb_width = 0;
+    int rgb_height = 0;
+    if (m_has_rgb)
+    {
+        xn::ImageMetaData rgbMD;
+        m_ni_rgb_generator.GetMetaData(rgbMD);
+        rgb_width = rgbMD.XRes();
+        rgb_height = rgbMD.YRes();
+    }
 
     int depth_width = depthMD.XRes() / m_subsampling_factor;
     int depth_height = depthMD.YRes() / m_subsampling_factor;
-
-    int rgb_width = rgbMD.XRes();
-    int rgb_height = rgbMD.YRes();
 
     m_calib_data->setRawRgbSize(cv::Size(rgb_width, rgb_height));
     m_calib_data->setRgbSize(cv::Size(rgb_width, rgb_height));
@@ -447,34 +529,38 @@ void OpenniGrabber :: run()
     m_current_image.setCalibration(m_calib_data);
     m_rgbd_image.setCalibration(m_calib_data);
 
-    m_rgbd_image.rawRgbRef() = Mat3b(m_calib_data->rawRgbSize());
+    // Depth
     m_rgbd_image.rawDepthRef() = Mat1f(m_calib_data->raw_depth_size);
-    m_rgbd_image.rawIntensityRef() = Mat1f(m_calib_data->rawRgbSize());
-
-    m_rgbd_image.rawIntensityRef() = 0.f;
     m_rgbd_image.rawDepthRef() = 0.f;
-    m_rgbd_image.rawRgbRef() = Vec3b(0,0,0);
-
-    m_rgbd_image.rgbRef() = m_rgbd_image.rawRgbRef();
     m_rgbd_image.depthRef() = m_rgbd_image.rawDepthRef();
-    m_rgbd_image.intensityRef() = m_rgbd_image.rawIntensityRef();
+    m_current_image.rawDepthRef() = Mat1f(m_calib_data->raw_depth_size);
+    m_current_image.rawDepthRef() = 0.f;
+    m_current_image.depthRef() = m_current_image.rawDepthRef();
 
+    // Color
+    if (m_has_rgb)
+    {
+        m_rgbd_image.rawRgbRef() = Mat3b(m_calib_data->rawRgbSize());
+        m_rgbd_image.rawRgbRef() = Vec3b(0,0,0);
+        m_rgbd_image.rgbRef() = m_rgbd_image.rawRgbRef();
+        m_current_image.rawRgbRef() = Mat3b(m_calib_data->rawRgbSize());
+        m_current_image.rawRgbRef() = Vec3b(0,0,0);
+        m_current_image.rgbRef() = m_current_image.rawRgbRef();
+
+        m_rgbd_image.rawIntensityRef() = Mat1f(m_calib_data->rawRgbSize());
+        m_rgbd_image.rawIntensityRef() = 0.f;
+        m_rgbd_image.intensityRef() = m_rgbd_image.rawIntensityRef();
+        m_current_image.rawIntensityRef() = Mat1f(m_calib_data->rawRgbSize());
+        m_current_image.rawIntensityRef() = 0.f;
+        m_current_image.intensityRef() = m_current_image.rawIntensityRef();
+    }
+
+    // User tracking
     m_rgbd_image.userLabelsRef() = cv::Mat1b(m_calib_data->raw_depth_size);
     m_rgbd_image.userLabelsRef() = 0u;
 
     if (m_track_users)
         m_rgbd_image.setSkeletonData(new Skeleton());
-
-    m_current_image.rawRgbRef() = Mat3b(m_calib_data->rawRgbSize());
-    m_current_image.rawRgbRef() = Vec3b(0,0,0);
-    m_current_image.rawDepthRef() = Mat1f(m_calib_data->raw_depth_size);
-    m_current_image.rawDepthRef() = 0.f;
-    m_current_image.rawIntensityRef() = Mat1f(m_calib_data->rawRgbSize());
-    m_current_image.rawIntensityRef() = 0.f;
-
-    m_current_image.rgbRef() = m_current_image.rawRgbRef();
-    m_current_image.depthRef() = m_current_image.rawDepthRef();
-    m_current_image.intensityRef() = m_current_image.rawIntensityRef();
 
     m_current_image.userLabelsRef() = cv::Mat1b(m_calib_data->raw_depth_size);
     m_current_image.userLabelsRef() = 0u;
@@ -482,25 +568,31 @@ void OpenniGrabber :: run()
     if (m_track_users)
         m_current_image.setSkeletonData(new Skeleton());
 
-    bool mapping_required = m_calib_data->rawRgbSize() != m_calib_data->raw_depth_size;
-    if (!mapping_required)
+    if (m_has_rgb)
     {
-        m_rgbd_image.mappedRgbRef() = m_rgbd_image.rawRgbRef();
-        m_rgbd_image.mappedDepthRef() = m_rgbd_image.rawDepthRef();
-        m_current_image.mappedRgbRef() = m_current_image.rawRgbRef();
-        m_current_image.mappedDepthRef() = m_current_image.rawDepthRef();
+        bool mapping_required = m_calib_data->rawRgbSize() != m_calib_data->raw_depth_size;
+        if (!mapping_required)
+        {
+            m_rgbd_image.mappedRgbRef() = m_rgbd_image.rawRgbRef();
+            m_rgbd_image.mappedDepthRef() = m_rgbd_image.rawDepthRef();
+            m_current_image.mappedRgbRef() = m_current_image.rawRgbRef();
+            m_current_image.mappedDepthRef() = m_current_image.rawDepthRef();
+        }
+        else
+        {
+            m_rgbd_image.mappedRgbRef() = Mat3b(m_calib_data->raw_depth_size);
+            m_rgbd_image.mappedRgbRef() = Vec3b(0,0,0);
+            m_rgbd_image.mappedDepthRef() = Mat1f(m_calib_data->rawRgbSize());
+            m_rgbd_image.mappedDepthRef() = 0.f;
+            m_current_image.mappedRgbRef() = Mat3b(m_calib_data->rawDepthSize());
+            m_current_image.mappedRgbRef() = Vec3b(0,0,0);
+            m_current_image.mappedDepthRef() = Mat1f(m_calib_data->rawRgbSize());
+            m_current_image.mappedDepthRef() = 0.f;
+        }
     }
-    else
-    {
-        m_rgbd_image.mappedRgbRef() = Mat3b(m_calib_data->raw_depth_size);
-        m_rgbd_image.mappedRgbRef() = Vec3b(0,0,0);
-        m_rgbd_image.mappedDepthRef() = Mat1f(m_calib_data->rawRgbSize());
-        m_rgbd_image.mappedDepthRef() = 0.f;
-        m_current_image.mappedRgbRef() = Mat3b(m_calib_data->rawDepthSize());
-        m_current_image.mappedRgbRef() = Vec3b(0,0,0);
-        m_current_image.mappedDepthRef() = Mat1f(m_calib_data->rawRgbSize());
-        m_current_image.mappedDepthRef() = 0.f;
-    }
+
+    m_rgbd_image.setCameraSerial(cameraSerial());
+    m_current_image.setCameraSerial(cameraSerial());
 
     xn::SceneMetaData sceneMD;
     xn::DepthMetaData depthMD;
@@ -531,13 +623,16 @@ void OpenniGrabber :: run()
             m_body_event_detector->update();
 
         m_ni_depth_generator.GetMetaData(depthMD);
-        if (m_get_infrared)
+        if (m_has_rgb)
         {
-            m_ni_ir_generator.GetMetaData(irMD);
-        }
-        else
-        {
-            m_ni_rgb_generator.GetMetaData(rgbMD);
+            if (m_get_infrared)
+            {
+                m_ni_ir_generator.GetMetaData(irMD);
+            }
+            else
+            {
+                m_ni_rgb_generator.GetMetaData(rgbMD);
+            }
         }
 
         RGBDImage& temp_image =
@@ -554,36 +649,39 @@ void OpenniGrabber :: run()
         for (int i = 0; i < depthMD.XRes()*depthMD.YRes(); ++i)
             raw_depth_ptr[i] = depth_correction_factor * pDepth[i]/1000.f;
 
-        if (m_get_infrared)
+        if (m_has_rgb)
         {
-            const XnGrayscale16Pixel* pImage = irMD.Data();
-            m_current_image.rawIntensityRef().create(irMD.YRes(), irMD.XRes());
-            float* raw_img_ptr = m_current_image.rawIntensityRef().ptr<float>();
-            for (int i = 0; i < irMD.XRes()*irMD.YRes(); ++i)
+            if (m_get_infrared)
             {
-                raw_img_ptr[i] = pImage[i];
-            }
-        }
-        else
-        {
-            if (m_custom_bayer_decoding)
-            {
-                uchar* raw_rgb_ptr = m_current_image.rawRgbRef().ptr<uchar>();
-                bayer_decoder.fillRGB(rgbMD,
-                                      m_current_image.rawRgb().cols, m_current_image.rawRgb().rows,
-                                      raw_rgb_ptr);
-                cvtColor(m_current_image.rawRgbRef(), m_current_image.rawRgbRef(), CV_RGB2BGR);
+                const XnGrayscale16Pixel* pImage = irMD.Data();
+                m_current_image.rawIntensityRef().create(irMD.YRes(), irMD.XRes());
+                float* raw_img_ptr = m_current_image.rawIntensityRef().ptr<float>();
+                for (int i = 0; i < irMD.XRes()*irMD.YRes(); ++i)
+                {
+                    raw_img_ptr[i] = pImage[i];
+                }
             }
             else
             {
-                const XnUInt8* pImage = rgbMD.Data();
-                ntk_assert(rgbMD.PixelFormat() == XN_PIXEL_FORMAT_RGB24, "Invalid RGB format.");
-                uchar* raw_rgb_ptr = m_current_image.rawRgbRef().ptr<uchar>();
-                for (int i = 0; i < rgbMD.XRes()*rgbMD.YRes()*3; i += 3)
-                    for (int k = 0; k < 3; ++k)
-                    {
-                        raw_rgb_ptr[i+k] = pImage[i+(2-k)];
-                    }
+                if (m_custom_bayer_decoding)
+                {
+                    uchar* raw_rgb_ptr = m_current_image.rawRgbRef().ptr<uchar>();
+                    bayer_decoder.fillRGB(rgbMD,
+                                          m_current_image.rawRgb().cols, m_current_image.rawRgb().rows,
+                                          raw_rgb_ptr);
+                    cvtColor(m_current_image.rawRgbRef(), m_current_image.rawRgbRef(), CV_RGB2BGR);
+                }
+                else
+                {
+                    const XnUInt8* pImage = rgbMD.Data();
+                    ntk_assert(rgbMD.PixelFormat() == XN_PIXEL_FORMAT_RGB24, "Invalid RGB format.");
+                    uchar* raw_rgb_ptr = m_current_image.rawRgbRef().ptr<uchar>();
+                    for (int i = 0; i < rgbMD.XRes()*rgbMD.YRes()*3; i += 3)
+                        for (int k = 0; k < 3; ++k)
+                        {
+                            raw_rgb_ptr[i+k] = pImage[i+(2-k)];
+                        }
+                }
             }
         }
 
@@ -628,6 +726,8 @@ void OpenniGrabber :: run()
                        m_current_image.userLabels().size(),
                        0, 0, INTER_NEAREST);
         }
+
+        m_current_image.setTimestamp(getCurrentTimestamp());
 
         {
             QWriteLocker locker(&m_lock);
@@ -733,6 +833,163 @@ struct ntk::OpenniDriver::Config
     OpenniDriver* that;
 };
 
+
+ntk::OpenniDriver::OpenniDriver() : m_config(new Config(this))
+{
+    ntk_dbg(1) << "Initializing OpenNI driver";
+
+    if (ntk::ntk_debug_level >= 1)
+    {
+        xnLogSetFileOutput(true);
+        xnLogSetSeverityFilter(XN_LOG_WARNING);
+        xnLogSetMaskState("ALL", true);
+    }
+    if (ntk::ntk_debug_level >= 2)
+    {
+        xnLogSetConsoleOutput(true);
+        xnLogSetSeverityFilter(XN_LOG_VERBOSE);
+    }
+    xnLogInitSystem();
+
+    XnStatus status = m_ni_context.Init();
+    checkXnError(status, "Initialize context");
+
+    xn::NodeInfoList device_node_info_list;
+    status = m_ni_context.EnumerateProductionTrees(XN_NODE_TYPE_DEVICE, NULL, device_node_info_list);
+    if (status != XN_STATUS_OK && device_node_info_list.Begin () != device_node_info_list.End ())
+        ntk_throw_exception(format("enumerating devices failed. Reason: %s", xnGetStatusString(status)));
+
+    for (xn::NodeInfoList::Iterator nodeIt = device_node_info_list.Begin();
+         nodeIt != device_node_info_list.End (); ++nodeIt)
+    {
+        const xn::NodeInfo& deviceInfo = *nodeIt;
+        const XnProductionNodeDescription& description = deviceInfo.GetDescription();
+        ntk_dbg(1) << format("Found device: vendor %s name %s", description.strVendor, description.strName);
+        DeviceInfo info;
+        info.camera_type = description.strName;
+        info.vendor = description.strVendor;
+        info.creation_info = deviceInfo.GetCreationInfo();
+
+        unsigned short vendor_id;
+        unsigned short product_id;
+        unsigned char bus;
+        unsigned char address;        
+        sscanf(deviceInfo.GetCreationInfo(), "%hx/%hx@%hhu/%hhu", &vendor_id, &product_id, &bus, &address);
+        info.vendor_id = vendor_id;
+        info.product_id = product_id;
+        info.bus = bus;
+        info.address = address;
+
+        m_device_nodes.push_back(info);
+    }
+
+    findSerialNumbers();
+
+    std::ofstream f ("trace.txt", std::fstream::app);
+
+    for (size_t i = 0; i < m_device_nodes.size(); ++i)
+    {
+        DeviceInfo& info = m_device_nodes[i];
+        if (info.serial.empty())
+            info.serial = i;
+        ntk_dbg(1) << cv::format("[Device %d] %s, %s, serial=%s",
+                                 i, info.vendor.c_str(), info.camera_type.c_str(), info.serial.c_str());
+
+        f << QDateTime::currentDateTime().toString().toStdString() << ": ";
+        f << cv::format("[Device %d] %s, %s, serial=%s",
+                                 i, info.vendor.c_str(), info.camera_type.c_str(), info.serial.c_str());
+        f << " (" << info.creation_info << ")" << std::endl;
+    }
+
+    strcpy(m_license.strVendor, "PrimeSense");
+    strcpy(m_license.strKey, "0KOIk2JeIBYClPWVnMoRKn5cdY4=");
+    m_ni_context.AddLicense(m_license);
+}
+
+ntk::OpenniDriver :: ~OpenniDriver()
+{
+    m_ni_context.StopGeneratingAll();
+    m_ni_context.Release();
+    delete m_config;
+}
+
+void ntk::OpenniDriver :: checkXnError(const XnStatus& status, const char* what) const
+{
+    if (status != XN_STATUS_OK)
+    {
+        ntk_dbg(0) << "[ERROR] " << cv::format("%s failed: %s\n", what, xnGetStatusString(status));
+        ntk_throw_exception("Error in OpenniGrabber.");
+    }
+}
+
+#ifndef WIN32
+void ntk::OpenniDriver::findSerialNumbers()
+{
+    libusb_context *context = 0;
+
+    int result = libusb_init(&context); //initialize a library session
+    if (result < 0) return;
+
+    libusb_device **devices;
+    int count = libusb_get_device_list (context, &devices);
+    if (count < 0) return;   //Count is the number of USB devices
+
+    for (int devIdx = 0; devIdx < count; ++devIdx)
+    {
+        libusb_device* device = devices[devIdx];
+        uint8_t busId = libusb_get_bus_number (device);
+        uint8_t address = libusb_get_device_address (device);
+
+        int device_id = -1;
+        for (size_t i = 0; device_id < 0 && i < m_device_nodes.size(); ++i)
+        {
+            if (busId == m_device_nodes[i].bus && address == m_device_nodes[i].address)
+                device_id = i;
+        }
+
+        if (device_id < 0)
+            continue;
+
+        libusb_device_descriptor descriptor;
+        result = libusb_get_device_descriptor (devices[devIdx], &descriptor);
+        if (result == 0)
+        {
+            libusb_device_handle* dev_handle;
+            result = libusb_open (device, &dev_handle);
+            if (result == 0)
+            {
+                unsigned char buffer[1024];
+                int len = libusb_get_string_descriptor_ascii (dev_handle, descriptor.iSerialNumber, buffer, 1024);
+
+                if (len > 4)
+                {
+                    buffer[len] = 0;
+                    m_device_nodes[device_id].serial = std::string((const char*) buffer);
+                }
+                else
+                {
+                    // If there is no serial (e.g. Asus XTION), use the bus address.
+                    m_device_nodes[device_id].serial = cv::format("%d", busId);
+                }
+                libusb_close (dev_handle);
+            }
+        }
+    }
+    libusb_free_device_list (devices, 1);
+    libusb_exit (context);
+}
+#else
+void ntk::OpenniDriver::findSerialNumbers()
+{
+    for (size_t i = 0; i < m_device_nodes.size(); ++i)
+    {
+        DeviceInfo& info = m_device_nodes[i];
+        QStringList fields = QString(info.creation_info.c_str()).split('#');
+        info.serial = fields[2].toStdString();
+    }
+}
+#endif // WIN32
+
 const char*
 ntk::OpenniDriver::Config::configText = "\
 <OpenNI>\n\
@@ -749,12 +1006,12 @@ ntk::OpenniDriver::Config::configText = "\
 </Dumps>\n\
 </Log>\n\
 <ProductionNodes>\n\
-<Node type=\"Image\" name=\"Image1\">\n\
+<!--<Node type=\"Image\" name=\"Image1\">\n\
 <Configuration>\n\
 <MapOutputMode xRes=\"640\" yRes=\"480\" FPS=\"30\"/>\n\
 <Mirror on=\"true\"/>\n\
 </Configuration>\n\
-</Node>\n\
+</Node>-->\n\
 <Node type=\"Depth\" name=\"Depth1\">\n\
 <Configuration>\n\
 <MapOutputMode xRes=\"640\" yRes=\"480\" FPS=\"30\"/>\n\
@@ -795,58 +1052,3 @@ ntk::OpenniDriver::Config::modulesText = "\
 </Modules>\n\
 ";
 #endif
-
-ntk::OpenniDriver::OpenniDriver() : m_config(new Config(this))
-{
-    ntk_dbg(1) << "Initializing OpenNI driver";
-
-    if (ntk::ntk_debug_level >= 1)
-    {
-        xnLogSetFileOutput(true);
-        xnLogSetSeverityFilter(XN_LOG_WARNING);
-        xnLogSetMaskState("ALL", true);
-    }
-    if (ntk::ntk_debug_level >= 2)
-    {
-        xnLogSetConsoleOutput(true);
-        xnLogSetSeverityFilter(XN_LOG_VERBOSE);
-    }
-    xnLogInitSystem();
-
-    XnStatus status = m_ni_context.Init();
-    checkXnError(status, "Initialize context");
-
-    xn::NodeInfoList device_node_info_list;
-    status = m_ni_context.EnumerateProductionTrees(XN_NODE_TYPE_DEVICE, NULL, device_node_info_list);
-    if (status != XN_STATUS_OK && device_node_info_list.Begin () != device_node_info_list.End ())
-        ntk_throw_exception(format("enumerating devices failed. Reason: %s", xnGetStatusString(status)));
-
-    for (xn::NodeInfoList::Iterator nodeIt = device_node_info_list.Begin();
-         nodeIt != device_node_info_list.End (); ++nodeIt)
-    {
-        const xn::NodeInfo& deviceInfo = *nodeIt;
-        const XnProductionNodeDescription& description = deviceInfo.GetDescription();
-        ntk_dbg(1) << format("Found device: vendor %s name %s", description.strVendor, description.strName);
-        m_device_nodes.push_back("kinect");
-    }
-
-    strcpy(m_license.strVendor, "PrimeSense");
-    strcpy(m_license.strKey, "0KOIk2JeIBYClPWVnMoRKn5cdY4=");
-    m_ni_context.AddLicense(m_license);
-}
-
-ntk::OpenniDriver :: ~OpenniDriver()
-{
-    m_ni_context.StopGeneratingAll();
-    m_ni_context.Release();
-    delete m_config;
-}
-
-void ntk::OpenniDriver :: checkXnError(const XnStatus& status, const char* what) const
-{
-    if (status != XN_STATUS_OK)
-    {
-        ntk_dbg(0) << "[ERROR] " << cv::format("%s failed: %s\n", what, xnGetStatusString(status));
-        ntk_throw_exception("Error in OpenniGrabber.");
-    }
-}

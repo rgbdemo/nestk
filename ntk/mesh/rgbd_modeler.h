@@ -23,6 +23,7 @@
 #include <ntk/core.h>
 #include <ntk/camera/calibration.h>
 #include <ntk/mesh/mesh.h>
+#include <ntk/utils/opencv_utils.h>
 
 namespace ntk
 {
@@ -32,16 +33,14 @@ class Pose3D;
 class RGBDModeler
 {
 public:
-    RGBDModeler() : m_global_depth_offset(0), m_use_surfels(false) {}
+    RGBDModeler() :
+        m_global_depth_offset(0),
+        m_use_surfels(false)
+    {}
 
 public:
-    virtual bool addNewView(const RGBDImage& image, Pose3D& relative_pose);
-    virtual void computeMesh() {}
-    virtual void computeSurfaceMesh() {}
-    virtual void computeAccurateVerticeColors() {}
     const Mesh& currentMesh() const { return m_mesh; }
     const RGBDImage& lastImage() const { return m_last_image; }
-    virtual void reset() { m_mesh.clear(); }
     void setGlobalDepthOffset(float offset) { m_global_depth_offset = offset; }
     virtual float resolution() const { return 0; }
     virtual void setResolution(float resolution) {}
@@ -49,6 +48,14 @@ public:
     const ntk::Plane& supportPlane() const { return m_support_plane; }
     virtual int numPoints() const { return -1; }
     void setSurfelRendering(bool use_surfels) { m_use_surfels = use_surfels; }
+    void setBoundingBox(const Rect3f& bbox) { m_bounding_box = bbox; }
+
+public:
+    virtual bool addNewView(const RGBDImage& image, Pose3D& depth_pose);
+    virtual void computeMesh() {}
+    virtual void computeSurfaceMesh() { computeMesh(); }
+    virtual void computeAccurateVerticeColors() {}
+    virtual void reset() { m_mesh.clear(); }
 
 protected:
     ntk::Mesh m_mesh;
@@ -56,7 +63,9 @@ protected:
     ntk::Plane m_support_plane;
     ntk::RGBDImage m_last_image;
     bool m_use_surfels;
+    Rect3f m_bounding_box;
 };
+ntk_ptr_typedefs(RGBDModeler)
 
 } // ntk
 

@@ -71,7 +71,7 @@ public:
 
 public:
     /*! Update the voxel grid using the given image. */
-    virtual bool addNewView(const RGBDImage& image, Pose3D& relative_pose);
+    virtual bool addNewView(const RGBDImage& image, Pose3D& depth_pose);
 
     /*! Compute a mesh out of the voxel grid. */
     virtual void computeMesh();

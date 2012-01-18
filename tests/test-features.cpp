@@ -62,7 +62,7 @@ int main(int argc, char** argv)
   image2.loadFromDir(opt::image2(), calib);
 
   RGBDProcessor rgbd_processor;
-  rgbd_processor.setFilterFlag(RGBDProcessor::ComputeKinectDepthBaseline, true);
+  rgbd_processor.setFilterFlag(RGBDProcessorFlags::ComputeKinectDepthBaseline, true);
 
   rgbd_processor.processImage(image1);
   rgbd_processor.processImage(image2);

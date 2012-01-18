@@ -59,8 +59,8 @@ int main(int argc, char** argv)
 
   // Tell the processor to transform raw depth into meters using linear coefficients.
   RGBDProcessor processor;
-  processor.setFilterFlag(RGBDProcessor::ComputeKinectDepthBaseline, true);
-  processor.setFilterFlag(RGBDProcessor::FilterMedian, true);
+  processor.setFilterFlag(RGBDProcessorFlags::ComputeKinectDepthBaseline, true);
+  processor.setFilterFlag(RGBDProcessorFlags::FilterMedian, true);
 
   RGBDImage current_frame;
   cv::Mat3b mapped_color;

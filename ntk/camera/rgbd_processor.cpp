@@ -18,25 +18,29 @@
  */
 
 #include "rgbd_processor.h"
-
 #include <ntk/utils/opencv_utils.h>
 #include <ntk/utils/time.h>
 #include <ntk/geometry/pose_3d.h>
+#include <ntk/image/bilateral_filter.h>
 
 #ifdef NESTK_USE_PCL
-#include <pcl/features/integral_image_normal.h>
 #include <ntk/mesh/pcl_utils.h>
+#include <pcl/features/integral_image_normal.h>
+#include <pcl/features/normal_3d.h>
 #endif
 
-using namespace cv;
+// FIXME: The KdTreeFLANN class template instantiation (from kdtree_flann.h)
+// indirectly triggered later in this compilation unit will fail if the cv
+// namespace is pulled at the top-level one. Fully-qualify cv symbols, for now.
+// using namespace cv;
 
 namespace ntk
 {
 
-	RGBDProcessor :: RGBDProcessor() :
+    RGBDProcessor :: RGBDProcessor() :
             m_image(0),
             //m_flags(FixGeometry | FixBias | UndistortImages | ComputeNormals),
-            m_flags(UndistortImages),
+            m_flags(RGBDProcessorFlags::UndistortImages),
             m_min_depth(0.3),
             m_max_depth(10.0),
             m_max_normal_angle(80),
@@ -64,7 +68,7 @@ namespace ntk
             double dx = c-cx;
             double dy = r-cy;
 
-            Point3f v(dx/fx, dy/fy, 1);
+            cv::Point3f v(dx/fx, dy/fy, 1);
             double norm = sqrt(v.dot(v));
             v = v * (1.0/norm);
             v *= orig_depth;
@@ -118,21 +122,22 @@ namespace ntk
 
         for_all_rc(depth_im)
         {
-            normal_im(r,c) = estimate_normal_from_depth(depth_im, depth_pose,
-                                                        r, c, 0.03,
-                                                        &dx, &dy);
+            cv::Vec3f n = estimate_normal_from_depth(depth_im, depth_pose,
+                                                     r, c, 0.03,
+                                                     &dx, &dy);
+            normal_im(r,c) = n;
         }
     }
 
 #ifdef NESTK_USE_PCL
-    // FIXME: why is it so slow ?
     void RGBDProcessor :: computeNormalsPCL(RGBDImage& image)
     {
         ntk_ensure(image.calibration(), "Calibration required.");
 
         ntk::TimeCount tc_normals("Normals", 1);
-        pcl::PointCloud<pcl::PointXYZ> cloud;
-        rgbdImageToPointCloud(cloud, image);
+        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
+
+        rgbdImageToPointCloud(*cloud, image, true /* keep dense */);
         tc_normals.elapsedMsecs(" -- imageToPointCloud");
 
         pcl::IntegralImageNormalEstimation<pcl::PointXYZ, pcl::Normal> ne;
@@ -142,7 +147,7 @@ namespace ntk
         ne.setNormalEstimationMethod (ne.AVERAGE_3D_GRADIENT);
         ne.setMaxDepthChangeFactor(0.1f);
         ne.setNormalSmoothingSize(5.0f);
-        ne.setInputCloud(cloud.makeShared());
+        ne.setInputCloud(cloud); // FIXME: Find out whether the removal of the (deep-copying) cloud.makeShared() call sped things up.
         ne.compute(normals);
         tc_normals.elapsedMsecs(" -- compute normals");
 
@@ -155,16 +160,58 @@ namespace ntk
         {
             pcl::Normal& p = normals.points[depth_im.cols*r+c];
             if (p.normal_z < 0) continue;
-            Vec3f cv_p (p.normal_x, p.normal_y, p.normal_z);
+            cv::Vec3f cv_p (p.normal_x, p.normal_y, p.normal_z);
             normalize(cv_p);
             ntk_assert(cv::norm(cv_p) > 0.9 || ntk_isnan(cv_p[0]), "No null normal");
-            normal_im(r,c) = cv_p;
+            normal_im(r,c) = depth_pose.invCameraTransform(cv_p); // normals are in image space.
         }
 
-        tc_normals.stop(" -- Previous Implementation");
+        tc_normals.stop(" -- transformation to Mat1f");
+    }
+
+    void RGBDProcessor :: computeHighQualityNormalsPCL(RGBDImage& image)
+    {
+        ntk_ensure(image.calibration(), "Calibration required.");
+
+        ntk::TimeCount tc_normals("Normals", 1);
+        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
+        rgbdImageToPointCloud(*cloud, image, true /* is_dense */);
+        tc_normals.elapsedMsecs(" -- imageToPointCloud");
+
+
+        pcl::PointCloud<pcl::Normal> normals;
+        pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> ne;
+        pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ> ());
+        ne.setSearchMethod (tree);
+        ne.setRadiusSearch (0.01);
+        ne.setInputCloud(cloud); // FIXME: Find out whether the removal of the (deep-copying) cloud.makeShared() call sped things up.
+        ne.compute(normals);
+        tc_normals.elapsedMsecs(" -- compute normals");
+
+        const Pose3D& depth_pose = *image.calibration()->depth_pose;
+        const cv::Mat1f& depth_im = image.depth();
+        cv::Mat3f& normal_im = image.normalRef();
+        normal_im = cv::Mat3f(depth_im.size());
+        fillWithNan(normal_im);
+        for_all_rc(depth_im)
+        {
+            pcl::Normal& p = normals.points[depth_im.cols*r+c];
+            if (p.normal_z < 0) continue;
+            cv::Vec3f cv_p (p.normal_x, p.normal_y, p.normal_z);
+            normalize(cv_p);
+            ntk_assert(cv::norm(cv_p) > 0.9 || ntk_isnan(cv_p[0]), "No null normal");
+            normal_im(r,c) = depth_pose.invCameraTransform(cv_p); // normals are in image space.
+        }
+
+        tc_normals.stop(" -- transformation to Mat1f");
     }
 #else
     void RGBDProcessor :: computeNormalsPCL(RGBDImage& image)
+    {
+        ntk_assert(0, "PCL support not enabled.");
+    }
+
+    void RGBDProcessor :: computeHighQualityNormalsPCL(RGBDImage& image)
     {
         ntk_assert(0, "PCL support not enabled.");
     }
@@ -174,35 +221,40 @@ namespace ntk
     {
         m_image = &image;
 
+        if (m_image->calibration())
+        {
+            m_image->setDepthPose(*m_image->calibration()->depth_pose);
+        }
+
         TimeCount tc("processImage", 2);
 
-        if (m_flags & FlipColorImage)
+        if (m_image->hasRgb() && hasFilterFlag(RGBDProcessorFlags::FlipColorImage))
         {
             flip(m_image->rawRgb(), m_image->rawRgbRef(), -1);
         }
 
-        if (!(m_flags&NiteProcessed) && m_image->rawIntensity().data)
+        if (!hasFilterFlag(RGBDProcessorFlags::NiteProcessed) && m_image->rawIntensity().data)
         {
-            normalize(m_image->rawIntensityRef(), m_image->rawIntensityRef(), 0, 255, NORM_MINMAX, -1);
+            normalize(m_image->rawIntensityRef(), m_image->rawIntensityRef(), 0, 255, cv::NORM_MINMAX, -1);
         }
 
-        if ((m_flags&NiteProcessed) || (!m_image->calibration() || !(m_flags & UndistortImages) || (m_flags & Pause)))
+        if (hasFilterFlag(RGBDProcessorFlags::NiteProcessed) || (!m_image->calibration() || !hasFilterFlag(RGBDProcessorFlags::UndistortImages) || hasFilterFlag(RGBDProcessorFlags::Pause)))
         {
             m_image->rawAmplitude().copyTo(m_image->amplitudeRef());
-            m_image->rawIntensity().copyTo(m_image->intensityRef());
             m_image->rawDepth().copyTo(m_image->depthRef());
             m_image->rawRgb().copyTo(m_image->rgbRef());
+            m_image->rawIntensity().copyTo(m_image->intensityRef());
         }
 
-        if (!(m_flags&NiteProcessed) && m_image->calibration() && (m_flags & UndistortImages))
+        if (!hasFilterFlag(RGBDProcessorFlags::NiteProcessed) && m_image->calibration() && hasFilterFlag(RGBDProcessorFlags::UndistortImages))
             undistortImages();
         tc.elapsedMsecs("undistort");
 
-        if (m_flags & ComputeKinectDepthLinear)
+        if (hasFilterFlag(RGBDProcessorFlags::ComputeKinectDepthLinear))
             computeKinectDepthLinear();
-        else if (m_flags & ComputeKinectDepthTanh)
+        else if (hasFilterFlag(RGBDProcessorFlags::ComputeKinectDepthTanh))
             computeKinectDepthTanh();
-        else if (m_flags & ComputeKinectDepthBaseline)
+        else if (hasFilterFlag(RGBDProcessorFlags::ComputeKinectDepthBaseline))
             computeKinectDepthBaseline();
         tc.elapsedMsecs("computeDepth");
 
@@ -218,47 +270,50 @@ namespace ntk
 
         if (m_image->calibration())
         {
-            if (m_flags & FixGeometry)
+            if (hasFilterFlag(RGBDProcessorFlags::FixGeometry))
                 fixDepthGeometry();
 
-            if (m_flags & FixBias)
+            if (hasFilterFlag(RGBDProcessorFlags::FixBias))
                 fixDepthBias();
 
-            if (m_flags & FilterMedian)
+            if (hasFilterFlag(RGBDProcessorFlags::FilterMedian))
                 medianFilter();
 
-            if ((m_flags & ComputeNormals) || (m_flags & FilterNormals))
-                computeNormalsPCL(*m_image);
+            if (hasFilterFlag(RGBDProcessorFlags::FilterBilateral))
+                bilateralFilter(*m_image);
+
+            if (hasFilterFlag(RGBDProcessorFlags::ComputeNormals) || hasFilterFlag(RGBDProcessorFlags::FilterNormals))
+                computeNormals();
 
             tc.elapsedMsecs("computeNormals");
 
-            if (m_flags & FilterThresholdDepth)
+            if (hasFilterFlag(RGBDProcessorFlags::FilterThresholdDepth))
                 applyDepthThreshold();
 
             tc.elapsedMsecs("depthThreshold");
 
-            if (m_flags & FilterAmplitude)
+            if (hasFilterFlag(RGBDProcessorFlags::FilterAmplitude))
                 removeLowAmplitudeOutliers();
 
-            if (m_flags & FilterEdges)
+            if (hasFilterFlag(RGBDProcessorFlags::FilterEdges))
                 removeEdgeOutliers();
 
-            if (m_flags & FilterNormals)
+            if (hasFilterFlag(RGBDProcessorFlags::FilterNormals))
                 removeNormalOutliers();
 
-            if (m_flags & FilterUnstable)
+            if (hasFilterFlag(RGBDProcessorFlags::FilterUnstable))
                 removeUnstableOutliers();
 
             tc.elapsedMsecs("unstableOutliers");
 
-            if (m_flags & ComputeMapping)
+            if (hasFilterFlag(RGBDProcessorFlags::ComputeMapping))
                 computeMappings();
 
             tc.elapsedMsecs("computeMappings");
 
-            if (m_flags & RemoveSmallStructures)
+            if (hasFilterFlag(RGBDProcessorFlags::RemoveSmallStructures))
                 removeSmallStructures();
-            if (m_flags & FillSmallHoles)
+            if (hasFilterFlag(RGBDProcessorFlags::FillSmallHoles))
                 fillSmallHoles();
         }
 
@@ -312,7 +367,7 @@ namespace ntk
         }
 
         if (m_image->calibration()->zero_depth_distortion ||
-            (m_flags & NoAmplitudeIntensityUndistort))
+            hasFilterFlag(RGBDProcessorFlags::NoAmplitudeIntensityUndistort))
         {
             m_image->rawAmplitudeRef().copyTo(m_image->amplitudeRef());
             m_image->rawIntensityRef().copyTo(m_image->intensityRef());
@@ -334,6 +389,7 @@ namespace ntk
     void RGBDProcessor :: computeMappings()
     {
         ntk_ensure(m_image->calibration(), "Calibration required.");
+        ntk_ensure(m_image->hasRgb(), "Image does not have rgb data!");
 
         cv::Mat1b& mask_im = m_image->depthMaskRef();
 
@@ -363,14 +419,14 @@ namespace ntk
                 continue;
 
             double depth = depth_im(i_r,i_c);
-            cv::Point3f p = depth_pose.unprojectFromImage(Point2f(c,r), depth);
+            cv::Point3f p = depth_pose.unprojectFromImage(cv::Point2f(c,r), depth);
             cv::Point3f prgb = rgb_pose.projectToImage(p);
 
             int i_y = ntk::math::rnd(prgb.y);
             int i_x = ntk::math::rnd(prgb.x);
             if (is_yx_in_range(rgb_im, i_y, i_x))
             {
-                Vec3b bgr = rgb_im(i_y, i_x);
+                cv::Vec3b bgr = rgb_im(i_y, i_x);
                 mapped_color(i_r, i_c) = bgr;
                 mapped_depth(i_y, i_x) = prgb.z;
             }
@@ -380,6 +436,13 @@ namespace ntk
     void RGBDProcessor :: medianFilter()
     {
         medianBlur(m_image->depthRef(), m_image->depthRef(), 3);
+    }
+
+    void RGBDProcessor :: bilateralFilter(RGBDImage& image)
+    {
+        cv::Mat1f tmp;
+        depth_bilateralFilter(image.depthRef(), tmp, 7, 20, 20, 0.01);
+        tmp.copyTo(image.depthRef());
     }
 
 #if 0
@@ -430,8 +493,8 @@ namespace ntk
         {
             if (!mask_im(r,c)) continue;
             if (!m_image->isValidNormal(r,c)) continue;
-            Vec3f eyev = camera_eye_vector(depth_pose, r, c);
-            Vec3f normal = m_image->normal()(r, c);
+            cv::Vec3f eyev = camera_eye_vector(depth_pose, r, c);
+            cv::Vec3f normal = m_image->normal()(r, c);
             double angle = acos(normal.dot(-eyev));
             if (angle > (m_max_normal_angle*M_PI/180.0))
                 mask_im(r,c) = 0;
@@ -647,7 +710,7 @@ namespace ntk
         for (int r = 0; r < depth_im.rows; ++r)
         {
             const float* depth_data = depth_im.ptr<float>(r);
-            Vec3b* depth_color_data = color_depth_im.ptr<Vec3b>(r);
+            cv::Vec3b* depth_color_data = color_depth_im.ptr<cv::Vec3b>(r);
             for (int c = 0; c < depth_im.cols; ++c)
             {
                 int v = 255*6*(depth_data[c]-min_val)/(max_val-min_val);
@@ -695,15 +758,15 @@ namespace ntk
                 {
                     r = g = b = 0;
                 }
-                depth_color_data[c] = Vec3b(b,g,r);
+                depth_color_data[c] = cv::Vec3b(b,g,r);
             }
         }
     }
 
     void OpenniRGBDProcessor :: computeMappings()
     {
-        Size depth_size = m_image->calibration()->raw_depth_size;
-        Size rgb_size = m_image->calibration()->rawRgbSize();
+        cv::Size depth_size = m_image->calibration()->raw_depth_size;
+        cv::Size rgb_size = m_image->calibration()->rawRgbSize();
 
         bool mapping_required = depth_size != rgb_size;
 
@@ -723,24 +786,24 @@ namespace ntk
 
         const float ratio = float(rgb_size.width) / depth_size.width;
 
-        Size raw_rgb_size(rgb_size.width/ratio, rgb_size.height/ratio);
+        cv::Size raw_rgb_size(rgb_size.width/ratio, rgb_size.height/ratio);
         cv::Mat3b raw_mapped_rgb(raw_rgb_size);
         cv::resize(m_image->rawRgb(), raw_mapped_rgb, raw_rgb_size, 0, 0, cv::INTER_LINEAR);
-        m_image->mappedRgbRef() = raw_mapped_rgb(Rect(Point(0,0),
+        m_image->mappedRgbRef() = raw_mapped_rgb(cv::Rect(cv::Point(0,0),
                                                       depth_size));
 
-        Size raw_depth_size(depth_size.width*ratio, depth_size.height*ratio);
+        cv::Size raw_depth_size(depth_size.width*ratio, depth_size.height*ratio);
 
         cv::Mat1f raw_mapped_depth(raw_depth_size);
-        cv::resize(m_image->rawDepth(), raw_mapped_depth, raw_depth_size, 0, 0, INTER_NEAREST);
+        cv::resize(m_image->rawDepth(), raw_mapped_depth, raw_depth_size, 0, 0, cv::INTER_NEAREST);
 
         cv::Mat1b raw_mapped_depth_mask(raw_depth_size);
-        cv::resize(m_image->depthMask(), raw_mapped_depth_mask, raw_depth_size, 0, 0, INTER_NEAREST);
+        cv::resize(m_image->depthMask(), raw_mapped_depth_mask, raw_depth_size, 0, 0, cv::INTER_NEAREST);
 
-        cv::Mat1f roi_depth = m_image->mappedDepthRef()(Rect(Point(0,0), raw_depth_size));
+        cv::Mat1f roi_depth = m_image->mappedDepthRef()(cv::Rect(cv::Point(0,0), raw_depth_size));
         raw_mapped_depth.copyTo(roi_depth);
 
-        cv::Mat1b roi_depth_mask = m_image->mappedDepthMaskRef()(Rect(Point(0,0), raw_depth_size));
+        cv::Mat1b roi_depth_mask = m_image->mappedDepthMaskRef()(cv::Rect(cv::Point(0,0), raw_depth_size));
         raw_mapped_depth_mask.copyTo(roi_depth_mask);
     }
 
@@ -766,9 +829,8 @@ namespace ntk
         }
 
         if (params.do_mapping)
-            processor->setFilterFlag(RGBDProcessor::ComputeMapping, true);
+            processor->setFilterFlag(RGBDProcessorFlags::ComputeMapping, true);
         return processor;
     }
 
 }
-

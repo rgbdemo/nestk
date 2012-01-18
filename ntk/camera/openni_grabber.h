@@ -23,11 +23,38 @@
 #include <ntk/camera/rgbd_grabber.h>
 #include <ntk/gesture/skeleton.h>
 
+// OpenNI headers include windows.h on windows without preventing
+// preprocessor namespace pollution.
+// FIXME: Factor this out.
+#ifdef _WIN32
+#   define NOMINMAX
+#   define VC_EXTRALEAN
+#endif
 #include <XnOpenNI.h>
+#ifdef _WIN32
+#   undef VC_EXTRALEAN
+#   undef NOMINMAX
+#endif
+
 #include <XnCodecIDs.h>
 #include <XnCppWrapper.h>
 #include <XnVSessionManager.h>
 #include <XnVPushDetector.h>
+
+// Under certain odd circumstances, qhull/io.h can be incorrectly included
+// by XnPlatformWin32.h, dragging True and False as preprocessor macros,
+// breaking in turn flann headers.
+// See also: ntk/gesture/skeleton.h
+// FIXME: Ensure that such a broken build system is never generated and remove
+// this kludge.
+#ifdef _WIN32
+#   ifdef True
+#       undef True
+#   endif
+#   ifdef False
+#       undef False
+#   endif
+#endif
 
 namespace ntk
 {
@@ -37,13 +64,30 @@ class BodyEventDetector;
 class OpenniDriver
 {
 public:
+    struct DeviceInfo
+    {
+        std::string creation_info;
+        std::string camera_type;
+        std::string serial;
+        std::string vendor;
+        unsigned short vendor_id;
+        unsigned short product_id;
+        unsigned char bus;
+        unsigned char address;
+    };
+
+public:
     OpenniDriver();
     ~OpenniDriver();
 
 public:
     xn::Context& niContext() { return m_ni_context; }
     int numDevices() const { return m_device_nodes.size(); }
+    const DeviceInfo& deviceInfo(int index) const { return m_device_nodes[index]; }
     void checkXnError(const XnStatus& status, const char* what) const;
+
+private:
+    void findSerialNumbers();
 
 private:
     struct Config;
@@ -51,7 +95,7 @@ private:
 
 private:
     xn::Context m_ni_context;
-    std::vector<std::string> m_device_nodes;
+    std::vector<DeviceInfo> m_device_nodes;
     XnLicense m_license;
 };
 
@@ -62,6 +106,11 @@ public:
      * Constructor. camera_id specifies the camera, 0 is the first device.
      */
     OpenniGrabber(OpenniDriver& driver, int camera_id = 0);
+
+    /*!
+     * Constructor. camera_id specifies the camera serial, e.g. "045e/02ae@38/6"
+     */
+    OpenniGrabber(OpenniDriver& driver, const std::string& camera_serial);
 
     /*! set a new xml config file for the grabber
    * call it before initialize() */
@@ -129,12 +178,14 @@ public:
     void calibrationFinishedCallback(XnUserID nId, bool success);
 
 private:
+    void setDefaultBayerMode();
     void waitAndUpdateActiveGenerators();
     void estimateCalibration();
 
 private:
     OpenniDriver& m_driver;
     int m_camera_id;
+    std::string m_camera_serial;
     RGBDImage m_current_image;
     xn::Device m_ni_device;
     xn::DepthGenerator m_ni_depth_generator;
@@ -161,6 +212,7 @@ private:
 
     bool m_track_users;
     bool m_get_infrared;
+    bool m_has_rgb;
 
     static QMutex m_ni_mutex;
 };

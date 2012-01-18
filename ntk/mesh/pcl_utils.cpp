@@ -32,17 +32,20 @@ template void vectorToPointCloud(pcl::PointCloud<PointXYZIndex>& cloud,
                                  const std::vector<cv::Point3f>& points,
                                  const std::vector<int>& indices);
 
-template void rgbdImageToPointCloud(pcl::PointCloud<pcl::PointXYZ>& cloud, const RGBDImage& image);
-template void rgbdImageToPointCloud(pcl::PointCloud<PointXYZIndex>& cloud, const RGBDImage& image);
+template void rgbdImageToPointCloud(pcl::PointCloud<pcl::PointXYZ>& cloud, const RGBDImage& image, bool keep_dense);
+template void rgbdImageToPointCloud(pcl::PointCloud<pcl::PointNormal>& cloud, const RGBDImage& image, bool keep_dense);
+template void rgbdImageToPointCloud(pcl::PointCloud<PointXYZIndex>& cloud, const RGBDImage& image, bool keep_dense);
 
 template void rgbdImageToPointCloud(pcl::PointCloud<pcl::PointXYZ>& cloud,
                                     const RGBDImage& image,
                                     const Pose3D& pose,
-                                    int subsampling_factor);
+                                    int subsampling_factor,
+                                    bool keep_dense);
 template void rgbdImageToPointCloud(pcl::PointCloud<PointXYZIndex>& cloud,
                                     const RGBDImage& image,
                                     const Pose3D& pose,
-                                    int subsampling_factor);
+                                    int subsampling_factor,
+                                    bool keep_dense);
 
 template void pointCloudToMesh(ntk::Mesh& mesh,
                                const pcl::PointCloud<PointXYZIndex>& cloud);
@@ -83,5 +86,38 @@ void meshToPointCloud(pcl::PointCloud<pcl::PointXYZ>& cloud,
         cloud.points[i] = toPcl(mesh.vertices[i]);
     }
 }
+
+void meshToPointCloud(pcl::PointCloud<pcl::PointNormal>& cloud,
+                      const ntk::Mesh& mesh)
+{
+    cloud.points.resize(mesh.vertices.size());
+    cloud.height = 1;
+    cloud.width = cloud.points.size();
+    foreach_idx(i, cloud.points)
+    {
+        cloud.points[i] = toPcl(mesh.vertices[i], mesh.normals[i]);
+    }
+}
+
+Eigen::Affine3f toPclCameraTransform(const Pose3D& pose)
+{
+    Eigen::Affine3f mat;
+    cv::Mat1f T = pose.cvCameraTransform();
+    for (int r = 0; r < 4; ++r)
+        for (int c = 0; c < 4; ++c)
+            mat(r,c) = T(r,c);
+    return mat;
+}
+
+Eigen::Affine3f toPclInvCameraTransform(const Pose3D& pose)
+{
+    Eigen::Affine3f mat;
+    cv::Mat1f T = pose.cvInvCameraTransform();
+    for (int r = 0; r < 4; ++r)
+        for (int c = 0; c < 4; ++c)
+            mat(r,c) = T(r,c);
+    return mat;
+}
+
 
 } // ntk

@@ -73,13 +73,13 @@ public:
     float voxelSize() const { return downsample_leaf_objects_; }
     void setObjectVoxelSize(float s = 0.003) { downsample_leaf_objects_ = s; }
     void setBackgroundVoxelSize(float s = 0.01) { downsample_leaf_ = s; }
-    void setDepthLimits(float min_z = -1.6, float max_z = -0.4) { min_z_bounds_ = min_z; max_z_bounds_ = max_z; }
+    void setDepthLimits(float min_z = -2, float max_z = -0.4) { min_z_bounds_ = min_z; max_z_bounds_ = max_z; }
     void setObjectHeightLimits(float min_h = 0.01, float max_h = 0.5) { object_min_height_ = min_h;  object_max_height_ = max_h; }
     void setMaxDistToPlane(float d) { m_max_dist_to_plane = d; }
 
 public:
     /*! Returns true if at least one object and plane are detected. */
-    bool detect(PointCloud& cloud);
+    bool detect(PointCloudConstPtr cloud);
 
     /*! Returns the index of the most central cluster. */
     int getMostCentralCluster() const;
@@ -87,6 +87,7 @@ public:
 public:
     const ntk::Plane& plane() const { return m_plane; }
     const std::vector <std::vector<cv::Point3f> >& objectClusters() const { return m_object_clusters; }
+    PointCloudConstPtr tableInliers() const { return table_projected_; }
 
 private:
     // PCL objects

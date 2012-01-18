@@ -22,6 +22,7 @@
 #include <ntk/geometry/pose_3d.h>
 #include <ntk/numeric/levenberg_marquart_minimizer.h>
 #include <ntk/utils/time.h>
+#include <ntk/camera/rgbd_processor.h>
 
 using namespace cv;
 
@@ -44,6 +45,7 @@ bool SurfelsRGBDModeler :: mergeToLeftSurfel(Surfel& dest, const Surfel& src)
         dest.min_camera_angle = src.min_camera_angle;
         dest.radius = src.radius;
     }
+
     dest.n_views = dest.n_views + src.n_views;
     return true;
 }
@@ -62,20 +64,26 @@ float SurfelsRGBDModeler :: computeSurfelRadius(float depth, float camera_z, dou
     return radius;
 }
 
-bool SurfelsRGBDModeler :: addNewView(const RGBDImage& image, Pose3D& relative_pose)
+bool SurfelsRGBDModeler :: addNewView(const RGBDImage& image_, Pose3D& depth_pose)
 {
     ntk::TimeCount tc("SurfelsRGBDModeler::addNewView", 1);
-    const float update_max_dist = 0.1;
     const float max_camera_normal_angle = ntk::deg_to_rad(90);
 
-    Pose3D rgb_pose = *image.calibration()->rgb_pose;
-    Pose3D depth_pose = *image.calibration()->depth_pose;
-    depth_pose.applyTransformBefore(relative_pose);
-    rgb_pose.applyTransformBefore(relative_pose);
+    RGBDImage image;
+    image_.copyTo(image);
+    if (!image_.normal().data)
+    {
+        OpenniRGBDProcessor processor;
+        processor.computeNormalsPCL(image);
+    }
+
+    Pose3D rgb_pose = depth_pose;
+    rgb_pose.toRightCamera(image.calibration()->rgb_intrinsics, image.calibration()->R, image.calibration()->T);
 
     Pose3D world_to_camera_normal_pose;
-    world_to_camera_normal_pose.applyTransformBefore(relative_pose);
-    Pose3D camera_to_world_normal_pose = world_to_camera_normal_pose; camera_to_world_normal_pose.invert();
+    world_to_camera_normal_pose.applyTransformBefore(cv::Vec3f(0,0,0), depth_pose.cvEulerRotation());
+    Pose3D camera_to_world_normal_pose = world_to_camera_normal_pose;
+    camera_to_world_normal_pose.invert();
 
     const Mat1f& depth_im = image.depth();
     Mat1b covered_pixels (depth_im.size());
@@ -103,6 +111,8 @@ bool SurfelsRGBDModeler :: addNewView(const RGBDImage& image, Pose3D& relative_p
                 || !image.isValidNormal(r,c))
             continue;
 
+        const float update_max_dist = getCompatibilityDistance(depth_im(r,c));
+
         Vec3f camera_normal = image.normal()(r, c);
         normalize(camera_normal);
 
@@ -120,7 +130,7 @@ bool SurfelsRGBDModeler :: addNewView(const RGBDImage& image, Pose3D& relative_p
         {
             // Removal check. If a surfel has a different normal and is closer to the camera
             // than the new scan, remove it.
-            if (surfel_2d.z > depth_im(r,c) && surfel.n_views < 2)
+            if ((-surfel_2d.z) < depth_im(r,c) && surfel.n_views < 3)
             {
                 m_surfels.erase(surfel_it);
                 surfel_deleted = true;
@@ -135,7 +145,7 @@ bool SurfelsRGBDModeler :: addNewView(const RGBDImage& image, Pose3D& relative_p
         // - Otherwise do not include the new one.
         if (std::abs(surfel_2d.z - depth_im(r,c)) > update_max_dist)
         {
-            if (surfel.min_camera_angle > camera_angle && surfel.n_views < 2)
+            if (surfel.min_camera_angle > camera_angle && surfel.n_views < 3)
             {
                 m_surfels.erase(surfel_it);
                 surfel_deleted = true;
@@ -191,6 +201,8 @@ bool SurfelsRGBDModeler :: addNewView(const RGBDImage& image, Pose3D& relative_p
                 continue;
 
             Point3f p3d = depth_pose.unprojectFromImage(Point2f(c,r), depth);
+            if (!m_bounding_box.isEmpty() && !m_bounding_box.isPointInside(p3d))
+                continue;
 
             cv::Vec3b rgb_color = bgr_to_rgb(image.mappedRgb()(r,c));
 
@@ -268,5 +280,25 @@ void SurfelsRGBDModeler::setResolution(float r)
     reset();
 }
 
+float ntk::SurfelsRGBDModeler::getCompatibilityDistance(float depth) const
+{
+    if (depth < 0.8)
+        return 0.002;
+    else if (depth < 1)
+        return 0.003;
+    else if (depth < 1.5)
+        return 0.005;
+    else if (depth < 2)
+        return 0.008;
+    else if (depth < 3)
+        return 0.02;
+    else if (depth < 4)
+        return 0.04;
+    else if (depth < 5)
+        return 0.05;
+    else if (depth < 6)
+        return 0.06;
+    return 0.1;
+}
 
 }  // ntk

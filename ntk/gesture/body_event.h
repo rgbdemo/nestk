@@ -23,7 +23,19 @@
 #include <ntk/core.h>
 #include <ntk/utils/debug.h>
 
+// OpenNI headers include windows.h on windows without preventing
+// preprocessor namespace pollution.
+// FIXME: Factor this out.
+#ifdef _WIN32
+#   define NOMINMAX
+#   define VC_EXTRALEAN
+#endif
 #include <XnOpenNI.h>
+#ifdef _WIN32
+#   undef VC_EXTRALEAN
+#   undef NOMINMAX
+#endif
+
 #include <XnCodecIDs.h>
 #include <XnCppWrapper.h>
 #include <XnVSessionManager.h>

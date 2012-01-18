@@ -1,9 +1,28 @@
-#ifndef RELATIVE_POSE_ESTIMATOR_FROM_IMAGE_H
-#define RELATIVE_POSE_ESTIMATOR_FROM_IMAGE_H
+/**
+ * This file is part of the nestk library.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * Author: Nicolas Burrus <nicolas.burrus@uc3m.es>, (C) 2010
+ */
+
+#ifndef NTK_GEOMETRY_RELATIVE_POSE_ESTIMATOR_FROM_IMAGE_H
+#define NTK_GEOMETRY_RELATIVE_POSE_ESTIMATOR_FROM_IMAGE_H
 
 #include "relative_pose_estimator.h"
 
-#include <ntk/image/sift_gpu.h>
+//#include <ntk/image/sift_gpu.h>
 #include <ntk/image/feature.h>
 
 namespace ntk
@@ -14,49 +33,42 @@ namespace ntk
  * Feature matches are computed between the new image and past images,
  * allowing direct estimation of the relative pose.
  */
-class RelativePoseEstimatorFromImage : public RelativePoseEstimator
+class RelativePoseEstimatorFromRgbFeatures : public RelativePoseEstimatorFromImages
 {
 public:
-  RelativePoseEstimatorFromImage(const FeatureSetParams& params, bool use_icp = false)
-   : m_feature_parameters(params), m_use_icp(use_icp), m_incremental_model(true)
-  {
-    // Force feature extraction to return only features with depth.
-    m_feature_parameters.only_features_with_depth = true;
-    reset();
-  }
+    RelativePoseEstimatorFromRgbFeatures(const FeatureSetParams& params)
+        : m_feature_parameters(params),
+          m_min_matches(10),
+          m_num_matches(0)
+    {
+        // Force feature extraction to return only features with depth.
+        m_feature_parameters.only_features_with_depth = true;
+        resetTarget();
+    }
 
-  virtual bool estimateNewPose(const RGBDImage& image);
-  virtual void reset();
-  void setIncrementalModel(bool enable) { m_incremental_model = enable; }
+    virtual void setTargetImage(const RGBDImage &image);
+    virtual void setTargetPose(const Pose3D& pose);
+    virtual bool estimateNewPose();
 
-private:
-  struct ImageData
-  {
-    Pose3D depth_pose;
-    cv::Mat3b color;
-  };
+    int numMatches() const { return m_num_matches; }
 
 private:
-  int newImageIndex() const { return m_image_data.size(); }
-  int computeNumMatchesWithPrevious(const RGBDImage& image,
-                                    const FeatureSet& features,
-                                    std::vector<cv::DMatch>& best_matches);
-  bool estimateDeltaPose(Pose3D& new_pose,
+    bool estimateNewPose(Pose3D& new_pose,
                          const RGBDImage& image,
                          const FeatureSet& features,
-                         const std::vector<cv::DMatch>& best_matches,
-                         int closest_view_index);
+                         const std::vector<cv::DMatch>& matches);
 
-  bool optimizeWithICP(const RGBDImage& image, Pose3D& depth_pose, int closest_view_index);
+    void resetTarget();
+
+    void computeTargetFeatures();
 
 private:
-  std::vector < FeatureSet > m_features;
-  std::vector< ImageData > m_image_data;
-  FeatureSetParams m_feature_parameters;
-  bool m_use_icp;
-  bool m_incremental_model;
+    FeatureSet m_target_features;
+    FeatureSetParams m_feature_parameters;
+    int m_min_matches;
+    int m_num_matches;
 };
 
-} // ntk
+}
 
-#endif // RELATIVE_POSE_ESTIMATOR_FROM_IMAGE_H
+#endif // NTK_GEOMETRY_RELATIVE_POSE_ESTIMATOR_FROM_IMAGE_H

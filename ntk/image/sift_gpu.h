@@ -21,9 +21,8 @@
 # define NTK_IMAGE_SIFT_GPU_H
 
 #include <ntk/core.h>
-
 #include "siftgpu/SiftGPU.h"
-
+#include <opencv2/features2d/features2d.hpp>
 #include <QLocalServer>
 #include <QLocalSocket>
 

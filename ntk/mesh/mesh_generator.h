@@ -47,6 +47,7 @@ public:
   void setMeshType(MeshType type) { m_mesh_type = type; }
   void setResolutionFactor(double f);
   void setMaxNormalAngle(double angle_in_degrees) { m_max_normal_angle = angle_in_degrees; }
+  void setMaxDeltaDepthBetweenEdges(float d) { m_max_delta_depth = d; }
 
 public:
   void generate(const RGBDImage& image,
@@ -59,6 +60,7 @@ private:
   MeshType m_mesh_type;
   double m_resolution_factor;
   double m_max_normal_angle;
+  float m_max_delta_depth;
 };
 
 } // ntk

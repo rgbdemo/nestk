@@ -58,7 +58,7 @@ namespace ntk
   double normcdf(double x, double mean, double std_dev)
   {
     double y = (x-mean)/std_dev;
-  return 0.5 * erfc(-y/ntk::math::sqrt2);
+    return 0.5 * erfc(-y/ntk::math::sqrt2);
   }
 
   double normpdf(double x, double mean, double dev)

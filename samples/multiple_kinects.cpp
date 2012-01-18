@@ -28,10 +28,14 @@ using namespace ntk;
 
 int main()
 {    
+    ntk::ntk_debug_level = 1;
     OpenniDriver ni_driver;
 
     OpenniGrabber grabber1(ni_driver, 0); // first id is 0
     OpenniGrabber grabber2(ni_driver, 1);
+
+    grabber1.setTrackUsers(false);
+    grabber2.setTrackUsers(false);
 
     grabber1.connectToDevice();
     grabber2.connectToDevice();
@@ -59,18 +63,11 @@ int main()
       cv::Mat3b debug_color_img1 = image1.mappedRgb();
       cv::Mat3b debug_color_img2 = image2.mappedRgb();
 
-      cv::Mat3b debug_users1;
-      cv::Mat3b debug_users2;
-      image1.fillRgbFromUserLabels(debug_users1);
-      image2.fillRgbFromUserLabels(debug_users2);
-
       imshow("depth1", debug_depth_img1);
       imshow("color1", debug_color_img1);
-      imshow("users1", debug_users1);
 
       imshow("depth2", debug_depth_img2);
       imshow("color2", debug_color_img2);
-      imshow("users2", debug_users2);
       cv::waitKey(10);
     }
 }

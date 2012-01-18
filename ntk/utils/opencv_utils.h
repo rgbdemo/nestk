@@ -48,6 +48,8 @@ const NtkDebug& operator<<(const NtkDebug& stream, const cv::Mat1d& m);
 namespace ntk
 {
 
+cv::Point3f computeCentroid(const std::vector<cv::Point3f>& points);
+
 template <class T>
 class Rect3_
 {
@@ -91,6 +93,12 @@ public:
     cv::Point3_<T> centroid() const
     {
         return cv::Point3_<T>(x+(width/T(2)), y+(height/T(2)), z + (depth / T(2)));
+    }
+
+    bool isPointInside(const cv::Point3f& p) const
+    {
+        return (p.x >= x) && (p.y >= y) && (p.z >= z)
+                && (p.x <= (x+width)) && (p.y <= (y+height)) && (p.z <= (z+depth));
     }
 
 public:

@@ -80,12 +80,33 @@ void MeshViewer :: enableLighting()
     makeCurrent();
     glEnable(GL_LIGHTING);
     GLfloat specular[] = {1.0f, 1.0f, 1.0f , 1.0f};
+    GLfloat diffuse[] = {0.2f, 0.2f, 0.2f , 0.2f};
     glLightfv(GL_LIGHT0, GL_SPECULAR, specular);
-    GLfloat position[] = { 0.1f, 1.0f, 0.5f, 1.0f };
-    glLightfv(GL_LIGHT0, GL_POSITION, position);
+    //glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
+    GLfloat position0[] = { 0.5f, 0.5f, 0.0f, 1.0f };
+    glLightfv(GL_LIGHT0, GL_POSITION, position0);
     glEnable(GL_LIGHT0);
+
+    glLightfv(GL_LIGHT1, GL_SPECULAR, specular);
+    //glLightfv(GL_LIGHT1, GL_DIFFUSE, diffuse);
+    GLfloat position1[] = { -0.5f, 0.5f, 0.0f, 1.0f };
+    glLightfv(GL_LIGHT1, GL_POSITION, position1);
+    glEnable(GL_LIGHT1);
+
+    glLightfv(GL_LIGHT2, GL_SPECULAR, specular);
+    //glLightfv(GL_LIGHT2, GL_DIFFUSE, diffuse);
+    GLfloat position2[] = { -0.5f, -0.5f, 0.0f, 1.0f };
+    glLightfv(GL_LIGHT2, GL_POSITION, position2);
+    glEnable(GL_LIGHT2);
+
+    glLightfv(GL_LIGHT3, GL_SPECULAR, specular);
+    //glLightfv(GL_LIGHT3, GL_DIFFUSE, diffuse);
+    GLfloat position3[] = { 0.5f, -0.5f, 0.0f, 1.0f };
+    glLightfv(GL_LIGHT3, GL_POSITION, position3);
+    glEnable(GL_LIGHT3);
+
     glEnable(GL_SMOOTH);
-    glShadeModel(GL_FLAT);
+    glShadeModel(GL_SMOOTH);
     glColorMaterial ( GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE );
     glEnable ( GL_COLOR_MATERIAL );
 }
@@ -206,20 +227,26 @@ void MeshViewer :: addMeshToVertexBufferObject(const ntk::Mesh& mesh, const Pose
     vbo.has_faces = mesh.hasFaces();
     vbo.has_color = mesh.hasColors();
     vbo.has_texcoords = mesh.hasTexcoords();
+    vbo.has_normals = mesh.hasNormals();
+    vbo.rendering_mode = mode;
     vbo.color_offset = mesh.vertices.size()*sizeof(Vec3f);
-    vbo.texture_offset = mesh.vertices.size()*sizeof(Vec3f) + mesh.colors.size() * sizeof(Vec3b);
+    vbo.normals_offset = vbo.color_offset + mesh.colors.size()*sizeof(Vec3b);
+    vbo.texture_offset = vbo.normals_offset + mesh.normals.size() * sizeof(Vec3f);
     vbo.nb_vertices = mesh.vertices.size();
 
     glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbo.vertex_id);
     glBufferDataARB(GL_ARRAY_BUFFER_ARB,
-                    mesh.colors.size()*sizeof(Vec3b)
-                    + mesh.vertices.size()*sizeof(Vec3f)
-                    + mesh.texcoords.size()*sizeof(Point2f), // size
+                    mesh.colors.size() * sizeof(Vec3b)
+                    + mesh.normals.size() * sizeof(Vec3f)
+                    + mesh.vertices.size() * sizeof(Vec3f)
+                    + mesh.texcoords.size() * sizeof(Point2f), // size
                     0, // null pointer: just allocate memory
                     GL_STATIC_DRAW_ARB);
     glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, mesh.vertices.size()*sizeof(Vec3f), &mesh.vertices[0]);
     if (vbo.has_color)
         glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, vbo.color_offset, mesh.colors.size()*sizeof(Vec3b), &mesh.colors[0]);
+    if (vbo.has_normals)
+        glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, vbo.normals_offset, mesh.normals.size()*sizeof(Vec3f), &mesh.normals[0]);
     if (vbo.has_texcoords)
         glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, vbo.texture_offset, mesh.texcoords.size()*sizeof(Point2f), &mesh.texcoords[0]);
 
@@ -471,6 +498,92 @@ void MeshViewer :: updateDisplayCenter()
     m_display_center = Point3f(cv_p(0,0), cv_p(1,0), cv_p(2,0));
 }
 
+void MeshViewer :: enableVertexBufferObject(VertexBufferObject& obj, int index)
+{
+    glBindBufferARB(GL_ARRAY_BUFFER_ARB, obj.vertex_id);
+
+    // Set the model view matrix associated with this mesh.
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glMultMatrixf(obj.model_view_matrix.ptr<float>());
+
+    if (obj.has_texcoords)
+    {
+        glEnable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, m_textures[index]);
+    }
+    else
+    {
+        glDisable(GL_TEXTURE_2D);
+    }
+
+    if (obj.has_color)
+        glEnableClientState(GL_COLOR_ARRAY);
+
+    if (obj.has_normals)
+        glEnableClientState(GL_NORMAL_ARRAY);
+
+    if (obj.has_texcoords)
+        glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+
+    glEnableClientState(GL_VERTEX_ARRAY);
+
+
+    glVertexPointer(3, GL_FLOAT, 0, 0);
+
+    if (obj.has_color)
+        glColorPointer(3, GL_UNSIGNED_BYTE, 0, ((char*) NULL) + obj.color_offset);
+
+    if (obj.has_normals)
+        glNormalPointer(GL_FLOAT, 0, ((char*) NULL) + obj.normals_offset);
+    else
+        glNormal3f(0, 0, 1);
+
+    if (obj.has_texcoords)
+        glTexCoordPointer(2, GL_FLOAT, 0, ((char*) NULL) + obj.texture_offset);
+}
+
+void MeshViewer :: disableVertexBufferObject(VertexBufferObject& obj)
+{
+    glDisableClientState(GL_VERTEX_ARRAY);
+
+    if (obj.has_normals)
+        glDisableClientState(GL_NORMAL_ARRAY);
+
+    if (obj.has_color)
+        glDisableClientState(GL_COLOR_ARRAY);
+
+    if (obj.has_texcoords)
+        glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+
+    // bind with 0, so, switch back to normal pointer operation
+    glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+
+    if (obj.has_faces)
+    {
+        glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
+    }
+
+    // Restore model view matrix.
+    glMatrixMode(GL_MODELVIEW);
+    glPopMatrix();
+}
+
+void MeshViewer :: drawVertexBufferObject(VertexBufferObject& obj)
+{
+    if (obj.has_faces)
+    {
+        glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, obj.faces_id);
+        glDrawElements(GL_TRIANGLES, obj.nb_faces*3, GL_UNSIGNED_INT, 0);
+    }
+    else
+    {
+        glDrawArrays(GL_POINTS,
+                     0,
+                     obj.nb_vertices);
+    }
+}
+
 void MeshViewer :: paintGL()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -485,68 +598,23 @@ void MeshViewer :: paintGL()
     {
         foreach_idx(i, m_vertex_buffer_objects)
         {
-            glBindBufferARB(GL_ARRAY_BUFFER_ARB, m_vertex_buffer_objects[i].vertex_id);
+            enableVertexBufferObject(m_vertex_buffer_objects[i], i);
 
-            // Set the model view matrix associated with this mesh.
-            glMatrixMode(GL_MODELVIEW);
-            glPushMatrix();
-            glMultMatrixf(m_vertex_buffer_objects[i].model_view_matrix.ptr<float>());
-
-            if (m_vertex_buffer_objects[i].has_texcoords)
+            if (m_vertex_buffer_objects[i].rendering_mode & WIREFRAME)
             {
-                glEnable(GL_TEXTURE_2D);
-                glBindTexture(GL_TEXTURE_2D, m_textures[i]);
+                //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+                //drawVertexBufferObject(m_vertex_buffer_objects[i]);
+
+                glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+                drawVertexBufferObject(m_vertex_buffer_objects[i]);
             }
             else
             {
-                glDisable(GL_TEXTURE_2D);
+                glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+                drawVertexBufferObject(m_vertex_buffer_objects[i]);
             }
 
-            if (m_vertex_buffer_objects[i].has_color)
-                glEnableClientState(GL_COLOR_ARRAY);
-            if (m_vertex_buffer_objects[i].has_texcoords)
-                glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-            glEnableClientState(GL_VERTEX_ARRAY);
-
-            glVertexPointer(3, GL_FLOAT, 0, 0);
-            if (m_vertex_buffer_objects[i].has_color)
-                glColorPointer(3, GL_UNSIGNED_BYTE, 0, ((char*) NULL) + m_vertex_buffer_objects[i].color_offset);
-
-            if (m_vertex_buffer_objects[i].has_texcoords)
-                glTexCoordPointer(2, GL_FLOAT, 0, ((char*) NULL) + m_vertex_buffer_objects[i].texture_offset);
-
-            if (m_vertex_buffer_objects[i].has_faces)
-            {
-                glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, m_vertex_buffer_objects[i].faces_id);
-                glNormal3f(0, 0, 1);
-                glDrawElements(GL_TRIANGLES, m_vertex_buffer_objects[i].nb_faces*3, GL_UNSIGNED_INT, 0);
-            }
-            else
-            {
-                glDrawArrays(GL_POINTS,
-                             0,
-                             m_vertex_buffer_objects[i].nb_vertices);
-            }
-
-            glDisableClientState(GL_VERTEX_ARRAY);
-
-            if (m_vertex_buffer_objects[i].has_color)
-                glDisableClientState(GL_COLOR_ARRAY);
-
-            if (m_vertex_buffer_objects[i].has_texcoords)
-                glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-
-            // bind with 0, so, switch back to normal pointer operation
-            glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
-
-            if (m_vertex_buffer_objects[i].has_faces)
-            {
-                glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
-            }
-
-            // Restore model view matrix.
-            glMatrixMode(GL_MODELVIEW);
-            glPopMatrix();
+            disableVertexBufferObject(m_vertex_buffer_objects[i]);
         }
     }
     else

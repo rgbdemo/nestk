@@ -51,30 +51,35 @@ void vectorToPointCloud(pcl::PointCloud<PointT>& cloud,
 }
 
 template <class PointT>
-void rgbdImageToPointCloud(pcl::PointCloud<PointT>& cloud, const RGBDImage& image)
+void rgbdImageToPointCloud(pcl::PointCloud<PointT>& cloud, const RGBDImage& image, bool keep_dense)
 {
     if (!image.calibration())
         ntk_throw_exception("No calibration data in image.");
 
-    rgbdImageToPointCloud(cloud, image, *image.calibration()->depth_pose);
+    rgbdImageToPointCloud(cloud, image, *image.calibration()->depth_pose, 1.0, keep_dense);
 }
 
 template <class PointT>
 void rgbdImageToPointCloud(pcl::PointCloud<PointT>& cloud,
                            const RGBDImage& image,
                            const Pose3D& pose,
-                           int subsampling_factor)
+                           int subsampling_factor,
+                           bool keep_dense)
 {
-    std::vector<cv::Point3f> points;
-    std::vector<int> indices;
-
     PointT nan_point;
     nan_point.getVector4fMap().setConstant (std::numeric_limits<float>::quiet_NaN());
 
-    cloud.width = image.depth().cols / subsampling_factor;
-    cloud.height = image.depth().rows / subsampling_factor;
-    cloud.points.resize(cloud.width*cloud.height, nan_point);
-    cloud.is_dense = true;
+    if (keep_dense)
+    {
+        cloud.width = image.depth().cols / subsampling_factor;
+        cloud.height = image.depth().rows / subsampling_factor;
+        cloud.points.resize(cloud.width*cloud.height, nan_point);
+        cloud.is_dense = true;
+    }
+    else
+    {
+        cloud.clear();
+    }
 
     for (int r = 0; r < image.depth().rows; r += subsampling_factor)
         for (int c = 0; c < image.depth().cols; c += subsampling_factor)
@@ -84,10 +89,71 @@ void rgbdImageToPointCloud(pcl::PointCloud<PointT>& cloud,
             if (d < 1e-5 || !mask_ok)
                 continue;
             cv::Point3f p = pose.unprojectFromImage(cv::Point2f(c,r),d);
-            PointT& pcl_p = cloud.points[r*cloud.width+c];
+            PointT pcl_p;
             pcl_p.x = p.x;
             pcl_p.y = p.y;
             pcl_p.z = p.z;
+            if (keep_dense)
+                cloud.points[r*cloud.width+c] = pcl_p;
+            else
+                cloud.push_back(pcl_p);
+        }   
+}
+
+template <>
+void rgbdImageToPointCloud(pcl::PointCloud<pcl::PointNormal>& cloud,
+                           const RGBDImage& image,
+                           const Pose3D& pose,
+                           int subsampling_factor,
+                           bool keep_dense)
+{
+    typedef pcl::PointNormal PointT;
+
+    PointT nan_point;
+    nan_point.getVector4fMap().setConstant (std::numeric_limits<float>::quiet_NaN());
+
+    if (keep_dense)
+    {
+        cloud.width = image.depth().cols / subsampling_factor;
+        cloud.height = image.depth().rows / subsampling_factor;
+        cloud.points.resize(cloud.width*cloud.height, nan_point);
+        cloud.is_dense = true;
+    }
+    else
+    {
+        cloud.clear();
+    }
+
+    Pose3D rotation_pose;
+    rotation_pose.applyTransformAfter(cv::Vec3f(0,0,0), pose.cvEulerRotation());
+
+    for (int r = 0; r < image.depth().rows; r += subsampling_factor)
+        for (int c = 0; c < image.depth().cols; c += subsampling_factor)
+        {
+            float d = image.depth()(r,c);
+
+            bool mask_ok = !image.depthMask().data || image.depthMask()(r,c);
+            if (d < 1e-5 || !mask_ok)
+                continue;
+
+            if (!image.isValidNormal(r,c))
+                continue;
+
+            cv::Point3f p = pose.unprojectFromImage(cv::Point2f(c,r), d);
+            cv::Vec3f normal = image.normal()(r,c);
+            cv::Vec3f n = rotation_pose.invCameraTransform(normal);
+            PointT pcl_p;
+            pcl_p.x = p.x;
+            pcl_p.y = p.y;
+            pcl_p.z = p.z;
+            pcl_p.normal_x = n[0];
+            pcl_p.normal_y = n[1];
+            pcl_p.normal_z = n[2];
+
+            if (keep_dense)
+                cloud.points[r*cloud.width+c] = pcl_p;
+            else
+                cloud.push_back(pcl_p);
         }
 }
 
@@ -100,6 +166,20 @@ void pointCloudToMesh(ntk::Mesh& mesh,
     foreach_idx(i, cloud.points)
     {
         mesh.vertices[i] = cv::Point3f(cloud.points[i].x, cloud.points[i].y, cloud.points[i].z);
+    }
+}
+
+template <>
+void pointCloudToMesh(ntk::Mesh& mesh,
+                      const pcl::PointCloud<pcl::PointNormal>& cloud)
+{
+    mesh.clear();
+    mesh.vertices.resize(cloud.size());
+    mesh.normals.resize(cloud.size());
+    foreach_idx(i, cloud.points)
+    {
+        mesh.vertices[i] = cv::Point3f(cloud.points[i].x, cloud.points[i].y, cloud.points[i].z);
+        mesh.normals[i] = cv::Point3f(cloud.points[i].normal_x, cloud.points[i].normal_y, cloud.points[i].normal_z);
     }
 }
 

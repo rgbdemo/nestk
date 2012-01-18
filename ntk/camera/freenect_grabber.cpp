@@ -26,6 +26,17 @@ extern "C" {
 #include <ntk/camera/rgbd_processor.h>
 #include <ntk/camera/rgbd_image.h>
 
+// FIXME: Factor this out.
+#ifdef _WIN32
+#   define NOMINMAX
+#   define VC_EXTRALEAN
+#   define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+#   undef WIN32_LEAN_AND_MEAN
+#   undef VC_EXTRALEAN
+#   undef NOMINMAX
+#endif
+
 using namespace cv;
 
 namespace ntk

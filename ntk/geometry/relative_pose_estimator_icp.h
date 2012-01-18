@@ -20,10 +20,10 @@
 #ifndef NTK_GEOMETRY_RELATIVE_POSE_ESTIMATOR_ICP_H
 #define NTK_GEOMETRY_RELATIVE_POSE_ESTIMATOR_ICP_H
 
+#ifndef NESTK_USE_PCL
+# define NESTK_USE_PCL 1 // for QTcreator.
+#endif
 #include "relative_pose_estimator.h"
-
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
 
 namespace ntk
 {
@@ -37,8 +37,21 @@ namespace ntk
  * This is based on the PCL library implementation of ICP.
  * The algorithm first downsample the image using a voxel grid filter.
  */
-class RelativePoseEstimatorICP : public RelativePoseEstimator
+template <class PointT>
+class RelativePoseEstimatorICP : public RelativePoseEstimatorFromPointClouds<PointT>
 {
+private:
+    typedef RelativePoseEstimatorFromPointClouds<PointT> super;
+    using super::m_target_cloud;
+    using super::m_source_cloud;
+    using super::m_initial_pose;
+    using super::m_target_pose;
+    using super::m_estimated_pose;
+
+    typedef pcl::PointCloud<PointT> PointCloudType;
+    typedef typename PointCloudType::ConstPtr PointCloudConstPtr;
+    typedef typename PointCloudType::Ptr PointCloudPtr;
+
 public:
     RelativePoseEstimatorICP()
         : m_distance_threshold(0.05),
@@ -47,11 +60,6 @@ public:
     {}
 
 public:
-    bool hasReferenceImage() const { return m_ref_cloud.points.size() > 0; }
-
-    void setReferenceImage(const RGBDImage& ref_image);
-    void setReferenceCloud(const pcl::PointCloud<pcl::PointXYZ>& cloud);
-
     /*! Distance threshold to associate points. */
     void setDistanceThreshold(double th) { m_distance_threshold = th; }
 
@@ -62,14 +70,65 @@ public:
     void setMaxIterations(int n) { m_max_iterations = n; }
 
 public:
-    virtual bool estimateNewPose(const RGBDImage& image);
-    virtual void reset() {}
+    virtual bool estimateNewPose();
+    virtual void transformPointCloud(PointCloudType& input,
+                                     PointCloudType& output,
+                                     Eigen::Affine3f& H);
 
 protected:
-    pcl::PointCloud<pcl::PointXYZ> m_ref_cloud;
+    virtual bool preprocessClouds();
+
+    virtual bool computeRegistration(Pose3D& relative_pose,
+                                     PointCloudConstPtr source_cloud,
+                                     PointCloudConstPtr target_cloud,
+                                     PointCloudType& aligned_cloud);
+
+protected:
     double m_distance_threshold;
     double m_voxel_leaf_size;
     int m_max_iterations;
+    PointCloudPtr m_filtered_target;
+    PointCloudPtr m_filtered_source;
+};
+
+template <class PointT>
+class RelativePoseEstimatorICPWithNormals : public RelativePoseEstimatorICP<PointT>
+{
+    typedef RelativePoseEstimatorICP<PointT> super;
+    typedef pcl::PointCloud<PointT> PointCloudType;
+    typedef typename PointCloudType::ConstPtr PointCloudConstPtr;
+    typedef typename PointCloudType::Ptr PointCloudPtr;
+
+    using super::m_max_iterations;
+    using super::m_distance_threshold;
+
+protected:
+    virtual bool computeRegistration(Pose3D& relative_pose,
+                                     PointCloudConstPtr source_cloud,
+                                     PointCloudConstPtr target_cloud,
+                                     PointCloudType& aligned_cloud);
+
+    virtual void transformPointCloud(PointCloudType& input,
+                                     PointCloudType& output,
+                                     Eigen::Affine3f& H);
+};
+
+template <class PointT>
+class RelativePoseEstimatorGICP : public RelativePoseEstimatorICP<PointT>
+{
+    typedef RelativePoseEstimatorICP<PointT> super;
+    typedef pcl::PointCloud<PointT> PointCloudType;
+    typedef typename PointCloudType::ConstPtr PointCloudConstPtr;
+    typedef typename PointCloudType::Ptr PointCloudPtr;
+
+    using super::m_max_iterations;
+    using super::m_distance_threshold;
+
+protected:
+    virtual bool computeRegistration(Pose3D& relative_pose,
+                                     PointCloudConstPtr source_cloud,
+                                     PointCloudConstPtr target_cloud,
+                                     PointCloudType& aligned_cloud);
 };
 
 } // ntk

@@ -39,7 +39,7 @@ public:
 public:
   // From AsyncUpdater. Will be called whener the published
   // has a new image.
-  virtual void handleAsyncEvent() { handleNewImage(); }
+  virtual void handleAsyncEvent(ntk::EventListener::Event) { handleNewImage(); }
 
   void handleNewImage()
   {
@@ -69,7 +69,7 @@ int main(int argc, char **argv)
   grabber.connectToDevice();
 
   RGBDProcessor processor;
-  processor.setFilterFlag(RGBDProcessor::ComputeKinectDepthBaseline, true);
+  processor.setFilterFlag(RGBDProcessorFlags::ComputeKinectDepthBaseline, true);
 
   ImageHandler handler(grabber, processor);
 

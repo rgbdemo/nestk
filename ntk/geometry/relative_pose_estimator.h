@@ -24,77 +24,130 @@
 #include <ntk/camera/rgbd_image.h>
 #include <ntk/geometry/pose_3d.h>
 
+#if defined(NESTK_USE_PCL) || defined(USE_PCL)
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+#include <ntk/mesh/pcl_utils.h>
+#endif
+
 namespace ntk
 {
 
+class PoseEstimator
+{
+public:
+    //! Estimate the pose for the updated data.
+    //! \return true is pose successfully estimated, false otherwise.
+    virtual bool estimateNewPose() = 0;
+
+    const Pose3D& estimatedPose() const { return m_estimated_pose; }
+    Pose3D& estimatedPose() { return m_estimated_pose; }
+
+protected:
+    Pose3D m_estimated_pose;
+};
+
 /*!
- * Estimate the relative 3D pose between a new image and the previous ones.
+ * Estimate the 3D pose of a source image or point cloud by estimating the delta pose
+ * w.r.t. a target reference.
  */
 class RelativePoseEstimator
 {
 public:
-  //! Estimate the relative pose for a new image
-  //! \return true is pose successfully estimated, false otherwise.
-  virtual bool estimateNewPose(const RGBDImage& image) = 0;
+    //! Estimate the relative pose for the updated data.
+    //! \return true is pose successfully estimated, false otherwise.
+    virtual bool estimateNewPose() = 0;
 
-  //! Return last estimated pose.
-  const Pose3D& currentPose() const { return m_current_pose; }
-  Pose3D& currentPose() { return m_current_pose; }
+    //! Return last estimated pose.
+    const Pose3D& estimatedSourcePose() const { return m_estimated_pose; }
+    Pose3D& estimatedSourcePose() { return m_estimated_pose; }
 
-  //! Reset the relative pose estimator.
-  virtual void reset() = 0;
+    void setInitialSourcePoseEstimate(const Pose3D& pose) { m_initial_pose = pose; m_estimated_pose = pose; }
+    void setTargetPose(const Pose3D& pose) { m_target_pose = pose; }
 
 protected:
-  Pose3D m_current_pose;
+    Pose3D m_initial_pose;
+    Pose3D m_target_pose;
+    Pose3D m_estimated_pose;
 };
 
 /*!
- * Compute relative pose information using viewXXXX/relative_pose.avs file.
- * The image should have directory information (i.e. loaded from disk)
- * and have a "relative_pose.avs" file storing the pose information.
- * This file should be readableby the Pose3D::parseAvsFile() function.
+ * Compute relative pose information betwen two RGBDImages.
  */
-class RelativePoseEstimatorFromFile : public RelativePoseEstimator
+class RelativePoseEstimatorFromImages : public RelativePoseEstimator
 {
 public:
-  virtual bool estimateNewPose(const RGBDImage& image);
-  virtual void reset() {}
+    RelativePoseEstimatorFromImages()
+        : m_source_image(0),
+          m_target_image(0)
+    {}
+
+    virtual void setSourceImage(const RGBDImage& image)
+    { m_source_image = &image; }
+
+    virtual void setTargetImage(const RGBDImage& image)
+    { m_target_image = &image; m_estimated_pose.setCameraParametersFromOpencv(image.calibration()->depth_intrinsics); }
+
+protected:
+    const RGBDImage* m_source_image;
+    const RGBDImage* m_target_image;
 };
 
+#if defined(NESTK_USE_PCL) || defined(USE_PCL)
 /*!
- * Compute relative pose information by applying a constant delta pose.
- * This pose estimator takes an initial pose and a delta pose, and for
- * each new frame the current_pose gets multiplied by the delta_pose.
+ * Compute relative pose information betwen PCL point clouds.
  */
-class RelativePoseEstimatorFromDelta : public RelativePoseEstimator
+template <class PointT>
+class RelativePoseEstimatorFromPointClouds : public RelativePoseEstimatorFromImages
 {
 public:
-  RelativePoseEstimatorFromDelta(const Pose3D& initial_pose,
-                                 const Pose3D& delta_pose)
-    : m_initial_pose(initial_pose),
-      m_delta_pose(delta_pose)
-  {
-    reset();
-  }
+    typedef pcl::PointCloud<PointT> PointCloudType;
+    typedef typename PointCloudType::Ptr PointCloudPtr;
+    typedef typename PointCloudType::ConstPtr PointCloudConstPtr;
 
-  virtual bool estimateNewPose(const RGBDImage& image);
-
-  virtual void reset() { m_current_pose = m_initial_pose; }
-
-private:
-  Pose3D m_initial_pose;
-  Pose3D m_delta_pose;
-};
-
-class DummyRelativePoseEstimator : public RelativePoseEstimator
-{
 public:
-    virtual bool estimateNewPose(const RGBDImage& image)
-    { m_current_pose = *image.calibration()->depth_pose; return true; }
+    RelativePoseEstimatorFromPointClouds()
+    {}
 
-    virtual void reset() {}
+    virtual void setSourceImage(const RGBDImage& image)
+    {
+        PointCloudPtr cloud(new PointCloudType);
+        rgbdImageToPointCloud(*cloud, image);
+        m_source_cloud = cloud; // FIXME: Find out whether the removal of the (deep-copying) cloud.makeShared() call sped things up.
+    }
+
+    virtual void setTargetImage(const RGBDImage& image)
+    {
+        PointCloudPtr cloud(new PointCloudType);
+        rgbdImageToPointCloud(*cloud, image);
+        m_target_cloud = cloud; // FIXME: Find out whether the removal of the (deep-copying) cloud.makeShared() call sped things up.
+    }
+
+    virtual void setSourceCloud(PointCloudConstPtr cloud)
+    { m_source_cloud = cloud; }
+
+    virtual void setTargetCloud(PointCloudConstPtr cloud)
+    { m_target_cloud = cloud; }
+
+protected:
+    PointCloudConstPtr m_source_cloud;
+    PointCloudConstPtr m_target_cloud;
 };
+#endif
 
+double rms_optimize_ransac(Pose3D& pose3d,
+                           const std::vector<cv::Point3f>& ref_points,
+                           const std::vector<cv::Point3f>& img_points,
+                           std::vector<bool>& valid_points);
+
+double rms_optimize_3d(Pose3D& pose3d,
+                       const std::vector<cv::Point3f>& ref_points,
+                       const std::vector<cv::Point3f>& img_points);
+
+double rms_optimize_against_depth_image(Pose3D& pose3d,
+                                        const std::vector<cv::Point3f>& ref_points,
+                                        const cv::Mat1f& depth_im,
+                                        float max_distance);
 
 } // ntk
 

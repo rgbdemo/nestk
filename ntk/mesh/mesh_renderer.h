@@ -22,7 +22,20 @@
 
 #include "mesh.h"
 
+// Qt Opengl headers include windows.h on windows without preventing
+// preprocessor namespace pollution.
+// FIXME: Factor this out.
+#ifdef _WIN32
+#   define NOMINMAX
+#   define VC_EXTRALEAN
+#   define WIN32_LEAN_AND_MEAN
+#endif
 #include <QtOpenGL/QGLPixelBuffer>
+#ifdef _WIN32
+#   undef WIN32_LEAN_AND_MEAN
+#   undef VC_EXTRALEAN
+#   undef NOMINMAX
+#endif
 
 namespace ntk
 {

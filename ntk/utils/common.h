@@ -57,6 +57,7 @@ namespace ntk
   {
   public:
     struct DynamicCastTag {};
+    struct ReinterpretCastTag {};
   public:
     Ptr();
     Ptr(_Tp* _obj);
@@ -64,6 +65,7 @@ namespace ntk
     Ptr(const Ptr& ptr);
     template <class U>  Ptr(const Ptr<U>& ptr);
     template <class U>  Ptr(const Ptr<U>& ptr, DynamicCastTag);
+    template <class U>  Ptr(const Ptr<U>& ptr, ReinterpretCastTag);
     Ptr& operator = (const Ptr& ptr);
     void addref();
     void release();
@@ -146,6 +148,22 @@ namespace ntk
     }
   }
 
+  template<typename _Tp>
+  template <class _Up>
+  inline Ptr<_Tp>::Ptr(const Ptr<_Up>& ptr, ReinterpretCastTag)
+  {
+    obj = reinterpret_cast<_Tp*>(ptr.obj);
+    if (obj)
+    {
+      refcount = ptr.refcount;
+      addref();
+    }
+    else
+    {
+      refcount = 0;
+    }
+  }
+
   template<typename _Tp> inline Ptr<_Tp>& Ptr<_Tp>::operator = (const Ptr<_Tp>& ptr)
   {
       int* _refcount = ptr.refcount;
@@ -167,6 +185,10 @@ namespace ntk
   inline Ptr<_Tp> dynamic_Ptr_cast(const Ptr<_Up>& ptr)
   { return Ptr<_Tp>(ptr, typename Ptr<_Tp>::DynamicCastTag()); }
 
+  template <typename _Tp, typename _Up>
+  inline Ptr<_Tp> reinterpret_Ptr_cast(const Ptr<_Up>& ptr)
+  { return Ptr<_Tp>(ptr, typename Ptr<_Tp>::ReinterpretCastTag()); }
+
 }
 
 namespace ntk
@@ -181,16 +203,16 @@ namespace ntk
 #define stl_bounds(s) s.begin(), s.end()
 
 #define foreach_idx(Idxname, Vector) \
- for (size_t Idxname = 0; Idxname < (size_t)Vector.size(); ++Idxname)
+ for (size_t Idxname = 0; Idxname < (size_t)(Vector).size(); ++Idxname)
     
 #define foreach_uidx(Idxname, Vector) \
- for (unsigned Idxname = 0; Idxname < (unsigned)Vector.size(); ++Idxname)
+ for (unsigned Idxname = 0; Idxname < (unsigned)(Vector).size(); ++Idxname)
     
 #define foreach_it(Itname, Instance, Type) \
- for (Type::iterator Itname = Instance.begin(); Itname != Instance.end(); ++Itname)
+ for (Type::iterator Itname = (Instance).begin(); Itname != (Instance).end(); ++Itname)
 
 #define foreach_const_it(Itname, Instance, Type) \
- for (Type::const_iterator Itname = Instance.begin(); Itname != Instance.end(); ++Itname)
+ for (Type::const_iterator Itname = (Instance).begin(); Itname != (Instance).end(); ++Itname)
 
 #define cat2(a, b) a,b
 #define cat3(a, b, c) a,b,c

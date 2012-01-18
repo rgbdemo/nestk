@@ -21,10 +21,58 @@
 #define NTK_CAMERA_RGBD_PROCESSOR_H
 
 #include <ntk/core.h>
+// #include <opencv/cv.h>
 #include <ntk/camera/rgbd_image.h>
 
 namespace ntk
 {
+
+class RGBDProcessorFlags
+{
+public:
+    enum Flag {
+      NoProcessing = 0x0,
+      FixGeometry = 0x1, // transform euclidian distance to depth (z component)
+      UndistortImages = 0x2, // apply undistort
+      FixBias = 0x4, // fix depth bias using polynomials
+      FilterAmplitude = 0x8, // remove low amplitude pixels
+      FilterNormals = 0x10, // remove normals not aligned enough with line of sight
+      FilterUnstable = 0x20, // remove depth values changing too much between consecutive frames
+      FilterEdges = 0x40, // remove pixels with high depth spatial derivative
+      FilterThresholdDepth = 0x80, // set a depth range
+      FilterMedian = 0x100,
+      ComputeMapping = 0x200, // compute mappings between rgb and depth
+      ComputeNormals = 0x400, // compute normals (required by FilterNormals)
+      ComputeKinectDepthTanh = 0x800, // compute depth in meters from kinect values
+      ComputeKinectDepthLinear = 0x1000, // compute depth in meters from kinect values
+      ComputeKinectDepthBaseline = 0x2000, // compute depth in meters from kinect values
+      NoAmplitudeIntensityUndistort = 0x4000, // apply undistort
+      Pause = 0x8000, // disable temporary the processing
+      RemoveSmallStructures = 0x10000,
+      FillSmallHoles = 0x20000,
+      FlipColorImage = 0x40000, // horizontally flip the color image
+      NiteProcessed = 0x80000, // raw = mapped = postprocessed
+      FilterBilateral = 0x100000
+    };
+
+    RGBDProcessorFlags(int flags) { m_flags = flags; }
+
+    /*! Accessors to the flag values */
+    bool hasFilterFlag(Flag flag) const { return m_flags&flag; }
+    void setFilterFlags(int flags) { m_flags = flags; }
+    void setFilterFlag(Flag flag, bool enabled)
+    { if (enabled) m_flags |= flag; else m_flags &= ~flag; }
+
+    void addFlags(const RGBDProcessorFlags& rhs)
+    {
+        m_flags |= rhs.m_flags;
+    }
+
+    operator int() { return m_flags; }
+
+private:
+    int m_flags;
+};
 
 /*!
  * Process raw RGB-D images to generate postprocessed members.
@@ -34,39 +82,18 @@ namespace ntk
 class RGBDProcessor
 {
 public:
-  enum ProcessorFlag {
-    NoProcessing = 0x0,
-    FixGeometry = 0x1, // transform euclidian distance to depth (z component)
-    UndistortImages = 0x2, // apply undistort
-    FixBias = 0x4, // fix depth bias using polynomials
-    FilterAmplitude = 0x8, // remove low amplitude pixels
-    FilterNormals = 0x10, // remove normals not aligned enough with line of sight
-    FilterUnstable = 0x20, // remove depth values changing too much between consecutive frames
-    FilterEdges = 0x40, // remove pixels with high depth spatial derivative
-    FilterThresholdDepth = 0x80, // set a depth range
-    FilterMedian = 0x100,
-    ComputeMapping = 0x200, // compute mappings between rgb and depth
-    ComputeNormals = 0x400, // compute normals (required by FilterNormals)
-    ComputeKinectDepthTanh = 0x800, // compute depth in meters from kinect values
-    ComputeKinectDepthLinear = 0x1000, // compute depth in meters from kinect values
-    ComputeKinectDepthBaseline = 0x2000, // compute depth in meters from kinect values
-    NoAmplitudeIntensityUndistort = 0x4000, // apply undistort
-    Pause = 0x8000, // disable temporary the processing
-    RemoveSmallStructures = 0x10000,
-    FillSmallHoles = 0x20000,
-    FlipColorImage = 0x40000, // horizontally flip the color image
-    NiteProcessed = 0x80000, // raw = mapped = postprocessed
-  };
+
 
 public:
   RGBDProcessor();
 
 public:
   /*! Accessors to the flag values */
-  bool hasFilterFlag(ProcessorFlag flag) const { return m_flags&flag; }
-  void setFilterFlags(int flags) { m_flags = flags; }
-  void setFilterFlag(ProcessorFlag flag, bool enabled)
-  { if (enabled) m_flags |= flag; else m_flags &= ~flag; }
+  bool hasFilterFlag(RGBDProcessorFlags::Flag flag) const { return m_flags.hasFilterFlag(flag); }
+  void setFilterFlags(int flags) { m_flags.setFilterFlags(flags); }
+  void setFilterFlag(RGBDProcessorFlags::Flag flag, bool enabled) { m_flags.setFilterFlag(flag, enabled); }
+  void setFilterFlags(const RGBDProcessorFlags& flags) { m_flags = flags; }
+  RGBDProcessorFlags getFilterFlags() const { return m_flags; }
 
   /*! Set the depth range. */
   void setMinDepth(float meters) { m_min_depth = meters; }
@@ -105,6 +132,12 @@ public:
   /*! Compute normals using PCL integral images. This function is reentrant. */
   virtual void computeNormalsPCL(RGBDImage& image);
 
+  /*! Compute normals using PCL local plane estimation with PCA. */
+  virtual void computeHighQualityNormalsPCL(RGBDImage& image);
+
+  /*! Filter the depth image using a tuned bilateral filter. */
+  virtual void bilateralFilter(RGBDImage& image);
+
 protected:
   virtual void undistortImages();
   virtual void fixDepthGeometry();
@@ -125,7 +158,7 @@ protected:
 
 protected:
   RGBDImage* m_image;
-  int m_flags;
+  RGBDProcessorFlags m_flags;
   cv::Mat1f m_last_depth_image;
   float m_min_depth;
   float m_max_depth;
@@ -136,6 +169,7 @@ protected:
   float m_min_amplitude;
   float m_max_amplitude;
 };
+ntk_ptr_typedefs(RGBDProcessor)
 
 /*! RGBDProcessor with default parameters for libfreenect Kinect driver. */
 class FreenectRGBDProcessor : public RGBDProcessor
@@ -144,8 +178,8 @@ public:
   FreenectRGBDProcessor()
     : RGBDProcessor()
   {
-    setFilterFlag(RGBDProcessor::ComputeKinectDepthBaseline, true);
-    setFilterFlag(RGBDProcessor::NoAmplitudeIntensityUndistort, true);
+    setFilterFlag(RGBDProcessorFlags::ComputeKinectDepthBaseline, true);
+    setFilterFlag(RGBDProcessorFlags::NoAmplitudeIntensityUndistort, true);
   }
 };
 
@@ -160,7 +194,7 @@ public:
     : RGBDProcessor()
   {
     // Everything is done by the grabber.
-    setFilterFlags(RGBDProcessor::NiteProcessed | RGBDProcessor::ComputeMapping);
+    setFilterFlags(RGBDProcessorFlags::NiteProcessed | RGBDProcessorFlags::ComputeMapping);
   }
 
 protected:

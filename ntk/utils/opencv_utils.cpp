@@ -56,6 +56,17 @@ const NtkDebug& operator<<(const NtkDebug& stream, const cv::Mat1f& m)
 namespace ntk
 {
 
+cv::Point3f computeCentroid(const std::vector<cv::Point3f>& points)
+{
+    cv::Point3f centroid (0,0,0);
+    foreach_idx(i, points)
+    {
+        centroid = centroid + points[i];
+    }
+    centroid = centroid * (1.f/points.size());
+    return centroid;
+}
+
   cv::Mat4b toMat4b(const cv::Mat3b& im)
   {
     Mat4b out (im.size());

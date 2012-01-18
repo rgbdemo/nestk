@@ -265,7 +265,7 @@ void calibrationCorners(const std::string& image_name,
   }
   cv::Mat draw_image = scaled_image;
 
-  if (ok)
+  if (ok && !image_name.empty())
   {
     cv::Mat gray_image;
     cvtColor(image, gray_image, CV_BGR2GRAY);
@@ -282,14 +282,20 @@ void calibrationCorners(const std::string& image_name,
     drawChessboardCorners(draw_image, pattern_size, corner_matrix, ok);
     ntk_dbg_print(image_name, 1);
     imwrite(image_name + ".corners.png", draw_image);
-    imshow(window_name, draw_image);
-    waitKey(10);
-
-    for (int i = 0; i < corners.size(); ++i)
+    if (!window_name.empty())
     {
-      corners[i].x /= scale_factor;
-      corners[i].y /= scale_factor;
+        imshow(window_name, draw_image);
+        waitKey(10);
     }
+  }
+
+  if (ok)
+  {
+      for (int i = 0; i < corners.size(); ++i)
+      {
+          corners[i].x /= scale_factor;
+          corners[i].y /= scale_factor;
+      }
   }
 
   if (!ok)

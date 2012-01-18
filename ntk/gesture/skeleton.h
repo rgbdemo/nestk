@@ -22,11 +22,38 @@
 
 #include <ntk/core.h>
 
+// OpenNI headers include windows.h on windows without preventing
+// preprocessor namespace pollution.
+// FIXME: Factor this out.
+#ifdef _WIN32
+#   define NOMINMAX
+#   define VC_EXTRALEAN
+#endif
 #include <XnOpenNI.h>
+#ifdef _WIN32
+#   undef VC_EXTRALEAN
+#   undef NOMINMAX
+#endif
+
 #include <XnCodecIDs.h>
 #include <XnCppWrapper.h>
 #include <XnVSessionManager.h>
 #include <XnVPushDetector.h>
+
+// Under certain odd circumstances, qhull/io.h can be incorrectly included
+// by XnPlatformWin32.h, dragging True and False as preprocessor macros,
+// breaking in turn flann headers.
+// See also: ntk/camera/openni_grabber.h
+// FIXME: Ensure that such a broken build system is never generated and remove
+// this kludge.
+#ifdef _WIN32
+#   ifdef True
+#       undef True
+#   endif
+#   ifdef False
+#       undef False
+#   endif
+#endif
 
 namespace ntk
 {

@@ -782,10 +782,23 @@ void Pose3D :: fromGLToRos()
     applyTransformAfter(Vec3f(0,0,0), Vec3f(M_PI/2.0, 0, -M_PI/2.0));
 }
 
+float Pose3D :: determinant() const
+{
+    return impl->camera_transform.matrix().determinant();
+}
+
 void Pose3D :: invert()
 {
+    ntk_assert(impl->camera_transform.matrix().determinant() > 1e-3, "Matrix is not invertible!");
     impl->camera_transform = impl->camera_transform.inverse();
     impl->computeProjectiveTransform();
+}
+
+Pose3D Pose3D :: inverted() const
+{
+    Pose3D p = *this;
+    p.invert();
+    return p;
 }
 
 cv::Point3f Pose3D :: projectToImage(const cv::Point3f& p) const
@@ -890,14 +903,24 @@ cv::Point3f Pose3D :: unprojectFromImage(const cv::Point2f& p, double depth) con
 
 void Pose3D :: applyTransformBefore(const Pose3D& rhs_pose)
 {
-    impl->camera_transform = impl->camera_transform * rhs_pose.impl->camera_transform;
-    impl->computeProjectiveTransform();
+    // impl->camera_transform = impl->camera_transform * rhs_pose.impl->camera_transform;
+    // impl->computeProjectiveTransform();
+
+    // First extracting translation and rotation components to avoid the cumulation
+    // of numerical errors, eventually leading to invalid transformation matrices,
+    // e.g. with < 1 determinant.
+    applyTransformBefore(rhs_pose.cvTranslation(), rhs_pose.cvEulerRotation());
 }
 
 void Pose3D :: applyTransformAfter(const Pose3D& rhs_pose)
 {
-    impl->camera_transform = rhs_pose.impl->camera_transform * impl->camera_transform;
-    impl->computeProjectiveTransform();
+    // impl->camera_transform = rhs_pose.impl->camera_transform * impl->camera_transform;
+    // impl->computeProjectiveTransform();
+
+    // First extracting translation and rotation components to avoid the cumulation
+    // of numerical errors, eventually leading to invalid transformation matrices,
+    // e.g. with < 1 determinant.
+    applyTransformAfter(rhs_pose.cvTranslation(), rhs_pose.cvEulerRotation());
 }
 
 void Pose3D :: applyTransformAfter(const cv::Vec3f& translation, const cv::Mat1d& rotation_matrix)
@@ -974,9 +997,11 @@ cv::Vec3f compute_axis_angle_rotation(const cv::Vec3f& src, const cv::Vec3f& dst
     cv::Vec3f norm_dst = dst;
     normalize(norm_dst);
 
+    float sign = norm_src.dot(norm_dst) < 0 ? 1 : -1;
+
     cv::Vec3f w = norm_src.cross(norm_dst);
     float norm_w = norm(w);
-    float magn = asin(norm_w);
+    float magn = asin(norm_w) * sign;
     // FIXME: *= is broken on OpenCV 2.2
     w = w * (magn / norm_w);
     return w;

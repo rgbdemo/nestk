@@ -43,7 +43,9 @@ public:
       m_last_frame_tick(0),
       m_framerate(0),
       m_frame_count(0),
-      m_connected(false)
+      m_connected(false),
+      m_camera_serial("unknown"),
+      m_initial_timestamp(0)
   {
     setSynchronous(false);
   }
@@ -68,6 +70,10 @@ public:
   /*! Set an additional distance offset which will be added to all distance values for Time-of-Flight cameras. */
   virtual float offset() const { return 0.0; }
   virtual void setOffset(int indexFreq) {}
+
+  /*! Set the camera serial associated to this device. */
+  virtual void setCameraSerial(const std::string& serial) { m_camera_serial = serial; }
+  const std::string& cameraSerial() const { return m_camera_serial; }
 
   /*! Set the tilt angle for motorized grabbers such as Kinect. */
   virtual void setTiltAngle(int angle) {}
@@ -140,6 +146,7 @@ public:
 
 protected:
   void advertiseNewFrame();
+  float getCurrentTimestamp();
 
 protected:
   mutable RecursiveQReadWriteLock m_lock;
@@ -152,6 +159,8 @@ protected:
   double m_framerate;
   int m_frame_count;
   bool m_connected;
+  std::string m_camera_serial;
+  uint64 m_initial_timestamp;
 };
 
 } // ntk

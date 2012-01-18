@@ -197,8 +197,8 @@ namespace ntk
 #ifdef NESTK_USE_PCL
 void PclPlaneEstimator :: estimate(const ntk::RGBDImage& image, cv::Mat1b& plane_points, const Pose3D& pose)
 {
-  PointCloud<PointXYZIndex> cloud;
-  rgbdImageToPointCloud(cloud, image, pose);
+  PointCloud<PointXYZIndex>::Ptr cloud(new PointCloud<PointXYZIndex>);
+  rgbdImageToPointCloud(*cloud, image, pose);
 
   pcl::ModelCoefficients coefficients;
   pcl::PointIndices inliers;
@@ -211,7 +211,7 @@ void PclPlaneEstimator :: estimate(const ntk::RGBDImage& image, cv::Mat1b& plane
   seg.setMethodType (pcl::SAC_RANSAC);
   seg.setDistanceThreshold (0.01);
 
-  pcl::PointCloud<PointXYZIndex>::Ptr cloudptr = cloud.makeShared();
+  pcl::PointCloud<PointXYZIndex>::Ptr cloudptr = cloud; // FIXME: Find out whether the removal of the (deep-copying) cloud.makeShared() call sped things up.
   seg.setInputCloud (cloudptr);
   seg.segment (inliers, coefficients);
 
@@ -222,7 +222,7 @@ void PclPlaneEstimator :: estimate(const ntk::RGBDImage& image, cv::Mat1b& plane
 
   foreach_idx(i, inliers.indices)
   {
-    PointXYZIndex p = cloud.points[inliers.indices[i]];
+    PointXYZIndex p = cloud->points[inliers.indices[i]];
     int r = p.rgba / image.depth().cols;
     int c = p.rgba % image.depth().cols;
     plane_points(r,c) = 255;

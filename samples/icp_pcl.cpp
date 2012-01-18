@@ -94,31 +94,39 @@ int main(int argc, char **argv)
     imshow_normalized("rotated_depth", transformed_image.depth());
     cv::waitKey(0);
 
+    Pose3D target_pose = *ref_image.calibration()->depth_pose;
+    // Artificially apply some changes.
+    // target_pose.applyTransformBefore(cv::Vec3f(0,0,0), cv::Vec3f(0,0,M_PI/2.0));
+    target_pose.applyTransformBefore(cv::Vec3f(0,1.0,0), cv::Vec3f(M_PI*4.0,0,M_PI/2.0));
+
     // Check if ICP can find the applied transformation.
-    RelativePoseEstimatorICP estimator;
+    RelativePoseEstimatorICP<pcl::PointXYZ> estimator;
     estimator.setDistanceThreshold(0.5); // points are associated if distance is < 50cm
     estimator.setVoxelSize(0.01); // points are clustered into 1cm cells.
     estimator.setMaxIterations(100); // no more than 100 ICP iterations
-    estimator.setReferenceImage(ref_image);
-    estimator.estimateNewPose(transformed_image);
+    estimator.setTargetImage(ref_image);
+    estimator.setTargetPose(target_pose);
+    estimator.setInitialSourcePoseEstimate(target_pose);
+    estimator.setSourceImage(transformed_image);
+    estimator.estimateNewPose();
 
-    // Should be almost 0
-    ntk_dbg_print(estimator.currentPose().cvTranslation(), 1);
+    // Should be almost -0.0765679 0.996878 0.000200177
+    ntk_dbg_print(estimator.estimatedSourcePose().cvTranslation(), 1);
 
-    // Should be around 5 degrees around the z axis.
-    ntk_dbg_print(estimator.currentPose().cvEulerRotation()*float(180/ntk::math::pi), 1);
+    // Should be around -0.0329548 0.00738798 94.9662
+    ntk_dbg_print(estimator.estimatedSourcePose().cvEulerRotation()*float(180/ntk::math::pi), 1);
 
     // Save the processed images as point clouds.
     MeshGenerator generator;
     generator.setUseColor(true);
     generator.setMeshType(MeshGenerator::PointCloudMesh);
 
-    generator.generate(ref_image);
+    generator.generate(ref_image, target_pose, target_pose);
     generator.mesh().saveToPlyFile("ref.ply");
 
-    generator.generate(transformed_image);
+    generator.generate(transformed_image, target_pose, target_pose);
     generator.mesh().saveToPlyFile("transformed.ply");
 
-    generator.generate(transformed_image, estimator.currentPose(), estimator.currentPose());
+    generator.generate(transformed_image, estimator.estimatedSourcePose(), estimator.estimatedSourcePose());
     generator.mesh().saveToPlyFile("transformed_corrected.ply");
 }

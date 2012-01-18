@@ -99,23 +99,23 @@ void TableObjectDetector<PointType> :: initialize()
 }
 
 template <class PointType>
-bool TableObjectDetector<PointType> :: detect(pcl::PointCloud<Point>& cloud)
+bool TableObjectDetector<PointType> :: detect(PointCloudConstPtr cloud)
 {
     ntk::TimeCount tc("TableObjectDetector::detect", 1);
     m_object_clusters.clear();
     initialize();
 
-    ntk_dbg(1) << cv::format("PointCloud with %d data points.\n", cloud.width * cloud.height);
+    ntk_dbg(1) << cv::format("PointCloud with %d data points.\n", cloud->width * cloud->height);
 
     // ---[ Convert the dataset
-    cloud_ = cloud.makeShared();
+    cloud_ = cloud; // FIXME: Find out whether the removal of the (deep-copying) cloud.makeShared() call sped things up.
 
     // ---[ Create the voxel grid
     pcl::PointCloud<Point> cloud_filtered;
     pass_.setInputCloud (cloud_);
     pass_.filter (cloud_filtered);
     cloud_filtered_.reset (new pcl::PointCloud<Point> (cloud_filtered));
-    ntk_dbg(1) << cv::format("Number of points left after filtering (%f -> %f): %d out of %d.\n", min_z_bounds_, max_z_bounds_, (int)cloud_filtered.points.size (), (int)cloud.points.size ());
+    ntk_dbg(1) << cv::format("Number of points left after filtering (%f -> %f): %d out of %d.\n", min_z_bounds_, max_z_bounds_, (int)cloud_filtered.points.size (), (int)cloud->points.size ());
 
     pcl::PointCloud<Point> cloud_downsampled;
     grid_.setInputCloud (cloud_filtered_);

@@ -7,6 +7,19 @@ SET ( ntk_sources
 
      core.h
      ntk.h
+     aruco/aruco.h
+     aruco/board.cpp
+     aruco/boarddetector.cpp
+     aruco/boarddetector.h
+     aruco/board.h
+     aruco/cameraparameters.cpp
+     aruco/cameraparameters.h
+     aruco/cvdrawingutils.cpp
+     aruco/cvdrawingutils.h
+     aruco/marker.cpp
+     aruco/markerdetector.cpp
+     aruco/markerdetector.h
+     aruco/marker.h
      camera/calibration.h
      camera/calibration.cpp
      camera/file_grabber.h
@@ -28,6 +41,10 @@ SET ( ntk_sources
      geometry/affine_transform.h
      geometry/affine_transform.cpp
      geometry/eigen_utils.h
+     geometry/incremental_pose_estimator.h
+     geometry/incremental_pose_estimator.cpp
+     geometry/incremental_pose_estimator_from_rgb_features.h
+     geometry/incremental_pose_estimator_from_rgb_features.cpp
      geometry/plane.h
      geometry/plane.cpp
      geometry/polygon.h
@@ -44,6 +61,8 @@ SET ( ntk_sources
      gui/image_widget.cpp
      gui/screen_grabber.h
      gui/screen_grabber.cpp
+     image/bilateral_filter.h
+     image/bilateral_filter.cpp
      image/color_model.h
      image/color_model.cpp
      image/feature.h

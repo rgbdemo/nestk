@@ -115,8 +115,8 @@ bool TableObjectRGBDModeler :: addNewView(const RGBDImage& image, Pose3D& depth_
     {
         detector = new TableObjectDetector<PointXYZ>();
         detector->setObjectVoxelSize(m_resolution);
-        PointCloud<PointXYZ> cloud;
-        rgbdImageToPointCloud(cloud, image, depth_pose);
+        PointCloud<PointXYZ>::Ptr cloud(new PointCloud<PointXYZ>);
+        rgbdImageToPointCloud(*cloud, image, depth_pose);
         bool ok = detector->detect(cloud);
         if (!ok)
         {

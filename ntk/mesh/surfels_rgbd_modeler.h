@@ -41,7 +41,7 @@ public:
     virtual int numPoints() const { return m_surfels.size(); }
 
 public:
-    virtual bool addNewView(const RGBDImage& image, Pose3D& relative_pose);
+    virtual bool addNewView(const RGBDImage& image, Pose3D& depth_pose);
     virtual void computeMesh();
 
     virtual void reset() { RGBDModeler::reset(); m_surfels.clear(); }    
@@ -77,6 +77,9 @@ protected:
     cv::Point3f cellToWorld(const Cell& c)
     { return cv::Point3f(c.x*m_resolution, c.y*m_resolution, c.z*m_resolution); }
 
+    /*! Return the compatibility threshold in function of the depth value. */
+    float getCompatibilityDistance(float depth) const;
+
 protected:
     bool mergeToLeftSurfel(Surfel& dest, const Surfel& src);
     float computeSurfelRadius(float depth, float camera_z, double mean_focal);
@@ -90,6 +93,7 @@ protected:
 
     friend class LocalPlaneSegmentor;
 };
+ntk_ptr_typedefs(SurfelsRGBDModeler)
 
 class ICPSurfelsRGBDModeler : public SurfelsRGBDModeler
 {
