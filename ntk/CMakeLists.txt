@@ -151,6 +151,57 @@ SET ( ntk_sources
      utils/xml_serializable.cpp
 )
 
+IF (NESTK_BUILD_OBJECT_DETECTION)
+  SET ( ntk_sources ${ntk_sources}
+     detection/object/feature.cpp
+     detection/object/feature.h
+     detection/object/feature_indexer.cpp
+     detection/object/feature_indexer.h
+     detection/object/feature_indexer_kdt.cpp
+     detection/object/feature_indexer_kdt.h
+     detection/object/located_feature.cpp
+     detection/object/located_feature.h
+     detection/object/object_database.cpp
+     detection/object/object_database.h
+     detection/object/object_detector.cpp
+     detection/object/object_detector.h
+     detection/object/object_finder.cpp
+     detection/object/object_finder.h
+     detection/object/object_match.cpp
+     detection/object/object_match.h
+     detection/object/object_pose.cpp
+     detection/object/object_pose.h
+     detection/object/object_tracker.cpp
+     detection/object/object_tracker.h
+     detection/object/pose_2d.cpp
+     detection/object/pose_2d.h
+     detection/object/sift_hough.cpp
+     detection/object/sift_hough.h
+     detection/object/sift_object_detector.cpp
+     detection/object/sift_object_detector.h
+     detection/object/sift_object_detector_lowe.cpp
+     detection/object/sift_object_detector_lowe.h
+     detection/object/sift_object_match.cpp
+     detection/object/sift_object_match.h
+     detection/object/sift_object_match_lowe.cpp
+     detection/object/sift_object_match_lowe.h
+     detection/object/sift_object_pose_estimator.cpp
+     detection/object/sift_object_pose_estimator.h
+     detection/object/sift_parameters.cpp
+     detection/object/sift_parameters.h
+     detection/object/sift_point_match.cpp
+     detection/object/sift_point_match.h
+     detection/object/task_pool.cpp
+     detection/object/task_pool.h
+     detection/object/vfh_object_detector.cpp
+     detection/object/vfh_object_detector.h
+     detection/object/visual_object.cpp
+     detection/object/visual_object.h
+     detection/object/visual_object_view.cpp
+     detection/object/visual_object_view.h
+  )
+ENDIF()
+
 QT4_WRAP_CPP(moc_sources
   gui/image_widget.h
   mesh/mesh_viewer.h

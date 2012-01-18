@@ -51,7 +51,7 @@ OPTION(NESTK_USE_EMBEDDED_EIGEN "Use embedded eigen" 1)
 OPTION(NESTK_USE_EMBEDDED_GLEW "Use embedded glew." 1)
 OPTION(NESTK_USE_EMBEDDED_PMDSDK "Use embedded pmdsdk." 1)
 
-OPTION(NESTK_BUILD_ADS "Build Anytime Detection System" ${NESTK_BUILD_ADS})
+OPTION(NESTK_BUILD_OBJECT_DETECTION "Build Anytime Detection System" ${NESTK_BUILD_OBJECT_DETECTION})
 
 ################################################################################
 ### Process embedded dependencies
