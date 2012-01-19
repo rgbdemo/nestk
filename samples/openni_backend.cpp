@@ -46,7 +46,7 @@ int main(int argc, char **argv)
 
     // Set current directory to application directory.
     // This is to find Nite config in config/ directory.
-    QApplication app (argc, argv);
+    QCoreApplication app (argc, argv);
     QDir::setCurrent(QApplication::applicationDirPath());
 
     // Declare the global OpenNI driver. Only one can be instantiated in a program.
