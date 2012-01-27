@@ -244,6 +244,8 @@ IF(NESTK_USE_PCL)
          detection/table_object_detector.hpp
      	 geometry/relative_pose_estimator_icp.h
      	 geometry/relative_pose_estimator_icp.cpp
+         geometry/relative_pose_estimator_tabletop.h
+         geometry/relative_pose_estimator_tabletop.cpp
          mesh/table_object_rgbd_modeler.h
          mesh/table_object_rgbd_modeler.cpp
          mesh/pcl_utils.h

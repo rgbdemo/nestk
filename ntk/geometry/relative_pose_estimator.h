@@ -54,6 +54,8 @@ protected:
 class RelativePoseEstimator
 {
 public:
+    virtual ~RelativePoseEstimator() {}
+
     //! Estimate the relative pose for the updated data.
     //! \return true is pose successfully estimated, false otherwise.
     virtual bool estimateNewPose() = 0;
