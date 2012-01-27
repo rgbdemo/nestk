@@ -44,7 +44,9 @@ namespace ntk
         m_save_rgb_pose(false),
         m_save_pcl_point_cloud(false),
         m_save_intensity(true),
-        m_use_compressed_format(true)
+        m_use_compressed_format(true),
+        m_include_serial(true),
+        m_include_timestamp(true)
   {
     setDirectory(directory);
   }
@@ -69,11 +71,13 @@ namespace ntk
 
   std::string RGBDFrameRecorder :: getNextFrameDirectory(const RGBDImage& image) const
   {
-    return format("%s/%s/view%04d-%f",
-                  m_dir.absolutePath().toStdString().c_str(),
-                  image.cameraSerial().c_str(),
-                  m_frame_index,
-                  image.timestamp());
+      std::string path = m_dir.absolutePath().toStdString();
+      if (m_include_serial)
+          path += "/" + image.cameraSerial();
+      path += format("/view%04d", m_frame_index);
+      if (m_include_timestamp)
+          path += format("-%f", image.timestamp());
+      return path;
   }
 
   void RGBDFrameRecorder :: saveCurrentFrames(const std::vector<RGBDImage>& images)

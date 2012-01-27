@@ -79,6 +79,12 @@ public:
   /*! Whether images should be saved in a compressed format. */
   void setUseCompressedFormat(bool use_compressed) { m_use_compressed_format = use_compressed; }
 
+  /*! Whether images should be saved in a subdirectory with the name of the camera serial. */
+  void setIncludeSerial(bool use_it) { m_include_serial = use_it; }
+
+  /*! Whether the timestamp should be included as a suffix. */
+  void setIncludeTimestamp(bool use_it) { m_include_timestamp = use_it; }
+
 private:
   void writeFrame(const RGBDImage& image, const std::string& dir);
 
@@ -91,6 +97,8 @@ private:
   bool m_save_pcl_point_cloud;
   bool m_save_intensity;
   bool m_use_compressed_format;
+  bool m_include_serial;
+  bool m_include_timestamp;
 };
 
 } // ntk
