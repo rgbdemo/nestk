@@ -420,9 +420,7 @@ double computeLowePfa(const SiftParameters& params,
     unsigned k = nb_matches;
 
 #ifdef NESTK_USE_GSL
-    double bnk = 1.0 - gsl_cdf_binomial_P(k - 1, p, n);
-    if (k == 1) // special case.
-        bnk = 1.0;
+    double bnk = 1.0 - gsl_cdf_binomial_P(k - 1, p, n);    
     // double bnk = gsl_cdf_binomial_Q(k - 1, p, n);
 #else
 // FIXME: Implement, extract, and expose something similar to:
@@ -430,8 +428,10 @@ double computeLowePfa(const SiftParameters& params,
 #ifdef __GNUC__
 #warning Compiling object detector without GSL, will give wrong results!
 #endif
-    double bnk = 1.0;
+    double bnk = exp(binomial_logicdf_hoeffding_estimate(k - 1, p, n));
 #endif
+    if (k == 1) // special case.
+        bnk = 1.0;
 
     const double pm = params.p_good_match;
     double pfa = pm / (pm + bnk);
