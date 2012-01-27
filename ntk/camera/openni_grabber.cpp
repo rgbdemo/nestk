@@ -885,20 +885,13 @@ ntk::OpenniDriver::OpenniDriver() : m_config(new Config(this))
 
     findSerialNumbers();
 
-    std::ofstream f ("trace.txt", std::fstream::app);
-
     for (size_t i = 0; i < m_device_nodes.size(); ++i)
     {
         DeviceInfo& info = m_device_nodes[i];
         if (info.serial.empty())
             info.serial = i;
         ntk_dbg(1) << cv::format("[Device %d] %s, %s, serial=%s",
-                                 i, info.vendor.c_str(), info.camera_type.c_str(), info.serial.c_str());
-
-        f << QDateTime::currentDateTime().toString().toStdString() << ": ";
-        f << cv::format("[Device %d] %s, %s, serial=%s",
-                                 i, info.vendor.c_str(), info.camera_type.c_str(), info.serial.c_str());
-        f << " (" << info.creation_info << ")" << std::endl;
+                                 i, info.vendor.c_str(), info.camera_type.c_str(), info.serial.c_str());        
     }
 
     strcpy(m_license.strVendor, "PrimeSense");

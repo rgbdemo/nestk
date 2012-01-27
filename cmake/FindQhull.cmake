@@ -12,8 +12,8 @@ set(QHULL_MAJOR_VERSION 6)
 find_path(QHULL_INCLUDE_DIR 
           NAMES libqhull.h qhull.h
           HINTS ${NESTK_ROOT_DIRS_HINTS} "${QHULL_ROOT}" "$ENV{QHULL_ROOT}"
-          PATHS "$ENV{PROGRAMFILES}/qhull 6.2.0.1373" "$ENV{PROGRAMW6432}/qhull 6.2.0.1373" 
-          PATH_SUFFIXES qhull src/libqhull libqhull include include/qhull)
+          PATHS "$ENV{PROGRAMFILES}/qhull" "$ENV{PROGRAMFILES}/qhull 6.2.0.1373" "$ENV{PROGRAMW6432}/qhull" "$ENV{PROGRAMW6432}/qhull 6.2.0.1373" 
+          PATH_SUFFIXES qhull src/libqhull libqhull include include/qhull include/libqhull)
 
 # Prefer static libraries in Windows over shared ones
 if(WIN32)
