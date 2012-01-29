@@ -45,6 +45,8 @@ SET ( ntk_sources
      geometry/incremental_pose_estimator.cpp
      geometry/incremental_pose_estimator_from_rgb_features.h
      geometry/incremental_pose_estimator_from_rgb_features.cpp
+     geometry/incremental_pose_estimator_from_markers.h
+     geometry/incremental_pose_estimator_from_markers.cpp
      geometry/plane.h
      geometry/plane.cpp
      geometry/polygon.h
@@ -55,6 +57,8 @@ SET ( ntk_sources
      geometry/relative_pose_estimator.cpp
      geometry/relative_pose_estimator_from_image.h
      geometry/relative_pose_estimator_from_image.cpp
+     geometry/relative_pose_estimator_markers.h
+     geometry/relative_pose_estimator_markers.cpp
      geometry/similarity_transform.h
      geometry/similarity_transform.cpp
      gui/image_widget.h
@@ -100,6 +104,8 @@ SET ( ntk_sources
      mesh/mesh_renderer.cpp
      mesh/mesh_viewer.h
      mesh/mesh_viewer.cpp
+     mesh/plane_remover.h
+     mesh/plane_remover.cpp
      mesh/rgbd_modeler.h
      mesh/rgbd_modeler.cpp
      mesh/surfels_rgbd_modeler.h
