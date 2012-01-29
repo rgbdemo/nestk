@@ -308,13 +308,8 @@ Vec3f estimate_normal_from_depth(const Mat1f& depth_yml,
     }
     else
     {
-        ntk_dbg(2) << "====";
-        ntk_dbg_print(dx, 2);
-        ntk_dbg_print(dy, 2);
         dx = -(*dx_img)(r,c); // negative to compensate opengl frame.
         dy = (*dy_img)(r,c);
-        ntk_dbg_print(dx, 2);
-        ntk_dbg_print(dy, 2);
         if (std::abs(dx) > depth_delta_limit)
             return infinite_point();
         if (std::abs(dy) > depth_delta_limit)

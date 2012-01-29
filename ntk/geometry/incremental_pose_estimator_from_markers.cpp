@@ -186,8 +186,8 @@ estimateNewPose()
                 int r = ntk::math::rnd(marker_pairs[i].first[k].y);
                 int c = ntk::math::rnd(marker_pairs[i].first[k].x);
                 float depth = 0;
-                if (is_yx_in_range(m_image->depth(), r, c))
-                    depth = m_image->depth()(r,c);
+                if (is_yx_in_range(m_image->mappedDepth(), r, c))
+                    depth = m_image->mappedDepth()(r,c);
 
                 cv::Point3f image_point (marker_pairs[i].first[k].x, marker_pairs[i].first[k].y, depth);
                 image_points.push_back(image_point);

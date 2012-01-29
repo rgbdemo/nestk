@@ -344,6 +344,7 @@ static void avs_rms_optimize_ransac(Pose3D& pose3d,
                 current_matches.insert(*matches_vector[*it]);
 
         double initial_error = avs_rms_optimize_3d(current_pose, current_matches);
+        initial_error /= matches.size();
         ntk_dbg_print(initial_error, 2);
         // Base solution not good enough.
         if (initial_error > initial_error_threshold)
@@ -389,6 +390,7 @@ static void avs_rms_optimize_ransac(Pose3D& pose3d,
         // current_pose = pose3d;
 
         double iteration_error = avs_rms_optimize_3d(current_pose, current_matches);
+        iteration_error /= matches.size();
         if (iteration_error > max_final_error)
             continue;
 

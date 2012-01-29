@@ -126,6 +126,7 @@ bool SurfelsRGBDModeler :: addNewView(const RGBDImage& image_, Pose3D& depth_pos
             continue;
 
         float normal_angle = acos(world_normal.dot(surfel.normal));
+        // Surfels have different normals, maybe two different faces of the same object.
         if (normal_angle > (m_update_max_normal_angle*M_PI/180.0))
         {
             // Removal check. If a surfel has a different normal and is closer to the camera
@@ -135,8 +136,6 @@ bool SurfelsRGBDModeler :: addNewView(const RGBDImage& image_, Pose3D& depth_pos
                 m_surfels.erase(surfel_it);
                 surfel_deleted = true;
             }
-            else
-                covered_pixels(r,c) = 1;
             continue;
         }
 
