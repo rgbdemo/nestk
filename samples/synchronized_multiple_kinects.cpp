@@ -25,11 +25,23 @@
 #include <ntk/camera/rgbd_processor.h>
 #include <ntk/utils/opencv_utils.h>
 
+#include <QMessageBox>
+#include <QApplication>
+
 using namespace ntk;
 
-int main()
+int main(int argc, char** argv)
 {    
+	QApplication app(argc, argv);
+
     OpenniDriver ni_driver;
+
+	if (ni_driver.numDevices() < 2)
+	{
+		QMessageBox::critical(0, "Error", "Less than two Kinect were detected.");
+		exit(1);
+	}
+
     OpenniGrabber grabber1(ni_driver, 0); // first id is 0
     OpenniGrabber grabber2(ni_driver, 1);
 

@@ -29,4 +29,4 @@
 template class ntk::RelativePoseEstimatorICP<pcl::PointXYZ>;
 template class ntk::RelativePoseEstimatorICP<pcl::PointNormal>;
 template class ntk::RelativePoseEstimatorICPWithNormals<pcl::PointNormal>;
-template class ntk::RelativePoseEstimatorGICP<pcl::PointNormal>;
+// template class ntk::RelativePoseEstimatorGICP<pcl::PointNormal>;

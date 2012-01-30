@@ -25,7 +25,7 @@
 #include <ntk/mesh/pcl_utils.h>
 
 #include <pcl/registration/icp.h>
-#include <pcl/registration/gicp.h>
+//#include <pcl/registration/gicp.h>
 #include <pcl/registration/icp_nl.h>
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/filters/passthrough.h>
