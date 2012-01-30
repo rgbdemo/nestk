@@ -113,6 +113,7 @@ protected:
                                      Eigen::Affine3f& H);
 };
 
+#if 0 // broken in PCL 1.4
 template <class PointT>
 class RelativePoseEstimatorGICP : public RelativePoseEstimatorICP<PointT>
 {
@@ -130,6 +131,7 @@ protected:
                                      PointCloudConstPtr target_cloud,
                                      PointCloudType& aligned_cloud);
 };
+#endif
 
 } // ntk
 

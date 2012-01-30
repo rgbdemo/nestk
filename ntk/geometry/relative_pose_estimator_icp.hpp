@@ -25,7 +25,7 @@
 #include <ntk/mesh/pcl_utils.h>
 
 #include <pcl/registration/icp.h>
-//#include <pcl/registration/gicp.h>
+// #include <pcl/registration/gicp.h>
 #include <pcl/registration/icp_nl.h>
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/filters/passthrough.h>
@@ -271,6 +271,7 @@ transformPointCloud(PointCloudType& input,
 namespace ntk
 {
 
+#if 0 // FIXME: broken in PCL 1.4
 template <class PointT>
 bool RelativePoseEstimatorGICP<PointT> ::
 computeRegistration(Pose3D& relative_pose,
@@ -313,6 +314,7 @@ computeRegistration(Pose3D& relative_pose,
     relative_pose.setCameraTransform(T);
     return true;
 }
+#endif
 
 } // ntk
 
