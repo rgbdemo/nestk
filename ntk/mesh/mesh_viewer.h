@@ -50,7 +50,7 @@ class MeshViewer : public QGLWidget
     Q_OBJECT
 
 public:
-    enum MeshViewerMode { FLAT = 1, WIREFRAME = 2 };
+    enum MeshViewerMode { FLAT = 1, WIREFRAME = 2, FLAT_WIREFRAME = 3 };
 
 public:
     MeshViewer(QWidget *parent = 0)
@@ -94,7 +94,9 @@ protected:
     virtual void initializeGL();
     void resizeGL(int w, int h);
     void paintGL();
-    void  updateDisplayCenter();
+    void paintVBO(int index);
+    void paintDisplayList(int index);
+    void updateDisplayCenter();
     bool estimatePickingPoint(cv::Point3f& p, int mouse_x, int mouse_y);
     void updateBackgroundColor();
 

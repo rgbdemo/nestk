@@ -55,6 +55,8 @@ void MeshViewer :: initializeGL()
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_LINE_SMOOTH);
     glHint (GL_LINE_SMOOTH_HINT, GL_NICEST);
+
+    glShadeModel(GL_SMOOTH);
     glEnable (GL_BLEND);
     glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     // glEnable(GL_POINT_SMOOTH);
@@ -79,31 +81,15 @@ void MeshViewer :: enableLighting()
 {
     makeCurrent();
     glEnable(GL_LIGHTING);
-    GLfloat specular[] = {1.0f, 1.0f, 1.0f , 1.0f};
-    GLfloat diffuse[] = {0.2f, 0.2f, 0.2f , 0.2f};
-    glLightfv(GL_LIGHT0, GL_SPECULAR, specular);
-    //glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
-    GLfloat position0[] = { 0.5f, 0.5f, 0.0f, 1.0f };
-    glLightfv(GL_LIGHT0, GL_POSITION, position0);
+    static GLfloat ambientColor[] = {0.1,0.1,0.1,1.0};
+    static GLfloat diffuseColor[] = {0.7,0.7,0.7,1.0};
+    static GLfloat specularColor[] = {1.0,1.0,1.0,1.0};
+
+    glLightfv(GL_LIGHT0, GL_AMBIENT, ambientColor);
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuseColor);
+    glLightfv(GL_LIGHT0, GL_SPECULAR, specularColor);
+
     glEnable(GL_LIGHT0);
-
-    glLightfv(GL_LIGHT1, GL_SPECULAR, specular);
-    //glLightfv(GL_LIGHT1, GL_DIFFUSE, diffuse);
-    GLfloat position1[] = { -0.5f, 0.5f, 0.0f, 1.0f };
-    glLightfv(GL_LIGHT1, GL_POSITION, position1);
-    glEnable(GL_LIGHT1);
-
-    glLightfv(GL_LIGHT2, GL_SPECULAR, specular);
-    //glLightfv(GL_LIGHT2, GL_DIFFUSE, diffuse);
-    GLfloat position2[] = { -0.5f, -0.5f, 0.0f, 1.0f };
-    glLightfv(GL_LIGHT2, GL_POSITION, position2);
-    glEnable(GL_LIGHT2);
-
-    glLightfv(GL_LIGHT3, GL_SPECULAR, specular);
-    //glLightfv(GL_LIGHT3, GL_DIFFUSE, diffuse);
-    GLfloat position3[] = { 0.5f, -0.5f, 0.0f, 1.0f };
-    glLightfv(GL_LIGHT3, GL_POSITION, position3);
-    glEnable(GL_LIGHT3);
 
     glEnable(GL_SMOOTH);
     glShadeModel(GL_SMOOTH);
@@ -584,6 +570,55 @@ void MeshViewer :: drawVertexBufferObject(VertexBufferObject& obj)
     }
 }
 
+void MeshViewer :: paintVBO(int index)
+{
+#if defined(NESTK_USE_GLEW) || defined(USE_GLEW)
+    enableVertexBufferObject(m_vertex_buffer_objects[index], index);
+
+    switch (m_vertex_buffer_objects[index].rendering_mode)
+    {
+    case WIREFRAME:
+        glPushAttrib(GL_POLYGON_BIT);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        drawVertexBufferObject(m_vertex_buffer_objects[index]);
+        glPopAttrib();
+        break;
+
+    case FLAT:
+        drawVertexBufferObject(m_vertex_buffer_objects[index]);
+        break;
+
+    case FLAT_WIREFRAME:
+        glPushAttrib(GL_ENABLE_BIT | GL_CURRENT_BIT | GL_LIGHTING_BIT | GL_POLYGON_BIT);
+        glEnable(GL_POLYGON_OFFSET_FILL);
+        glPolygonOffset(1.0, 1);
+        drawVertexBufferObject(m_vertex_buffer_objects[index]);
+        glDisable(GL_POLYGON_OFFSET_FILL);
+
+        glEnable(GL_COLOR_MATERIAL);
+        glColorMaterial(GL_FRONT_AND_BACK,GL_AMBIENT_AND_DIFFUSE);
+
+        glColor3f(.3f,.3f,.3f);
+        glDisable(GL_LINE_SMOOTH);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        drawVertexBufferObject(m_vertex_buffer_objects[index]);
+        glEnable(GL_LINE_SMOOTH);
+        glPopAttrib();
+        break;
+
+    default:
+        break;
+    };
+
+    disableVertexBufferObject(m_vertex_buffer_objects[index]);
+#endif
+}
+
+void MeshViewer :: paintDisplayList(int index)
+{
+    glCallList(m_display_lists[index]);
+}
+
 void MeshViewer :: paintGL()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -593,28 +628,19 @@ void MeshViewer :: paintGL()
     if (m_show_grid)
         drawGrid();
 
+    glPushMatrix();
+    glLoadIdentity();
+    // FIXME: should lights follow the camera ?
+    static float lightPosF[]={0.0,0.0,1.0,0.0};
+    glLightfv(GL_LIGHT0,GL_POSITION,lightPosF);
+    glPopMatrix();
+
 #if defined(NESTK_USE_GLEW) || defined(USE_GLEW)
     if (m_use_vertex_buffer_object)
     {
         foreach_idx(i, m_vertex_buffer_objects)
         {
-            enableVertexBufferObject(m_vertex_buffer_objects[i], i);
-
-            if (m_vertex_buffer_objects[i].rendering_mode & WIREFRAME)
-            {
-                //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-                //drawVertexBufferObject(m_vertex_buffer_objects[i]);
-
-                glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-                drawVertexBufferObject(m_vertex_buffer_objects[i]);
-            }
-            else
-            {
-                glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
-                drawVertexBufferObject(m_vertex_buffer_objects[i]);
-            }
-
-            disableVertexBufferObject(m_vertex_buffer_objects[i]);
+            paintVBO(i);
         }
     }
     else
@@ -622,7 +648,7 @@ void MeshViewer :: paintGL()
     {
         foreach_idx(i, m_display_lists)
         {
-            glCallList(m_display_lists[i]);
+            paintDisplayList(i);
         }
         glFlush();
     }
