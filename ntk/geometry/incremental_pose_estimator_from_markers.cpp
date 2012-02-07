@@ -133,14 +133,14 @@ estimateNewPose()
         cv::Mat3b tmp;
         m_image->rgb().copyTo(tmp);
         detector.detect(tmp, markers, *m_image->calibration(), m_marker_setup.marker_size);
-        ntk_dbg_print(markers.size(), 1);
+        ntk_dbg_print(markers.size(), 2);
         cv::Mat3b debug_im; tmp.copyTo(debug_im);
         for(size_t i=0; i < markers.size(); ++i)
         {
-            std::cout << markers[i] << endl;
+            // std::cout << markers[i] << endl;
             markers[i].draw(debug_im, Scalar(0,0,255), 2);
         }
-        imwrite("/tmp/debug_markers.png", debug_im);
+        // imwrite("/tmp/debug_markers.png", debug_im);
     }
     m_detected_markers = markers;
 
@@ -199,7 +199,7 @@ estimateNewPose()
         double error = rms_optimize_3d(delta_target_pose, marker_points_3d, image_points);
         error /= 3; // x, y, z
         error /= marker_pairs.size(); // normalized norm
-        ntk_dbg_print(error, 1);
+        ntk_dbg_print(error, 2);
         if (error > 5e-3) // 5mm
             return false; // probably a bad estimation.
         delta_target_pose.toLeftCamera(m_image->calibration()->depth_intrinsics, m_image->calibration()->R, m_image->calibration()->T);

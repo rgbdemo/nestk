@@ -136,7 +136,7 @@ void VisualObjectView :: buildFromModel()
     renderer.renderToImage(proj_img_4b, MeshRenderer::NORMAL);
     tc_build.elapsedMsecs(" -- renderToImage: ");
 
-#if 1 || defined(NESTK_HEAVY_DEBUG)
+#ifdef NESTK_HEAVY_DEBUG
     imwrite("/tmp/debug_projected.png", toMat3b(proj_img_4b));
 #endif
 

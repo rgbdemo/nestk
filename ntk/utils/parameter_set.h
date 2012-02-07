@@ -24,6 +24,7 @@ public:
 
     void addWatcher(ParameterSetWatcher* watcher) { watchers.insert(watcher); }
     void removeWatcher(ParameterSetWatcher* watcher) { watchers.remove(watcher); }
+    int numWatchers() const { return watchers.size(); }
 
     void setParameter(const QString& name, const QVariant& value)
     {
@@ -71,6 +72,8 @@ public:
     virtual ~ParameterSetManager()
     {
         parameter_set->removeWatcher(this);
+        if (parameter_set->numWatchers() == 0)
+            delete parameter_set;
     }
 
 public:
@@ -89,6 +92,8 @@ public:
     }
 
     virtual void onParameterUpdated(const QString& name, const QVariant& value) {}
+
+    ParameterSet* parameterSet() { return parameter_set; }
 
 protected:
     ParameterSet* parameter_set;

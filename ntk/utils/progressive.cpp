@@ -18,8 +18,9 @@
  */
 
 #include "progressive.h"
+#include "debug.h"
 
-void ntk::Progressive::progress(const char* message, float percent) const
+void ntk::ProgressiveImpl::progress(const char* message, float percent, const char* id) const
 {
-    emit progressChanged(QString(message), percent);
+    emit progressChanged(QString(message), percent, id);
 }

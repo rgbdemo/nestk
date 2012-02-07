@@ -40,7 +40,7 @@ using namespace std;
 #include "ShaderMan.h"
 
 #if  defined(_WIN64)
-	#pragma comment(lib, "../../lib/DevIL64.lib")
+	    // #pragma comment(lib, "../../lib/DevIL64.lib")
 #elif  defined(_WIN32) 
         // #pragma comment(lib, "../../lib/DevIL.lib")
 #endif

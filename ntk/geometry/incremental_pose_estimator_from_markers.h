@@ -22,7 +22,6 @@
 
 #include "incremental_pose_estimator.h"
 #include <ntk/geometry/relative_pose_estimator_markers.h>
-#include <ntk/geometry/plane.h>
 
 namespace ntk
 {

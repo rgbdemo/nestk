@@ -43,6 +43,8 @@ typedef pcl::PointXYZRGBA PointXYZIndex;
 class RGBDImage;
 class Pose3D;
 
+void removeExtrapoledTriangles(ntk::Mesh& surface, const ntk::Mesh& ground_cloud, float radius);
+
 inline pcl::PointXYZ toPcl(const cv::Point3f& p)
 { return pcl::PointXYZ(p.x, p.y, p.z); }
 

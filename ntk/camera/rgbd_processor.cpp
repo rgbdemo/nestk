@@ -282,6 +282,8 @@ namespace ntk
             if (hasFilterFlag(RGBDProcessorFlags::FilterBilateral))
                 bilateralFilter(*m_image);
 
+            tc.elapsedMsecs("bilateralFilter");
+
             if (hasFilterFlag(RGBDProcessorFlags::ComputeNormals) || hasFilterFlag(RGBDProcessorFlags::FilterNormals))
                 computeNormals();
 

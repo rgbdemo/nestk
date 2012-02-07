@@ -564,9 +564,12 @@ void MeshViewer :: drawVertexBufferObject(VertexBufferObject& obj)
     }
     else
     {
+        glPushAttrib(GL_LIGHTING_BIT);
+        glDisable(GL_LIGHTING);
         glDrawArrays(GL_POINTS,
                      0,
                      obj.nb_vertices);
+        glPopAttrib();
     }
 }
 
@@ -625,15 +628,15 @@ void MeshViewer :: paintGL()
 
     unsigned long start = ntk::Time::getMillisecondCounter();
 
-    if (m_show_grid)
-        drawGrid();
-
     glPushMatrix();
     glLoadIdentity();
     // FIXME: should lights follow the camera ?
     static float lightPosF[]={0.0,0.0,1.0,0.0};
     glLightfv(GL_LIGHT0,GL_POSITION,lightPosF);
     glPopMatrix();
+
+    if (m_show_grid)
+        drawGrid();
 
 #if defined(NESTK_USE_GLEW) || defined(USE_GLEW)
     if (m_use_vertex_buffer_object)

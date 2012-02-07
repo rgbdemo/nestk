@@ -21,6 +21,7 @@
 #include "pcl_utils.hpp"
 
 #include <pcl/ros/conversions.h>
+#include <pcl/octree/octree.h>
 
 namespace ntk
 {
@@ -119,5 +120,50 @@ Eigen::Affine3f toPclInvCameraTransform(const Pose3D& pose)
     return mat;
 }
 
+void removeExtrapoledTriangles(ntk::Mesh& surface, const ntk::Mesh& ground_cloud, float radius)
+{
+    pcl::PointCloud<pcl::PointXYZ>::Ptr pcl_cloud (new pcl::PointCloud<pcl::PointXYZ>());
+    meshToPointCloud(*pcl_cloud, ground_cloud);
+    pcl::octree::OctreePointCloudSearch<pcl::PointXYZ> octree (radius / 10.0f);
+    octree.setInputCloud (pcl_cloud);
+    octree.addPointsFromInputCloud ();
+
+    std::vector<int> lookup_table(surface.vertices.size(), -1);
+    Mesh filtered_surface;
+
+    foreach_idx(i, surface.vertices)
+    {
+        std::vector<int> pointIdxRadiusSearch;
+        std::vector<float> pointRadiusSquaredDistance;
+        int nb_neighb = octree.radiusSearch (toPcl(surface.vertices[i]), radius,
+                                             pointIdxRadiusSearch, pointRadiusSquaredDistance);
+        if (nb_neighb > 0)
+        {
+            // Ok, has a corresponding vertex in the original point cloud.
+            filtered_surface.vertices.push_back(surface.vertices[i]);
+            lookup_table[i] = filtered_surface.vertices.size()-1;
+        }
+    }
+
+    foreach_idx(i, surface.faces)
+    {
+        Face face;
+        bool ok = true;
+        for (int k = 0; k < 3; ++k)
+        {
+            int index = lookup_table[surface.faces[i].indices[k]];
+            if (index < 0)
+            {
+                ok = false;
+                break;
+            }
+            face.indices[k] = index;
+        }
+        if (ok)
+            filtered_surface.faces.push_back(face);
+    }
+
+    surface = filtered_surface;
+}
 
 } // ntk

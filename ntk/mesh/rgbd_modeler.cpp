@@ -37,8 +37,7 @@ bool RGBDModeler :: addNewView(const RGBDImage& image, Pose3D& depth_pose)
     world_to_camera_normal_pose.applyTransformBefore(Vec3f(0,0,0), depth_pose.cvEulerRotation());
     Pose3D camera_to_world_normal_pose = world_to_camera_normal_pose; camera_to_world_normal_pose.invert();
 
-    const Mat1f& depth_im = image.depth();
-
+    const Mat1f& depth_im = image.depth();    
     for_all_rc(depth_im)
     {
         if (!image.depthMask()(r,c))

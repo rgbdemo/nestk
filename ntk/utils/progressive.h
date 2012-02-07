@@ -27,15 +27,33 @@
 namespace ntk
 {
 
-class Progressive : public QObject
+class ProgressiveImpl : public QObject
 {
-    Q_OBJECT
-
+Q_OBJECT
 public:
-    virtual void progress(const char* message, float percent) const;
+    //! Send a progress message, percent and optionally give an identifier.
+    virtual void progress(const char* message, float percent, const char* id = "unknown") const;
 
 signals:
-    void progressChanged(QString, float) const;
+    void progressChanged(QString, float, QString) const;
+};
+
+/*!
+ * Objects whose progress can be followed. This class does not inherit directly
+ * from QObject to avoid multiple inheritance issues with QObject.
+ */
+class Progressive
+{
+public:
+    ProgressiveImpl* progressObject() const { return &impl; }
+
+    virtual void progress(const char* message, float percent, const char* id = "unknown") const
+    {
+        progressObject()->progress(message, percent, id);
+    }
+
+private:
+    mutable ProgressiveImpl impl;
 };
 
 }  // ntk
