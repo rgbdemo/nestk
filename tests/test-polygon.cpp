@@ -29,7 +29,6 @@
 #include <pcl/PolygonMesh.h>
 #include <pcl/ros/conversions.h>
 #include <pcl/point_types.h>
-#include <sys/time.h>
 
 using namespace ntk;
 

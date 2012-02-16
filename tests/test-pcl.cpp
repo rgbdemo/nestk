@@ -24,7 +24,6 @@
 #include <pcl/common/distances.h>
 #include <pcl/common/eigen.h>
 #include <pcl/point_types.h>
-#include <sys/time.h>
 
 using pcl::PointXYZ;
 
