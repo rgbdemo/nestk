@@ -125,7 +125,7 @@ estimateNewPose()
         Pose3D delta_target_pose = m_target_pose;
         delta_target_pose.toRightCamera(m_target_image->calibration()->rgb_intrinsics, m_target_image->calibration()->R, m_target_image->calibration()->T);
         double error = rms_optimize_3d(delta_target_pose, source_marker_points_3d, target_image_points);
-        ntk_dbg_print(error, 1);
+        ntk_dbg_print(error, 2);
         delta_target_pose.invert();
         delta_target_pose.applyTransformBefore(m_target_pose);
         delta_target_pose.toLeftCamera(m_target_image->calibration()->depth_intrinsics, m_target_image->calibration()->R, m_target_image->calibration()->T);

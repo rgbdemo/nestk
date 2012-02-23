@@ -103,12 +103,13 @@ namespace ntk
     }
 
     // FIXME: why is it so slow ?
-    void RGBDProcessor :: computeNormals()
+    void RGBDProcessor :: computeNormals(RGBDImage& image)
     {
-        ntk_ensure(m_image->calibration(), "Calibration required.");
-        const Pose3D& depth_pose = *m_image->calibration()->depth_pose;
-        const cv::Mat1f& depth_im = m_image->depth();
-        cv::Mat3f& normal_im = m_image->normalRef();
+        ntk_ensure(image.calibration(), "Calibration required.");
+        ntk::TimeCount tc("computeNormals", 2);
+        const Pose3D& depth_pose = *image.calibration()->depth_pose;
+        const cv::Mat1f& depth_im = image.depth();
+        cv::Mat3f& normal_im = image.normalRef();
         normal_im = cv::Mat3f(depth_im.size());
         normal_im = infinite_point();
 
@@ -127,6 +128,7 @@ namespace ntk
                                                      &dx, &dy);
             normal_im(r,c) = n;
         }
+        tc.stop();
     }
 
 #ifdef NESTK_USE_PCL
@@ -285,7 +287,7 @@ namespace ntk
             tc.elapsedMsecs("bilateralFilter");
 
             if (hasFilterFlag(RGBDProcessorFlags::ComputeNormals) || hasFilterFlag(RGBDProcessorFlags::FilterNormals))
-                computeNormals();
+                computeNormals(*m_image);
 
             tc.elapsedMsecs("computeNormals");
 

@@ -7,7 +7,7 @@ SET ( ntk_sources
 
      core.h
      ntk.h
-     aruco/aruco.h
+     aruco/aruco.h 
      aruco/board.cpp
      aruco/boarddetector.cpp
      aruco/boarddetector.h
@@ -36,8 +36,12 @@ SET ( ntk_sources
      camera/rgbd_image.cpp
      camera/rgbd_processor.h
      camera/rgbd_processor.cpp
-     projector/calibration.h
-     projector/calibration.cpp
+     detection/image_segmentor.h
+     detection/image_segmentor.cpp
+     detection/plane_estimator.cpp
+     detection/plane_estimator.h
+     detection/table_object_detector.h
+     detection/table_object_detector.hpp
      geometry/affine_transform.h
      geometry/affine_transform.cpp
      geometry/eigen_utils.h
@@ -45,8 +49,6 @@ SET ( ntk_sources
      geometry/incremental_pose_estimator.cpp
      geometry/incremental_pose_estimator_from_rgb_features.h
      geometry/incremental_pose_estimator_from_rgb_features.cpp
-     geometry/incremental_pose_estimator_from_markers.h
-     geometry/incremental_pose_estimator_from_markers.cpp
      geometry/plane.h
      geometry/plane.cpp
      geometry/polygon.h
@@ -55,10 +57,6 @@ SET ( ntk_sources
      geometry/pose_3d.cpp
      geometry/relative_pose_estimator.h
      geometry/relative_pose_estimator.cpp
-     geometry/relative_pose_estimator_from_image.h
-     geometry/relative_pose_estimator_from_image.cpp
-     geometry/relative_pose_estimator_markers.h
-     geometry/relative_pose_estimator_markers.cpp
      geometry/similarity_transform.h
      geometry/similarity_transform.cpp
      gui/image_widget.h
@@ -72,7 +70,7 @@ SET ( ntk_sources
      image/feature.h
      image/feature.cpp
      image/sift.h
-     image/sift.cpp
+     image/sift.cpp # WARNING: sift.cpp is also compiled internally by opencv.
      image/sift_gpu.h
      image/sift_gpu.cpp
      image/siftgpu/SiftGPU.h
@@ -121,6 +119,8 @@ SET ( ntk_sources
      numeric/differential_evolution_solver.cpp
      numeric/differential_evolution_minimizer.h
      numeric/differential_evolution_minimizer.cpp
+     projector/calibration.h
+     projector/calibration.cpp
      stats/distributions.h
      stats/distributions.cpp
      stats/estimation.cpp
@@ -146,6 +146,8 @@ SET ( ntk_sources
      utils/opencv_utils.cpp
      utils/progressive.h
      utils/progressive.cpp
+     utils/parameter_set.h
+     utils/parameter_set.cpp
      utils/qt_utils.h
      utils/qt_utils.cpp
      utils/stl.h
@@ -156,6 +158,21 @@ SET ( ntk_sources
      utils/xml_serializable.h
      utils/xml_serializable.cpp
 )
+
+QT4_WRAP_CPP(moc_sources
+  gui/image_widget.h
+  mesh/mesh_viewer.h
+  thread/event.h
+  utils/progressive.h
+)
+
+# Workaround a bug with i386 on Mac that cannot compile this particular
+# file, error is:
+# non-relocatable subtraction expression, "LC36" minus "L00000000103$pb"
+IF(APPLE AND (CMAKE_OSX_ARCHITECTURES MATCHES "i386"))
+  SET_SOURCE_FILES_PROPERTIES(numeric/levenberg_marquart_minimizer.cpp
+    PROPERTIES COMPILE_FLAGS "-O0")
+ENDIF()
 
 IF (NESTK_BUILD_OBJECT_DETECTION)
   SET ( ntk_sources ${ntk_sources}
@@ -208,21 +225,6 @@ IF (NESTK_BUILD_OBJECT_DETECTION)
   )
 ENDIF()
 
-QT4_WRAP_CPP(moc_sources
-  gui/image_widget.h
-  mesh/mesh_viewer.h
-  utils/progressive.h
-  thread/event.h  
-)
-
-# Workaround a bug with i386 on Mac that cannot compile this particular
-# file, error is:
-# non-relocatable subtraction expression, "LC36" minus "L00000000103$pb"
-IF(APPLE AND (CMAKE_OSX_ARCHITECTURES MATCHES "i386"))
-  SET_SOURCE_FILES_PROPERTIES(numeric/levenberg_marquart_minimizer.cpp
-    PROPERTIES COMPILE_FLAGS "-O0")
-ENDIF()
-
 IF (NESTK_USE_OPENNI)
   SET (ntk_sources ${ntk_sources}
        camera/openni_grabber.h
@@ -248,8 +250,17 @@ IF(NESTK_USE_PCL)
          detection/plane_estimator.cpp
          detection/table_object_detector.h
          detection/table_object_detector.hpp
-     	 geometry/relative_pose_estimator_icp.h
-     	 geometry/relative_pose_estimator_icp.cpp
+         geometry/incremental_pose_estimator_from_markers.h
+         geometry/incremental_pose_estimator_from_markers.cpp
+         geometry/relative_pose_estimator_icp.h
+         geometry/relative_pose_estimator_icp.hpp
+         geometry/relative_pose_estimator_icp.cpp
+         geometry/relative_pose_estimator_from_features.h
+         geometry/relative_pose_estimator_from_features.cpp
+         geometry/relative_pose_estimator_from_image.h
+         geometry/relative_pose_estimator_from_image.cpp
+         geometry/relative_pose_estimator_markers.h
+         geometry/relative_pose_estimator_markers.cpp
          geometry/relative_pose_estimator_tabletop.h
          geometry/relative_pose_estimator_tabletop.cpp
          mesh/table_object_rgbd_modeler.h
@@ -257,6 +268,8 @@ IF(NESTK_USE_PCL)
          mesh/pcl_utils.h
          mesh/pcl_utils.hpp
          mesh/pcl_utils.cpp
+         mesh/grid_rgbd_modeler.h
+         mesh/grid_rgbd_modeler.cpp
     )
 ENDIF()
 
@@ -266,13 +279,6 @@ IF (NESTK_USE_OPENCL)
        gpu/opencl.h
    )
 ENDIF()
-
-IF(NESTK_USE_PCL)
-    SET (ntk_sources ${ntk_sources}
-         mesh/pcl_utils.h
-         mesh/pcl_utils.cpp
-        )
-ENDIF(NESTK_USE_PCL)
 
 IF (NESTK_USE_ROS)
   SET (ntk_sources ${ntk_sources}
@@ -300,7 +306,7 @@ TARGET_LINK_LIBRARIES(nestk
   ${GSL_LIBRARIES}
   ${OPENCL_LIBRARIES}
   ${GLEW_LIBRARIES}
-  ${GLUT_LIBRARY}
+  ${GLUT_glut_LIBRARY}
   ${OPENGL_LIBRARIES}
   ${PCL_LIBRARIES}
   ${OpenCV_LIBS}
@@ -311,7 +317,8 @@ TARGET_LINK_LIBRARIES(nestk
   ${OPENNI_LIBRARIES}
   ${NITE_LIBRARY}
   ${WINMM_LIBRARY}
-  ${PTHREAD_LIBRARY})
+  ${PTHREAD_LIBRARY}
+)
 
 SET_TARGET_PROPERTIES(nestk PROPERTIES
   ARCHIVE_OUTPUT_DIRECTORY "${LIBRARY_OUTPUT_PATH}"

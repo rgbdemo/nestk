@@ -777,6 +777,11 @@ void Pose3D :: fromGLToRos()
     applyTransformAfter(Vec3f(0,0,0), Vec3f(M_PI/2.0, 0, -M_PI/2.0));
 }
 
+void Pose3D :: fromCvToGL()
+{
+    applyTransformAfter(Vec3f(0,0,0), Vec3f(M_PI, 0, 0));
+}
+
 float Pose3D :: determinant() const
 {
     return impl->camera_transform.matrix().determinant();

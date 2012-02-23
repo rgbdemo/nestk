@@ -61,7 +61,7 @@ public:
 
   /*! Size of the depth image. */
   const cv::Size& rawDepthSize() const { return raw_depth_size; }
-  const cv::Size& depthSize() { return depth_size; }
+  const cv::Size& depthSize() const { return depth_size; }
 
   /*! Intrinsics 3x3 matrix for the rgb channel */
   cv::Mat1d rgb_intrinsics;

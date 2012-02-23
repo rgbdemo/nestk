@@ -22,6 +22,8 @@
 
 #include "pcl_utils.h"
 
+#include <pcl/filters/passthrough.h>
+
 namespace ntk
 {
 
@@ -207,6 +209,14 @@ void sampledRgbdImageToPointCloud(pcl::PointCloud<PointT>& cloud,
         cloud.points[i].z = p.z;
         i += 1;
     }
+}
+
+template <class PointT>
+void removeNan(pcl::PointCloud<PointT>& clean_cloud, typename pcl::PointCloud<PointT>::ConstPtr source_cloud)
+{
+    pcl::PassThrough<PointT> pass;
+    pass.setInputCloud(source_cloud);
+    pass.filter(clean_cloud);
 }
 
 } // ntk

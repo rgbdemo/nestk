@@ -16,6 +16,13 @@ IF (NESTK_USE_OPENNI)
 
    ADD_EXECUTABLE(synchronized-multiple-kinects synchronized_multiple_kinects.cpp)
    TARGET_LINK_LIBRARIES(synchronized-multiple-kinects nestk)
+
+   ADD_EXECUTABLE(image-pose-estimator image_pose_estimator.cpp)
+   TARGET_LINK_LIBRARIES(image-pose-estimator nestk)
+
+   ADD_EXECUTABLE(markers markers.cpp)
+   TARGET_LINK_LIBRARIES(markers nestk)
+
 ENDIF(NESTK_USE_OPENNI)
 
 IF (NESTK_USE_FREENECT)
@@ -32,4 +39,7 @@ IF (NESTK_USE_PCL)
 
     ADD_EXECUTABLE(table-top-object table_top_object.cpp)
     TARGET_LINK_LIBRARIES(table-top-object nestk)
+
+    ADD_EXECUTABLE(object-recognition object_recognition.cpp)
+    TARGET_LINK_LIBRARIES(object-recognition nestk)
 ENDIF()

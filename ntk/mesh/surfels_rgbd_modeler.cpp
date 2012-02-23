@@ -56,6 +56,16 @@ bool SurfelsRGBDModeler :: normalsAreCompatible(const Surfel& lhs, const Surfel&
     return (normal_angle < (m_update_max_normal_angle*M_PI/180.0));
 }
 
+const Surfel *SurfelsRGBDModeler::getClosestSurfel(const Point3f &p) const
+{
+    Cell cell = worldToCell(p);
+    SurfelMap::const_iterator it = m_surfels.find(cell);
+    if (it == m_surfels.end())
+        return 0;
+    else
+        return &(it->second);
+}
+
 float SurfelsRGBDModeler :: computeSurfelRadius(float depth, float camera_z, double mean_focal)
 {
     camera_z = std::max(camera_z, 0.3f);
@@ -66,7 +76,7 @@ float SurfelsRGBDModeler :: computeSurfelRadius(float depth, float camera_z, dou
 
 bool SurfelsRGBDModeler :: addNewView(const RGBDImage& image_, Pose3D& depth_pose)
 {
-    ntk::TimeCount tc("SurfelsRGBDModeler::addNewView", 1);
+    ntk::TimeCount tc("SurfelsRGBDModeler::addNewView", 2);
     const float max_camera_normal_angle = ntk::deg_to_rad(90);
 
     RGBDImage image;
@@ -74,7 +84,9 @@ bool SurfelsRGBDModeler :: addNewView(const RGBDImage& image_, Pose3D& depth_pos
     if (!image_.normal().data)
     {
         OpenniRGBDProcessor processor;
-        processor.computeNormalsPCL(image);
+        // FIXME compute faster normals.
+        processor.computeNormals(image);
+        // processor.computeNormalsPCL(image);
     }
 
     Pose3D rgb_pose = depth_pose;
@@ -247,7 +259,7 @@ bool SurfelsRGBDModeler :: addNewView(const RGBDImage& image_, Pose3D& depth_pos
         }
     tc.elapsedMsecs(" -- adding new voxels -- ");
 
-    ntk_dbg_print(m_surfels.size(), 1);
+    ntk_dbg_print(m_surfels.size(), 2);
     return true;
 }
 

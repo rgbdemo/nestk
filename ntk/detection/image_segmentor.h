@@ -66,6 +66,21 @@ protected:
 };
 ntk_ptr_typedefs(ImageSegmentorFromBackgroundPlane)
 
+/*!
+ * Only keep points that are far enough from a plane.
+ */
+class ImageSegmentorFromBackgroundPlaneDistance : public ImageSegmentorFromBackgroundPlane
+{
+public:
+    ImageSegmentorFromBackgroundPlaneDistance();
+    virtual ~ImageSegmentorFromBackgroundPlaneDistance() {}
+
+public:
+    virtual bool initializeFromFirstImage(const ntk::RGBDImage &image, const ntk::Pose3D &estimated_pose);
+    virtual bool filterImage(RGBDImage& image, const Pose3D& estimated_pose);
+};
+ntk_ptr_typedefs(ImageSegmentorFromBackgroundPlaneDistance)
+
 /*! Extract a bounding box around the dominant cluster lying over a plane. */
 class ImageSegmentorFromObjectOnPlane : public ImageSegmentorFromBackgroundPlane
 {

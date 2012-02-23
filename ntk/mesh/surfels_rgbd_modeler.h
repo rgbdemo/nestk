@@ -71,10 +71,10 @@ protected:
 
     typedef std::multimap<Cell, Surfel> SurfelMap;
 
-    Cell worldToCell(const cv::Point3f& p)
+    Cell worldToCell(const cv::Point3f& p) const
     { return Cell(p.x / m_resolution, p.y / m_resolution, p.z / m_resolution); }
 
-    cv::Point3f cellToWorld(const Cell& c)
+    cv::Point3f cellToWorld(const Cell& c) const
     { return cv::Point3f(c.x*m_resolution, c.y*m_resolution, c.z*m_resolution); }
 
     /*! Return the compatibility threshold in function of the depth value. */
@@ -84,6 +84,7 @@ protected:
     bool mergeToLeftSurfel(Surfel& dest, const Surfel& src);
     float computeSurfelRadius(float depth, float camera_z, double mean_focal);
     bool normalsAreCompatible(const Surfel& lhs, const Surfel& rhs);
+    const Surfel* getClosestSurfel(const cv::Point3f& p) const;
 
 protected:
     SurfelMap m_surfels;

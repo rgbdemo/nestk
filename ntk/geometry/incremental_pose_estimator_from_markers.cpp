@@ -81,8 +81,6 @@ reset()
 {
     IncrementalPoseEstimatorFromImage::reset();
     m_started = false;
-    m_marker_setup_estimated = false;
-    m_setup_frames.clear();
 }
 
 bool ntk::IncrementalPoseEstimatorFromMarkers::
