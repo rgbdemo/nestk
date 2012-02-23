@@ -36,12 +36,6 @@ SET ( ntk_sources
      camera/rgbd_image.cpp
      camera/rgbd_processor.h
      camera/rgbd_processor.cpp
-     detection/image_segmentor.h
-     detection/image_segmentor.cpp
-     detection/plane_estimator.cpp
-     detection/plane_estimator.h
-     detection/table_object_detector.h
-     detection/table_object_detector.hpp
      geometry/affine_transform.h
      geometry/affine_transform.cpp
      geometry/eigen_utils.h
@@ -246,6 +240,8 @@ ENDIF()
 
 IF(NESTK_USE_PCL)
     SET (ntk_sources ${ntk_sources}
+         detection/image_segmentor.h
+         detection/image_segmentor.cpp
          detection/plane_estimator.h
          detection/plane_estimator.cpp
          detection/table_object_detector.h
