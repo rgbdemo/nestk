@@ -226,7 +226,7 @@ bool OpenniGrabber :: connectToDevice()
     xn::Query query;
     query.AddNeededNode(deviceInfo.GetInstanceName());
 
-    bool is_kinect = (std::string("SensorKinect") == description.strName);
+    bool is_kinect = (std::string("SensorKinect") == description.strName) || (std::string("SensorV2") == description.strName);
 
     status = m_ni_depth_generator.Create(m_driver.niContext(), &query);
     m_driver.checkXnError(status, "Create depth generator");
