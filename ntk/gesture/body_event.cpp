@@ -173,7 +173,7 @@ void BodyEventDetector :: initialize(xn::Context& context, xn::DepthGenerator& d
 
     m_push_detector = new XnVPushDetector;
     m_push_detector->RegisterPush(this, &BodyEventDetectorPush_Pushed);
-    // FIXME: using custom detector. m_session_manager->AddListener(m_push_detector);
+    m_session_manager->AddListener(m_push_detector);
 
     m_wave_detector = new XnVWaveDetector;
     m_wave_detector->SetFlipCount(5);
@@ -182,11 +182,9 @@ void BodyEventDetector :: initialize(xn::Context& context, xn::DepthGenerator& d
 
     m_steady_detector = new XnVSteadyDetector;
     m_steady_detector->RegisterSteady(this, &BodyEventDetectorSteady_Steady);
-    // FIXME: this should be accessible from Lua.
-    m_steady_detector->SetDetectionDuration(1000);
+    m_steady_detector->SetDetectionDuration(200);
     m_steady_detector->SetMaximumVelocity(0.005);
-    // FIXME: disabled, use custom gesture recognition.
-    // m_session_manager->AddListener(m_steady_detector);
+    m_session_manager->AddListener(m_steady_detector);
 
     m_circle_detector = new XnVCircleDetector;
     m_circle_detector->RegisterCircle(this, &BodyEventDetectorCircle_Circle);
