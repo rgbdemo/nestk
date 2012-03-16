@@ -418,9 +418,6 @@ void OpenniGrabber :: estimateCalibration()
 {
     XnPoint3D p;
     p.X = 0; p.Y = 0; p.Z = -1;
-    m_ni_depth_generator.ConvertProjectiveToRealWorld(1, &p, &p);
-
-    p.X = 0; p.Y = 0; p.Z = -1;
     m_ni_depth_generator.ConvertRealWorldToProjective(1, &p, &p);
     double cx = p.X;
     double cy = p.Y;
