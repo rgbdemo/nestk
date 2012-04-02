@@ -162,7 +162,8 @@ void calibrationCorners(const std::string& image_name,
                         std::vector<cv::Point2f>& corners,
                         const cv::Mat& image,
                         float scale_factor,
-                        PatternType pattern = PatternChessboard);
+                        PatternType pattern = PatternChessboard,
+                        cv::Mat3b *debug_image = 0);
 
 /*!
  * Estimate the 3D transform of a chessboard.

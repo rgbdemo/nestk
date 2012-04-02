@@ -191,7 +191,8 @@ void calibrationCorners(const std::string& image_name,
                         std::vector<Point2f>& corners,
                         const cv::Mat& image,
                         float scale_factor,
-                        PatternType pattern)
+                        PatternType pattern,
+                        cv::Mat3b* debug_image)
 {
   Size pattern_size (pattern_width, pattern_height);
 
@@ -265,7 +266,7 @@ void calibrationCorners(const std::string& image_name,
   }
   cv::Mat draw_image = scaled_image;
 
-  if (ok && !image_name.empty())
+  if (ok && (!image_name.empty() || debug_image))
   {
     cv::Mat gray_image;
     cvtColor(image, gray_image, CV_BGR2GRAY);
@@ -280,8 +281,18 @@ void calibrationCorners(const std::string& image_name,
       corner_matrix.at<Point2f>(row,0) = corners[row];
 
     drawChessboardCorners(draw_image, pattern_size, corner_matrix, ok);
-    ntk_dbg_print(image_name, 1);
-    imwrite(image_name + ".corners.png", draw_image);
+
+    if (debug_image)
+    {
+        draw_image.copyTo(*debug_image);
+    }
+
+    if (!image_name.empty())
+    {
+        ntk_dbg_print(image_name, 1);
+        imwrite(image_name + ".corners.png", draw_image);
+    }
+
     if (!window_name.empty())
     {
         imshow(window_name, draw_image);
