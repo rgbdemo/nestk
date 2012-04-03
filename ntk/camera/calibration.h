@@ -24,6 +24,9 @@
 #include <ntk/core.h>
 // #include <opencv/cv.h>
 #include <ntk/camera/rgbd_image.h>
+#include <ntk/camera/rgbd_processor.h>
+
+#include <QDir>
 
 namespace ntk
 {
@@ -41,6 +44,9 @@ public:
   RGBDCalibration();
 
   ~RGBDCalibration();
+
+  /*! Deep copy. */
+  void copyTo(RGBDCalibration& rhs) const;
 
   /*! Update depth_pose and rgb_pose from read parameters. */
   void updatePoses();
@@ -178,6 +184,34 @@ void estimate_checkerboard_pose(const std::vector<cv::Point3f>& model,
                                 const std::vector<cv::Point2f>& img_points,
                                 const cv::Mat1d& calib_matrix,
                                 cv::Mat1f& H);
+
+double computeCalibrationError(const cv::Mat& F,
+                               const std::vector<std::vector<cv::Point2f> >& rgb_corners,
+                               const std::vector<std::vector<cv::Point2f> >& depth_corners);
+
+void showCheckerboardCorners(const cv::Mat3b& image,
+                             const std::vector<cv::Point2f>& corners,
+                             int wait_time = 10);
+
+// Apply translation coeffs, see http://www.ros.org/wiki/kinect_calibration/technical
+void kinect_shift_ir_to_depth(cv::Mat3b& im);
+
+void loadImageList(const QDir& image_dir,
+                   const QStringList& view_list,
+                   ntk::RGBDProcessor& processor,
+                   ntk::RGBDCalibration& calibration,
+                   std::vector<ntk::RGBDImage>& images);
+
+void getCalibratedCheckerboardCorners(const std::vector<ntk::RGBDImage>& images,
+                                      int pattern_width,
+                                      int pattern_height,
+                                      ntk::PatternType pattern_type,
+                                      std::vector< std::vector<cv::Point2f> >& output_corners, bool show_corners = true);
+
+void calibrateStereoFromCheckerboard(const std::vector< std::vector<cv::Point2f> >& undistorted_ref_corners,
+                                     const std::vector< std::vector<cv::Point2f> >& undistorted_corners,
+                                     int pattern_width, int pattern_height, float pattern_size,
+                                     ntk::RGBDCalibration &calibration);
 
 } // ntk
 

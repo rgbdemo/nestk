@@ -21,6 +21,7 @@
 #include <ntk/utils/opencv_utils.h>
 #include <ntk/utils/stl.h>
 #include <ntk/camera/rgbd_processor.h>
+#include <ntk/camera/calibration.h>
 
 #include <QDir>
 

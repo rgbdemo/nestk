@@ -29,6 +29,8 @@
 
 #include <opencv/highgui.h>
 
+#include <QDir>
+
 using namespace ntk;
 using namespace cv;
 
@@ -67,7 +69,43 @@ RGBDCalibration::RGBDCalibration() :
 RGBDCalibration :: ~RGBDCalibration()
 {
   delete depth_pose;
-  delete rgb_pose;
+    delete rgb_pose;
+}
+
+void RGBDCalibration::copyTo(RGBDCalibration &rhs) const
+{
+    rgb_intrinsics.copyTo(rhs.rgb_intrinsics);
+    rgb_distortion.copyTo(rhs.rgb_distortion);
+    rhs.zero_rgb_distortion = zero_rgb_distortion;
+    rhs.zero_depth_distortion = zero_depth_distortion;
+    depth_intrinsics.copyTo(rhs.depth_intrinsics);
+    depth_distortion.copyTo(rhs.depth_distortion);
+    R_extrinsics.copyTo(rhs.R_extrinsics);
+    T_extrinsics.copyTo(rhs.T_extrinsics);
+    R.copyTo(rhs.R);
+    T.copyTo(rhs.T);
+
+    rhs.depth_pose = new Pose3D;
+    *rhs.depth_pose = *depth_pose;
+    rhs.rgb_pose = new Pose3D;
+    *rhs.rgb_pose = *rgb_pose;
+
+    rgb_undistort_map1.copyTo(rhs.rgb_undistort_map1);
+    rgb_undistort_map2.copyTo(rhs.rgb_undistort_map2);
+
+    depth_undistort_map1.copyTo(rhs.depth_undistort_map1);
+    depth_undistort_map2.copyTo(rhs.depth_undistort_map2);
+
+    rhs.depth_baseline = depth_baseline;
+    rhs.depth_offset = depth_offset;
+
+    rhs.raw_rgb_size = raw_rgb_size;
+    rhs.rgb_size = rgb_size;
+
+    rhs.raw_depth_size = raw_depth_size;
+    rhs.depth_size = depth_size;
+
+    rhs.camera_type = camera_type;
 }
 
 void RGBDCalibration :: updatePoses()
@@ -431,6 +469,187 @@ void estimate_checkerboard_pose(const std::vector<Point3f>& model,
   ntk_dbg_print(H, 1);
 
   H = from_open_cv * H * to_open_cv;
+}
+
+void showCheckerboardCorners(const cv::Mat3b& image, const std::vector<Point2f>& corners, int wait_time)
+{
+  cv::Mat3b debug_img;
+  image.copyTo(debug_img);
+  foreach_idx(i, corners)
+  {
+    Point2i p = corners[i];
+    Rect r (p+Point2i(-2,-2),cv::Size(4,4));
+    cv::rectangle(debug_img, r, Scalar(255,0,0,255));
+    cv::circle(debug_img, p, 8, Scalar(0,0,255,255));
+  }
+  imshow("corners", debug_img);
+  cv::waitKey(wait_time);
+}
+
+double computeCalibrationError(const cv::Mat& F,
+                    const std::vector<std::vector<Point2f> >& rgb_corners,
+                    const std::vector<std::vector<Point2f> >& depth_corners)
+{
+  std::vector<cv::Point2f> points_in_rgb;
+  for (int i = 0; i < rgb_corners.size(); ++i)
+    for (int j = 0; j < rgb_corners[i].size(); ++j)
+      points_in_rgb.push_back(rgb_corners[i][j]);
+
+  std::vector<cv::Point2f> points_in_depth;
+  for (int i = 0; i < depth_corners.size(); ++i)
+    for (int j = 0; j < depth_corners[i].size(); ++j)
+      points_in_depth.push_back(depth_corners[i][j]);
+
+  std::vector<Vec3f> lines_in_depth;
+  std::vector<Vec3f> lines_in_rgb;
+
+  cv::computeCorrespondEpilines(cv::Mat(points_in_rgb), 1, F, lines_in_depth);
+  cv::computeCorrespondEpilines(cv::Mat(points_in_depth), 2, F, lines_in_rgb);
+
+  double avgErr = 0;
+  for(int i = 0; i < points_in_rgb.size(); ++i)
+  {
+    double err = fabs(points_in_rgb[i].x*lines_in_rgb[i][0] +
+                      points_in_rgb[i].y*lines_in_rgb[i][1] + lines_in_rgb[i][2]);
+    avgErr += err;
+  }
+
+  for(int i = 0; i < points_in_depth.size(); ++i)
+  {
+    double err = fabs(points_in_depth[i].x*lines_in_depth[i][0] +
+                      points_in_depth[i].y*lines_in_depth[i][1] + lines_in_depth[i][2]);
+    avgErr += err;
+  }
+
+  return avgErr / (points_in_rgb.size() + points_in_depth.size());
+}
+
+void kinect_shift_ir_to_depth(cv::Mat3b& im)
+{
+  imwrite("/tmp/before.png", im);
+  cv::Mat1f t (2, 3);
+  t = 0.f;
+  t(0,0) = 1;
+  t(1,1) = 1;
+  t(0,2) = -4.8;
+  t(1,2) = -3.9;
+  cv::Mat3b tmp;
+  warpAffine(im, tmp, t, im.size());
+  im = tmp;
+  imwrite("/tmp/after.png", im);
+}
+
+void loadImageList(const QDir& image_dir,
+                    const QStringList& view_list,
+                    ntk::RGBDProcessor& processor,
+                    RGBDCalibration& calibration,
+                    std::vector<RGBDImage>& images)
+{
+    images.clear();
+    for (int i_image = 0; i_image < view_list.size(); ++i_image)
+    {
+        QString filename = view_list[i_image];
+        QDir cur_image_dir (image_dir.absoluteFilePath(filename));
+
+        RGBDImage image;
+        image.loadFromDir(cur_image_dir.absolutePath().toStdString(), &calibration, &processor);
+        images.push_back(image);
+    }
+}
+
+void getCalibratedCheckerboardCorners(const std::vector<RGBDImage>& images,
+                                      int pattern_width,
+                                      int pattern_height,
+                                      PatternType pattern_type,
+                                      std::vector< std::vector<Point2f> >& output_corners,
+                                      bool show_corners)
+{
+    std::vector< std::vector<Point2f> > good_corners;
+    output_corners.resize(images.size());
+    for (int i_image = 0; i_image < images.size(); ++i_image)
+    {
+        const RGBDImage& image = images[i_image];
+
+        std::vector<Point2f> current_view_corners;
+        calibrationCorners("", "corners",
+                           pattern_width, pattern_height,
+                           current_view_corners, image.rgb(), 1,
+                           pattern_type);
+
+        if (current_view_corners.size() == pattern_height*pattern_width)
+        {
+            output_corners[i_image] = current_view_corners;
+            if (show_corners)
+                showCheckerboardCorners(image.rgb(), current_view_corners, 1);
+        }
+        else
+        {
+            ntk_dbg(0) << "Warning: corners not detected";
+            output_corners[i_image].resize(0);
+        }
+    }
+}
+
+void calibrateStereoFromCheckerboard(const std::vector< std::vector<Point2f> >& undistorted_ref_corners,
+                                     const std::vector< std::vector<Point2f> >& undistorted_corners,
+                                     int pattern_width,
+                                     int pattern_height,
+                                     float pattern_size,
+                                     ntk::RGBDCalibration& calibration)
+{
+  ntk_assert(undistorted_ref_corners.size() == undistorted_corners.size(), "Size should be equal.");
+  std::vector< std::vector<Point2f> > undistorted_good_corners;
+  std::vector< std::vector<Point2f> > undistorted_good_ref_corners;
+
+  foreach_idx(i, undistorted_ref_corners)
+  {
+    if (undistorted_ref_corners[i].size() > 0 && undistorted_corners[i].size() > 0)
+    {
+      ntk_assert(undistorted_ref_corners[i].size() == undistorted_corners[i].size(),
+                 "Sizes should be equal.");
+      undistorted_good_ref_corners.push_back(undistorted_ref_corners[i]);
+      undistorted_good_corners.push_back(undistorted_corners[i]);
+    }
+  }
+
+  std::vector< std::vector<Point3f> > pattern_points;
+  calibrationPattern(pattern_points,
+                     pattern_width,  pattern_height, pattern_size,
+                     undistorted_good_ref_corners.size());
+
+  cv::Mat R, T;
+  cv::Mat E(3,3,CV_64F),F(3,3,CV_64F);
+  cv::Mat zero_dist (calibration.depth_distortion.size(), calibration.depth_distortion.type());
+  zero_dist = Scalar(0);
+
+  stereoCalibrate(pattern_points,
+                  undistorted_good_ref_corners, undistorted_good_corners,
+                  calibration.rgb_intrinsics, zero_dist,
+                  calibration.rgb_intrinsics, zero_dist,
+                  calibration.rgbSize(),
+                  R, T, E, F,
+                  TermCriteria(TermCriteria::COUNT+TermCriteria::EPS, 50, 1e-6),
+                  CALIB_FIX_INTRINSIC);
+
+  // OpenCV coords has y down and z toward scene.
+  // OpenGL classical 3d coords has y up and z backwards
+  // This is the transform matrix.
+
+  cv::Mat1d to_gl_base(3,3); setIdentity(to_gl_base);
+  to_gl_base(1,1) = -1;
+  to_gl_base(2,2) = -1;
+
+  cv::Mat1d new_R = to_gl_base.inv() * R * to_gl_base;
+  cv::Mat1d new_T = to_gl_base * (T);
+
+  new_R.copyTo(R);
+  new_T.copyTo(T);
+
+  double error = computeCalibrationError(F, undistorted_good_ref_corners, undistorted_good_corners);
+  std::cout << "Average pixel reprojection error: " << error << std::endl;
+
+  R.copyTo(calibration.R_extrinsics);
+  T.copyTo(calibration.T_extrinsics);
 }
 
 } // ntk

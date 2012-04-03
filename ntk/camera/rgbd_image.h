@@ -20,7 +20,6 @@
 #ifndef NTK_CAMERA_RGBD_IMAGE_H
 #define NTK_CAMERA_RGBD_IMAGE_H
 
-#include <ntk/camera/calibration.h>
 #include <ntk/geometry/pose_3d.h>
 #include <ntk/thread/event.h>
 
