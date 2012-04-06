@@ -226,7 +226,7 @@ bool OpenniGrabber :: connectToDevice()
     xn::Query query;
     query.AddNeededNode(deviceInfo.GetInstanceName());
 
-    bool is_kinect = (std::string("SensorKinect") == description.strName);
+    bool is_kinect = (std::string("SensorKinect") == description.strName) || (std::string("SensorV2") == description.strName);
 
     status = m_ni_depth_generator.Create(m_driver.niContext(), &query);
     m_driver.checkXnError(status, "Create depth generator");
@@ -417,9 +417,6 @@ void OpenniGrabber :: waitAndUpdateActiveGenerators()
 void OpenniGrabber :: estimateCalibration()
 {
     XnPoint3D p;
-    p.X = 0; p.Y = 0; p.Z = -1;
-    m_ni_depth_generator.ConvertProjectiveToRealWorld(1, &p, &p);
-
     p.X = 0; p.Y = 0; p.Z = -1;
     m_ni_depth_generator.ConvertRealWorldToProjective(1, &p, &p);
     double cx = p.X;

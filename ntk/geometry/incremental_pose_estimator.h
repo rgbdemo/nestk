@@ -22,6 +22,7 @@
 
 #include <ntk/geometry/pose_3d.h>
 #include <ntk/camera/rgbd_image.h>
+#include <ntk/camera/calibration.h>
 
 namespace ntk
 {

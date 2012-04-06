@@ -134,7 +134,7 @@ int main(int argc, char **argv)
 
         // Get the last hand point position.
         cv::Point3f handpoint = body_event_listener.getLastHandPosInImage();
-        ntk_dbg_print(handpoint, 1);
+        ntk_dbg_print(handpoint, 2);
 
         // Prepare the depth view, with handpoint.
         cv::Mat1b debug_depth_img = normalize_toMat1b(image.depth());
