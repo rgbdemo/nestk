@@ -140,11 +140,13 @@ protected:
 double rms_optimize_ransac(Pose3D& pose3d,
                            const std::vector<cv::Point3f>& ref_points,
                            const std::vector<cv::Point3f>& img_points,
-                           std::vector<bool>& valid_points);
+                           std::vector<bool>& valid_points,
+                           bool use_depth);
 
 double rms_optimize_3d(Pose3D& pose3d,
                        const std::vector<cv::Point3f>& ref_points,
-                       const std::vector<cv::Point3f>& img_points);
+                       const std::vector<cv::Point3f>& img_points,
+                       bool use_depth);
 
 double rms_optimize_against_depth_image(Pose3D& pose3d,
                                         const std::vector<cv::Point3f>& ref_points,

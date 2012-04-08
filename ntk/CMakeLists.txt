@@ -234,7 +234,7 @@ IF (NESTK_USE_OPENNI)
       )
 ENDIF()
 
-IF (NESTK_USE_FREENECT)
+IF (NESTK_USE_FREENECT OR USE_FREENECT)
   SET (ntk_sources ${ntk_sources}
        camera/freenect_grabber.h
        camera/freenect_grabber.cpp)
@@ -269,7 +269,7 @@ IF(NESTK_USE_PCL)
     )
 ENDIF()
 
-IF (NESTK_USE_OPENCL)
+IF (NESTK_USE_OPENCL OR USE_OPENCL)
   SET (ntk_sources ${ntk_sources}
        gpu/opencl.cpp
        gpu/opencl.h

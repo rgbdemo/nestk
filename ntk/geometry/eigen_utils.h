@@ -23,6 +23,8 @@
 #include <ntk/core.h>
 #include <ntk/utils/debug.h>
 #include <ntk/utils/serializable.h>
+#include <ntk/geometry/pose_3d.h>
+
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
@@ -132,13 +134,26 @@ inline void toOpencv(const Eigen::Matrix<EigenScalarType,H,W>& ep,
 }
 #endif
 
-#ifdef _MSC_VER
-inline void toEigen(const cv::Mat1d& mat, Eigen::Matrix3d& ep)
+inline ntk::Pose3D toPose3D(const Eigen::Matrix4f& m)
 {
-  for (int r = 0; r < 3; ++r)
-    for (int c = 0; c < 3; ++c)
-      ep(r,c) = mat(r,c);
+    cv::Mat1f cv_pose(4,4);
+    toOpencv(m, cv_pose);
+    ntk::Pose3D pose;
+    pose.setCameraTransform(cv_pose);
+    return pose;
 }
+
+// FIXME: MSVC10 ICEs on the generic function definition.
+#ifdef _MSC_VER
+#define TO_EIGEN_MSVC_DEF       \
+{                               \
+  for (int r = 0; r < 3; ++r)   \
+    for (int c = 0; c < 3; ++c) \
+      ep(r,c) = mat(r,c);       \
+}
+inline void toEigen(const cv::Mat1f& mat, Eigen::Matrix4f& ep) TO_EIGEN_MSVC_DEF
+inline void toEigen(const cv::Mat1d& mat, Eigen::Matrix3d& ep) TO_EIGEN_MSVC_DEF
+#undef TO_EIGEN_MSVC_DEF
 #else
 template <typename CvScalarType, typename EScalarType, int H, int W>
 inline void toEigen(const cv::Mat_<CvScalarType>& mat, Eigen::Matrix<EScalarType,H,W>& ep)

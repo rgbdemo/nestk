@@ -24,6 +24,7 @@ IF (NESTK_USE_OPENNI)
   NEW_TEST(test-multiple-kinect 0)
 ENDIF()
 
+NEW_TEST(test-opencl-sobel 0)
 NEW_TEST(test-opencv-grabber 0)
 NEW_TEST(test-siftgpu 0)
 NEW_TEST(test-siftgpu-server 0)

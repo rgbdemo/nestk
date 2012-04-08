@@ -668,6 +668,12 @@ void Pose3D :: setCameraTransform(const cv::Mat1d& H)
     impl->computeProjectiveTransform();
 }
 
+void Pose3D :: setCameraTransform(const Pose3D& pose)
+{
+    impl->camera_transform = pose.impl->camera_transform;
+    impl->computeProjectiveTransform();
+}
+
 cv::Point3f Pose3D :: cameraTransform(const cv::Point3f& p) const
 {
     Eigen::Vector3d ep; toEigen(p, ep);

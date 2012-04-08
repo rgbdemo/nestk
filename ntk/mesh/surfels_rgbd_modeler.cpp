@@ -294,21 +294,15 @@ void SurfelsRGBDModeler::setResolution(float r)
 float ntk::SurfelsRGBDModeler::getCompatibilityDistance(float depth) const
 {
     if (depth < 0.8)
-        return 0.002;
-    else if (depth < 1)
         return 0.003;
-    else if (depth < 1.5)
+    else if (depth < 1)
         return 0.005;
+    else if (depth < 1.5)
+        return 0.01;
     else if (depth < 2)
-        return 0.008;
-    else if (depth < 3)
-        return 0.02;
-    else if (depth < 4)
         return 0.04;
-    else if (depth < 5)
-        return 0.05;
-    else if (depth < 6)
-        return 0.06;
+    else if (depth < 3)
+        return 0.08;
     return 0.1;
 }
 
