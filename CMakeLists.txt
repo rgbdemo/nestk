@@ -6,6 +6,9 @@ endif(COMMAND cmake_policy)
 PROJECT(nestk)
 SET(NESTK_VERSION 0.7)
 
+# FIXME: Auto-detect this.
+OPTION(NESTK_USE_KIN4WIN "Use Microsoft Kinect for Windows SDK." 1)
+
 ################################################################################
 ### extra flags
 ################################################################################

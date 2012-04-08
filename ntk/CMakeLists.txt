@@ -221,6 +221,13 @@ IF (NESTK_BUILD_OBJECT_DETECTION)
   )
 ENDIF()
 
+IF(NESTK_USE_KIN4WIN)
+    SET(ntk_sources ${ntk_sources}
+       camera/kin4win_grabber.h
+       camera/kin4win_grabber.cpp
+    )
+ENDIF()
+
 IF (NESTK_USE_OPENNI)
   SET (ntk_sources ${ntk_sources}
        camera/openni_grabber.h
