@@ -124,6 +124,12 @@ public:
    */
   double depth_offset;
 
+  /*! Depth correction factor to multiply with. */
+  double depth_multiplicative_correction_factor;
+
+  /*! Depth correction factor to add. */
+  double depth_additive_correction_factor;
+
   cv::Size raw_rgb_size;
   cv::Size rgb_size;
 

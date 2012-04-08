@@ -43,17 +43,19 @@ namespace ntk
 {
 
 RGBDCalibration::RGBDCalibration() :
-  zero_rgb_distortion(true),
-  zero_depth_distortion(true),
-  depth_pose(0),
-  rgb_pose(0),
-  depth_baseline(7.5e-02),
-  depth_offset(1090),
-  raw_rgb_size(640,480),
-  rgb_size(480,480),
-  raw_depth_size(204,204),
-  depth_size(204,204),
-  camera_type("kinect-ni")
+    zero_rgb_distortion(true),
+    zero_depth_distortion(true),
+    depth_pose(0),
+    rgb_pose(0),
+    depth_baseline(7.5e-02),
+    depth_offset(1090),
+    depth_multiplicative_correction_factor(1.0),
+    depth_additive_correction_factor(0.0),
+    raw_rgb_size(640,480),
+    rgb_size(480,480),
+    raw_depth_size(204,204),
+    depth_size(204,204),
+    camera_type("kinect-ni")
 {
     R_extrinsics = Mat1d(3,3);
     setIdentity(R_extrinsics);
@@ -68,7 +70,7 @@ RGBDCalibration::RGBDCalibration() :
 
 RGBDCalibration :: ~RGBDCalibration()
 {
-  delete depth_pose;
+    delete depth_pose;
     delete rgb_pose;
 }
 
@@ -98,6 +100,8 @@ void RGBDCalibration::copyTo(RGBDCalibration &rhs) const
 
     rhs.depth_baseline = depth_baseline;
     rhs.depth_offset = depth_offset;
+    rhs.depth_multiplicative_correction_factor = depth_multiplicative_correction_factor;
+    rhs.depth_additive_correction_factor = depth_additive_correction_factor;
 
     rhs.raw_rgb_size = raw_rgb_size;
     rhs.rgb_size = rgb_size;
@@ -123,98 +127,133 @@ void RGBDCalibration :: updatePoses()
 
 void RGBDCalibration :: loadFromFile(const char* filename)
 {
-  QFileInfo f (filename);
-  ntk_throw_exception_if(!f.exists(), "Could not find calibration file.");
-  cv::FileStorage calibration_file (filename, CV_STORAGE_READ);
-  readMatrix(calibration_file, "rgb_intrinsics", rgb_intrinsics);
-  readMatrix(calibration_file, "rgb_distortion", rgb_distortion);
-  zero_rgb_distortion = rgb_distortion(0,0) < 1e-5 ? true : false;
-  readMatrix(calibration_file, "depth_intrinsics", depth_intrinsics);
-  readMatrix(calibration_file, "depth_distortion", depth_distortion);
-  zero_depth_distortion = depth_distortion(0,0) < 1e-5 ? true : false;;
-  readMatrix(calibration_file, "R", R);
-  readMatrix(calibration_file, "T", T);
-  cv::Mat1i size_mat;
-  readMatrix(calibration_file, "rgb_size", size_mat);
-  rgb_size = cv::Size(size_mat(0,0), size_mat(0,1));
-  readMatrix(calibration_file, "raw_rgb_size", size_mat);
-  raw_rgb_size = cv::Size(size_mat(0,0), size_mat(0,1));
-  cv::Mat1i rgb_size_mat;
-  readMatrix(calibration_file, "depth_size", size_mat);
-  depth_size = cv::Size(size_mat(0,0), size_mat(0,1));
-  readMatrix(calibration_file, "raw_depth_size", size_mat);
-  raw_depth_size = cv::Size(size_mat(0,0), size_mat(0,1));
+    QFileInfo f (filename);
+    ntk_throw_exception_if(!f.exists(), "Could not find calibration file.");
+    cv::FileStorage calibration_file (filename, CV_STORAGE_READ);
+    readMatrix(calibration_file, "rgb_intrinsics", rgb_intrinsics);
+    readMatrix(calibration_file, "rgb_distortion", rgb_distortion);
+    zero_rgb_distortion = rgb_distortion(0,0) < 1e-5 ? true : false;
+    readMatrix(calibration_file, "depth_intrinsics", depth_intrinsics);
+    readMatrix(calibration_file, "depth_distortion", depth_distortion);
+    zero_depth_distortion = depth_distortion(0,0) < 1e-5 ? true : false;;
+    readMatrix(calibration_file, "R", R);
+    readMatrix(calibration_file, "T", T);
+    cv::Mat1i size_mat;
+    readMatrix(calibration_file, "rgb_size", size_mat);
+    rgb_size = cv::Size(size_mat(0,0), size_mat(0,1));
+    readMatrix(calibration_file, "raw_rgb_size", size_mat);
+    raw_rgb_size = cv::Size(size_mat(0,0), size_mat(0,1));
+    cv::Mat1i rgb_size_mat;
+    readMatrix(calibration_file, "depth_size", size_mat);
+    depth_size = cv::Size(size_mat(0,0), size_mat(0,1));
+    readMatrix(calibration_file, "raw_depth_size", size_mat);
+    raw_depth_size = cv::Size(size_mat(0,0), size_mat(0,1));
 
-  try {
-    readMatrix(calibration_file, "R_extrinsics", R_extrinsics);
-    readMatrix(calibration_file, "T_extrinsics", T_extrinsics);
-  }
-  catch (...)
-  {
-      ntk_dbg(0) << "Warning: could not load extrinsics (R_extrinsics, T_extrinsics).";
-  }
+    try {
+        readMatrix(calibration_file, "R_extrinsics", R_extrinsics);
+        readMatrix(calibration_file, "T_extrinsics", T_extrinsics);
+    }
+    catch (...)
+    {
+        ntk_dbg(0) << "Warning: could not load extrinsics (R_extrinsics, T_extrinsics).";
+    }
 
-  cv::Mat1f depth_calib (1,2);
-  try {
-    readMatrix(calibration_file, "depth_base_and_offset", depth_calib);
-    depth_baseline = depth_calib(0,0);
-    depth_offset = depth_calib(0,1);
-  }
-  catch(...)
-  {
-    ntk_dbg(0) << "Warning: could not load depth offset";
-  }
+    cv::Mat1f depth_calib (1,2);
+    try {
+        readMatrix(calibration_file, "depth_base_and_offset", depth_calib);
+        depth_baseline = depth_calib(0,0);
+        depth_offset = depth_calib(0,1);
+    }
+    catch(...)
+    {
+        ntk_dbg(1) << "Warning: could not load depth offset";
+    }
 
-  calibration_file.release();
+    try {
+        cv::Mat1f depth_multiplicative_correction_factor (1,1);
+        readMatrix(calibration_file, "depth_multiplicative_correction_factor", depth_multiplicative_correction_factor);
+        this->depth_multiplicative_correction_factor = depth_multiplicative_correction_factor(0,0);
+    }
+    catch(...)
+    {
+        ntk_dbg(1) << "Warning: could not load depth multiplicative factor";
+    }
 
-  depth_pose = new Pose3D();
-  rgb_pose = new Pose3D();
-  updatePoses();
+    try {
+        cv::Mat1f depth_additive_correction_factor (1,1);
+        readMatrix(calibration_file, "depth_additive_correction_factor", depth_additive_correction_factor);
+        this->depth_additive_correction_factor = depth_additive_correction_factor(0,0);
+    }
+    catch(...)
+    {
+        ntk_dbg(1) << "Warning: could not load depth additive correction factor";
+    }
 
-  initUndistortRectifyMap(rgb_intrinsics, rgb_distortion,
-                          Mat(), rgb_intrinsics, rgb_size, CV_16SC2,
-                          rgb_undistort_map1, rgb_undistort_map2);
+    calibration_file.release();
 
-  initUndistortRectifyMap(depth_intrinsics, depth_distortion,
-                          Mat(), depth_intrinsics, depth_size, CV_16SC2,
-                          depth_undistort_map1, depth_undistort_map2);
+    depth_pose = new Pose3D();
+    rgb_pose = new Pose3D();
+    updatePoses();
+
+    initUndistortRectifyMap(rgb_intrinsics, rgb_distortion,
+                            Mat(), rgb_intrinsics, rgb_size, CV_16SC2,
+                            rgb_undistort_map1, rgb_undistort_map2);
+
+    initUndistortRectifyMap(depth_intrinsics, depth_distortion,
+                            Mat(), depth_intrinsics, depth_size, CV_16SC2,
+                            depth_undistort_map1, depth_undistort_map2);
 }
 
 void RGBDCalibration :: saveToFile(const char* filename) const
 {
-  FileStorage output_file (filename,
-                           CV_STORAGE_WRITE);
-  writeMatrix(output_file, "rgb_intrinsics", rgb_intrinsics);
-  writeMatrix(output_file, "rgb_distortion", rgb_distortion);
-  writeMatrix(output_file, "depth_intrinsics", depth_intrinsics);
-  writeMatrix(output_file, "depth_distortion", depth_distortion);
-  writeMatrix(output_file, "R", R);
-  writeMatrix(output_file, "T", T);
-  writeMatrix(output_file, "R_extrinsics", R_extrinsics);
-  writeMatrix(output_file, "T_extrinsics", T_extrinsics);
-  cv::Mat1i size_matrix(1,2);
+    FileStorage output_file (filename,
+                             CV_STORAGE_WRITE);
+    writeMatrix(output_file, "rgb_intrinsics", rgb_intrinsics);
+    writeMatrix(output_file, "rgb_distortion", rgb_distortion);
+    writeMatrix(output_file, "depth_intrinsics", depth_intrinsics);
+    writeMatrix(output_file, "depth_distortion", depth_distortion);
+    writeMatrix(output_file, "R", R);
+    writeMatrix(output_file, "T", T);
+    writeMatrix(output_file, "R_extrinsics", R_extrinsics);
+    writeMatrix(output_file, "T_extrinsics", T_extrinsics);
+    cv::Mat1i size_matrix(1,2);
 
-  size_matrix(0,0) = rgb_size.width;
-  size_matrix(0,1) = rgb_size.height;
-  writeMatrix(output_file, "rgb_size", size_matrix);
+    size_matrix(0,0) = rgb_size.width;
+    size_matrix(0,1) = rgb_size.height;
+    writeMatrix(output_file, "rgb_size", size_matrix);
 
-  size_matrix(0,0) = raw_rgb_size.width;
-  size_matrix(0,1) = raw_rgb_size.height;
-  writeMatrix(output_file, "raw_rgb_size", size_matrix);
+    size_matrix(0,0) = raw_rgb_size.width;
+    size_matrix(0,1) = raw_rgb_size.height;
+    writeMatrix(output_file, "raw_rgb_size", size_matrix);
 
-  size_matrix(0,0) = depth_size.width;
-  size_matrix(0,1) = depth_size.height;
-  writeMatrix(output_file, "depth_size", size_matrix);
+    size_matrix(0,0) = depth_size.width;
+    size_matrix(0,1) = depth_size.height;
+    writeMatrix(output_file, "depth_size", size_matrix);
 
-  size_matrix(0,0) = raw_depth_size.width;
-  size_matrix(0,1) = raw_depth_size.height;
-  writeMatrix(output_file, "raw_depth_size", size_matrix);
+    size_matrix(0,0) = raw_depth_size.width;
+    size_matrix(0,1) = raw_depth_size.height;
+    writeMatrix(output_file, "raw_depth_size", size_matrix);
 
-  cv::Mat1f depth_calib (1,2);
-  depth_calib(0,0) = depth_baseline;
-  depth_calib(0,1) = depth_offset;
-  writeMatrix(output_file, "depth_base_and_offset", depth_calib);
-  output_file.release();
+    {
+        cv::Mat1f depth_calib (1,2);
+        depth_calib(0,0) = depth_baseline;
+        depth_calib(0,1) = depth_offset;
+        writeMatrix(output_file, "depth_base_and_offset", depth_calib);
+    }
+
+    {
+        cv::Mat1f depth_multiplicative_correction_factor (1,1);
+        depth_multiplicative_correction_factor(0,0) = this->depth_multiplicative_correction_factor;
+        writeMatrix(output_file, "depth_multiplicative_correction_factor", depth_multiplicative_correction_factor);
+    }
+
+    {
+        cv::Mat1f depth_additive_correction_factor (1,1);
+        depth_additive_correction_factor(0,0) = this->depth_additive_correction_factor;
+        writeMatrix(output_file, "depth_additive_correction_factor", depth_additive_correction_factor);
+    }
+
+    output_file.release();
 }
 
 
@@ -232,80 +271,78 @@ void calibrationCorners(const std::string& image_name,
                         PatternType pattern,
                         cv::Mat3b* debug_image)
 {
-  Size pattern_size (pattern_width, pattern_height);
+    Size pattern_size (pattern_width, pattern_height);
 
-  cv::Mat scaled_image;
+    cv::Mat scaled_image;
 
-  if (ntk::flt_eq(scale_factor, 1))
-  {
-    scaled_image = image.clone();
-  }
-  else
-  {
-    cv::resize(image, scaled_image,
-               Size(image.cols*scale_factor, image.rows*scale_factor),
-               scale_factor, scale_factor, cv::INTER_CUBIC);
-  }
+    if (ntk::flt_eq(scale_factor, 1))
+    {
+        scaled_image = image.clone();
+    }
+    else
+    {
+        cv::resize(image, scaled_image,
+                   Size(image.cols*scale_factor, image.rows*scale_factor),
+                   scale_factor, scale_factor, cv::INTER_CUBIC);
+    }
 
-  int flags = CV_CALIB_CB_NORMALIZE_IMAGE|CV_CALIB_CB_ADAPTIVE_THRESH;
-  bool ok = true;
-  switch (pattern)
-  {
-  case PatternChessboard: {
-      ok = findChessboardCorners(scaled_image,
-                                 pattern_size,
-                                 corners,
-                                 flags);
-
-      if (!ok)
-      {
-        flags = CV_CALIB_CB_NORMALIZE_IMAGE;
+    int flags = CV_CALIB_CB_NORMALIZE_IMAGE|CV_CALIB_CB_ADAPTIVE_THRESH;
+    bool ok = true;
+    switch (pattern)
+    {
+    case PatternChessboard: {
         ok = findChessboardCorners(scaled_image,
                                    pattern_size,
                                    corners,
                                    flags);
-      }
 
-      if (!ok)
-      {
-        flags = CV_CALIB_CB_ADAPTIVE_THRESH;
-        ok = findChessboardCorners(scaled_image,
-                                   pattern_size,
-                                   corners,
-                                   flags);
-      }
+        if (!ok)
+        {
+            flags = CV_CALIB_CB_NORMALIZE_IMAGE;
+            ok = findChessboardCorners(scaled_image,
+                                       pattern_size,
+                                       corners,
+                                       flags);
+        }
 
-      if (!ok)
-      {
-        flags = 0;
-        ok = findChessboardCorners(scaled_image,
-                                   pattern_size,
-                                   corners,
-                                   flags);
-      }
-      break;
-  }
-  case PatternCircles: {
+        if (!ok)
+        {
+            flags = CV_CALIB_CB_ADAPTIVE_THRESH;
+            ok = findChessboardCorners(scaled_image,
+                                       pattern_size,
+                                       corners,
+                                       flags);
+        }
+
+        if (!ok)
+        {
+            flags = 0;
+            ok = findChessboardCorners(scaled_image,
+                                       pattern_size,
+                                       corners,
+                                       flags);
+        }
+        break;
+    }
+    case PatternCircles: {
 #ifdef HAVE_OPENCV_GREATER_THAN_2_2
-      ok = findCirclesGrid( scaled_image, pattern_size, corners );
+        ok = findCirclesGrid( scaled_image, pattern_size, corners );
 #else
-      ntk_throw_exception("Circles pattern is not supported with OpenCV < 2.3");
+        ntk_throw_exception("Circles pattern is not supported with OpenCV < 2.3");
 #endif
-      break;
-  }
-  case PatternAsymCircles: {
+        break;
+    }
+    case PatternAsymCircles: {
 #ifdef HAVE_OPENCV_GREATER_THAN_2_2
-      ok = findCirclesGrid( scaled_image, pattern_size, corners, CALIB_CB_ASYMMETRIC_GRID);
+        ok = findCirclesGrid( scaled_image, pattern_size, corners, CALIB_CB_ASYMMETRIC_GRID);
 #else
-      ntk_throw_exception("Circles pattern is not supported with OpenCV < 2.3");
+        ntk_throw_exception("Circles pattern is not supported with OpenCV < 2.3");
 #endif
-      break;
-  }
-  }
-  cv::Mat draw_image = scaled_image;
+        break;
+    }
+    }
+    cv::Mat draw_image = scaled_image;
 
-  if (ok && (!image_name.empty() || debug_image))
-  {
     cv::Mat gray_image;
     cvtColor(image, gray_image, CV_BGR2GRAY);
     if (pattern == PatternChessboard)
@@ -314,81 +351,83 @@ void calibrationCorners(const std::string& image_name,
                      cvTermCriteria( CV_TERMCRIT_EPS+CV_TERMCRIT_ITER, 30, 0.1 ));
     }
 
-    cv::Mat corner_matrix(corners.size(), 1, CV_32FC2);
-    for (int row = 0; row < corners.size(); ++row)
-      corner_matrix.at<Point2f>(row,0) = corners[row];
-
-    drawChessboardCorners(draw_image, pattern_size, corner_matrix, ok);
-
-    if (debug_image)
+    if (ok && (!image_name.empty() || debug_image))
     {
-        draw_image.copyTo(*debug_image);
+        cv::Mat corner_matrix(corners.size(), 1, CV_32FC2);
+        for (int row = 0; row < corners.size(); ++row)
+            corner_matrix.at<Point2f>(row,0) = corners[row];
+
+        drawChessboardCorners(draw_image, pattern_size, corner_matrix, ok);
+
+        if (debug_image)
+        {
+            draw_image.copyTo(*debug_image);
+        }
+
+        if (!image_name.empty())
+        {
+            ntk_dbg_print(image_name, 1);
+            imwrite(image_name + ".corners.png", draw_image);
+        }
+
+        if (!window_name.empty())
+        {
+            imshow(window_name, draw_image);
+            waitKey(10);
+        }
     }
 
-    if (!image_name.empty())
+    if (ok)
     {
-        ntk_dbg_print(image_name, 1);
-        imwrite(image_name + ".corners.png", draw_image);
+        for (int i = 0; i < corners.size(); ++i)
+        {
+            corners[i].x /= scale_factor;
+            corners[i].y /= scale_factor;
+        }
     }
 
-    if (!window_name.empty())
+    if (!ok)
     {
-        imshow(window_name, draw_image);
-        waitKey(10);
+        corners.clear();
+        return;
     }
-  }
-
-  if (ok)
-  {
-      for (int i = 0; i < corners.size(); ++i)
-      {
-          corners[i].x /= scale_factor;
-          corners[i].y /= scale_factor;
-      }
-  }
-
-  if (!ok)
-  {
-    corners.clear();
-    return;
-  }
 }
 
 void crop_image(cv::Mat& image, cv::Size s)
 {
-  cv::Mat roi = image(cv::Rect((image.cols-s.width)/2.0,
-                               (image.rows-s.height)/2.0,
-                               s.width,
-                               s.height));
-  cv::Mat new_image = cv::Mat(s, image.type());
-  roi.copyTo(new_image);
-  image = new_image;
+    cv::Mat roi = image(cv::Rect((image.cols-s.width)/2.0,
+                                 (image.rows-s.height)/2.0,
+                                 s.width,
+                                 s.height));
+    cv::Mat new_image = cv::Mat(s, image.type());
+    roi.copyTo(new_image);
+    image = new_image;
 }
 
 void depth_distortionance_to_depth(cv::Mat1f& depth_im,
                                    const RGBDCalibration& calib,
                                    const cv::Mat1f& amplitude)
 {
-  double cx = calib.depth_intrinsics(0,2);
-  double cy = calib.depth_intrinsics(1,2);
-  double fx = calib.depth_intrinsics(0,0);
-  double fy = calib.depth_intrinsics(1,1);
+    double cx = calib.depth_intrinsics(0,2);
+    double cy = calib.depth_intrinsics(1,2);
+    double fx = calib.depth_intrinsics(0,0);
+    double fy = calib.depth_intrinsics(1,1);
 
-  for_all_rc(depth_im)
-  {
-    double orig_depth = depth_im(r,c);
+    for_all_rc(depth_im)
+    {
+        double orig_depth = depth_im(r,c);
 
-    double dx = c-cx;
-    double dy = r-cy;
+        double dx = c-cx;
+        double dy = r-cy;
 
-    Point3f v(dx/fx, dy/fy, 1);
-    double norm = sqrt(v.dot(v));
-    v = v * (1.0/norm);
-    v *= orig_depth;
+        Point3f v(dx/fx, dy/fy, 1);
+        double norm = sqrt(v.dot(v));
+        v = v * (1.0/norm);
+        v *= orig_depth;
 
-    double depth_z = v.z;
-    depth_im(r,c) = depth_z;
-  }
+        double depth_z = v.z;
+        depth_im(r,c) = depth_z;
+    }
 }
 
 void calibrationPattern(std::vector< std::vector<Point3f> >& output,
@@ -397,34 +436,34 @@ void calibrationPattern(std::vector< std::vector<Point3f> >& output,
                         float square_size,
                         int nb_images)
 {
-  const int nb_corners = pattern_width * pattern_height;
+    const int nb_corners = pattern_width * pattern_height;
 
-  output.resize(nb_images);
-  for(int i = 0; i < nb_images; ++i)
-  {
-    output[i].resize(nb_corners);
-    for(int j = 0; j < pattern_height; ++j)
-      for(int k = 0; k < pattern_width; ++k)
-      {
-        output[i][j*pattern_width+k] = Point3f(k*square_size, j*square_size, 0);
-      }
-  }
+    output.resize(nb_images);
+    for(int i = 0; i < nb_images; ++i)
+    {
+        output[i].resize(nb_corners);
+        for(int j = 0; j < pattern_height; ++j)
+            for(int k = 0; k < pattern_width; ++k)
+            {
+                output[i][j*pattern_width+k] = Point3f(k*square_size, j*square_size, 0);
+            }
+    }
 }
 
 void calibrationPattern(std::vector<cv::Point3f> & output,
-                         int pattern_width,
-                         int pattern_height,
-                         float square_size)
+                        int pattern_width,
+                        int pattern_height,
+                        float square_size)
 {
-  const int nb_corners = pattern_width * pattern_height;
+    const int nb_corners = pattern_width * pattern_height;
 
 
     output.resize(nb_corners);
     for(int j = 0; j < pattern_height; ++j)
-      for(int k = 0; k < pattern_width; ++k)
-      {
-        output[j*pattern_width+k] = Point3f(k*square_size, j*square_size, 0);
-      }
+        for(int k = 0; k < pattern_width; ++k)
+        {
+            output[j*pattern_width+k] = Point3f(k*square_size, j*square_size, 0);
+        }
 
 }
 
@@ -433,117 +472,117 @@ void estimate_checkerboard_pose(const std::vector<Point3f>& model,
                                 const cv::Mat1d& calib_matrix,
                                 cv::Mat1f& H)
 {
-  cv::Mat1f to_open_cv (4,4);
-  setIdentity(to_open_cv);
-  to_open_cv(1,1) = -1;
-  to_open_cv(2,2) = -1;
-  cv::Mat1f from_open_cv = to_open_cv.inv();
+    cv::Mat1f to_open_cv (4,4);
+    setIdentity(to_open_cv);
+    to_open_cv(1,1) = -1;
+    to_open_cv(2,2) = -1;
+    cv::Mat1f from_open_cv = to_open_cv.inv();
 
-  Mat3f model_mat(model.size(), 1); CvMat c_model_mat = model_mat;
-  for_all_rc(model_mat) model_mat(r, 0) = Vec3f(model[r].x, -model[r].y, -model[r].z);
+    Mat3f model_mat(model.size(), 1); CvMat c_model_mat = model_mat;
+    for_all_rc(model_mat) model_mat(r, 0) = Vec3f(model[r].x, -model[r].y, -model[r].z);
 
-  // First image, for model pose.
+    // First image, for model pose.
 
-  Mat2f point_mat(img_points.size(), 1); CvMat c_point_mat = point_mat;
-  for_all_rc(point_mat) point_mat(r, 0) = Vec2f(img_points[r].x, img_points[r].y);
+    Mat2f point_mat(img_points.size(), 1); CvMat c_point_mat = point_mat;
+    for_all_rc(point_mat) point_mat(r, 0) = Vec2f(img_points[r].x, img_points[r].y);
 
-  Mat1f rvec (3,1); rvec = 0; CvMat c_rvec = rvec;
-  Mat1f tvec (3,1); tvec = 0; CvMat c_tvec = tvec;
+    Mat1f rvec (3,1); rvec = 0; CvMat c_rvec = rvec;
+    Mat1f tvec (3,1); tvec = 0; CvMat c_tvec = tvec;
 
-  CvMat c_calib_mat = calib_matrix;
-  cvFindExtrinsicCameraParams2(&c_model_mat,
-                               &c_point_mat,
-                               &c_calib_mat,
-                               0, &c_rvec, &c_tvec);
+    CvMat c_calib_mat = calib_matrix;
+    cvFindExtrinsicCameraParams2(&c_model_mat,
+                                 &c_point_mat,
+                                 &c_calib_mat,
+                                 0, &c_rvec, &c_tvec);
 
-  cv::Mat1f rot(3,3); CvMat c_rot = rot;
-  cvRodrigues2(&c_rvec, &c_rot);
+    cv::Mat1f rot(3,3); CvMat c_rot = rot;
+    cvRodrigues2(&c_rvec, &c_rot);
 
-  H = cv::Mat1f(4,4);
-  setIdentity(H);
-  cv::Mat1f H_rot = H(Rect(0,0,3,3));
-  rot.copyTo(H_rot);
-  H(0,3) = tvec(0,0);
-  H(1,3) = tvec(1,0);
-  H(2,3) = tvec(2,0);
-  ntk_dbg_print(H, 1);
+    H = cv::Mat1f(4,4);
+    setIdentity(H);
+    cv::Mat1f H_rot = H(Rect(0,0,3,3));
+    rot.copyTo(H_rot);
+    H(0,3) = tvec(0,0);
+    H(1,3) = tvec(1,0);
+    H(2,3) = tvec(2,0);
+    ntk_dbg_print(H, 1);
 
-  H = from_open_cv * H * to_open_cv;
+    H = from_open_cv * H * to_open_cv;
 }
 
 void showCheckerboardCorners(const cv::Mat3b& image, const std::vector<Point2f>& corners, int wait_time)
 {
-  cv::Mat3b debug_img;
-  image.copyTo(debug_img);
-  foreach_idx(i, corners)
-  {
-    Point2i p = corners[i];
-    Rect r (p+Point2i(-2,-2),cv::Size(4,4));
-    cv::rectangle(debug_img, r, Scalar(255,0,0,255));
-    cv::circle(debug_img, p, 8, Scalar(0,0,255,255));
-  }
-  imshow("corners", debug_img);
-  cv::waitKey(wait_time);
+    cv::Mat3b debug_img;
+    image.copyTo(debug_img);
+    foreach_idx(i, corners)
+    {
+        Point2i p = corners[i];
+        Rect r (p+Point2i(-2,-2),cv::Size(4,4));
+        cv::rectangle(debug_img, r, Scalar(255,0,0,255));
+        cv::circle(debug_img, p, 8, Scalar(0,0,255,255));
+    }
+    imshow("corners", debug_img);
+    cv::waitKey(wait_time);
 }
 
 double computeCalibrationError(const cv::Mat& F,
-                    const std::vector<std::vector<Point2f> >& rgb_corners,
-                    const std::vector<std::vector<Point2f> >& depth_corners)
+                               const std::vector<std::vector<Point2f> >& rgb_corners,
+                               const std::vector<std::vector<Point2f> >& depth_corners)
 {
-  std::vector<cv::Point2f> points_in_rgb;
-  for (int i = 0; i < rgb_corners.size(); ++i)
-    for (int j = 0; j < rgb_corners[i].size(); ++j)
-      points_in_rgb.push_back(rgb_corners[i][j]);
+    std::vector<cv::Point2f> points_in_rgb;
+    for (int i = 0; i < rgb_corners.size(); ++i)
+        for (int j = 0; j < rgb_corners[i].size(); ++j)
+            points_in_rgb.push_back(rgb_corners[i][j]);
 
-  std::vector<cv::Point2f> points_in_depth;
-  for (int i = 0; i < depth_corners.size(); ++i)
-    for (int j = 0; j < depth_corners[i].size(); ++j)
-      points_in_depth.push_back(depth_corners[i][j]);
+    std::vector<cv::Point2f> points_in_depth;
+    for (int i = 0; i < depth_corners.size(); ++i)
+        for (int j = 0; j < depth_corners[i].size(); ++j)
+            points_in_depth.push_back(depth_corners[i][j]);
 
-  std::vector<Vec3f> lines_in_depth;
-  std::vector<Vec3f> lines_in_rgb;
+    std::vector<Vec3f> lines_in_depth;
+    std::vector<Vec3f> lines_in_rgb;
 
-  cv::computeCorrespondEpilines(cv::Mat(points_in_rgb), 1, F, lines_in_depth);
-  cv::computeCorrespondEpilines(cv::Mat(points_in_depth), 2, F, lines_in_rgb);
+    cv::computeCorrespondEpilines(cv::Mat(points_in_rgb), 1, F, lines_in_depth);
+    cv::computeCorrespondEpilines(cv::Mat(points_in_depth), 2, F, lines_in_rgb);
 
-  double avgErr = 0;
-  for(int i = 0; i < points_in_rgb.size(); ++i)
-  {
-    double err = fabs(points_in_rgb[i].x*lines_in_rgb[i][0] +
-                      points_in_rgb[i].y*lines_in_rgb[i][1] + lines_in_rgb[i][2]);
-    avgErr += err;
-  }
+    double avgErr = 0;
+    for(int i = 0; i < points_in_rgb.size(); ++i)
+    {
+        double err = fabs(points_in_rgb[i].x*lines_in_rgb[i][0] +
+                          points_in_rgb[i].y*lines_in_rgb[i][1] + lines_in_rgb[i][2]);
+        avgErr += err;
+    }
 
-  for(int i = 0; i < points_in_depth.size(); ++i)
-  {
-    double err = fabs(points_in_depth[i].x*lines_in_depth[i][0] +
-                      points_in_depth[i].y*lines_in_depth[i][1] + lines_in_depth[i][2]);
-    avgErr += err;
-  }
+    for(int i = 0; i < points_in_depth.size(); ++i)
+    {
+        double err = fabs(points_in_depth[i].x*lines_in_depth[i][0] +
+                          points_in_depth[i].y*lines_in_depth[i][1] + lines_in_depth[i][2]);
+        avgErr += err;
+    }
 
-  return avgErr / (points_in_rgb.size() + points_in_depth.size());
+    return avgErr / (points_in_rgb.size() + points_in_depth.size());
 }
 
 void kinect_shift_ir_to_depth(cv::Mat3b& im)
 {
-  imwrite("/tmp/before.png", im);
-  cv::Mat1f t (2, 3);
-  t = 0.f;
-  t(0,0) = 1;
-  t(1,1) = 1;
-  t(0,2) = -4.8;
-  t(1,2) = -3.9;
-  cv::Mat3b tmp;
-  warpAffine(im, tmp, t, im.size());
-  im = tmp;
-  imwrite("/tmp/after.png", im);
+    imwrite("/tmp/before.png", im);
+    cv::Mat1f t (2, 3);
+    t = 0.f;
+    t(0,0) = 1;
+    t(1,1) = 1;
+    t(0,2) = -4.8;
+    t(1,2) = -3.9;
+    cv::Mat3b tmp;
+    warpAffine(im, tmp, t, im.size());
+    im = tmp;
+    imwrite("/tmp/after.png", im);
 }
 
 void loadImageList(const QDir& image_dir,
-                    const QStringList& view_list,
-                    ntk::RGBDProcessor& processor,
-                    RGBDCalibration& calibration,
-                    std::vector<RGBDImage>& images)
+                   const QStringList& view_list,
+                   ntk::RGBDProcessor& processor,
+                   RGBDCalibration& calibration,
+                   std::vector<RGBDImage>& images)
 {
     images.clear();
     for (int i_image = 0; i_image < view_list.size(); ++i_image)
@@ -564,6 +603,9 @@ void getCalibratedCheckerboardCorners(const std::vector<RGBDImage>& images,
                                       std::vector< std::vector<Point2f> >& output_corners,
                                       bool show_corners)
 {
+    static int k = 0;
+    k++;
+
     std::vector< std::vector<Point2f> > good_corners;
     output_corners.resize(images.size());
     for (int i_image = 0; i_image < images.size(); ++i_image)
@@ -571,7 +613,7 @@ void getCalibratedCheckerboardCorners(const std::vector<RGBDImage>& images,
         const RGBDImage& image = images[i_image];
 
         std::vector<Point2f> current_view_corners;
-        calibrationCorners("", "corners",
+        calibrationCorners(cv::format("corners%02d-%02d", k, i_image), "",
                            pattern_width, pattern_height,
                            current_view_corners, image.rgb(), 1,
                            pattern_type);
@@ -597,59 +639,59 @@ void calibrateStereoFromCheckerboard(const std::vector< std::vector<Point2f> >& 
                                      float pattern_size,
                                      ntk::RGBDCalibration& calibration)
 {
-  ntk_assert(undistorted_ref_corners.size() == undistorted_corners.size(), "Size should be equal.");
-  std::vector< std::vector<Point2f> > undistorted_good_corners;
-  std::vector< std::vector<Point2f> > undistorted_good_ref_corners;
+    ntk_assert(undistorted_ref_corners.size() == undistorted_corners.size(), "Size should be equal.");
+    std::vector< std::vector<Point2f> > undistorted_good_corners;
+    std::vector< std::vector<Point2f> > undistorted_good_ref_corners;
 
-  foreach_idx(i, undistorted_ref_corners)
-  {
-    if (undistorted_ref_corners[i].size() > 0 && undistorted_corners[i].size() > 0)
+    foreach_idx(i, undistorted_ref_corners)
     {
-      ntk_assert(undistorted_ref_corners[i].size() == undistorted_corners[i].size(),
-                 "Sizes should be equal.");
-      undistorted_good_ref_corners.push_back(undistorted_ref_corners[i]);
-      undistorted_good_corners.push_back(undistorted_corners[i]);
+        if (undistorted_ref_corners[i].size() > 0 && undistorted_corners[i].size() > 0)
+        {
+            ntk_assert(undistorted_ref_corners[i].size() == undistorted_corners[i].size(),
+                       "Sizes should be equal.");
+            undistorted_good_ref_corners.push_back(undistorted_ref_corners[i]);
+            undistorted_good_corners.push_back(undistorted_corners[i]);
+        }
     }
-  }
 
-  std::vector< std::vector<Point3f> > pattern_points;
-  calibrationPattern(pattern_points,
-                     pattern_width,  pattern_height, pattern_size,
-                     undistorted_good_ref_corners.size());
+    std::vector< std::vector<Point3f> > pattern_points;
+    calibrationPattern(pattern_points,
+                       pattern_width,  pattern_height, pattern_size,
+                       undistorted_good_ref_corners.size());
 
-  cv::Mat R, T;
-  cv::Mat E(3,3,CV_64F),F(3,3,CV_64F);
-  cv::Mat zero_dist (calibration.depth_distortion.size(), calibration.depth_distortion.type());
-  zero_dist = Scalar(0);
+    cv::Mat R, T;
+    cv::Mat E(3,3,CV_64F),F(3,3,CV_64F);
+    cv::Mat zero_dist (calibration.depth_distortion.size(), calibration.depth_distortion.type());
+    zero_dist = Scalar(0);
 
-  stereoCalibrate(pattern_points,
-                  undistorted_good_ref_corners, undistorted_good_corners,
-                  calibration.rgb_intrinsics, zero_dist,
-                  calibration.rgb_intrinsics, zero_dist,
-                  calibration.rgbSize(),
-                  R, T, E, F,
-                  TermCriteria(TermCriteria::COUNT+TermCriteria::EPS, 50, 1e-6),
-                  CALIB_FIX_INTRINSIC);
+    stereoCalibrate(pattern_points,
+                    undistorted_good_ref_corners, undistorted_good_corners,
+                    calibration.rgb_intrinsics, zero_dist,
+                    calibration.rgb_intrinsics, zero_dist,
+                    calibration.rgbSize(),
+                    R, T, E, F,
+                    TermCriteria(TermCriteria::COUNT+TermCriteria::EPS, 50, 1e-6),
+                    CALIB_FIX_INTRINSIC|CALIB_SAME_FOCAL_LENGTH);
 
-  // OpenCV coords has y down and z toward scene.
-  // OpenGL classical 3d coords has y up and z backwards
-  // This is the transform matrix.
+    // OpenCV coords has y down and z toward scene.
+    // OpenGL classical 3d coords has y up and z backwards
+    // This is the transform matrix.
 
-  cv::Mat1d to_gl_base(3,3); setIdentity(to_gl_base);
-  to_gl_base(1,1) = -1;
-  to_gl_base(2,2) = -1;
+    cv::Mat1d to_gl_base(3,3); setIdentity(to_gl_base);
+    to_gl_base(1,1) = -1;
+    to_gl_base(2,2) = -1;
 
-  cv::Mat1d new_R = to_gl_base.inv() * R * to_gl_base;
-  cv::Mat1d new_T = to_gl_base * (T);
+    cv::Mat1d new_R = to_gl_base.inv() * R * to_gl_base;
+    cv::Mat1d new_T = to_gl_base * (T);
 
-  new_R.copyTo(R);
-  new_T.copyTo(T);
+    new_R.copyTo(R);
+    new_T.copyTo(T);
 
-  double error = computeCalibrationError(F, undistorted_good_ref_corners, undistorted_good_corners);
-  std::cout << "Average pixel reprojection error: " << error << std::endl;
+    double error = computeCalibrationError(F, undistorted_good_ref_corners, undistorted_good_corners);
+    std::cout << "Average pixel reprojection error: " << error << std::endl;
 
-  R.copyTo(calibration.R_extrinsics);
-  T.copyTo(calibration.T_extrinsics);
+    R.copyTo(calibration.R_extrinsics);
+    T.copyTo(calibration.T_extrinsics);
 }
 
 } // ntk
