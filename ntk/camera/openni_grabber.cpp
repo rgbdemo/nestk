@@ -101,7 +101,8 @@ OpenniGrabber :: OpenniGrabber(OpenniDriver& driver, int camera_id) :
     m_xml_config_file(DEFAULT_XML_CONFIG_FILE),
     m_track_users(true),
     m_get_infrared(false),
-    m_has_rgb(true)
+    m_has_rgb(true),
+    m_hardware_registration(true)
 {
     setDefaultBayerMode();
 }
@@ -120,7 +121,8 @@ OpenniGrabber :: OpenniGrabber(OpenniDriver& driver, const std::string& camera_s
     m_xml_config_file(DEFAULT_XML_CONFIG_FILE),
     m_track_users(true),
     m_get_infrared(false),
-    m_has_rgb(true)
+    m_has_rgb(true),
+    m_hardware_registration(true)
 {
     for (size_t i = 0; i < driver.numDevices(); ++i)
     {
@@ -267,8 +269,11 @@ bool OpenniGrabber :: connectToDevice()
         status = m_ni_rgb_generator.SetMapOutputMode(rgb_mode);
         m_driver.checkXnError(status, "Set RGB mode");
 
-        ntk_throw_exception_if(!m_ni_depth_generator.IsCapabilitySupported(XN_CAPABILITY_ALTERNATIVE_VIEW_POINT), "Cannot register images.");
-        m_ni_depth_generator.GetAlternativeViewPointCap().SetViewPoint(m_ni_rgb_generator);
+        if(m_hardware_registration)
+        {
+            ntk_throw_exception_if(!m_ni_depth_generator.IsCapabilitySupported(XN_CAPABILITY_ALTERNATIVE_VIEW_POINT), "Cannot register images.");
+            m_ni_depth_generator.GetAlternativeViewPointCap().SetViewPoint(m_ni_rgb_generator);
+        }
 
         if (!is_kinect && m_ni_depth_generator.IsCapabilitySupported(XN_CAPABILITY_FRAME_SYNC))
         {
