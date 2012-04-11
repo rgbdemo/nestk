@@ -6,8 +6,15 @@ endif(COMMAND cmake_policy)
 PROJECT(nestk)
 SET(NESTK_VERSION 0.7)
 
-# FIXME: Auto-detect this.
-OPTION(NESTK_USE_KIN4WIN "Use Microsoft Kinect for Windows SDK." 1)
+if(WIN32)
+    set(KINECTSDK_DIR $ENV{KINECTSDK10_DIR} CACHE PATH "Kinect SDK Directory")
+    if(KINECTSDK_DIR)
+        set(NESTK_USE_KIN4WIN_DEFAULT ON)
+    else()
+        set(NESTK_USE_KIN4WIN_DEFAULT OFF)
+    endif()
+    option(NESTK_USE_KIN4WIN "Use Microsoft Kinect for Windows SDK." ${NESTK_USE_KIN4WIN_DEFAULT})
+endif()
 
 ################################################################################
 ### extra flags
