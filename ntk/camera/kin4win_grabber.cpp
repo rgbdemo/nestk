@@ -1,5 +1,7 @@
 #include "kin4win_grabber.h"
 
+#include "NuiApi.h"
+
 #include <ntk/utils/opencv_utils.h>
 #include <ntk/gesture/body_event.h>
 #include <ntk/geometry/pose_3d.h>
