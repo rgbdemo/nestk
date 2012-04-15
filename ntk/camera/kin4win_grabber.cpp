@@ -18,7 +18,333 @@ QMutex ntk::Kin4WinGrabber::m_ni_mutex;
 namespace
 {
 
+typedef OLECHAR* WinStr;
+typedef HRESULT  WinRet;
+typedef HANDLE   WinHandle;
+
+namespace Messages
+{
+#define MSG(Var, Txt)         \
+    static WinStr Var = Txt;
+
+    MSG(initError         , L"Failed to initialize sensor.")
+    MSG(depthStreamError  , L"Could not open depth stream.")
+    MSG(colorStreamError  , L"Could not open color stream.")
+    MSG(creationError     , L"Failed to acquire sensor."   )
+    MSG(inUseError        , L"Sensor already in use."      )
+
+#undef MSG
 }
+
+void alert (WinStr txt)
+{
+    MessageBoxW(0, txt, L"Kinect", MB_OK | MB_ICONHAND);
+}
+
+void debug (WinStr txt)
+{
+    OutputDebugStringW(txt);
+}
+
+struct Nui
+{
+    static void statusChanged (WinRet result, WinStr instanceName, WinStr uniqueDeviceName, void* data)
+    {
+        reinterpret_cast<Nui*>(data)->statusChanged(result, instanceName, uniqueDeviceName);
+    }
+
+    bool isSameInstance (WinStr instanceName) const
+    {
+        0 != name && 0 == wcscmp(name, instanceName);
+    }
+
+    void statusChanged (WinRet result, WinStr instanceName, WinStr uniqueDeviceName)
+    {
+        // FIXME: Update UI.
+
+        if(!SUCCEEDED(result))
+        {
+            if (isSameInstance(instanceName))
+            {
+                unInit();
+                zero();
+            }
+            return;
+        }
+
+        if (S_OK == result)
+        {
+            if (isSameInstance(instanceName))
+                init(instanceName);
+            else if (!sensor)
+                init();
+        }
+    }
+
+    WinRet init (WinStr instanceName)
+    {
+        if (0 == instanceName)
+        {
+            alert(Messages::creationError);
+            return E_FAIL;
+        }
+
+        WinRet ret = NuiCreateSensorById(instanceName, &sensor);
+    
+        if (FAILED(ret))
+        {
+            alert(Messages::creationError);
+            return ret;
+        }
+
+        SysFreeString(name);
+
+        name = sensor->NuiDeviceConnectionId();
+
+        return init();
+    }
+
+    static DWORD WINAPI processThread (void* data)
+    {
+        Nui* that = reinterpret_cast<Nui*>(data);
+
+        return that->processThread();
+    }
+
+    WinRet init ()
+    {
+        WinRet ret;
+        bool result;
+
+        if (0 == sensor)
+        {
+            WinRet ret = NuiCreateSensorByIndex(0, &sensor);
+
+            if (FAILED(ret))
+                return ret;
+
+            SysFreeString(name);
+
+            name = sensor->NuiDeviceConnectionId();
+        }
+        
+        nextDepthFrameEvent = CreateEvent(0, TRUE, FALSE, 0);
+        nextColorFrameEvent = CreateEvent(0, TRUE, FALSE, 0);
+   
+        ret = sensor->NuiInitialize(NUI_INITIALIZE_FLAG_USES_DEPTH | NUI_INITIALIZE_FLAG_USES_COLOR);
+ 
+        if (FAILED(ret))
+        {
+            if (E_NUI_DEVICE_IN_USE == ret)
+                alert(Messages::inUseError);
+            else
+                alert(Messages::initError);
+
+            return ret;
+        }
+
+        ret = sensor->NuiImageStreamOpen(NUI_IMAGE_TYPE_COLOR, NUI_IMAGE_RESOLUTION_640x480, 0, 2, nextColorFrameEvent, &colorStreamHandle);
+
+        if (FAILED(ret))
+        {
+            alert(Messages::colorStreamError);
+            return ret;
+        }
+
+        ret = sensor->NuiImageStreamOpen(NUI_IMAGE_TYPE_DEPTH, NUI_IMAGE_RESOLUTION_320x240, 0, 2, nextDepthFrameEvent, &depthStreamHandle);
+
+        if (FAILED(ret))
+        {
+            alert(Messages::depthStreamError);
+            return ret;
+        }
+
+        stopProcessingEvent = CreateEvent(0, FALSE, FALSE, 0);
+        processingThreadHandle = CreateThread(NULL, 0, processThread, this, 0, NULL);
+
+        return ret;
+    }
+
+    DWORD processThread ()
+    {
+        const int numEvents = 3;
+        WinHandle events[numEvents] = { stopProcessingEvent, nextDepthFrameEvent, nextColorFrameEvent };
+        int eventIndex = -1;
+        DWORD t;
+
+        bool continueProcessing = true;
+
+        while (continueProcessing)
+        {
+            // Wait for all of the events.
+            eventIndex = WaitForMultipleObjects(numEvents, events, FALSE, 100);
+
+            // Process the next event.
+            switch (eventIndex)
+            {
+                case WAIT_TIMEOUT:
+                    continue;
+
+                case WAIT_OBJECT_0:
+                    continueProcessing = false;
+                    continue;
+
+                case WAIT_OBJECT_0 + 1:
+                    nextDepthFrame();
+                    break;
+
+                case WAIT_OBJECT_0 + 2:
+                    nextColorFrame();
+                    break;
+            }
+        }
+
+        return 0;
+    }
+
+    void nextColorFrame ()
+    {
+        NUI_IMAGE_FRAME colorFrame;
+
+        WinRet ret = sensor->NuiImageStreamGetNextFrame(colorStreamHandle, 0, &colorFrame);
+
+        if (FAILED(ret))
+            return;
+
+        INuiFrameTexture* texture = colorFrame.pFrameTexture;
+        NUI_LOCKED_RECT lockedRect;
+        texture->LockRect(0, &lockedRect, NULL, 0);
+        if (lockedRect.Pitch != 0)
+        {
+            // m_pDrawColor->Draw( static_cast<BYTE *>(LockedRect.pBits), LockedRect.size );
+        }
+        else
+        {
+            debug(L"Buffer length of received texture is bogus\r\n");
+        }
+
+        texture->UnlockRect(0);
+
+        sensor->NuiImageStreamReleaseFrame(colorStreamHandle, &colorFrame);
+    }
+
+    void nextDepthFrame ()
+    {
+        NUI_IMAGE_FRAME depthFrame;
+
+        WinRet ret = sensor->NuiImageStreamGetNextFrame(depthStreamHandle, 0, &depthFrame);
+
+        if (FAILED(ret))
+            return;
+
+        INuiFrameTexture* texture = depthFrame.pFrameTexture;
+        NUI_LOCKED_RECT lockedRect;
+        texture->LockRect(0, &lockedRect, NULL, 0);
+        if (0 != lockedRect.Pitch)
+        {
+            //DWORD frameWidth, frameHeight;
+        
+            //NuiImageResolutionToSize(imageFrame.eResolution, frameWidth, frameHeight);
+        
+            //// draw the bits to the bitmap
+            //RGBQUAD * rgbrun = m_rgbWk;
+            //USHORT * pBufferRun = (USHORT *)LockedRect.pBits;
+
+            //// end pixel is start + width*height - 1
+            //USHORT * pBufferEnd = pBufferRun + (frameWidth * frameHeight);
+
+            //assert( frameWidth * frameHeight <= ARRAYSIZE(m_rgbWk) );
+
+            //while ( pBufferRun < pBufferEnd )
+            //{
+            //    *rgbrun = Nui_ShortToQuad_Depth( *pBufferRun );
+            //    ++pBufferRun;
+            //    ++rgbrun;
+            //}
+
+            // m_pDrawDepth->Draw( (BYTE*) m_rgbWk, frameWidth * frameHeight * 4 );
+        }
+        else
+        {
+            debug(L"Buffer length of received texture is bogus\r\n");
+        }
+
+        texture->UnlockRect(0);
+
+        sensor->NuiImageStreamReleaseFrame(depthStreamHandle, &depthFrame);
+    }
+
+    void unInit( )
+    {
+        // Stop the processing thread.
+        if (0 != stopProcessingEvent)
+        {
+            // Signal the thread.
+            SetEvent(stopProcessingEvent);
+
+            // Wait for thread to stop.
+            if (0 != processingThreadHandle)
+            {
+                WaitForSingleObject(processingThreadHandle, INFINITE);
+                CloseHandle(processingThreadHandle);
+            }
+
+            CloseHandle(stopProcessingEvent);
+        }
+
+        if (0 != sensor)
+            sensor->NuiShutdown();
+
+        if (0 != nextDepthFrameEvent && INVALID_HANDLE_VALUE != nextDepthFrameEvent)
+        {
+            CloseHandle(nextDepthFrameEvent);
+            nextDepthFrameEvent = 0;
+        }
+        if (0 != nextColorFrameEvent && INVALID_HANDLE_VALUE !=  nextColorFrameEvent)
+        {
+            CloseHandle(nextColorFrameEvent);
+            nextColorFrameEvent = 0;
+        }
+
+        if (0 != sensor)
+        {
+            sensor->Release();
+            sensor = 0;
+        }
+    }
+
+    void zero()
+    {
+        if (0 != sensor)
+        {
+            sensor->Release();
+            sensor = 0;
+        }
+        nextDepthFrameEvent = 0;
+        nextColorFrameEvent = 0;
+        depthStreamHandle = 0;
+        colorStreamHandle = 0;
+        processingThreadHandle = 0;
+        stopProcessingEvent = 0;
+    }
+
+    WinStr name;
+
+    INuiSensor* sensor;
+
+    WinHandle nextDepthFrameEvent;
+    WinHandle nextColorFrameEvent;
+
+    WinHandle depthStreamHandle;
+    WinHandle colorStreamHandle;
+
+    WinHandle stopProcessingEvent;
+    WinHandle processingThreadHandle;
+};
+
+}
+
+//------------------------------------------------------------------------------
 
 namespace ntk
 {
