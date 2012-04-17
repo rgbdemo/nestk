@@ -600,14 +600,15 @@ void getCalibratedCheckerboardCorners(const std::vector<RGBDImage>& images,
                                       int pattern_width,
                                       int pattern_height,
                                       PatternType pattern_type,
-                                      std::vector< std::vector<Point2f> >& output_corners,
+                                      std::vector< std::vector<Point2f> >& all_corners,
+                                      std::vector< std::vector<Point2f> >& good_corners,
                                       bool show_corners)
 {
     static int k = 0;
     k++;
 
-    std::vector< std::vector<Point2f> > good_corners;
-    output_corners.resize(images.size());
+    good_corners.clear();
+    all_corners.resize(images.size());
     for (int i_image = 0; i_image < images.size(); ++i_image)
     {
         const RGBDImage& image = images[i_image];
@@ -620,14 +621,15 @@ void getCalibratedCheckerboardCorners(const std::vector<RGBDImage>& images,
 
         if (current_view_corners.size() == pattern_height*pattern_width)
         {
-            output_corners[i_image] = current_view_corners;
+            all_corners[i_image] = current_view_corners;
+            good_corners.push_back(current_view_corners);
             if (show_corners)
                 showCheckerboardCorners(image.rgb(), current_view_corners, 1);
         }
         else
         {
             ntk_dbg(0) << "Warning: corners not detected";
-            output_corners[i_image].resize(0);
+            all_corners[i_image].resize(0);
         }
     }
 }
@@ -692,6 +694,106 @@ void calibrateStereoFromCheckerboard(const std::vector< std::vector<Point2f> >& 
 
     R.copyTo(calibration.R_extrinsics);
     T.copyTo(calibration.T_extrinsics);
+}
+
+void calibrate_kinect_rgb(const std::vector<RGBDImage>& images,
+                          const std::vector< std::vector<Point2f> >& good_corners,
+                          RGBDCalibration& calibration,
+                          int pattern_width,
+                          int pattern_height,
+                          float pattern_size,
+                          ntk::PatternType pattern_type,
+                          bool ignore_distortions,
+                          bool fix_center)
+{
+    std::vector< std::vector<Point3f> > pattern_points;
+    calibrationPattern(pattern_points,
+                       pattern_width, pattern_height, pattern_size,
+                       good_corners.size());
+
+    ntk_assert(pattern_points.size() == good_corners.size(), "Invalid points size");
+
+    int flags = CV_CALIB_USE_INTRINSIC_GUESS | CV_CALIB_FIX_ASPECT_RATIO;
+    if (ignore_distortions)
+        flags |= CV_CALIB_ZERO_TANGENT_DIST;
+    if (fix_center)
+        flags |= CV_CALIB_FIX_PRINCIPAL_POINT;
+
+    std::vector<Mat> rvecs, tvecs;
+    double reprojection_error = calibrateCamera(pattern_points, good_corners, calibration.rawRgbSize(),
+                                                calibration.rgb_intrinsics, calibration.rgb_distortion,
+                                                rvecs, tvecs, flags);
+    ntk_dbg_print(reprojection_error, 0);
+
+    if (ignore_distortions)
+        calibration.rgb_distortion = 0.f;
+}
+
+static float computeScaleFactorMean(const std::vector<Point2f>& current_view_corners,
+                                    const RGBDImage& image,
+                                    int pattern_width, int pattern_height, float pattern_size)
+{
+    std::vector< std::vector<Point3f> > pattern_points;
+    calibrationPattern(pattern_points,
+                       pattern_width,  pattern_height, pattern_size,
+                       1);
+
+    float mean = 0;
+    int n_values = 0;
+
+    for (int i = 0; i < current_view_corners.size(); ++i)
+    {
+        float depth_i = image.mappedDepth()(current_view_corners[i].y, current_view_corners[i].x);
+        ntk_dbg_print(depth_i, 1);
+        if (depth_i < 1e-5) continue;
+
+        cv::Point3f p3d_i = image.calibration()->rgb_pose->unprojectFromImage(current_view_corners[i], depth_i);
+
+        for (int j = (i+1); j < current_view_corners.size(); ++j)
+        {
+            float depth_j = image.mappedDepth()(current_view_corners[j].y, current_view_corners[j].x);
+            if (depth_j < 1e-5) continue;
+
+            ntk_dbg_print(depth_j, 1);
+
+            cv::Point3f p3d_j = image.calibration()->rgb_pose->unprojectFromImage(current_view_corners[j], depth_j);
+            ntk_dbg_print(p3d_i, 1);
+            ntk_dbg_print(p3d_j, 1);
+
+            float kinect_size = cv::norm(p3d_i - p3d_j);
+            ntk_dbg_print(kinect_size, 1);
+
+            float real_size = cv::norm(pattern_points[0][i] - pattern_points[0][j]);
+            ntk_dbg_print(real_size, 1);
+
+            mean += (real_size / kinect_size);
+            ++n_values;
+        }
+    }
+    mean /= n_values;
+    ntk_dbg_print(mean, 1);
+    return mean;
+}
+
+float calibrate_kinect_scale_factor(const std::vector<RGBDImage>& images,
+                                    const std::vector< std::vector<Point2f> >& corners,
+                                    int pattern_width, int pattern_height, float pattern_size)
+{
+    float scale_factor_mean = 0;
+    int n_factor_terms = 0;
+
+    for (int i = 0; i < images.size(); ++i)
+    {
+        if (corners[i].size() == 0)
+            continue;
+
+        scale_factor_mean += computeScaleFactorMean(corners[i], images[i], pattern_width, pattern_height, pattern_size);
+        ++n_factor_terms;
+    }
+
+    scale_factor_mean /= n_factor_terms;
+
+    return n_factor_terms > 0 ? scale_factor_mean : 1.0f;
 }
 
 } // ntk

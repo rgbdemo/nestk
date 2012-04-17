@@ -208,16 +208,32 @@ void loadImageList(const QDir& image_dir,
                    ntk::RGBDCalibration& calibration,
                    std::vector<ntk::RGBDImage>& images);
 
-void getCalibratedCheckerboardCorners(const std::vector<ntk::RGBDImage>& images,
+float calibrate_kinect_scale_factor(const std::vector<ntk::RGBDImage>& images,
+                                    const std::vector< std::vector<cv::Point2f> >& corners,
+                                    int pattern_width, int pattern_height, float pattern_size);
+
+void getCalibratedCheckerboardCorners(const std::vector<RGBDImage>& images,
                                       int pattern_width,
                                       int pattern_height,
-                                      ntk::PatternType pattern_type,
-                                      std::vector< std::vector<cv::Point2f> >& output_corners, bool show_corners = true);
+                                      PatternType pattern_type,
+                                      std::vector< std::vector<cv::Point2f> >& all_corners,
+                                      std::vector< std::vector<cv::Point2f> >& good_corners,
+                                      bool show_corners = true);
 
 void calibrateStereoFromCheckerboard(const std::vector< std::vector<cv::Point2f> >& undistorted_ref_corners,
                                      const std::vector< std::vector<cv::Point2f> >& undistorted_corners,
                                      int pattern_width, int pattern_height, float pattern_size,
                                      ntk::RGBDCalibration &calibration);
+
+void calibrate_kinect_rgb(const std::vector<ntk::RGBDImage>& images,
+                          const std::vector< std::vector<cv::Point2f> >& good_corners,
+                          ntk::RGBDCalibration& calibration,
+                          int pattern_width,
+                          int pattern_height,
+                          float pattern_size,
+                          ntk::PatternType pattern_type,
+                          bool ignore_distortions,
+                          bool fix_center);
 
 } // ntk
 
