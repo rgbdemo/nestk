@@ -3,6 +3,7 @@
 #include "NuiApi.h"
 
 #include <ntk/utils/opencv_utils.h>
+#include <ntk/utils/time.h>
 #include <ntk/gesture/body_event.h>
 #include <ntk/geometry/pose_3d.h>
 
@@ -18,9 +19,24 @@ QMutex ntk::Kin4WinGrabber::m_ni_mutex;
 namespace
 {
 
+typedef unsigned char  uint8_t;
+typedef unsigned short uint16_t;
+
 typedef OLECHAR* WinStr;
 typedef HRESULT  WinRet;
 typedef HANDLE   WinHandle;
+
+void alert (WinStr txt)
+{
+    MessageBoxW(0, txt, L"Kinect", MB_OK | MB_ICONHAND);
+}
+
+void debug (WinStr txt)
+{
+    OutputDebugStringW(txt);
+}
+
+}
 
 namespace Messages
 {
@@ -36,18 +52,26 @@ namespace Messages
 #undef MSG
 }
 
-void alert (WinStr txt)
-{
-    MessageBoxW(0, txt, L"Kinect", MB_OK | MB_ICONHAND);
-}
+namespace ntk {
 
-void debug (WinStr txt)
-{
-    OutputDebugStringW(txt);
-}
+// FIXME: NuiSetDeviceStatusCallback( &CSkeletalViewerApp::Nui_StatusProcThunk, that);
 
-struct Nui
+class Nui
 {
+public:
+    static const int defaultFrameWidth  = 640;
+    static const int defaultFrameHeight = 480;
+
+    Nui (Kin4WinGrabber* that)
+    : that(that)
+    , dirtyDepth(true)
+    , dirtyColor(true)
+    , sensor(0)
+    , name(0)
+    {
+
+    }
+
     static void statusChanged (WinRet result, WinStr instanceName, WinStr uniqueDeviceName, void* data)
     {
         reinterpret_cast<Nui*>(data)->statusChanged(result, instanceName, uniqueDeviceName);
@@ -151,7 +175,7 @@ struct Nui
             return ret;
         }
 
-        ret = sensor->NuiImageStreamOpen(NUI_IMAGE_TYPE_DEPTH, NUI_IMAGE_RESOLUTION_320x240, 0, 2, nextDepthFrameEvent, &depthStreamHandle);
+        ret = sensor->NuiImageStreamOpen(NUI_IMAGE_TYPE_DEPTH, NUI_IMAGE_RESOLUTION_640x480, 0, 2, nextDepthFrameEvent, &depthStreamHandle);
 
         if (FAILED(ret))
         {
@@ -216,6 +240,22 @@ struct Nui
         texture->LockRect(0, &lockedRect, NULL, 0);
         if (lockedRect.Pitch != 0)
         {
+            NUI_SURFACE_DESC surfaceDesc;
+            texture->GetLevelDesc(0, &surfaceDesc);
+            const int width  = surfaceDesc.Width;
+            const int height = surfaceDesc.Height;
+
+            ntk_assert( width == that->m_current_image.rawRgb().cols, "Bad width");
+            ntk_assert(height == that->m_current_image.rawRgb().rows, "Bad height");
+
+            uint8_t* buf = static_cast<uint8_t*>(lockedRect.pBits);
+            // size_t  size = size_t(lockedRect.size);
+
+            cvtColor(cv::Mat4b(height, width, (cv::Vec4b*)buf), that->m_current_image.rawRgbRef(), CV_RGBA2RGB);
+
+            // std::copy(buf, buf + 3 * width * height, (uint8_t*) that->m_current_image.rawRgbRef().ptr());
+            // cvtColor(that->m_current_image.rawRgb(), that->m_current_image.rawRgbRef(), CV_RGB2BGR);
+
             // m_pDrawColor->Draw( static_cast<BYTE *>(LockedRect.pBits), LockedRect.size );
         }
         else
@@ -226,6 +266,8 @@ struct Nui
         texture->UnlockRect(0);
 
         sensor->NuiImageStreamReleaseFrame(colorStreamHandle, &colorFrame);
+
+        dirtyColor = false;
     }
 
     void nextDepthFrame ()
@@ -242,6 +284,20 @@ struct Nui
         texture->LockRect(0, &lockedRect, NULL, 0);
         if (0 != lockedRect.Pitch)
         {
+            NUI_SURFACE_DESC surfaceDesc;
+            texture->GetLevelDesc(0, &surfaceDesc);
+            const int width  = surfaceDesc.Width;
+            const int height = surfaceDesc.Height;
+
+            uint16_t* buf = reinterpret_cast<uint16_t*>(lockedRect.pBits);
+
+            ntk_assert(width  == that->m_current_image.rawDepth().cols, "Bad width");
+            ntk_assert(height == that->m_current_image.rawDepth().rows, "Bad height");
+
+            float* depth_buf = that->m_current_image.rawDepthRef().ptr<float>();
+            for (int i = 0; i < width * height; ++i)
+                *depth_buf++ = float(NuiDepthPixelToDepth(*buf++)) / 1000.f;
+
             //DWORD frameWidth, frameHeight;
         
             //NuiImageResolutionToSize(imageFrame.eResolution, frameWidth, frameHeight);
@@ -272,6 +328,8 @@ struct Nui
         texture->UnlockRect(0);
 
         sensor->NuiImageStreamReleaseFrame(depthStreamHandle, &depthFrame);
+
+        dirtyDepth = false;
     }
 
     void unInit( )
@@ -328,18 +386,22 @@ struct Nui
         stopProcessingEvent = 0;
     }
 
+    Kin4WinGrabber* that;
+
     WinStr name;
 
     INuiSensor* sensor;
 
     WinHandle nextDepthFrameEvent;
-    WinHandle nextColorFrameEvent;
+    WinHandle     depthStreamHandle;
+    bool     dirtyDepth;
 
-    WinHandle depthStreamHandle;
-    WinHandle colorStreamHandle;
+    WinHandle nextColorFrameEvent;
+    WinHandle     colorStreamHandle;
+    bool     dirtyColor;
 
     WinHandle stopProcessingEvent;
-    WinHandle processingThreadHandle;
+    WinHandle     processingThreadHandle;
 };
 
 }
@@ -350,6 +412,7 @@ namespace ntk
 {
 
 Kin4WinGrabber :: Kin4WinGrabber(Kin4WinDriver& driver, int camera_id) :
+    nui(new Nui(this)),
     m_driver(driver),
     m_camera_id(camera_id)
 {
@@ -357,18 +420,19 @@ Kin4WinGrabber :: Kin4WinGrabber(Kin4WinDriver& driver, int camera_id) :
 }
 
 Kin4WinGrabber :: Kin4WinGrabber(Kin4WinDriver& driver, const std::string& camera_serial) :
+    nui(new Nui(this)),
     m_driver(driver),
     m_camera_id(-1),
     m_camera_serial(camera_serial)
 {
-    for (size_t i = 0; i < driver.numDevices(); ++i)
-    {
-        if (driver.deviceInfo(i).serial == camera_serial)
-        {
-            m_camera_id = i;
-            break;
-        }
-    }
+    //for (size_t i = 0; i < driver.numDevices(); ++i)
+    //{
+    //    if (driver.deviceInfo(i).serial == camera_serial)
+    //    {
+    //        m_camera_id = i;
+    //        break;
+    //    }
+    //}
 
     if (m_camera_id < 0)
     {
@@ -382,6 +446,8 @@ bool Kin4WinGrabber :: connectToDevice()
 
     ntk_dbg(1) << format("[Kinect %x] connecting", this);
 
+    //nui->init();
+
     return false;
 }
 
@@ -390,6 +456,8 @@ bool Kin4WinGrabber :: disconnectFromDevice()
     QMutexLocker ni_locker(&m_ni_mutex);
 
     ntk_dbg(1) << format("[Kinect %x] disconnecting", this);
+
+    nui->unInit();
 
     return false;
 }
@@ -401,7 +469,49 @@ void Kin4WinGrabber :: estimateCalibration()
 
 void Kin4WinGrabber :: run()
 {
+    m_should_exit = false;
 
+    //m_current_image.setCalibration(m_calib_data);
+    //m_rgbd_image.setCalibration(m_calib_data);
+
+    m_rgbd_image.rawRgbRef()   = Mat3b(Nui::defaultFrameHeight, Nui::defaultFrameWidth);
+    m_rgbd_image.rawDepthRef() = Mat1f(Nui::defaultFrameHeight, Nui::defaultFrameWidth);
+    //m_rgbd_image.rawIntensityRef() = Mat1f(defaultFrameHeight, defaultFrameWidth);
+
+    m_current_image.rawRgbRef()   = Mat3b(Nui::defaultFrameHeight, Nui::defaultFrameWidth);
+    m_current_image.rawDepthRef() = Mat1f(Nui::defaultFrameHeight, Nui::defaultFrameWidth);
+    //m_current_image.rawIntensityRef() = Mat1f(defaultFrameHeight, defaultFrameWidth);
+
+    nui->init();
+
+    int64 last_grab_time = 0;
+
+    while (!m_should_exit)
+    {
+        waitForNewEvent();
+
+        while (nui->dirtyDepth || nui->dirtyColor)
+        {
+            Sleep(1);
+        }
+
+        // m_current_image.rawDepth().copyTo(m_current_image.rawAmplitudeRef());
+        // m_current_image.rawDepth().copyTo(m_current_image.rawIntensityRef());
+
+        {
+            int64 grab_time = ntk::Time::getMillisecondCounter();
+            ntk_dbg_print(grab_time - last_grab_time, 2);
+            last_grab_time = grab_time;
+            QWriteLocker locker(&m_lock);
+
+            m_current_image.swap(m_rgbd_image);
+
+            nui->dirtyDepth = true;
+            nui->dirtyColor = true;
+        }
+
+        advertiseNewFrame();
+    }
 }
 
 } // ntk

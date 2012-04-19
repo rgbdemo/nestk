@@ -6,6 +6,8 @@
 namespace ntk
 {
 
+class Nui;
+
 class Kin4WinDriver
 {
 public:
@@ -26,12 +28,14 @@ public:
     ~Kin4WinDriver();
 
 public:
-    int numDevices() const;
-    const DeviceInfo& deviceInfo(int index) const;
+    //int numDevices() const;
+    //const DeviceInfo& deviceInfo(int index) const;
 };
 
 class Kin4WinGrabber : public ntk::RGBDGrabber
 {
+    friend class Nui;
+
 public:
     Kin4WinGrabber(Kin4WinDriver& driver, int camera_id = 0);
     Kin4WinGrabber(Kin4WinDriver& driver, const std::string& camera_serial);
@@ -47,6 +51,7 @@ private:
     void estimateCalibration();
 
 private:
+    Nui* nui; // FIXME: Handle multiple device setups.
     Kin4WinDriver& m_driver;
     int m_camera_id;
     std::string m_camera_serial;
