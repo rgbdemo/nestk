@@ -6,26 +6,6 @@ endif(COMMAND cmake_policy)
 PROJECT(nestk)
 SET(NESTK_VERSION 0.7)
 
-if(WIN32)
-    set(KINECTSDK_DIR $ENV{KINECTSDK10_DIR} CACHE PATH "Kinect SDK Directory")
-    if(KINECTSDK_DIR)
-        set(NESTK_USE_KIN4WIN_DEFAULT ON)
-    else()
-        set(NESTK_USE_KIN4WIN_DEFAULT OFF)
-    endif()
-    option(NESTK_USE_KIN4WIN "Use Microsoft Kinect for Windows SDK." ${NESTK_USE_KIN4WIN_DEFAULT})
-    if(NESTK_USE_KIN4WIN)
-        include_directories("${KINECTSDK_DIR}/inc")
-        if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-            set(KINECTSDK_LIBRARY "${KINECTSDK_DIR}/lib/amd64/Kinect10.lib")
-        else()
-            set(KINECTSDK_LIBRARY "${KINECTSDK_DIR}/lib/x86/Kinect10.lib")
-        endif()
-
-    endif()
-
-endif()
-
 ################################################################################
 ### extra flags
 ################################################################################
