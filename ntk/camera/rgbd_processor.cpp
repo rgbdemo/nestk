@@ -125,7 +125,7 @@ namespace ntk
         {
             cv::Vec3f n = estimate_normal_from_depth(depth_im, depth_pose,
                                                      r, c, 0.03,
-                                                     &dx, &dy);
+                                                     dx.data ? &dx : 0, dy.data ? &dy : 0);
             normal_im(r,c) = n;
         }
         tc.stop();
