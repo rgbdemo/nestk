@@ -304,16 +304,16 @@ void calibrationCorners(const std::string& image_name,
   }
   cv::Mat draw_image = scaled_image;
 
+  cv::Mat gray_image;
+  cvtColor(image, gray_image, CV_BGR2GRAY);
+  if (pattern == PatternChessboard)
+  {
+      cornerSubPix(gray_image, corners, Size(5,5), Size(-1,-1),
+                   cvTermCriteria( CV_TERMCRIT_EPS+CV_TERMCRIT_ITER, 30, 0.1 ));
+  }
+
   if (ok && (!image_name.empty() || debug_image))
   {
-    cv::Mat gray_image;
-    cvtColor(image, gray_image, CV_BGR2GRAY);
-    if (pattern == PatternChessboard)
-    {
-        cornerSubPix(gray_image, corners, Size(5,5), Size(-1,-1),
-                     cvTermCriteria( CV_TERMCRIT_EPS+CV_TERMCRIT_ITER, 30, 0.1 ));
-    }
-
     cv::Mat corner_matrix(corners.size(), 1, CV_32FC2);
     for (int row = 0; row < corners.size(); ++row)
       corner_matrix.at<Point2f>(row,0) = corners[row];
