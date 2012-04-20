@@ -20,7 +20,48 @@ namespace ntk
 
 CL::CL()
 {
-    setup_gl_cl();
+}
+
+void CL::setup()
+{
+    std::vector<cl::Platform> platforms;
+    err = cl::Platform::get(&platforms);
+    printf("cl::Platform::get(): %s\n", oclErrorString(err));
+    printf("platforms.size(): %zd\n", platforms.size());
+
+    deviceUsed = 0;
+    err = platforms[0].getDevices(CL_DEVICE_TYPE_GPU, &devices);
+    printf("getDevices: %s\n", oclErrorString(err));
+    printf("devices.size(): %zd\n", devices.size());
+    //const char* s = devices[0].getInfo<CL_DEVICE_EXTENSIONS>().c_str();
+    //printf("extensions: \n %s \n", s);
+    int t = devices.front().getInfo<CL_DEVICE_TYPE>();
+    printf("type: \n %d %d \n", t, CL_DEVICE_TYPE_GPU);
+
+    //assume sharing for now, at some point we should implement a check
+    //to make sure the devices can do context sharing
+    try{
+        context = cl::Context(CL_DEVICE_TYPE_GPU);
+        //context = cl::Context(devices, props);
+        //context = cl::Context(devices, props, NULL, NULL, &err);
+        //printf("IS IT ERR222 ???? %s\n", oclErrorString(err));
+        //context = cl::Context(CL_DEVICE_TYPE_GPU, props);
+        //context = cl::Context(cxGPUContext);
+    }
+    catch (cl::Error er) {
+        printf("ERROR: %s(%s)\n", er.what(), oclErrorString(er.err()));
+    }
+
+    //devices = context.getInfo<CL_CONTEXT_DEVICES>();
+
+    //create the command queue we will use to execute OpenCL commands
+    ///command_queue = clCreateCommandQueue(context, devices[deviceUsed], 0, &err);
+    try{
+        queue = cl::CommandQueue(context, devices[deviceUsed], 0, &err);
+    }
+    catch (cl::Error er) {
+        printf("ERROR: %s(%s)\n", er.what(), oclErrorString(er.err()));
+    }
 }
 
 static char *file_contents(const char *filename, int *length)
@@ -129,7 +170,7 @@ cl::Kernel CL::loadKernelFromString(const std::string& source_code,
     return kernel;
 }
 
-void CL::setup_gl_cl()
+void CL::setupGL()
 {
     std::vector<cl::Platform> platforms;
     err = cl::Platform::get(&platforms);
@@ -243,11 +284,6 @@ void CL::setup_gl_cl()
         printf("ERROR: %s(%s)\n", er.what(), oclErrorString(er.err()));
     }
 }
-
-
-
-
-
 
 // Helper function to get error string
 // From NVIDIA

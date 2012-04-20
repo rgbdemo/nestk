@@ -43,18 +43,20 @@ struct reprojection_error_3d : public ntk::CostFunction
 {
     reprojection_error_3d(const Pose3D& initial_pose,
                           const std::vector<Point3f>& ref_points,
-                          const std::vector<Point3f>& img_points)
-        : CostFunction(6, ref_points.size()*3),
+                          const std::vector<Point3f>& img_points,
+                          bool use_depth)
+        : CostFunction(6, ref_points.size()*(use_depth ? 3 : 2)),
           initial_pose(initial_pose),
           ref_points(ref_points),
-          img_points(img_points)
+          img_points(img_points),
+          stride (use_depth ? 3 : 2),
+          use_depth (use_depth)
     {
         ntk_assert(ref_points.size() == img_points.size(), "Invalid matches");
     }
 
     virtual void evaluate (const std::vector< double > &x, std::vector< double > &fx) const
     {
-        const bool use_depth = true;
         Pose3D new_pose = initial_pose;
         new_pose.applyTransformAfter(Vec3f(x[3],x[4],x[5]), cv::Vec3f(x[0],x[1],x[2]));
         int err_i = 0;
@@ -64,15 +66,18 @@ struct reprojection_error_3d : public ntk::CostFunction
             const Point3f& ref_point = ref_points[p_i];
             const Point3f& img_point = img_points[p_i];
             Point3f proj_p = new_pose.projectToImage(ref_point);
-            // Normalize to avoid depending on the presence of valid depth.
+
             bool has_depth_i = use_depth && img_point.z > 1e-5;
-            float norm_factor = has_depth_i ? 2.0/3.0 : 1.0;
-            fx[err_i*3] = norm_factor * (proj_p.x - img_point.x) / new_pose.meanFocal();
-            fx[err_i*3+1] = norm_factor * (proj_p.y - img_point.y) / new_pose.meanFocal();
-            if (has_depth_i)
-                fx[err_i*3+2] = norm_factor * (proj_p.z - img_point.z);
-            else
-                fx[err_i*3+2] = 0;
+            float norm_factor = 1.0;
+            // this point has no depth, compensate the missing error value.
+            if (use_depth && !has_depth_i) norm_factor = 3.0 / 2.0;
+
+            fx[err_i*stride] = norm_factor * (proj_p.x - img_point.x) / new_pose.meanFocal();
+            fx[err_i*stride+1] = norm_factor * (proj_p.y - img_point.y) / new_pose.meanFocal();
+
+            if (use_depth && has_depth_i)
+                fx[err_i*stride+2] = norm_factor * (proj_p.z - img_point.z);
+
             err_i = err_i + 1;
         }
     }
@@ -81,16 +86,19 @@ private:
     const Pose3D& initial_pose;
     const std::vector<Point3f>& ref_points;
     const std::vector<Point3f>& img_points;
+    int stride;
+    bool use_depth;
 };
 
 // atomic mean square pose estimation.
 double rms_optimize_3d(Pose3D& pose3d,
                        const std::vector<Point3f>& ref_points,
-                       const std::vector<Point3f>& img_points)
+                       const std::vector<Point3f>& img_points,
+                       bool use_depth)
 {
     std::vector<double> fx;
     std::vector<double> initial(6);
-    reprojection_error_3d f(pose3d, ref_points, img_points);
+    reprojection_error_3d f(pose3d, ref_points, img_points, use_depth);
     LevenbergMarquartMinimizer optimizer;
     std::fill(stl_bounds(initial), 0);
     fx.resize(ref_points.size()*3);
@@ -108,12 +116,13 @@ double rms_optimize_3d(Pose3D& pose3d,
 double rms_optimize_ransac(Pose3D& pose3d,
                            const std::vector<Point3f>& ref_points,
                            const std::vector<Point3f>& img_points,
-                           std::vector<bool>& valid_points)
+                           std::vector<bool>& valid_points,
+                           bool use_depth)
 {
     // One centimeter. 1000*1000 comes from the error scale factor
     // in rms_optimize.
-    const double rms_err_threshold = 0.03;
-    const double compat_err_threshold = 0.03;
+    const double rms_err_threshold = 0.005;
+    const double compat_err_threshold = 0.05;
     const int max_iterations = 50;
     const int min_support_points = std::max(7, int(ref_points.size()/20));
     const float min_consensus_support_percent = 0.05;
@@ -128,6 +137,8 @@ double rms_optimize_ransac(Pose3D& pose3d,
     std::vector<Point3f> current_img_points;
     std::set<int> best_indices;
     std::set<int> indices;
+
+    ntk_dbg_print(min_support_points, 2);
 
     for (int it = 0; it < max_iterations && best_error > 0.01; ++it)
     {
@@ -145,7 +156,7 @@ double rms_optimize_ransac(Pose3D& pose3d,
             current_img_points.push_back(img_points[*it]);
         }
 
-        double mean_initial_error = rms_optimize_3d(current_pose, current_ref_points, current_img_points);
+        double mean_initial_error = rms_optimize_3d(current_pose, current_ref_points, current_img_points, use_depth);
         mean_initial_error /= current_ref_points.size();
 
         ntk_dbg_print(mean_initial_error, 2);
@@ -187,7 +198,7 @@ double rms_optimize_ransac(Pose3D& pose3d,
         }
         // current_pose = pose3d;
 
-        double iteration_error = rms_optimize_3d(current_pose, current_ref_points, current_img_points);
+        double iteration_error = rms_optimize_3d(current_pose, current_ref_points, current_img_points, use_depth);
         // iteration_error /= current_ref_points.size();
         ntk_dbg_print(iteration_error, 2);
         if (iteration_error < best_error)

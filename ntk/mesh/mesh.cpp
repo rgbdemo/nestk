@@ -119,9 +119,21 @@ Point3f Mesh :: center() const
 }
 
 void Mesh::saveToPlyFile(const char* filename) const
-{
+{   
     if (texture.data)
-        imwrite(cv::format("%s.texture.png", filename), texture);
+    {
+        std::string texture_filename = filename;
+        if (texture_filename.size() > 3)
+        {
+            texture_filename.erase(texture_filename.size()-4, 3); // remove .ply
+            texture_filename += ".png";
+        }
+        else
+        {
+            texture_filename += ".texture.png";
+        }
+        imwrite(texture_filename, texture);
+    }
 
     std::ofstream ply_file (filename);
     ply_file << "ply\n";
@@ -157,7 +169,7 @@ void Mesh::saveToPlyFile(const char* filename) const
         ply_file << "element face " << faces.size() << "\n";
         ply_file << "property list uchar uint vertex_indices\n";
         // For meshlab wedges.
-        if (hasTexcoords())
+        if (hasTexcoords() || hasFaceTexcoords())
             ply_file << "property list uchar float texcoord\n";
     }
 
@@ -189,13 +201,22 @@ void Mesh::saveToPlyFile(const char* filename) const
             ply_file << faces[i].numVertices();
             for (unsigned j = 0; j < faces[i].numVertices(); ++j)
                 ply_file << " " << faces[i].indices[j];
-            if (hasTexcoords())
+            if (hasTexcoords() && !hasFaceTexcoords())
             {
                 ply_file << " 6";
                 for (unsigned j = 0; j < faces[i].numVertices(); ++j)
                 {
                     ply_file << " " << texcoords[faces[i].indices[j]].x;
                     ply_file << " " << 1.0 - texcoords[faces[i].indices[j]].y;
+                }
+            }
+            else if (hasFaceTexcoords())
+            {
+                ply_file << " 6";
+                for (unsigned j = 0; j < faces[i].numVertices(); ++j)
+                {
+                    ply_file << " " << face_texcoords[i].u[j];
+                    ply_file << " " << 1.0 - face_texcoords[i].v[j];
                 }
             }
             ply_file << "\n";

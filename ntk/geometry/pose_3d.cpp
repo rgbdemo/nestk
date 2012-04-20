@@ -668,6 +668,12 @@ void Pose3D :: setCameraTransform(const cv::Mat1d& H)
     impl->computeProjectiveTransform();
 }
 
+void Pose3D :: setCameraTransform(const Pose3D& pose)
+{
+    impl->camera_transform = pose.impl->camera_transform;
+    impl->computeProjectiveTransform();
+}
+
 cv::Point3f Pose3D :: cameraTransform(const cv::Point3f& p) const
 {
     Eigen::Vector3d ep; toEigen(p, ep);
@@ -775,6 +781,11 @@ cv::Vec4f Pose3D :: cvQuaternionRotation() const
 void Pose3D :: fromGLToRos()
 {
     applyTransformAfter(Vec3f(0,0,0), Vec3f(M_PI/2.0, 0, -M_PI/2.0));
+}
+
+void Pose3D :: fromCvToGL()
+{
+    applyTransformAfter(Vec3f(0,0,0), Vec3f(M_PI, 0, 0));
 }
 
 float Pose3D :: determinant() const

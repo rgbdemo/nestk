@@ -208,6 +208,13 @@ IF (NESTK_BUILD_OBJECT_DETECTION)
   )
 ENDIF()
 
+IF(NESTK_USE_KIN4WIN)
+    SET(ntk_sources ${ntk_sources}
+       camera/kin4win_grabber.h
+       camera/kin4win_grabber.cpp
+    )
+ENDIF()
+
 QT4_WRAP_CPP(moc_sources
   gui/image_widget.h
   mesh/mesh_viewer.h
@@ -312,6 +319,7 @@ TARGET_LINK_LIBRARIES(nestk
   ${NITE_LIBRARY}
   ${WINMM_LIBRARY}
   ${PTHREAD_LIBRARY})
+  ${KINECTSDK_LIBRARY}
 
 SET_TARGET_PROPERTIES(nestk PROPERTIES
   ARCHIVE_OUTPUT_DIRECTORY "${LIBRARY_OUTPUT_PATH}"

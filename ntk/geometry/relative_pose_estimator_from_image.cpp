@@ -47,7 +47,7 @@ estimateNewPose(Pose3D& new_pose,
     }
 
     std::vector<bool> valid_points;
-    double error = rms_optimize_ransac(new_pose, ref_points, img_points, valid_points);
+    double error = rms_optimize_ransac(new_pose, ref_points, img_points, valid_points, false /* use_depth */);
 
     ntk_dbg_print(error, 1);
     ntk_dbg_print(new_pose, 2);

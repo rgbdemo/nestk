@@ -103,12 +103,13 @@ namespace ntk
     }
 
     // FIXME: why is it so slow ?
-    void RGBDProcessor :: computeNormals()
+    void RGBDProcessor :: computeNormals(RGBDImage& image)
     {
-        ntk_ensure(m_image->calibration(), "Calibration required.");
-        const Pose3D& depth_pose = *m_image->calibration()->depth_pose;
-        const cv::Mat1f& depth_im = m_image->depth();
-        cv::Mat3f& normal_im = m_image->normalRef();
+        ntk_ensure(image.calibration(), "Calibration required.");
+        ntk::TimeCount tc("computeNormals", 2);
+        const Pose3D& depth_pose = *image.calibration()->depth_pose;
+        const cv::Mat1f& depth_im = image.depth();
+        cv::Mat3f& normal_im = image.normalRef();
         normal_im = cv::Mat3f(depth_im.size());
         normal_im = infinite_point();
 
@@ -124,9 +125,10 @@ namespace ntk
         {
             cv::Vec3f n = estimate_normal_from_depth(depth_im, depth_pose,
                                                      r, c, 0.03,
-                                                     &dx, &dy);
+                                                     dx.data ? &dx : 0, dy.data ? &dy : 0);
             normal_im(r,c) = n;
         }
+        tc.stop();
     }
 
 #ifdef NESTK_USE_PCL
@@ -270,6 +272,22 @@ namespace ntk
 
         if (m_image->calibration())
         {
+            if (!flt_eq(m_image->calibration()->depth_multiplicative_correction_factor, 1.0, 1e-5)
+                    || !flt_eq(m_image->calibration()->depth_additive_correction_factor, 0.0, 1e-5))
+            {
+                float factor = m_image->calibration()->depth_multiplicative_correction_factor;
+                float offset = m_image->calibration()->depth_additive_correction_factor;
+                ntk_dbg_print(m_image->calibration()->depth_multiplicative_correction_factor, 1);
+                ntk_dbg_print(m_image->calibration()->depth_additive_correction_factor, 1);
+                cv::Mat1f& depth_im = m_image->depthRef();
+                for_all_rc(depth_im)
+                {
+                    float& d = depth_im.at<float>(r,c);
+                    if (d > 1e-5)
+                        d = d*factor + offset;
+                }
+            }
+
             if (hasFilterFlag(RGBDProcessorFlags::FixGeometry))
                 fixDepthGeometry();
 
@@ -285,7 +303,7 @@ namespace ntk
             tc.elapsedMsecs("bilateralFilter");
 
             if (hasFilterFlag(RGBDProcessorFlags::ComputeNormals) || hasFilterFlag(RGBDProcessorFlags::FilterNormals))
-                computeNormals();
+                computeNormals(*m_image);
 
             tc.elapsedMsecs("computeNormals");
 
@@ -796,14 +814,14 @@ namespace ntk
 
         cv::Size raw_depth_size(depth_size.width*ratio, depth_size.height*ratio);
 
-        cv::Mat1f raw_mapped_depth(raw_depth_size);
-        cv::resize(m_image->rawDepth(), raw_mapped_depth, raw_depth_size, 0, 0, cv::INTER_NEAREST);
+        cv::Mat1f mapped_depth(raw_depth_size);
+        cv::resize(m_image->depth(), mapped_depth, raw_depth_size, 0, 0, cv::INTER_NEAREST);
 
         cv::Mat1b raw_mapped_depth_mask(raw_depth_size);
         cv::resize(m_image->depthMask(), raw_mapped_depth_mask, raw_depth_size, 0, 0, cv::INTER_NEAREST);
 
         cv::Mat1f roi_depth = m_image->mappedDepthRef()(cv::Rect(cv::Point(0,0), raw_depth_size));
-        raw_mapped_depth.copyTo(roi_depth);
+        mapped_depth.copyTo(roi_depth);
 
         cv::Mat1b roi_depth_mask = m_image->mappedDepthMaskRef()(cv::Rect(cv::Point(0,0), raw_depth_size));
         raw_mapped_depth_mask.copyTo(roi_depth_mask);

@@ -390,7 +390,7 @@ bool OpenniGrabber :: disconnectFromDevice()
 void OpenniGrabber :: waitAndUpdateActiveGenerators()
 {
     // If there is only one device, call this global function.
-    if (0 && m_driver.numDevices() == 1) // FIXME: does this result into unsynchronized frames?
+    if (m_driver.numDevices() == 1) // FIXME: does this result into unsynchronized frames?
     {
         m_driver.niContext().WaitOneUpdateAll(m_ni_depth_generator);
         // m_driver.niContext().WaitAndUpdateAll();
@@ -888,7 +888,7 @@ ntk::OpenniDriver::OpenniDriver() : m_config(new Config(this))
         if (info.serial.empty())
             info.serial = i;
         ntk_dbg(1) << cv::format("[Device %d] %s, %s, serial=%s",
-                                 i, info.vendor.c_str(), info.camera_type.c_str(), info.serial.c_str());        
+                                 i, info.vendor.c_str(), info.camera_type.c_str(), info.serial.c_str());
     }
 
     strcpy(m_license.strVendor, "PrimeSense");
@@ -1037,6 +1037,8 @@ ntk::OpenniDriver::Config::modulesText = "\
 <Module path=\"../lib/libnimRecorder.so\" />\n\
 <Module path=\"../lib/libXnDevicesSensorV2.so\" configDir=\"config\"/>\n\
 <Module path=\"../lib/libXnDeviceFile.so\" configDir=\"config\"/>\n\
+<Module path=\"../lib/libXnKinectDevicesSensorV2.so\" configDir=\"config\"/>\n\
+<Module path=\"../lib/libXnKinectDeviceFile.so\"      configDir=\"config\"/>\n\
 <Module path=\"../lib/libXnVFeatures.so\" configDir=\"config/XnVFeatures\"/>\n\
 <Module path=\"../lib/libXnVHandGenerator.so\" configDir=\"config/XnVHandGenerator\"/>\n\
 </Modules>\n\

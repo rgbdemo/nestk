@@ -214,7 +214,7 @@ computeRegistration(Pose3D& relative_pose,
     boost::shared_ptr<PointToPlane> point_to_plane (new PointToPlane);
     reg.setTransformationEstimation (point_to_plane);
 
-#if 1
+#if 0
     ntk::Mesh target_mesh;
     pointCloudToMesh(target_mesh, *target_cloud);
     target_mesh.saveToPlyFile("debug_target.ply");
@@ -237,7 +237,7 @@ computeRegistration(Pose3D& relative_pose,
       return false;
     }
 
-#if 1
+#if 0
     ntk::Mesh debug_mesh;
     pointCloudToMesh(debug_mesh, aligned_cloud);
     debug_mesh.saveToPlyFile("debug_aligned.ply");

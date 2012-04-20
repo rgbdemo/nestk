@@ -81,8 +81,6 @@ reset()
 {
     IncrementalPoseEstimatorFromImage::reset();
     m_started = false;
-    m_marker_setup_estimated = false;
-    m_setup_frames.clear();
 }
 
 bool ntk::IncrementalPoseEstimatorFromMarkers::
@@ -196,11 +194,11 @@ estimateNewPose()
 
         Pose3D delta_target_pose = m_estimated_pose;
         delta_target_pose.toRightCamera(m_image->calibration()->rgb_intrinsics, m_image->calibration()->R, m_image->calibration()->T);
-        double error = rms_optimize_3d(delta_target_pose, marker_points_3d, image_points);
+        double error = rms_optimize_3d(delta_target_pose, marker_points_3d, image_points, true /* use_depth */);
         error /= 3; // x, y, z
         error /= marker_pairs.size(); // normalized norm
         ntk_dbg_print(error, 2);
-        if (error > 5e-3) // 5mm
+        if (error > 0.01) // 2cm
             return false; // probably a bad estimation.
         delta_target_pose.toLeftCamera(m_image->calibration()->depth_intrinsics, m_image->calibration()->R, m_image->calibration()->T);
 

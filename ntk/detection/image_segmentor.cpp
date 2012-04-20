@@ -137,6 +137,39 @@ bool ImageSegmentorFromBackgroundPlane::filterImage(ntk::RGBDImage &image, const
     return true;
 }
 
+ImageSegmentorFromBackgroundPlaneDistance :: ImageSegmentorFromBackgroundPlaneDistance()
+{
+}
+
+bool ImageSegmentorFromBackgroundPlaneDistance::initializeFromFirstImage(const ntk::RGBDImage &image, const ntk::Pose3D &estimated_pose)
+{
+    bool ok = ImageSegmentorFromBackgroundPlane::initializeFromFirstImage(image, estimated_pose);
+    if (!ok) return false;
+
+    // Do not change the initial pose.
+    this->normalized_pose = estimated_pose;
+    return true;
+}
+
+bool ImageSegmentorFromBackgroundPlaneDistance::filterImage(ntk::RGBDImage &image, const ntk::Pose3D &estimated_pose)
+{
+    cv::Mat1b& depth_mask_im = image.depthMaskRef();
+    const cv::Mat1f& depth_im = image.depth();
+    for_all_rc(depth_mask_im)
+    {
+        if (!depth_mask_im(r,c))
+            continue;
+
+        if (depth_im(r,c) < 1e-5)
+            continue;
+
+        cv::Point3f p = estimated_pose.unprojectFromImage(cv::Point2f(c, r), depth_im(r,c));
+        if (table_plane.distanceToPlane(p) < 0.2)
+            depth_mask_im(r,c) = 0;
+    }
+    return true;
+}
+
 ImageSegmentorFromMarkers::ImageSegmentorFromMarkers(const ntk::MarkerSetup& marker_setup)
     : marker_setup(marker_setup)
 {

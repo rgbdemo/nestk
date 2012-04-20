@@ -43,8 +43,10 @@ public:
   int err;
   cl::Event event;
 
+  void setup();
+
   //setup an OpenCL context that shares with OpenGL
-  void setup_gl_cl();
+  void setupGL();
 
   cl::Program loadProgram(std::string path);
   cl::Program loadProgramFromString(const std::string& source_code);
