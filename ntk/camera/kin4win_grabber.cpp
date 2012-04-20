@@ -25,6 +25,7 @@ typedef unsigned short uint16_t;
 typedef OLECHAR* WinStr;
 typedef HRESULT  WinRet;
 typedef HANDLE   WinHandle;
+typedef NUI_IMAGE_RESOLUTION NuiResolution;
 
 void alert (WinStr txt)
 {
@@ -65,7 +66,9 @@ public:
     Nui (Kin4WinGrabber* that)
     : that(that)
     , dirtyDepth(true)
+    , depthResolution(NUI_IMAGE_RESOLUTION_640x480)
     , dirtyColor(true)
+    , colorResolution(NUI_IMAGE_RESOLUTION_640x480)
     , sensor(0)
     , name(0)
     {
@@ -167,7 +170,7 @@ public:
             return ret;
         }
 
-        ret = sensor->NuiImageStreamOpen(NUI_IMAGE_TYPE_COLOR, NUI_IMAGE_RESOLUTION_640x480, 0, 2, nextColorFrameEvent, &colorStreamHandle);
+        ret = sensor->NuiImageStreamOpen(NUI_IMAGE_TYPE_COLOR, colorResolution, 0, 2, nextColorFrameEvent, &colorStreamHandle);
 
         if (FAILED(ret))
         {
@@ -175,7 +178,7 @@ public:
             return ret;
         }
 
-        ret = sensor->NuiImageStreamOpen(NUI_IMAGE_TYPE_DEPTH, NUI_IMAGE_RESOLUTION_640x480, 0, 2, nextDepthFrameEvent, &depthStreamHandle);
+        ret = sensor->NuiImageStreamOpen(NUI_IMAGE_TYPE_DEPTH, depthResolution, 0, 2, nextDepthFrameEvent, &depthStreamHandle);
 
         if (FAILED(ret))
         {
@@ -386,16 +389,99 @@ public:
         stopProcessingEvent = 0;
     }
 
+    int getResolutionWidth (NuiResolution nuiRes) const
+    {
+        switch (nuiRes)
+        {
+            case NUI_IMAGE_RESOLUTION_INVALID : return -1 ;
+
+            case NUI_IMAGE_RESOLUTION_80x60   : return 80 ;
+            case NUI_IMAGE_RESOLUTION_320x240 : return 320;
+            case NUI_IMAGE_RESOLUTION_640x480 : return 640;
+            case NUI_IMAGE_RESOLUTION_1280x960: return 1280;
+
+            default: return 0;
+        }
+    }
+
+    int getResolutionHeight (NuiResolution nuiRes) const
+    {
+        switch (nuiRes)
+        {
+            case NUI_IMAGE_RESOLUTION_INVALID : return -1 ;
+
+            case NUI_IMAGE_RESOLUTION_80x60   : return 60 ;
+            case NUI_IMAGE_RESOLUTION_320x240 : return 240;
+            case NUI_IMAGE_RESOLUTION_640x480 : return 480;
+            case NUI_IMAGE_RESOLUTION_1280x960: return 960;
+
+            default: return 0;
+        }
+    }
+
+    int getColorWidth () const
+    {
+        return getResolutionWidth(colorResolution);
+    }
+
+    int getColorHeight () const
+    {
+        return getResolutionHeight(colorResolution);            
+    }
+
+    int getDepthWidth () const
+    {
+        return getResolutionWidth(depthResolution);
+    }
+
+    int getDepthHeight () const
+    {
+        return getResolutionHeight(depthResolution);            
+    }
+
+    // FIXME: Untested.
+    cv::Point3f depthToRealWorld (cv::Point3f p)
+    {
+        const int w = getDepthWidth();
+        const int h = getDepthHeight();
+
+        Vector4 v = NuiTransformDepthImageToSkeleton(
+            LONG(double(w - p.x - 1) / double(w)),
+            LONG(double(p.y) / double(h)),
+            USHORT(p.z * 1000) << 3,
+            depthResolution
+        );
+
+        return cv::Point3f(v.x, v.y, v.z);
+    }
+
+    cv::Point3f realWorldToDepth (const cv::Point3f& p)
+    {
+        const Vector4 v = { p.x, p.y, p.z, 1.f };
+        LONG x = 0;
+        LONG y = 0;
+        USHORT d = 0;
+
+        // FIXME: This should be resolution-dependent.
+        NuiTransformSkeletonToDepthImage(v, &x, &y, &d, depthResolution);
+
+        d >>= 3;
+
+        return cv::Point3f(x, y, float(d) / 1000.f);
+    }
+
     Kin4WinGrabber* that;
 
     WinStr name;
 
     INuiSensor* sensor;
 
+    NuiResolution depthResolution;
     WinHandle nextDepthFrameEvent;
     WinHandle     depthStreamHandle;
     bool     dirtyDepth;
 
+    NuiResolution colorResolution;
     WinHandle nextColorFrameEvent;
     WinHandle     colorStreamHandle;
     bool     dirtyColor;
@@ -446,9 +532,27 @@ bool Kin4WinGrabber :: connectToDevice()
 
     ntk_dbg(1) << format("[Kinect %x] connecting", this);
 
-    //nui->init();
+    m_rgbd_image.rawRgbRef()   = Mat3b(Nui::defaultFrameHeight, Nui::defaultFrameWidth);
+    m_rgbd_image.rawDepthRef() = Mat1f(Nui::defaultFrameHeight, Nui::defaultFrameWidth);
+    //m_rgbd_image.rawIntensityRef() = Mat1f(defaultFrameHeight, defaultFrameWidth);
 
-    return false;
+    m_current_image.rawRgbRef()   = Mat3b(Nui::defaultFrameHeight, Nui::defaultFrameWidth);
+    m_current_image.rawDepthRef() = Mat1f(Nui::defaultFrameHeight, Nui::defaultFrameWidth);
+    //m_current_image.rawIntensityRef() = Mat1f(defaultFrameHeight, defaultFrameWidth);
+
+    // FIXME: This should be done at connectToDevice time.
+    {
+        nui->init();
+        if (!m_calib_data)
+        {
+            estimateCalibration();
+            m_current_image.setCalibration(m_calib_data);
+            m_rgbd_image.setCalibration(m_calib_data);
+        }
+        m_connected = true;
+    }
+
+    return true;
 }
 
 bool Kin4WinGrabber :: disconnectFromDevice()
@@ -464,25 +568,98 @@ bool Kin4WinGrabber :: disconnectFromDevice()
 
 void Kin4WinGrabber :: estimateCalibration()
 {
+    cv::Point3f p = nui->realWorldToDepth(cv::Point3f(0.f, 0.f, 1.f));
 
+    double cx = p.x;
+    double cy = p.y;
+
+    p = nui->realWorldToDepth(cv::Point3f(1.f, 1.f, 1.f));
+
+    double fx = (p.x - cx);
+    double fy = -(p.y - cy);
+
+    // These factors were estimated using chessboard calibration.
+    // They seem to accurately correct the bias in object sizes output by
+    // the default parameters.
+    const double f_correction_factor = 528.0/570.34;
+    fx *= f_correction_factor;
+    fy *= f_correction_factor;
+
+    // FIXME: this bias was not observed anymore in recent experiments.
+    // const double cy_correction_factor = 267.0/240.0;
+    const double cy_correction_factor = 1.0;
+    cy *= cy_correction_factor;
+
+    m_calib_data = new RGBDCalibration();
+
+    int rgb_width  = nui->getColorWidth();
+    int rgb_height = nui->getColorHeight();
+
+    int depth_width  = nui->getDepthWidth();
+    int depth_height = nui->getDepthHeight();
+
+    m_calib_data->setRawRgbSize(cv::Size(rgb_width, rgb_height));
+    m_calib_data->setRgbSize(cv::Size(rgb_width, rgb_height));
+    m_calib_data->raw_depth_size = cv::Size(depth_width, depth_height);
+    m_calib_data->depth_size = cv::Size(depth_width, depth_height);
+
+    float width_ratio = float(rgb_width)/depth_width;
+    float height_ratio = float(rgb_height)/depth_height;
+
+    float rgb_fx = fx * width_ratio;
+    // Pixels are square on a Kinect.
+    // Image height gets cropped when going from 1280x1024 in 640x480.
+    // The ratio remains 2.
+    float rgb_fy = rgb_fx;
+    float rgb_cx = cx * width_ratio;
+    float rgb_cy = cy * width_ratio;
+
+    m_calib_data->rgb_intrinsics = cv::Mat1d(3,3);
+    setIdentity(m_calib_data->rgb_intrinsics);
+    m_calib_data->rgb_intrinsics(0,0) = rgb_fx;
+    m_calib_data->rgb_intrinsics(1,1) = rgb_fy;
+    m_calib_data->rgb_intrinsics(0,2) = rgb_cx;
+    m_calib_data->rgb_intrinsics(1,2) = rgb_cy;
+
+    m_calib_data->rgb_distortion = Mat1d(1,5);
+    m_calib_data->rgb_distortion = 0.;
+    m_calib_data->zero_rgb_distortion = true;
+
+    // After getAlternativeViewpoint, both camera have the same parameters.
+
+    m_calib_data->depth_intrinsics = cv::Mat1d(3,3);
+    setIdentity(m_calib_data->depth_intrinsics);
+    m_calib_data->depth_intrinsics(0,0) = fx;
+    m_calib_data->depth_intrinsics(1,1) = fy;
+    m_calib_data->depth_intrinsics(0,2) = cx;
+    m_calib_data->depth_intrinsics(1,2) = cy;
+
+    m_calib_data->depth_distortion = Mat1d(1,5);
+    m_calib_data->depth_distortion = 0.;
+    m_calib_data->zero_depth_distortion = true;
+
+    m_calib_data->R = Mat1d(3,3);
+    setIdentity(m_calib_data->R);
+
+    m_calib_data->T = Mat1d(3,1);
+    m_calib_data->T = 0.;
+
+    m_calib_data->depth_pose = new Pose3D();
+    m_calib_data->depth_pose->setCameraParametersFromOpencv(m_calib_data->depth_intrinsics);
+
+    m_calib_data->rgb_pose = new Pose3D();
+    m_calib_data->rgb_pose->toRightCamera(m_calib_data->rgb_intrinsics,
+                                          m_calib_data->R,
+                                          m_calib_data->T);
+
+    m_calib_data->camera_type = "kin4win";
 }
 
 void Kin4WinGrabber :: run()
 {
+    QMutexLocker ni_locker(&m_ni_mutex);
+
     m_should_exit = false;
-
-    //m_current_image.setCalibration(m_calib_data);
-    //m_rgbd_image.setCalibration(m_calib_data);
-
-    m_rgbd_image.rawRgbRef()   = Mat3b(Nui::defaultFrameHeight, Nui::defaultFrameWidth);
-    m_rgbd_image.rawDepthRef() = Mat1f(Nui::defaultFrameHeight, Nui::defaultFrameWidth);
-    //m_rgbd_image.rawIntensityRef() = Mat1f(defaultFrameHeight, defaultFrameWidth);
-
-    m_current_image.rawRgbRef()   = Mat3b(Nui::defaultFrameHeight, Nui::defaultFrameWidth);
-    m_current_image.rawDepthRef() = Mat1f(Nui::defaultFrameHeight, Nui::defaultFrameWidth);
-    //m_current_image.rawIntensityRef() = Mat1f(defaultFrameHeight, defaultFrameWidth);
-
-    nui->init();
 
     int64 last_grab_time = 0;
 
