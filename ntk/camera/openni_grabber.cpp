@@ -830,6 +830,25 @@ struct ntk::OpenniDriver::Config
     OpenniDriver* that;
 };
 
+const OpenniDriver::DeviceInfo&
+OpenniDriver::deviceInfo (int index) const
+{
+    static const DeviceInfo invalidDeviceInfo = {
+        "invalid",
+        "unknown camera",
+        "0",
+        "unknown vendor",
+        0x0000,
+        0x0000,
+        0x0u,
+        0x0u,
+    };
+
+    if (index < 0 || m_device_nodes.size() <= index)
+        return invalidDeviceInfo;
+
+    return m_device_nodes[index];
+}
 
 ntk::OpenniDriver::OpenniDriver() : m_config(new Config(this))
 {

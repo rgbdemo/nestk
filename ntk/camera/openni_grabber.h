@@ -83,7 +83,7 @@ public:
 public:
     xn::Context& niContext() { return m_ni_context; }
     int numDevices() const { return m_device_nodes.size(); }
-    const DeviceInfo& deviceInfo(int index) const { return m_device_nodes[index]; }
+    const DeviceInfo& deviceInfo(int index) const;
     void checkXnError(const XnStatus& status, const char* what) const;
 
 private:
