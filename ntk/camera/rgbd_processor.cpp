@@ -22,6 +22,7 @@
 #include <ntk/utils/time.h>
 #include <ntk/geometry/pose_3d.h>
 #include <ntk/image/bilateral_filter.h>
+#include <ntk/camera/calibration.h>
 
 #ifdef NESTK_USE_PCL
 #include <ntk/mesh/pcl_utils.h>
