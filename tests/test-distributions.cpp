@@ -38,14 +38,14 @@ bool test_tail_extrapolator()
     values[i] = 1;
   }
 
-  NTK_TEST_FLOAT_EQ(distrib.logCdf(-10), -102.545);
-  NTK_TEST_FLOAT_EQ(distrib.logCdf(-20), -202.545);
-  NTK_TEST_FLOAT_EQ(distrib.logCdf(-50), -502.545);
+  NTK_TEST_FLOAT_EQ(distrib.logCdf(-10), -102.545f);
+  NTK_TEST_FLOAT_EQ(distrib.logCdf(-20), -202.545f);
+  NTK_TEST_FLOAT_EQ(distrib.logCdf(-50), -502.545f);
 
   distrib.saveLogCdfAsPlot("/tmp/distrib.plot");
 
   ParetoTailExtrapolator extrapolator (distrib);
-  NTK_TEST_FLOAT_EQ(extrapolator.extrapolateLogCdf(-100), -103.045);
+  NTK_TEST_FLOAT_EQ(extrapolator.extrapolateLogCdf(-100), -103.045f);
   return true;
 }
 
@@ -62,14 +62,14 @@ bool test_mean()
   {
     EmpiricalDistribution mean_distrib_for_5;
     mean_empirical_distribution(mean_distrib_for_5, distrib, 5);
-    NTK_TEST_FLOAT_EQ(mean_distrib_for_5.mean(), 9.80706);
-    NTK_TEST_FLOAT_EQ(mean_distrib_for_5.logCdf(3), -5.62524);
+    NTK_TEST_FLOAT_EQ(mean_distrib_for_5.mean(), 9.80706f);
+    NTK_TEST_FLOAT_EQ(mean_distrib_for_5.logCdf(3), -5.62524f);
   }
 
   {
     EmpiricalDistribution mean_distrib_for_5;
     mean_empirical_distribution(mean_distrib_for_5, values, 5);
-    NTK_TEST_FLOAT_EQ(mean_distrib_for_5.logCdf(3), -5.51626);
+    NTK_TEST_FLOAT_EQ(mean_distrib_for_5.logCdf(3), -5.51626f);
   }
 
   EmpiricalMeanDistribution mean_distrib (9);
@@ -80,7 +80,7 @@ bool test_mean()
 
 bool test_tail_estimation(const char* filename)
 {
-  EmpiricalDistribution distrib(0.01);
+  EmpiricalDistribution distrib(0.01f);
   QFile xml_file(filename);
   distrib.loadFromXml(xml_file);
   distrib.saveLogCdfAsPlot("distrib.plot");

@@ -31,7 +31,7 @@ namespace ntk
     : m_use_color(false),
     m_mesh_type(PointCloudMesh),
     m_resolution_factor(1.0),
-    m_max_delta_depth(0.05)
+    m_max_delta_depth(0.05f)
   {
   }
 

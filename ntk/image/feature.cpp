@@ -218,14 +218,13 @@ void FeatureSet :: extractFromImageUsingSiftPP(const RGBDImage& image,
     int O = -1;
     const int S = levels;
     const int omin = -1;
-    float const sigman = .5 ;
-    float const sigma0 = 1.6 * powf(2.0f, 1.0f / S) ;
-    float threshold = 0.01; // closer to Lowe.
+    float const sigman = .5f ;
+    float const sigma0 = 1.6f * powf(2.0f, 1.0f / S) ;
+    float threshold = 0.01f; // closer to Lowe.
     float edgeThreshold  = 10.0f;
     int unnormalized = 0;
-    float magnif = 3.0;
+    float magnif = 3.0f;
 
-    VL::PgmBuffer buffer;
     cv::Mat1f fim(image.rgbAsGray().size());
     for_all_rc(fim) fim(r, c) = image.rgbAsGray()(r, c) / 255.0;
 

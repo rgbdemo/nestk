@@ -64,7 +64,7 @@ computeNumMatchesWithPrevious(const RGBDImage& image,
          --i)
     {
         std::vector<cv::DMatch> current_matches;
-        m_features[i].matchWith(features, current_matches, 0.8*0.8);
+        m_features[i].matchWith(features, current_matches, 0.8f*0.8f);
         ntk_dbg_print(current_matches.size(), 1);
         if (current_matches.size() > best_matches.size())
         {
@@ -82,7 +82,7 @@ estimateDeltaPose(Pose3D& new_rgb_pose,
                   const std::vector<cv::DMatch>& best_matches,
                   int closest_view_index)
 {
-    const float err_threshold = 0.005;
+    const float err_threshold = 0.005f;
 
     ntk_dbg_print(new_rgb_pose, 2);
     const ImageData& ref_image_data = m_image_data[closest_view_index];

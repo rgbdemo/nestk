@@ -780,12 +780,12 @@ cv::Vec4f Pose3D :: cvQuaternionRotation() const
 
 void Pose3D :: fromGLToRos()
 {
-    applyTransformAfter(Vec3f(0,0,0), Vec3f(M_PI/2.0, 0, -M_PI/2.0));
+    applyTransformAfter(Vec3f(0,0,0), Vec3f(static_cast<float>(M_PI)/2.0f, 0, static_cast<float>(-M_PI)/2.0f));
 }
 
 void Pose3D :: fromCvToGL()
 {
-    applyTransformAfter(Vec3f(0,0,0), Vec3f(M_PI, 0, 0));
+    applyTransformAfter(Vec3f(0,0,0), Vec3f(static_cast<float>(M_PI), 0, 0));
 }
 
 float Pose3D :: determinant() const

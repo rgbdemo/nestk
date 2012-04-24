@@ -285,7 +285,7 @@ void SurfelsRGBDModeler :: computeMesh()
 
 void SurfelsRGBDModeler::setResolution(float r)
 {
-    if (flt_eq(m_resolution, r, 1e-5))
+    if (flt_eq(m_resolution, r, 1e-5f))
         return;
     m_resolution = r;
     reset();
@@ -293,17 +293,17 @@ void SurfelsRGBDModeler::setResolution(float r)
 
 float ntk::SurfelsRGBDModeler::getCompatibilityDistance(float depth) const
 {
-    if (depth < 0.8)
-        return 0.003;
+    if (depth < 0.8f)
+        return 0.003f;
     else if (depth < 1)
-        return 0.005;
+        return 0.005f;
     else if (depth < 1.5)
-        return 0.01;
+        return 0.01f;
     else if (depth < 2)
-        return 0.04;
+        return 0.04f;
     else if (depth < 3)
-        return 0.08;
-    return 0.1;
+        return 0.08f;
+    return 0.1f;
 }
 
 }  // ntk
