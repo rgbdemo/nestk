@@ -180,11 +180,11 @@ void BodyEventDetector :: initialize(xn::Context& context, xn::DepthGenerator& d
     m_wave_detector->RegisterWave(this, &BodyEventDetectorWave_Waved);
     m_session_manager->AddListener(m_wave_detector);
 
-    m_steady_detector = new XnVSteadyDetector;
-    m_steady_detector->RegisterSteady(this, &BodyEventDetectorSteady_Steady);
-    m_steady_detector->SetDetectionDuration(200);
-    m_steady_detector->SetMaximumVelocity(0.005);
-    m_session_manager->AddListener(m_steady_detector);
+    // m_steady_detector = new XnVSteadyDetector;
+    // m_steady_detector->RegisterSteady(this, &BodyEventDetectorSteady_Steady);
+    // m_steady_detector->SetDetectionDuration(200);
+    // m_steady_detector->SetMaximumVelocity(0.005);
+    // m_session_manager->AddListener(m_steady_detector);
 
     m_circle_detector = new XnVCircleDetector;
     m_circle_detector->RegisterCircle(this, &BodyEventDetectorCircle_Circle);

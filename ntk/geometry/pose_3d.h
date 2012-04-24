@@ -185,6 +185,9 @@ public:
   /*! Go from OpenGL coordinate system to ROS coordinate system. */
   void fromGLToRos();
 
+  /*! Go from OpenCV coordinate system (x right, y down) to OpenGL (x right, y up). */
+  void fromCvToGL();
+
   /*!
    * Set the 3D camera transformation from OpenCV translation
    * and rodrigues vector.
@@ -196,6 +199,9 @@ public:
 
   /*! Set the 3D camera transform from 4x4 matrix. */
   void setCameraTransform(const cv::Mat1d& H);
+
+  /*! Set the 3D camera transform from another pose. */
+  void setCameraTransform(const Pose3D& pose);
 
   /*! Set the 3D camera transform from 3x3 fundamental matrix. */
   void setCameraTransformFromCvFundamentalMatrix(const cv::Mat1f& F);

@@ -1,3 +1,8 @@
+IF(NESTK_USE_KIN4WIN)
+   ADD_EXECUTABLE(kin4win-backend kin4win_backend.cpp)
+   TARGET_LINK_LIBRARIES(kin4win-backend nestk)
+ENDIF()
+
 IF (NESTK_USE_OPENNI)
    ADD_EXECUTABLE(skeleton-tracking skeleton_tracking.cpp)
    TARGET_LINK_LIBRARIES(skeleton-tracking nestk)

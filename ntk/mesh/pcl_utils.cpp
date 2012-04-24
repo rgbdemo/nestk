@@ -53,6 +53,9 @@ template void pointCloudToMesh(ntk::Mesh& mesh,
 template void pointCloudToMesh(ntk::Mesh& mesh,
                                const pcl::PointCloud<pcl::PointXYZ>& cloud);
 
+template void removeNan(pcl::PointCloud<pcl::PointXYZ>& clean_cloud, pcl::PointCloud<pcl::PointXYZ>::ConstPtr source_cloud);
+template void removeNan(pcl::PointCloud<pcl::PointNormal>& clean_cloud, pcl::PointCloud<pcl::PointNormal>::ConstPtr source_cloud);
+
 template
 void sampledRgbdImageToPointCloud(pcl::PointCloud<pcl::PointXYZ>& cloud,
                                   const RGBDImage& image,

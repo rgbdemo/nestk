@@ -56,6 +56,16 @@ bool SurfelsRGBDModeler :: normalsAreCompatible(const Surfel& lhs, const Surfel&
     return (normal_angle < (m_update_max_normal_angle*M_PI/180.0));
 }
 
+const Surfel *SurfelsRGBDModeler::getClosestSurfel(const Point3f &p) const
+{
+    Cell cell = worldToCell(p);
+    SurfelMap::const_iterator it = m_surfels.find(cell);
+    if (it == m_surfels.end())
+        return 0;
+    else
+        return &(it->second);
+}
+
 float SurfelsRGBDModeler :: computeSurfelRadius(float depth, float camera_z, double mean_focal)
 {
     camera_z = std::max(camera_z, 0.3f);
@@ -66,7 +76,7 @@ float SurfelsRGBDModeler :: computeSurfelRadius(float depth, float camera_z, dou
 
 bool SurfelsRGBDModeler :: addNewView(const RGBDImage& image_, Pose3D& depth_pose)
 {
-    ntk::TimeCount tc("SurfelsRGBDModeler::addNewView", 1);
+    ntk::TimeCount tc("SurfelsRGBDModeler::addNewView", 2);
     const float max_camera_normal_angle = ntk::deg_to_rad(90);
 
     RGBDImage image;
@@ -74,7 +84,9 @@ bool SurfelsRGBDModeler :: addNewView(const RGBDImage& image_, Pose3D& depth_pos
     if (!image_.normal().data)
     {
         OpenniRGBDProcessor processor;
-        processor.computeNormalsPCL(image);
+        // FIXME compute faster normals.
+        processor.computeNormals(image);
+        // processor.computeNormalsPCL(image);
     }
 
     Pose3D rgb_pose = depth_pose;
@@ -247,7 +259,7 @@ bool SurfelsRGBDModeler :: addNewView(const RGBDImage& image_, Pose3D& depth_pos
         }
     tc.elapsedMsecs(" -- adding new voxels -- ");
 
-    ntk_dbg_print(m_surfels.size(), 1);
+    ntk_dbg_print(m_surfels.size(), 2);
     return true;
 }
 
@@ -282,21 +294,15 @@ void SurfelsRGBDModeler::setResolution(float r)
 float ntk::SurfelsRGBDModeler::getCompatibilityDistance(float depth) const
 {
     if (depth < 0.8)
-        return 0.002;
-    else if (depth < 1)
         return 0.003;
-    else if (depth < 1.5)
+    else if (depth < 1)
         return 0.005;
+    else if (depth < 1.5)
+        return 0.01;
     else if (depth < 2)
-        return 0.008;
-    else if (depth < 3)
-        return 0.02;
-    else if (depth < 4)
         return 0.04;
-    else if (depth < 5)
-        return 0.05;
-    else if (depth < 6)
-        return 0.06;
+    else if (depth < 3)
+        return 0.08;
     return 0.1;
 }
 

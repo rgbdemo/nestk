@@ -72,6 +72,9 @@ void vectorToPointCloud(pcl::PointCloud<PointT>& cloud,
                         const std::vector<int>& indices = std::vector<int>());
 
 template <class PointT>
+void removeNan(pcl::PointCloud<PointT>& clean_cloud, typename pcl::PointCloud<PointT>::ConstPtr source_cloud);
+
+template <class PointT>
 void rgbdImageToPointCloud(pcl::PointCloud<PointT>& cloud, const RGBDImage& image, bool keep_dense = false);
 
 template <class PointT>

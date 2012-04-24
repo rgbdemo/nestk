@@ -129,6 +129,9 @@ public:
   /*! Postprocess an RGB-D image. This function is not reentrant. */
   virtual void processImage(RGBDImage& image);
 
+  /*! Compute fast normals using 2x2 neighborhood. */
+  virtual void computeNormals(RGBDImage& image);
+
   /*! Compute normals using PCL integral images. This function is reentrant. */
   virtual void computeNormalsPCL(RGBDImage& image);
 
@@ -147,8 +150,7 @@ protected:
   virtual void removeUnstableOutliers();
   virtual void removeEdgeOutliers();
   virtual void applyDepthThreshold();
-  virtual void computeNormals();
-  virtual void computeMappings();
+    virtual void computeMappings();
   virtual void medianFilter();
   virtual void computeKinectDepthLinear();
   virtual void computeKinectDepthTanh();

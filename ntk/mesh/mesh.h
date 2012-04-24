@@ -60,6 +60,13 @@ namespace ntk
     static int numVertices() { return 3; };
   };
 
+  struct FaceTexcoord
+  {
+      FaceTexcoord() {}
+      float u[3];
+      float v[3];
+  };
+
   class Mesh : public ntk::EventData
   {
   public:
@@ -67,6 +74,7 @@ namespace ntk
     std::vector<cv::Vec3b> colors;
     std::vector<cv::Point3f> normals;
     std::vector<cv::Point2f> texcoords;
+    std::vector<FaceTexcoord> face_texcoords;
     std::vector<Face> faces;
     cv::Mat3b texture;
 
@@ -87,6 +95,7 @@ namespace ntk
     bool hasColors() const { return colors.size() == vertices.size(); }
     bool hasNormals() const { return normals.size() == vertices.size(); }
     bool hasTexcoords() const { return texcoords.size() > 0; }
+    bool hasFaceTexcoords() const { return face_texcoords.size() > 0; }
     bool hasFaces() const { return faces.size() > 0; }
 
   public:

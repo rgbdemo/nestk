@@ -82,7 +82,7 @@ estimateDeltaPose(Pose3D& new_rgb_pose,
                   const std::vector<cv::DMatch>& best_matches,
                   int closest_view_index)
 {
-    const float err_threshold = 0.05;
+    const float err_threshold = 0.005;
 
     ntk_dbg_print(new_rgb_pose, 2);
     const ImageData& ref_image_data = m_image_data[closest_view_index];
@@ -125,7 +125,8 @@ estimateDeltaPose(Pose3D& new_rgb_pose,
 
     // double error = rms_optimize_3d(new_pose, ref_points, img_points);
     std::vector<bool> valid_points;
-    double error = rms_optimize_ransac(new_rgb_pose, ref_points, img_points, valid_points);
+    double error = rms_optimize_ransac(new_rgb_pose, ref_points, img_points, valid_points, false /* use_depth */);
+    error /= ref_points.size();
 
     ntk_dbg_print(error, 1);
     ntk_dbg_print(new_rgb_pose, 2);
