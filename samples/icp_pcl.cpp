@@ -97,7 +97,7 @@ int main(int argc, char **argv)
     Pose3D target_pose = *ref_image.calibration()->depth_pose;
     // Artificially apply some changes.
     // target_pose.applyTransformBefore(cv::Vec3f(0,0,0), cv::Vec3f(0,0,M_PI/2.0));
-    target_pose.applyTransformBefore(cv::Vec3f(0,1.0,0), cv::Vec3f(M_PI*4.0,0,M_PI/2.0));
+    target_pose.applyTransformBefore(cv::Vec3f(0,1.0f,0), cv::Vec3f(static_cast<double>(M_PI)*4.0f, 0, static_cast<float>(M_PI)/2.0f));
 
     // Check if ICP can find the applied transformation.
     RelativePoseEstimatorICP<pcl::PointXYZ> estimator;

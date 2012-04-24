@@ -125,7 +125,7 @@ double rms_optimize_ransac(Pose3D& pose3d,
     const double compat_err_threshold = 0.05;
     const int max_iterations = 50;
     const int min_support_points = std::max(7, int(ref_points.size()/20));
-    const float min_consensus_support_percent = 0.05;
+    const float min_consensus_support_percent = 0.05f;
 
     ntk_assert(ref_points.size() > min_support_points, "Not enough points.");
 

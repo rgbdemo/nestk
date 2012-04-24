@@ -132,7 +132,7 @@ namespace ntk
     erode(plane_points,plane_points,cv::Mat());
     //imwrite("plane-initial.png",plane_points);
 
-    std:vector<Point3f>& g = m_solver.planePointsRef();
+    std::vector<Point3f>& g = m_solver.planePointsRef();
 
     g.clear();
     

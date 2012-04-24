@@ -81,9 +81,9 @@ void MeshViewer :: enableLighting()
 {
     makeCurrent();
     glEnable(GL_LIGHTING);
-    static GLfloat ambientColor[] = {0.1,0.1,0.1,1.0};
-    static GLfloat diffuseColor[] = {0.7,0.7,0.7,1.0};
-    static GLfloat specularColor[] = {1.0,1.0,1.0,1.0};
+    static GLfloat ambientColor[] = {0.1f, 0.1f, 0.1f ,1.0f};
+    static GLfloat diffuseColor[] = {0.7f, 0.7f, 0.7f, 1.0f};
+    static GLfloat specularColor[] = {1.0f, 1.0f, 1.0f, 1.0f};
 
     glLightfv(GL_LIGHT0, GL_AMBIENT, ambientColor);
     glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuseColor);
@@ -666,8 +666,8 @@ void MeshViewer::drawGrid()
     const float min_z = -5, max_z = 5;
     const float step_x = 0.5, step_z = 0.5;
 
-    glLineWidth(0.7);
-    glColor3f(1.0,1.0,1.0);
+    glLineWidth(0.7f);
+    glColor3f(1.0f, 1.0f, 1.0f);
     glBegin(GL_LINES);
     for (float x = m_mesh_origin.x+min_x; x < m_mesh_origin.x + max_x + step_x*0.1; x += step_x)
     {

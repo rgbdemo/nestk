@@ -119,7 +119,9 @@ public:
   double imageCenterY() const { return m_image_center_y; }
 
   /*! Whether pixels have square size. */
-  bool focalAreIdentical() const { return ntk::flt_eq(m_focal_x, m_focal_y, 1e-5); }
+  bool focalAreIdentical() const { 
+    return ntk::flt_eq(static_cast<float>(m_focal_x), static_cast<float>(m_focal_y), 1e-5f); 
+  }
 
   /*! Mean focal. */
   double meanFocal() const { return (m_focal_x + m_focal_y)/2.0; }

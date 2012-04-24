@@ -1078,7 +1078,6 @@ GLTexInput::~GLTexInput()
 
 int GLTexInput::LoadImageFile(const cv::Mat1b& image, int &w, int &h )
 {
-	unsigned int imID;
 	int done = 1;
 
   ntk_assert(image.data, "Null image");

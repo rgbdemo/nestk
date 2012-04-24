@@ -192,7 +192,7 @@ void MeshRenderer :: setMesh(const Mesh& mesh)
 void MeshRenderer :: estimateOptimalPlanes(const Pose3D& pose, float* near_plane, float* far_plane)
 {
     float min_z = std::numeric_limits<float>::max();
-    float max_z = 0.01;
+    float max_z = 0.01f;
 
     for (int i = 0; i < m_mesh->faces.size(); ++i)
     {
@@ -217,13 +217,13 @@ void MeshRenderer :: estimateOptimalPlanes(const Pose3D& pose, float* near_plane
     ntk_dbg_print(max_z, 2);
 
     if (min_z < 0)
-        min_z = 0.01;
+        min_z = 0.01f;
 
     if (max_z < min_z)
         max_z = (min_z*2);
 
-    *near_plane = min_z*0.9;
-    *far_plane = max_z*1.1;
+    *near_plane = min_z*0.9f;
+    *far_plane = max_z*1.1f;
 }
 
 void MeshRenderer :: computeDepthBuffer()
