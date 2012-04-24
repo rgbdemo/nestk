@@ -57,12 +57,12 @@ namespace ntk
     Face() {}
 
     unsigned indices[3];
-    static int numVertices() { return 3; };
+    static int numVertices() { return 3; }
   };
 
   struct FaceTexcoord
   {
-      FaceTexcoord() {}
+      FaceTexcoord() { std::fill(reinterpret_cast<float*>(this), reinterpret_cast<float*>(this)+6, 0.0f); }
       float u[3];
       float v[3];
   };

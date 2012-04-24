@@ -296,7 +296,7 @@ ENDIF()
 IF (WIN32 OR APPLE)
   ADD_LIBRARY(nestk STATIC ${ntk_sources} ${moc_sources})
 ELSE (WIN32 OR APPLE)
-  ADD_LIBRARY(nestk SHARED ${ntk_sources} ${moc_sources})
+  ADD_LIBRARY(nestk STATIC ${ntk_sources} ${moc_sources})
 ENDIF (WIN32 OR APPLE)
 
 IF (WIN32)
@@ -312,6 +312,8 @@ TARGET_LINK_LIBRARIES(nestk
   ${GLUT_glut_LIBRARY}
   ${OPENGL_LIBRARIES}
   ${PCL_LIBRARIES}
+  ${CUDA_LIBRARIES}
+  ${OPENMP_LIBRARIES}
   ${OpenCV_LIBS}
   ${X11_LIBRARY}
   ${LIBUSB_1_LIBRARY}

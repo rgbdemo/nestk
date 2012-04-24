@@ -125,7 +125,7 @@ void Mesh::saveToPlyFile(const char* filename) const
         std::string texture_filename = filename;
         if (texture_filename.size() > 3)
         {
-            texture_filename.erase(texture_filename.size()-4, 3); // remove .ply
+            texture_filename.erase(texture_filename.size()-4, 4); // remove .ply
             texture_filename += ".png";
         }
         else

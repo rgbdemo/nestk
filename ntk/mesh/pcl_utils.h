@@ -96,6 +96,8 @@ void meshToPointCloud(pcl::PointCloud<pcl::PointNormal>& cloud,
 
 void polygonMeshToMesh(ntk::Mesh& mesh, pcl::PolygonMesh& polygon);
 
+void meshToPolygonMesh(pcl::PolygonMesh& polygon, const ntk::Mesh& mesh);
+
 template <class PointT>
 void sampledRgbdImageToPointCloud(pcl::PointCloud<PointT>& cloud,
                                   const RGBDImage& image,
