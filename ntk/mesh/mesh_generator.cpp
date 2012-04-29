@@ -245,10 +245,12 @@ namespace ntk
         m_mesh.faces.push_back(f);
       }
 
+      float delta_depth = estimateErrorFromDepth(depth_im(r,c), m_max_delta_depth);
+
       if ((c > 0) &&  (r < vertice_map.rows - 1) &&
           (vertice_map(r+1,c)>=0) && (vertice_map(r+1,c-1) >= 0) &&
-          (std::abs(depth_im(r,c) - depth_im(r+1, c)) < m_max_delta_depth) &&
-          (std::abs(depth_im(r,c) - depth_im(r+1, c-1)) < m_max_delta_depth))
+          (std::abs(depth_im(r,c) - depth_im(r+1, c)) < delta_depth) &&
+          (std::abs(depth_im(r,c) - depth_im(r+1, c-1)) < delta_depth))
       {
         Face f;
         f.indices[2] = vertice_map(r,c);
@@ -258,6 +260,12 @@ namespace ntk
       }
     }
     m_mesh.computeNormalsFromFaces();
+  }
+
+  float estimateErrorFromDepth(float depth, float max_depth_at_1m)
+  {
+      if (depth < 1) return max_depth_at_1m;
+      return depth * max_depth_at_1m;
   }
 
 } // ntk

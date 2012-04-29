@@ -345,7 +345,7 @@ void calibrationCorners(const std::string& image_name,
 
     cv::Mat gray_image;
     cvtColor(image, gray_image, CV_BGR2GRAY);
-    if (pattern == PatternChessboard)
+    if (ok && pattern == PatternChessboard)
     {
         cornerSubPix(gray_image, corners, Size(5,5), Size(-1,-1),
                      cvTermCriteria( CV_TERMCRIT_EPS+CV_TERMCRIT_ITER, 30, 0.1 ));
@@ -770,7 +770,10 @@ static float computeScaleFactorMean(const std::vector<Point2f>& current_view_cor
             ++n_values;
         }
     }
-    mean /= n_values;
+    if (n_values > 0)
+        mean /= n_values;
+    else
+        mean = 0.f;
     ntk_dbg_print(mean, 1);
     return mean;
 }
@@ -787,13 +790,21 @@ float calibrate_kinect_scale_factor(const std::vector<RGBDImage>& images,
         if (corners[i].size() == 0)
             continue;
 
-        scale_factor_mean += computeScaleFactorMean(corners[i], images[i], pattern_width, pattern_height, pattern_size);
-        ++n_factor_terms;
+        float scale = computeScaleFactorMean(corners[i], images[i], pattern_width, pattern_height, pattern_size);
+        if (scale > 1e-5)
+        {
+            scale_factor_mean += scale;
+            ++n_factor_terms;
+        }
     }
 
-    scale_factor_mean /= n_factor_terms;
+    if (n_factor_terms > 0)
+    {
+        scale_factor_mean /= n_factor_terms;
+        return scale_factor_mean;
+    }
 
-    return n_factor_terms > 0 ? scale_factor_mean : 1.0f;
+    return 0.f;
 }
 
 } // ntk
