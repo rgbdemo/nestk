@@ -3,6 +3,8 @@
 #
 #   nicolas.burrus@ensta.fr
 
+INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
+
 SET ( ntk_sources
 
      core.h
@@ -57,6 +59,8 @@ SET ( ntk_sources
      geometry/similarity_transform.cpp
      gui/image_widget.h
      gui/image_widget.cpp
+     gui/image_window.h
+     gui/image_window.cpp
      gui/screen_grabber.h
      gui/screen_grabber.cpp
      image/bilateral_filter.h
@@ -155,8 +159,13 @@ SET ( ntk_sources
      utils/xml_serializable.cpp
 )
 
+QT4_WRAP_UI(uic_sources
+  gui/image_window.ui
+)
+
 QT4_WRAP_CPP(moc_sources
   gui/image_widget.h
+  gui/image_window.h
   mesh/mesh_viewer.h
   thread/event.h
   utils/progressive.h
@@ -294,9 +303,9 @@ IF (IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/private")
 ENDIF()
 
 IF (WIN32 OR APPLE)
-  ADD_LIBRARY(nestk STATIC ${ntk_sources} ${moc_sources})
+  ADD_LIBRARY(nestk STATIC ${ntk_sources} ${moc_sources} ${uic_sources})
 ELSE (WIN32 OR APPLE)
-  ADD_LIBRARY(nestk STATIC ${ntk_sources} ${moc_sources})
+  ADD_LIBRARY(nestk STATIC ${ntk_sources} ${moc_sources} ${uic_sources})
 ENDIF (WIN32 OR APPLE)
 
 IF (WIN32)
