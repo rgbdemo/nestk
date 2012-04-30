@@ -48,7 +48,7 @@ void ImageWindowManager::handleAsyncEvent(EventListener::Event event)
     {
         window = new ImageWindow();
         windows[data->window_name] = window;
-        window->setWindowTitle(data->window_name);
+        window->setWindowTitle(data->window_name.c_str());
     }
     else
     {
