@@ -1043,6 +1043,8 @@ ntk::OpenniDriver::Config::modulesText = "\
 <Module path=\"libnimRecorder.dylib\" />\n\
 <Module path=\"libXnDevicesSensorV2.dylib\" configDir=\"config\"/>\n\
 <Module path=\"libXnDeviceFile.dylib\" configDir=\"config\"/>\n\
+<Module path=\"libXnKinectDevicesSensorV2.dylib\" configDir=\"config\"/>\n\
+<Module path=\"libXnKinectDeviceFile.dylib\" configDir=\"config\"/>\n\
 <Module path=\"libXnVFeatures.dylib\" configDir=\"config/XnVFeatures\"/>\n\
 <Module path=\"libXnVHandGenerator.dylib\" configDir=\"config/XnVHandGenerator\"/>\n\
 </Modules>\n\
