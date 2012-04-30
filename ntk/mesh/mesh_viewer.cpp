@@ -635,6 +635,8 @@ void MeshViewer :: paintGL()
     glLightfv(GL_LIGHT0,GL_POSITION,lightPosF);
     glPopMatrix();
 
+    glPointSize(m_point_size);
+
     if (m_show_grid)
         drawGrid();
 
