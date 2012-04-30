@@ -32,6 +32,7 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/PolygonMesh.h>
+#include <pcl/segmentation/planar_region.h>
 
 #include <vector>
 
@@ -83,6 +84,8 @@ void rgbdImageToPointCloud(pcl::PointCloud<PointT>& cloud,
                            const Pose3D& pose,
                            int subsampling_factor = 1,
                            bool keep_dense = false);
+
+void planarRegionToMesh(ntk::Mesh& mesh, const pcl::PlanarRegion<pcl::PointNormal> &region);
 
 template <class PointT>
 void pointCloudToMesh(ntk::Mesh& mesh,

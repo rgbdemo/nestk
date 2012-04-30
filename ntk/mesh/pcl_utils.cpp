@@ -22,6 +22,7 @@
 
 #include <pcl/ros/conversions.h>
 #include <pcl/octree/octree.h>
+#include <pcl/surface/ear_clipping.h>
 
 namespace ntk
 {
@@ -184,6 +185,30 @@ void removeExtrapoledTriangles(ntk::Mesh& surface, const ntk::Mesh& ground_cloud
     }
 
     surface = filtered_surface;
+}
+
+void planarRegionToMesh(ntk::Mesh& mesh, const pcl::PlanarRegion<pcl::PointNormal>& region)
+{
+    pcl::PolygonMeshPtr polygon (new pcl::PolygonMesh());
+    pcl::PointCloud<pcl::PointNormal> contour_cloud;
+    contour_cloud.points = region.getContour();
+    contour_cloud.height = 1;
+    contour_cloud.width = contour_cloud.points.size();
+
+    pcl::toROSMsg(contour_cloud, polygon->cloud);
+
+    pcl::Vertices vertices;
+    for (int i = 0; i < contour_cloud.size(); ++i)
+        vertices.vertices.push_back(i);
+
+    polygon->polygons.push_back(vertices);
+
+    pcl::EarClipping clipper;
+    clipper.setInputMesh(polygon);
+    pcl::PolygonMesh triangles;
+    clipper.process(triangles);
+
+    polygonMeshToMesh(mesh, triangles);
 }
 
 } // ntk
