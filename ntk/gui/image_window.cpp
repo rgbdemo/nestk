@@ -23,6 +23,11 @@ ntk::ImageWidget *ImageWindow::imageWidget()
     return ui->centralwidget;
 }
 
+void ImageWindow::onImageMouseMoved(int x, int y)
+{
+    ui->statusbar->showMessage(QString("(%1, %2)").arg(x).arg(y));
+}
+
 ImageWindowManager *ImageWindowManager::getInstance()
 {
     // if (!instance)
@@ -49,6 +54,8 @@ void ImageWindowManager::handleAsyncEvent(EventListener::Event event)
         window = new ImageWindow();
         windows[data->window_name] = window;
         window->setWindowTitle(data->window_name.c_str());
+        connect(window->imageWidget(), SIGNAL(mouseMoved(int, int)), window, SLOT(onImageMouseMoved(int,int)));
+        window->imageWidget()->setRatioKeeping(true);
     }
     else
     {

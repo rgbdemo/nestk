@@ -63,7 +63,7 @@ void sampledRgbdImageToPointCloud(pcl::PointCloud<pcl::PointXYZ>& cloud,
                                   const Pose3D& pose,
                                   int n_samples);
 
-void polygonMeshToMesh(ntk::Mesh& mesh, pcl::PolygonMesh& polygon)
+void polygonMeshToMesh(ntk::Mesh& mesh, const pcl::PolygonMesh& polygon)
 {
     pcl::PointCloud<pcl::PointXYZ> cloud;
     pcl::fromROSMsg(polygon.cloud, cloud);
@@ -200,6 +200,7 @@ void planarRegionToMesh(ntk::Mesh& mesh, const pcl::PlanarRegion<pcl::PointNorma
     pcl::Vertices vertices;
     for (int i = 0; i < contour_cloud.size(); ++i)
         vertices.vertices.push_back(i);
+    vertices.vertices.push_back(0);
 
     polygon->polygons.push_back(vertices);
 

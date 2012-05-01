@@ -64,6 +64,9 @@ inline pcl::PointNormal toPcl(const cv::Point3f& p, const cv::Point3f& n)
 inline cv::Point3f toOpencv(const pcl::PointXYZ& p)
 { return cv::Point3f(p.x, p.y, p.z); }
 
+inline cv::Point3f toOpencv(const pcl::PointNormal& p)
+{ return cv::Point3f(p.x, p.y, p.z); }
+
 Eigen::Affine3f toPclCameraTransform(const Pose3D& pose);
 Eigen::Affine3f toPclInvCameraTransform(const Pose3D& pose);
 
@@ -97,7 +100,7 @@ void meshToPointCloud(pcl::PointCloud<pcl::PointXYZ>& cloud,
 void meshToPointCloud(pcl::PointCloud<pcl::PointNormal>& cloud,
                       const ntk::Mesh& mesh);
 
-void polygonMeshToMesh(ntk::Mesh& mesh, pcl::PolygonMesh& polygon);
+void polygonMeshToMesh(ntk::Mesh& mesh, const pcl::PolygonMesh &polygon);
 
 void meshToPolygonMesh(pcl::PolygonMesh& polygon, const ntk::Mesh& mesh);
 

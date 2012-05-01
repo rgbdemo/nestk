@@ -26,6 +26,9 @@ public:
 
     ntk::ImageWidget* imageWidget();
     
+public slots:
+    void onImageMouseMoved(int x, int y);
+
 private:
     Ui::ImageWindow *ui;
 };
