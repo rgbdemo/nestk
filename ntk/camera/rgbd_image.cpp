@@ -61,6 +61,8 @@ namespace ntk
     m_timestamp = 0;
     ntk_dbg_print(dir, 2);
 
+    setCalibration(calib);
+
     if (!is_file(dir+"/raw/color.png") && is_file(dir+"/color.png"))
     {
       rawRgbRef() = imread(dir + "/color.png", 1);
@@ -122,9 +124,15 @@ namespace ntk
         rawIntensityRef() = imread(dir + "/raw/intensity.png", 0);
         ntk_ensure(rawIntensityRef().data, ("Could not read raw intensity image from " + dir).c_str());
       }
+
+      if (is_file(dir + "/rgb_pose.avs") && calib)
+      {
+        ntk::Pose3D pose;
+        pose.parseAvsFile((dir + "/rgb_pose.avs").c_str());
+        setRgbPose(pose);
+      }
     }
 
-    setCalibration(calib);
     if (processor)
       processor->processImage(*this);
   }
