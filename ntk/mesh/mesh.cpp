@@ -587,6 +587,13 @@ void Mesh :: addMesh(const ntk::Mesh& rhs)
         colors.insert(colors.end(), rhs.colors.begin(), rhs.colors.end());
     }
 
+    bool has_normals = hasNormals();
+    if (has_normals)
+    {
+        ntk_throw_exception_if(!rhs.hasNormals(), "Cannot merge different kind of meshes.");
+        normals.insert(normals.end(), rhs.normals.begin(), rhs.normals.end());
+    }
+
     for (int i = 0; i < rhs.faces.size(); ++i)
     {
         Face face = rhs.faces[i];

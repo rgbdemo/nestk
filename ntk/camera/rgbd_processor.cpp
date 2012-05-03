@@ -180,14 +180,13 @@ namespace ntk
         rgbdImageToPointCloud(*cloud, image, true /* is_dense */);
         tc_normals.elapsedMsecs(" -- imageToPointCloud");
 
-
         pcl::PointCloud<pcl::Normal> normals;
-        pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> ne;
-        pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ> ());
-        ne.setSearchMethod (tree);
-        ne.setRadiusSearch (0.01);
-        ne.setInputCloud(cloud); // FIXME: Find out whether the removal of the (deep-copying) cloud.makeShared() call sped things up.
-        ne.compute(normals);
+        pcl::IntegralImageNormalEstimation<pcl::PointXYZ, pcl::Normal> normal_estimator;
+        normal_estimator.setNormalEstimationMethod (normal_estimator.COVARIANCE_MATRIX);
+        normal_estimator.setMaxDepthChangeFactor (0.05f);
+        normal_estimator.setNormalSmoothingSize (20.0f);
+        normal_estimator.setInputCloud(cloud);
+        normal_estimator.compute(normals);
         tc_normals.elapsedMsecs(" -- compute normals");
 
         const Pose3D& depth_pose = *image.calibration()->depth_pose;
@@ -303,7 +302,12 @@ namespace ntk
             tc.elapsedMsecs("bilateralFilter");
 
             if (hasFilterFlag(RGBDProcessorFlags::ComputeNormals) || hasFilterFlag(RGBDProcessorFlags::FilterNormals))
-                computeNormals(*m_image);
+            {
+                if (hasFilterFlag(RGBDProcessorFlags::ComputeHighQualityNormals))
+                    computeHighQualityNormalsPCL(*m_image);
+                else
+                    computeNormals(*m_image);
+            }
 
             tc.elapsedMsecs("computeNormals");
 

@@ -37,7 +37,7 @@ public:
     //! Return the last estimated pose.
     const Pose3D& currentPose() const { return m_current_pose; }
     Pose3D& currentPose() { return m_current_pose; }
-    void setCurrentPose(const Pose3D& pose) { m_current_pose = pose; }
+    virtual void setCurrentPose(const Pose3D& pose) { m_current_pose = pose; }
 
 protected:
     Pose3D m_current_pose;
