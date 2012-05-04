@@ -237,7 +237,7 @@ private:
   std::string m_camera_serial;
   float m_timestamp;
 };
-ntk_ptr_typedefs(RGBDImage);
+ntk_ptr_typedefs(RGBDImage)
 
 } // ntk
 

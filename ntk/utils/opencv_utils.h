@@ -59,6 +59,11 @@ public:
         width(-1), height(-1), depth(-1)
     {}
 
+    Rect3_(T x, T y, T z, T width, T height, T depth) :
+        x(x), y(y), z(z),
+        width(width), height(height), depth(depth)
+    {}
+
     void extendToInclude(const cv::Point3f& p)
     {
         if (width < T(0) || height < T(0) || depth < T(0))
@@ -129,6 +134,8 @@ StreamType& operator<<(StreamType& output, const Rect3_<Type>& box)
 }
 
 ntk::Rect3f bounding_box(const std::vector<cv::Point3f>& points);
+ntk::Rect3f readBoundingBoxFromYamlFile(const std::string& filename);
+void writeBoundingBoxToYamlFile(const std::string& filename, const ntk::Rect3f& bbox);
 
 }
 
