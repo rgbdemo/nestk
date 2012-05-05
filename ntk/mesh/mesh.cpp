@@ -22,6 +22,7 @@
 
 #include <ntk/utils/debug.h>
 #include <ntk/utils/opencv_utils.h>
+#include <ntk/numeric/utils.h>
 
 // #include <opencv/cv.h>
 
@@ -181,7 +182,9 @@ void Mesh::saveToPlyFile(const char* filename) const
         ply_file << vertices[i].x << " " << vertices[i].y << " " << vertices[i].z;
 
         if (hasNormals())
-            ply_file << " " << normals[i].x << " " << normals[i].y << " " << normals[i].z;
+            ply_file << " " << (ntk::math::isnan(normals[i].x) ? 0 : normals[i].x)
+                     << " " << (ntk::math::isnan(normals[i].y) ? 0 : normals[i].y)
+                     << " " << (ntk::math::isnan(normals[i].z) ? 0 : normals[i].z);
 
         if (hasTexcoords())
         {
@@ -201,6 +204,8 @@ void Mesh::saveToPlyFile(const char* filename) const
             ply_file << faces[i].numVertices();
             for (unsigned j = 0; j < faces[i].numVertices(); ++j)
                 ply_file << " " << faces[i].indices[j];
+            ply_file << "\n";
+
             if (hasTexcoords() && !hasFaceTexcoords())
             {
                 ply_file << " 6";

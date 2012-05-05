@@ -143,7 +143,8 @@ namespace ntk
 	inline bool isnan(float x) { return _isnan(x); }
 	inline bool isnan(double x) { return _isnan(x); }
 #else
-	using std::isnan;
+    inline bool isnan(float x) { return std::isnan(x); }
+    inline bool isnan(double x) { return std::isnan(x); }
 #endif
 
     // rnd (rounding; 0.5 rounds up)
