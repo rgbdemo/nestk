@@ -154,10 +154,11 @@ namespace ntk
     m_raw_amplitude.copyTo(other.m_raw_amplitude);
     m_raw_depth.copyTo(other.m_raw_depth);
     m_user_labels.copyTo(other.m_user_labels);
-    other.m_calibration = m_calibration;    
+    other.m_calibration = m_calibration;
     other.m_directory = m_directory;
     other.m_camera_serial = m_camera_serial;
     other.m_timestamp = m_timestamp;
+    other.m_depth_pose = m_depth_pose;
 #if defined(NESTK_USE_OPENNI) || defined(USE_OPENNI)
     if (m_skeleton)
     {
@@ -198,6 +199,7 @@ namespace ntk
     std::swap(m_skeleton, other.m_skeleton);
     std::swap(m_camera_serial, other.m_camera_serial);
     std::swap(m_timestamp, other.m_timestamp);
+    std::swap(m_depth_pose, other.m_depth_pose);
   }
 
   void RGBDImage :: fillRgbFromUserLabels(cv::Mat3b& img) const
