@@ -115,6 +115,13 @@ namespace ntk
     const cv::Mat1f& depth_im = image.depth();
     const cv::Mat1b& mask_im = image.depthMask();
 
+    cv::Mat1b subsample_mask(mask_im.size());
+    subsample_mask = 0;
+    for (float r = 0; r < subsample_mask.rows-1; r += 1.0/m_resolution_factor)
+      for (float c = 0; c < subsample_mask.cols-1; c += 1.0/m_resolution_factor)
+        subsample_mask(ntk::math::rnd(r),ntk::math::rnd(c)) = 1;
+    subsample_mask = mask_im & subsample_mask;
+
     for_all_rc(depth_im)
     {
       int i_r = r;
@@ -122,7 +129,7 @@ namespace ntk
       if (!is_yx_in_range(depth_im, i_r, i_c))
         continue;
 
-      if (!mask_im(r,c))
+      if (!subsample_mask(r,c))
         continue;
 
       double depth = depth_im(i_r,i_c);
