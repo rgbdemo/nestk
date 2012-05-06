@@ -578,22 +578,34 @@ void kinect_shift_ir_to_depth(cv::Mat3b& im)
     imwrite("/tmp/after.png", im);
 }
 
+void loadImageList(const QStringList& view_dirs,
+                   ntk::RGBDProcessor& processor,
+                   RGBDCalibration& calibration,
+                   std::vector<RGBDImage>& images)
+{
+    images.clear();
+    for (int i_view_dir = 0; i_view_dir < view_dirs.size(); ++i_view_dir)
+    {
+        RGBDImage image;
+        image.loadFromDir(QDir(view_dirs[i_view_dir]).absolutePath().toStdString(), &calibration, &processor);
+        images.push_back(image);
+    }
+}
+
 void loadImageList(const QDir& image_dir,
                    const QStringList& view_list,
                    ntk::RGBDProcessor& processor,
                    RGBDCalibration& calibration,
                    std::vector<RGBDImage>& images)
 {
-    images.clear();
+    QStringList view_dirs;
     for (int i_image = 0; i_image < view_list.size(); ++i_image)
     {
         QString filename = view_list[i_image];
-        QDir cur_image_dir (image_dir.absoluteFilePath(filename));
-
-        RGBDImage image;
-        image.loadFromDir(cur_image_dir.absolutePath().toStdString(), &calibration, &processor);
-        images.push_back(image);
+        view_dirs.append(image_dir.absoluteFilePath(filename));
     }
+
+    loadImageList(view_dirs, processor, calibration, images);
 }
 
 void getCalibratedCheckerboardCorners(const std::vector<RGBDImage>& images,

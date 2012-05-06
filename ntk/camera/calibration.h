@@ -202,6 +202,11 @@ void showCheckerboardCorners(const cv::Mat3b& image,
 // Apply translation coeffs, see http://www.ros.org/wiki/kinect_calibration/technical
 void kinect_shift_ir_to_depth(cv::Mat3b& im);
 
+void loadImageList(const QStringList& view_dirs,
+                   ntk::RGBDProcessor& processor,
+                   ntk::RGBDCalibration& calibration,
+                   std::vector<ntk::RGBDImage>& images);
+
 void loadImageList(const QDir& image_dir,
                    const QStringList& view_list,
                    ntk::RGBDProcessor& processor,
