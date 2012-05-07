@@ -198,7 +198,9 @@ namespace ntk
     const Mat1b& mask_im = image.depthMask();
     m_mesh.clear();
     if (m_use_color)
-      image.rgb().copyTo(m_mesh.texture);
+    {
+      image.rgb().copyTo(m_mesh.texture);      
+    }
     else if (image.intensity().data)
       toMat3b(normalize_toMat1b(image.intensity())).copyTo(m_mesh.texture);
     else
@@ -231,7 +233,7 @@ namespace ntk
       }
       vertice_map(r,c) = m_mesh.vertices.size();
       m_mesh.vertices.push_back(p3d);
-      // m_mesh.colors.push_back(bgr_to_rgb(im.rgb()(p2d_rgb.y, p2d_rgb.x)));
+      m_mesh.colors.push_back(bgr_to_rgb(image.rgb()(p2d_rgb.y, p2d_rgb.x)));
       m_mesh.texcoords.push_back(texcoords);
     }
 
