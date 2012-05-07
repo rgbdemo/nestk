@@ -280,6 +280,8 @@ void MeshRenderer :: renderToImage(cv::Mat4b& image, int flags)
 
     ntk::TimeCount tc_gl_render("gl_render", 2);
 
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
     if (flags & WIREFRAME)
         glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 
