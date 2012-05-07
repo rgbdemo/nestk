@@ -28,7 +28,7 @@ FileGrabber::FileGrabber(const std::string& path, bool is_directory)
     : RGBDGrabber(),
       m_path(path.c_str()),
       m_current_image_index(0),
-      m_is_directory(is_directory),
+      m_is_directory(is_directory)
 {
     if (!is_directory)
     {
