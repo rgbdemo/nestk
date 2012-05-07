@@ -45,7 +45,8 @@ public:
       m_frame_count(0),
       m_connected(false),
       m_camera_serial("unknown"),
-      m_initial_timestamp(0)
+      m_initial_timestamp(0),
+      m_loop(false)
   {
     setSynchronous(false);
   }
@@ -55,6 +56,9 @@ public:
 public:
   /*! Tell the grabber thread to stop grabbing. */
   virtual void setShouldExit() { m_should_exit = true; }
+
+  /*! Tell whether the grabber should loop when no more data is available. */
+  void setLoop(bool loop) { m_loop = loop; }
 
   /*! Tell whether infrared images should be output. */
   virtual void setIRMode(bool ir) {}
@@ -161,6 +165,7 @@ protected:
   bool m_connected;
   std::string m_camera_serial;
   uint64 m_initial_timestamp;
+  bool m_loop;
 };
 
 } // ntk

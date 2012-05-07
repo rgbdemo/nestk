@@ -28,7 +28,7 @@ FileGrabber::FileGrabber(const std::string& path, bool is_directory)
     : RGBDGrabber(),
       m_path(path.c_str()),
       m_current_image_index(0),
-      m_is_directory(is_directory)
+      m_is_directory(is_directory),
 {
     if (!is_directory)
     {
@@ -56,6 +56,20 @@ void FileGrabber::run()
     {
         waitForNewEvent();
 
+        if (m_current_image_index >= m_image_list.size())
+        {
+            if (!m_loop)
+            {
+                ntk::sleep(50);
+                continue;
+            }
+            else
+            {
+                m_current_image_index = 0;
+            }
+        }
+
+
         if (m_is_directory)
         {
             QString filepath = m_path.absoluteFilePath(m_image_list[m_current_image_index]);
@@ -65,8 +79,6 @@ void FileGrabber::run()
                 m_rgbd_image.setTimestamp(getCurrentTimestamp());
             }
             ++m_current_image_index;
-            if (m_current_image_index >= m_image_list.size())
-                m_current_image_index = 0;
             ntk::sleep(10);
         }
         else
