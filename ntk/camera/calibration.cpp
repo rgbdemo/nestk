@@ -579,23 +579,23 @@ void kinect_shift_ir_to_depth(cv::Mat3b& im)
 }
 
 void loadImageList(const QStringList& view_dirs,
-                   ntk::RGBDProcessor& processor,
-                   RGBDCalibration& calibration,
+                   RGBDProcessor *processor,
+                   RGBDCalibration *calibration,
                    std::vector<RGBDImage>& images)
 {
     images.clear();
     for (int i_view_dir = 0; i_view_dir < view_dirs.size(); ++i_view_dir)
     {
         RGBDImage image;
-        image.loadFromDir(QDir(view_dirs[i_view_dir]).absolutePath().toStdString(), &calibration, &processor);
+        image.loadFromDir(QDir(view_dirs[i_view_dir]).absolutePath().toStdString(), calibration, processor);
         images.push_back(image);
     }
 }
 
 void loadImageList(const QDir& image_dir,
                    const QStringList& view_list,
-                   ntk::RGBDProcessor& processor,
-                   RGBDCalibration& calibration,
+                   ntk::RGBDProcessor* processor,
+                   RGBDCalibration* calibration,
                    std::vector<RGBDImage>& images)
 {
     QStringList view_dirs;
