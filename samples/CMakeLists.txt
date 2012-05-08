@@ -45,8 +45,10 @@ IF (NESTK_USE_PCL)
     ADD_EXECUTABLE(table-top-object table_top_object.cpp)
     TARGET_LINK_LIBRARIES(table-top-object nestk)
 
-    ADD_EXECUTABLE(object-recognition object_recognition.cpp)
-    TARGET_LINK_LIBRARIES(object-recognition nestk)
+    IF (NESTK_BUILD_OBJECT_DETECTION)
+        ADD_EXECUTABLE(object-recognition object_recognition.cpp)
+        TARGET_LINK_LIBRARIES(object-recognition nestk)
+    ENDIF()
 ENDIF()
 
 IF (NESTK_USE_OPENNI AND NESTK_USE_PCL)
