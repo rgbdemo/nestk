@@ -62,6 +62,8 @@ int main(int argc, char** argv)
         exit (0);
     }
 
+    pose.invert();
+
     global::images_dir = QDir(global::opt_target());
     ntk_ensure(global::images_dir.exists(), (global::images_dir.absolutePath() + " is not a directory.").toAscii());
     global::images_list = global::images_dir.entryList(QStringList("view????*"), QDir::Dirs, QDir::Name);
@@ -81,7 +83,7 @@ int main(int argc, char** argv)
             continue;
         }
 
-        new_pose.applyTransformAfter(pose);
+        new_pose.applyTransformBefore(pose);
         new_pose.saveToAvsFile((images[i].directory() + "/rgb_pose.avs").c_str());
         ntk_dbg(0) << "[Stored] " << (images[i].directory() + "/rgb_pose.avs");
     }
