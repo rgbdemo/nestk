@@ -35,7 +35,9 @@ using namespace cv;
 namespace global
 {
 ntk::arg<const char*> opt_pose(0, "Pose to apply (.avs)", 0);
-ntk::arg<const char*> opt_target(0, "RGBD images directory or ply mesh to transform", 0);
+ntk::arg<const char*> opt_mesh(0, "Ply mesh to transform", 0);
+ntk::arg<const char*> opt_images(0, "RGBD images directory to transform", 0);
+ntk::arg<bool> opt_mesh_aligned("--mesh-already-aligned", "Whether the mesh was already aligned", false);
 
 QDir images_dir;
 QStringList images_list;
@@ -51,20 +53,25 @@ int main(int argc, char** argv)
     pose.parseAvsFile(global::opt_pose());
     ntk_ensure(pose.isValid(), "Could not read pose");
 
-    std::string target_filename (global::opt_target());
-    size_t ply_pos = target_filename.find(".ply", 0);
-    if (ply_pos != std::string::npos)
-    {
-        ntk::Mesh mesh;
-        mesh.loadFromPlyFile(target_filename.c_str());
+    std::string mesh_filename (global::opt_mesh());
+    ntk::Mesh mesh;
+    mesh.loadFromPlyFile(mesh_filename.c_str());
+
+    if (!global::opt_mesh_aligned())
         mesh.applyTransform(pose);
-        mesh.saveToPlyFile(global::opt_target());
-        exit (0);
-    }
+
+    ntk::Rect3f bbox = ntk::bounding_box(mesh.vertices);
+
+    Pose3D center_pose;
+    center_pose.applyTransformBefore(-cv::Vec3f(bbox.x, 0, bbox.z), cv::Vec3f(0,0,0));
+    pose.applyTransformAfter(center_pose);
+
+    mesh.applyTransform(center_pose);
+    mesh.saveToPlyFile(global::opt_mesh());
 
     pose.invert();
 
-    global::images_dir = QDir(global::opt_target());
+    global::images_dir = QDir(global::opt_images());
     ntk_ensure(global::images_dir.exists(), (global::images_dir.absolutePath() + " is not a directory.").toAscii());
     global::images_list = global::images_dir.entryList(QStringList("view????*"), QDir::Dirs, QDir::Name);
 
