@@ -204,7 +204,6 @@ void Mesh::saveToPlyFile(const char* filename) const
             ply_file << faces[i].numVertices();
             for (unsigned j = 0; j < faces[i].numVertices(); ++j)
                 ply_file << " " << faces[i].indices[j];
-            ply_file << "\n";
 
             if (hasTexcoords() && !hasFaceTexcoords())
             {
