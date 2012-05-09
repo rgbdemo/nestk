@@ -210,4 +210,23 @@ bool ImageSegmentorFromMarkers::initializeFromFirstImage(const ntk::RGBDImage &i
     return true;
 }
 
+bool ImageSegmentorFromBoundingBox::filterImage(RGBDImage &image, const Pose3D &estimated_pose)
+{
+    cv::Mat1b& depth_mask_im = image.depthMaskRef();
+    const cv::Mat1f& depth_im = image.depth();
+    for_all_rc(depth_mask_im)
+    {
+        if (!depth_mask_im(r,c))
+            continue;
+
+        if (depth_im(r,c) < 1e-5)
+            continue;
+
+        cv::Point3f p = estimated_pose.unprojectFromImage(cv::Point2f(c, r), depth_im(r,c));
+        if (!bounding_box.isPointInside(p))
+            depth_mask_im(r,c) = 0;
+    }
+    return true;
+}
+
 } // namespace ntk

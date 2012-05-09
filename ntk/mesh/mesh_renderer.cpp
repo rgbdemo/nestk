@@ -90,6 +90,8 @@ void MeshRenderer :: setPose(const Pose3D& pose, float arg_near_plane, float arg
     glViewport(dx, -dy, m_pbuffer->width(), m_pbuffer->height());
     if (pose.isOrthographic())
     {
+        ntk_dbg_print(pose.focalX()/2, 0);
+        ntk_dbg_print(pose.focalY()/2, 0);
         gluOrtho2D(-pose.focalX()/2, pose.focalX()/2, -pose.focalY()/2, pose.focalY()/2);
     }
     else

@@ -42,6 +42,26 @@ protected:
 ntk_ptr_typedefs(ImageSegmentor)
 
 /*!
+ * Filters out points not lying in the provided bounding box.
+ */
+class ImageSegmentorFromBoundingBox : public ImageSegmentor
+{
+public:
+    ImageSegmentorFromBoundingBox(const ntk::Rect3f& bbox) : bounding_box(bbox) {}
+    virtual ~ImageSegmentorFromBoundingBox() {}
+
+public:
+    virtual bool filterImage(RGBDImage& image, const Pose3D& estimated_pose);
+
+    const ntk::Rect3f& boundingBox() const { return bounding_box; }
+    void setBoundingBox(const ntk::Rect3f& rect) { bounding_box = rect; }
+
+protected:
+    ntk::Rect3f bounding_box;
+};
+ntk_ptr_typedefs(ImageSegmentorFromBoundingBox)
+
+/*!
  * Extract a bounding box in front of a plane. No object has to touch the plane.
  * The normalized view is looking at the plane; along the normal, at a distance of
  * distanceToPlane meters.
