@@ -74,11 +74,6 @@ int main()
             float d = depth_map(r,c);
             vectorial::vec4f p3d = depth_projector.unprojectFromImage(cv::Point3f(c, r, d));
             p3d = rgb_projector.projectToImage(p3d);
-#if 0
-            vectorial::vec4f p3d = sseUnprojectFromImage(sse_mat, cv::Point3f(c, r, d));
-            vectorial::vec4f v (c*d, r*d, d, 1);
-            vectorial::vec4f p3d = sse_mat * v;
-#endif
             sse_sum += p3d;
         }
     }
