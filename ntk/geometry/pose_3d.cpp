@@ -813,7 +813,7 @@ cv::Point3f Pose3D :: projectToImage(const cv::Point3f& p) const
     return toVec3f(impl->projectToImage(ep));
 }
 
-void Pose3D :: projectToImage(const cv::Mat3f& voxels, const cv::Mat1b& mask, cv::Mat3f& pixels) const
+void Pose3D :: projectToImage(const cv::Mat4f& voxels, const cv::Mat1b& mask, cv::Mat4f& pixels) const
 {
     Eigen::Vector4d epix;
     Eigen::Vector4d evox;
@@ -821,12 +821,12 @@ void Pose3D :: projectToImage(const cv::Mat3f& voxels, const cv::Mat1b& mask, cv
 
     for (int r = 0; r < voxels.rows; ++r)
     {
-        const Vec3f* voxels_data = voxels.ptr<Vec3f>(r);
+        const Vec4f* voxels_data = voxels.ptr<Vec4f>(r);
         const uchar* mask_data = mask.ptr<uchar>(r);
-        Vec3f* pixels_data = pixels.ptr<Vec3f>(r);
+        Vec4f* pixels_data = pixels.ptr<Vec4f>(r);
         for (int c = 0; c < voxels.cols; ++c)
         {
-            if (!mask_data[c])
+            if (mask.data && !mask_data[c])
                 continue;
             evox(0) = voxels_data[c][0];
             evox(1) = voxels_data[c][1];
@@ -840,7 +840,7 @@ void Pose3D :: projectToImage(const cv::Mat3f& voxels, const cv::Mat1b& mask, cv
 }
 
 #if 1
-void Pose3D :: unprojectFromImage(const cv::Mat1f& pixels, const cv::Mat1b& mask, cv::Mat3f& voxels) const
+void Pose3D :: unprojectFromImage(const cv::Mat1f& pixels, const cv::Mat1b& mask, cv::Mat4f& voxels) const
 {
     Eigen::Vector4d epix;
     Eigen::Vector4d evox;
@@ -851,10 +851,10 @@ void Pose3D :: unprojectFromImage(const cv::Mat1f& pixels, const cv::Mat1b& mask
     {
         const float* pixels_data = pixels.ptr<float>(r);
         const uchar* mask_data = mask.ptr<uchar>(r);
-        Vec3f* voxels_data = voxels.ptr<Vec3f>(r);
+        Vec4f* voxels_data = voxels.ptr<Vec4f>(r);
         for (int c = 0; c < pixels.cols; ++c)
         {
-            if (!mask_data[c])
+            if (mask.data && !mask_data[c])
                 continue;
             const float d = pixels_data[c];
             epix(0) = c*d;
@@ -864,11 +864,12 @@ void Pose3D :: unprojectFromImage(const cv::Mat1f& pixels, const cv::Mat1b& mask
             voxels_data[c][0] = evox(0);
             voxels_data[c][1] = evox(1);
             voxels_data[c][2] = evox(2);
+            voxels_data[c][3] = evox(3);
         }
     }
 }
 #else
-void Pose3D :: unprojectFromImage(const cv::Mat1f& pixels, const cv::Mat1b& mask, cv::Mat3f& voxels) const
+void Pose3D :: unprojectFromImage(const cv::Mat1f& pixels, const cv::Mat1b& mask, cv::Mat4f& voxels) const
 {
     cv::Mat1f unproj = cvInvProjectionMatrix();
 
@@ -881,7 +882,7 @@ void Pose3D :: unprojectFromImage(const cv::Mat1f& pixels, const cv::Mat1b& mask
     {
         const float* pixels_data = pixels.ptr<float>(r);
         const uchar* mask_data = mask.ptr<uchar>(r);
-        Vec3f* voxels_data = voxels.ptr<Vec3f>(r);
+        Vec4f* voxels_data = voxels.ptr<Vec4f>(r);
         for (int c = 0; c < pixels.cols; ++c)
         {
             if (!mask[c])

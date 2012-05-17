@@ -150,6 +150,8 @@ SET ( ntk_sources
      utils/parameter_set.cpp
      utils/qt_utils.h
      utils/qt_utils.cpp
+     utils/sse.h
+     utils/sse.cpp
      utils/stl.h
      utils/serializable.h
      utils/time.h

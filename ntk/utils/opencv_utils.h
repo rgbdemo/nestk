@@ -142,6 +142,9 @@ void writeBoundingBoxToYamlFile(const std::string& filename, const ntk::Rect3f& 
 namespace ntk
 {
 
+inline cv::Point3f toPoint3f(const cv::Vec4f& v)
+{ return cv::Point3f(v[0], v[1], v[2]); }
+
 inline cv::Point2f toPoint2f(const cv::Point& p)
 { return cv::Point2f(p.x, p.y); }
 

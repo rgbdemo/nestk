@@ -51,8 +51,8 @@ namespace ntk
 
     const cv::Mat1f& depth_im = image.depth();
     const cv::Mat1b& mask_im = image.depthMask();
-    cv::Mat3f voxels (depth_im.size());
-    cv::Mat3f rgb_points (depth_im.size());
+    cv::Mat4f voxels (depth_im.size());
+    cv::Mat4f rgb_points (depth_im.size());
 
     cv::Mat1b subsample_mask(mask_im.size());
     subsample_mask = 0;
@@ -77,7 +77,7 @@ namespace ntk
         Vec3b color (0,0,0);
         if (m_use_color)
         {
-          Point3f prgb = rgb_points(r,c);
+          cv::Point3f prgb = toPoint3f(rgb_points(r,c));
           int i_y = ntk::math::rnd(prgb.y);
           int i_x = ntk::math::rnd(prgb.x);
           if (is_yx_in_range(image.rgb(), i_y, i_x))

@@ -1,6 +1,12 @@
 ADD_EXECUTABLE(apply-transform apply_transform.cpp)
 TARGET_LINK_LIBRARIES(apply-transform nestk)
 
+ADD_EXECUTABLE(sse sse.cpp)
+TARGET_LINK_LIBRARIES(sse nestk)
+
+ADD_EXECUTABLE(sse-normals sse_normals.cpp)
+TARGET_LINK_LIBRARIES(sse-normals nestk)
+
 IF(NESTK_USE_KIN4WIN)
    ADD_EXECUTABLE(kin4win-backend kin4win_backend.cpp)
    TARGET_LINK_LIBRARIES(kin4win-backend nestk)
