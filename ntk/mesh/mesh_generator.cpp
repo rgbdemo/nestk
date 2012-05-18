@@ -67,7 +67,7 @@ namespace ntk
 
     for (int r = 0; r < voxels.rows; ++r)
     {
-      Vec3f* voxels_data = voxels.ptr<Vec3f>(r);
+      Vec4f* voxels_data = voxels.ptr<Vec4f>(r);
       const uchar* mask_data = subsample_mask.ptr<uchar>(r);
       for (int c = 0; c < voxels.cols; ++c)
       {
@@ -96,7 +96,7 @@ namespace ntk
           color = Vec3b(g,g,g);
         }
 
-        m_mesh.vertices.push_back(voxels_data[c]);
+        m_mesh.vertices.push_back(toPoint3f(voxels_data[c]));
         m_mesh.colors.push_back(color);
       }
     }
