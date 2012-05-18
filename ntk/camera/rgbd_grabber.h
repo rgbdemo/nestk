@@ -46,7 +46,7 @@ public:
       m_connected(false),
       m_camera_serial("unknown"),
       m_initial_timestamp(0),
-      m_loop(false)
+      m_loop(true)
   {
     setSynchronous(false);
   }
