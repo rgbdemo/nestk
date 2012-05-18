@@ -264,6 +264,13 @@ inline cv::Vec3b bgr_to_rgb(const cv::Vec3b& v)
 
 void adjustRectToImage(cv::Rect& rect, const cv::Size& image_size);
 
+inline cv::Mat3b rotate90(const cv::Mat3b& im)
+{
+    cv::Mat3b res = im.t();
+    cv::flip(res, res, 1);
+    return res;
+}
+
 }
 
 namespace cv     // FIXME: has to be put in its
