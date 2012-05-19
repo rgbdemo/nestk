@@ -183,6 +183,9 @@ inline Eigen::Vector2d toEigenVector2d(const cv::Point2f& v)
 inline Eigen::Vector3d toEigenVector3d(const cv::Vec3f& v)
 { Eigen::Vector3d r; toEigen(v, r); return r; }
 
+inline Eigen::Vector3f toEigenVector3f(const cv::Vec3f& v)
+{ Eigen::Vector3f r; toEigen(v, r); return r; }
+
 inline Eigen::Vector4d toEigenVector4d(const cv::Vec3f& v)
 { Eigen::Vector4d r; toEigen(v, r); return r; }
 
