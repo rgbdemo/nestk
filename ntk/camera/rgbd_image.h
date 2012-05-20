@@ -183,7 +183,8 @@ public:
   {
     return m_mapped_depth.data
         && r < m_mapped_depth.rows && c < m_mapped_depth.cols && r >= 0 && c >= 0
-        && m_mapped_depth(r,c) > 1e-5;
+        && m_mapped_depth(r,c) > 1e-5
+        && (!m_mapped_depth_mask.data || m_mapped_depth(r,c));
   }
 
   /*!
@@ -207,7 +208,7 @@ public:
   void setSkeletonData(Skeleton* skeleton) { m_skeleton = skeleton; }
 
   /*! Associate a pose with the image. */
-  const Pose3D& depthPose() { return m_depth_pose; }
+  const Pose3D& depthPose() const { return m_depth_pose; }
   void setDepthPose(const Pose3D& pose) { m_depth_pose = pose; }
 
   /*! Return the rgb pose associated to the depth pose. */

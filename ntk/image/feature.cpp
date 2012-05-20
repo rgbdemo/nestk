@@ -124,10 +124,24 @@ void FeatureSet :: extractFromImage(const RGBDImage& image,
     // Remove keypoints without depth if the option is set.
     if (params.only_features_with_depth)
     {
+        const Pose3D depth_pose = image.depthPose();
+        const Pose3D rgb_pose = image.rgbPose();
         foreach_idx(i, keypoints)
         {
-            if (image.rgbPixelHasDepth(keypoints[i].pt.y, keypoints[i].pt.x))
+            float y = keypoints[i].pt.y;
+            float x = keypoints[i].pt.x;
+            if (image.rgbPixelHasDepth(y, x))
+            {
+                float d = image.mappedDepth()(y, x);
+                if (image.depthMask().data)
+                {
+                    cv::Point3f p = rgb_pose.unprojectFromImage(cv::Point3f(x, y, d));
+                    p = depth_pose.projectToImage(p);
+                    if (is_yx_in_range(image.depthMask(), p.y, p.x) && !image.depthMask()(p.y, p.x))
+                        continue;
+                }
                 filtered_keypoints.push_back(keypoints[i]);
+            }
         }
     }
     else

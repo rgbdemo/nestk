@@ -184,12 +184,14 @@ ImageSegmentorFromMarkers::ImageSegmentorFromMarkers(const ntk::MarkerSetup& mar
         }
     }
 
+#if 0
     bounding_box.y -= 0.05; // FIXME: foot is shifted from the board.
     bounding_box.height += 0.05; // FIXME: foot is shifted from the board.
     bounding_box.x -= 0.05;
     bounding_box.width += 0.1; // FIXME: foot is shifted from the board.
     bounding_box.z = 0.05; // 5cm from the plane to exclude the markerboard.
     bounding_box.depth = 0.3; // 30cm from the plane
+#endif
 
     ntk_dbg_print(bounding_box, 1);
 
