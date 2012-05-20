@@ -91,6 +91,25 @@ void meshToPolygonMesh(pcl::PolygonMesh& polygon, const ntk::Mesh& mesh)
     {
         pcl::Vertices& vertices = polygon.polygons[i];
         const ntk::Face& face = mesh.faces[i];
+        vertices.vertices.resize(face.numVertices());
+        vertices.vertices[0] = face.indices[0];
+        vertices.vertices[1] = face.indices[1];
+        vertices.vertices[2] = face.indices[2];
+    }
+}
+
+void meshToPolygonMeshWithNormals(pcl::PolygonMesh& polygon, const ntk::Mesh& mesh)
+{
+    pcl::PointCloud<pcl::PointNormal> cloud;
+    meshToPointCloud(cloud, mesh);
+    pcl::toROSMsg(cloud, polygon.cloud);
+
+    polygon.polygons.resize(mesh.faces.size());
+    foreach_idx(i, polygon.polygons)
+    {
+        pcl::Vertices& vertices = polygon.polygons[i];
+        const ntk::Face& face = mesh.faces[i];
+        vertices.vertices.resize(face.numVertices());
         vertices.vertices[0] = face.indices[0];
         vertices.vertices[1] = face.indices[1];
         vertices.vertices[2] = face.indices[2];
