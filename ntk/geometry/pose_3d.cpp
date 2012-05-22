@@ -985,6 +985,15 @@ void Pose3D :: applyTransformAfterRodrigues(const cv::Vec3f& cvTranslation, cons
     impl->computeProjectiveTransform();
 }
 
+cv::Vec2f Pose3D::distanceWith(const Pose3D &rhs) const
+{
+    Eigen::Quaterniond p(impl->camera_transform.rotation().matrix());
+    Eigen::Quaterniond q(rhs.impl->camera_transform.rotation().matrix());
+    float angle = p.angularDistance(q);
+    float translation = cv::norm(cvTranslation()-rhs.cvTranslation());
+    return cv::Vec2f (translation, angle);
+}
+
 const NtkDebug& operator<<(const NtkDebug& os, const Pose3D& p)
 {
     os << "fx=" << p.focalX()

@@ -239,6 +239,14 @@ public:
   /*! Project a set of image points to 3D. */
   void unprojectFromImage(const cv::Mat1f& pixels, const cv::Mat1b& mask, cv::Mat4f& voxels) const;
 
+public:
+  /*!
+   * Compute the euclidian distance between two poses.
+   * First component is translation, second is angle
+   * between the two quaternions.
+   */
+  cv::Vec2f distanceWith(const Pose3D& rhs) const;
+
 private:
   double m_focal_x;
   double m_focal_y;
