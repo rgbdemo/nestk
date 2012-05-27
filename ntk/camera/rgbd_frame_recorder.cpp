@@ -44,6 +44,7 @@ namespace ntk
         m_save_rgb_pose(false),
         m_save_pcl_point_cloud(false),
         m_save_intensity(true),
+        m_save_calibration(false),
         m_use_compressed_format(true),
         m_include_serial(true),
         m_include_timestamp(true)
@@ -110,6 +111,12 @@ namespace ntk
       {
         filename = cv::format("%s/rgb_pose.avs", frame_dir.c_str());
         image.rgbPose().saveToAvsFile(filename.c_str());
+      }
+
+      if (m_save_calibration && image.calibration())
+      {
+        filename = cv::format("%s/calibration.yml", frame_dir.c_str());
+        image.calibration()->saveToFile(filename.c_str());
       }
 
       if (!m_only_raw)

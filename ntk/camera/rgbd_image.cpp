@@ -54,13 +54,25 @@ namespace ntk
 
   // Load from a viewXXXX directory.
   void RGBDImage :: loadFromDir(const std::string& dir,
-                                const RGBDCalibration* calib,
+                                const RGBDCalibration* input_calib,
                                 RGBDProcessor* processor)
   {
     m_directory = dir;
     m_timestamp = 0;
     ntk_dbg_print(dir, 2);
 
+    const RGBDCalibration* calib = 0;
+    if (!input_calib && is_file(dir+"/calibration.yml"))
+    {
+        // FIXME: use smart pointer.
+        RGBDCalibration* new_calib = new RGBDCalibration;
+        new_calib->loadFromFile((dir+"/calibration.yml").c_str());
+        calib = new_calib;
+    }
+    else
+    {
+        calib = input_calib;
+    }
     setCalibration(calib);
 
     if (!is_file(dir+"/raw/color.png") && is_file(dir+"/color.png"))

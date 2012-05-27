@@ -247,6 +247,9 @@ namespace ntk
             m_image->rawIntensity().copyTo(m_image->intensityRef());
         }
 
+        if (!m_image->rawDepth().data)
+            return;
+
         if (!hasFilterFlag(RGBDProcessorFlags::NiteProcessed) && m_image->calibration() && hasFilterFlag(RGBDProcessorFlags::UndistortImages))
             undistortImages();
         tc.elapsedMsecs("undistort");

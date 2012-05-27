@@ -24,6 +24,9 @@
 #include <pcl/octree/octree.h>
 #include <pcl/surface/ear_clipping.h>
 
+#include<Eigen/StdVector>
+EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(Eigen::Vector2f)
+
 namespace ntk
 {
 
@@ -114,6 +117,41 @@ void meshToPolygonMeshWithNormals(pcl::PolygonMesh& polygon, const ntk::Mesh& me
         vertices.vertices[1] = face.indices[1];
         vertices.vertices[2] = face.indices[2];
     }
+}
+
+void meshToTextureMesh(pcl::TextureMesh& texture_mesh, const ntk::Mesh& mesh)
+{
+    pcl::PolygonMesh triangles;
+    meshToPolygonMeshWithNormals(triangles, mesh);
+
+    texture_mesh.cloud = triangles.cloud;
+
+    std::vector<pcl::Vertices> polygons;
+    std::vector<Eigen::Vector2f> tex_coordinates;
+
+    polygons.resize(mesh.faces.size());
+    foreach_idx(face_i, mesh.faces)
+    {
+        pcl::Vertices& vertices = polygons[face_i];
+        const ntk::Face& face = mesh.faces[face_i];
+        vertices.vertices.resize(face.numVertices());
+        foreach_idx(v_i, vertices.vertices)
+        {
+            vertices.vertices[v_i] = face.indices[v_i];
+            Eigen::Vector2f tex_p (0,0);
+            if (mesh.hasFaceTexcoords())
+            {
+                tex_p(0) = mesh.face_texcoords[face_i].u[v_i];
+                tex_p(1) = 1.f - mesh.face_texcoords[face_i].v[v_i];
+            }
+            tex_coordinates.push_back(tex_p);
+        }
+    }
+
+    texture_mesh.tex_polygons.clear();
+    texture_mesh.tex_coordinates.clear();
+    texture_mesh.tex_polygons.push_back(polygons);
+    texture_mesh.tex_coordinates.push_back(tex_coordinates);
 }
 
 void meshToPointCloud(pcl::PointCloud<pcl::PointXYZ>& cloud,

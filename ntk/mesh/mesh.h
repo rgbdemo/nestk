@@ -58,11 +58,25 @@ namespace ntk
 
     unsigned indices[3];
     static int numVertices() { return 3; }
+    static size_t size() { return 3; }
   };
 
   struct FaceTexcoord
   {
       FaceTexcoord() { std::fill(reinterpret_cast<float*>(this), reinterpret_cast<float*>(this)+6, 0.0f); }
+
+      FaceTexcoord(const FaceTexcoord& rhs) { *this = rhs; }
+
+      FaceTexcoord& operator= (const FaceTexcoord& rhs)
+      {
+          for (int i = 0; i < 3; ++i)
+          {
+              u[i] = rhs.u[i];
+              v[i] = rhs.v[i];
+          }
+          return *this;
+      }
+
       float u[3];
       float v[3];
   };
@@ -90,6 +104,12 @@ namespace ntk
     void applyTransform(const Pose3D& pose);
     void applyScaleTransform(float x_scale, float y_scale, float z_scale);
     void computeNormalsFromFaces();
+    void computeVertexFaceMap(std::vector< std::vector<int> >& faces_per_vertex);
+
+    // Cleaning
+  public:
+    void removeDuplicatedVertices();
+    void removeIsolatedVertices();
 
   public:
     bool hasColors() const { return colors.size() == vertices.size(); }

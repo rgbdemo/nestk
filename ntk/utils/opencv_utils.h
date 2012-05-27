@@ -23,6 +23,7 @@
 #include <ntk/core.h>
 #include <ntk/utils/debug.h>
 #include <ntk/utils/serializable.h>
+#include <ntk/numeric/utils.h>
 
 class QImage;
 
@@ -40,6 +41,13 @@ inline bool operator<(const cv::Point2i& p1, const cv::Point2i& p2)
 {
     if (p1.x == p2.x) return p1.y < p2.y;
     return p1.x < p2.x;
+}
+
+inline bool operator<(const cv::Point3f& p1, const cv::Point3f& p2)
+{
+    if (p1.x != p2.x) return p1.x < p2.x;
+    if (p1.y != p2.y) return p1.y < p2.y;
+    return p1.z < p2.z;
 }
 
 const NtkDebug& operator<<(const NtkDebug& stream, const cv::Mat1f& m);
@@ -160,6 +168,12 @@ inline cv::Vec3f infinite_point()
                      std::numeric_limits<float>::quiet_NaN(),
                      std::numeric_limits<float>::quiet_NaN());
 }
+
+inline bool isnan(const cv::Point3f& p)
+{ return ntk::math::isnan(p.x); }
+
+inline bool isnan(const cv::Vec3f& p)
+{ return ntk::math::isnan(p[0]); }
 
 inline void fillWithNan(cv::Mat3f& im)
 {

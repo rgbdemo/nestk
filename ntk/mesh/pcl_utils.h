@@ -32,6 +32,7 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/PolygonMesh.h>
+#include <pcl/TextureMesh.h>
 #include <pcl/segmentation/planar_region.h>
 
 #include <vector>
@@ -104,6 +105,7 @@ void polygonMeshToMesh(ntk::Mesh& mesh, const pcl::PolygonMesh &polygon);
 
 void meshToPolygonMesh(pcl::PolygonMesh& polygon, const ntk::Mesh& mesh);
 void meshToPolygonMeshWithNormals(pcl::PolygonMesh& polygon, const ntk::Mesh& mesh);
+void meshToTextureMesh(pcl::TextureMesh& texture_mesh, const ntk::Mesh& mesh);
 
 template <class PointT>
 void sampledRgbdImageToPointCloud(pcl::PointCloud<PointT>& cloud,
