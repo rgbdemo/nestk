@@ -180,6 +180,11 @@ inline void fillWithNan(cv::Mat3f& im)
     std::fill((cv::Vec3f*)im.datastart, (cv::Vec3f*)im.dataend, infinite_point());
 }
 
+inline cv::Vec3f toVec3f(const cv::Vec3b& v)
+{
+    return cv::Vec3f(v[0], v[1], v[2]);
+}
+
 template <class ScalarType>
 cv::Vec3d toVec3d(const cv::Mat_<ScalarType>& m)
 {
