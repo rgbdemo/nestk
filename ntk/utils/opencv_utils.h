@@ -185,6 +185,26 @@ inline cv::Vec3f toVec3f(const cv::Vec3b& v)
     return cv::Vec3f(v[0], v[1], v[2]);
 }
 
+inline cv::Vec3b toVec3b(const cv::Vec3f& v)
+{
+    return cv::Vec3b(v[0], v[1], v[2]);
+}
+
+inline cv::Vec3b toVec3b(const cv::Vec4b& v)
+{
+    return cv::Vec3b(v[0], v[1], v[2]);
+}
+
+inline cv::Vec3f vec_min(const cv::Vec3f& v1, const cv::Vec3f& v2)
+{
+    return cv::Vec3f(std::min(v1[0], v2[0]), std::min(v1[1], v2[1]), std::min(v1[2], v2[2]));
+}
+
+inline cv::Vec3f vec_max(const cv::Vec3f& v1, const cv::Vec3f& v2)
+{
+    return cv::Vec3f(std::max(v1[0], v2[0]), std::max(v1[1], v2[1]), std::max(v1[2], v2[2]));
+}
+
 template <class ScalarType>
 cv::Vec3d toVec3d(const cv::Mat_<ScalarType>& m)
 {
