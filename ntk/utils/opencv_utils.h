@@ -205,6 +205,11 @@ inline cv::Vec3f vec_max(const cv::Vec3f& v1, const cv::Vec3f& v2)
     return cv::Vec3f(std::max(v1[0], v2[0]), std::max(v1[1], v2[1]), std::max(v1[2], v2[2]));
 }
 
+inline cv::Vec3f vec_round(const cv::Vec3f& v)
+{
+    return cv::Vec3f(ntk::math::rnd(v[0]), ntk::math::rnd(v[1]), ntk::math::rnd(v[2]));
+}
+
 template <class ScalarType>
 cv::Vec3d toVec3d(const cv::Mat_<ScalarType>& m)
 {
