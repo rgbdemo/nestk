@@ -26,9 +26,51 @@
 
 using namespace ntk;
 
+void test_volume()
+{
+    ntk::TimeCount tc ("big volumes", 1);
+    const int dim = 512;
+    float* buffer = allocate_sse_buffer<float>(dim*dim*dim);
+    for (int d = 0; d < dim; ++d)
+    for (int r = 0; r < dim; ++r)
+    for (int c = 0; c < dim; ++c)
+    {
+        buffer[d*dim*dim+r*dim+c] = r*d*c;
+    }
+    tc.elapsedMsecs(" -- set_volume ");
+
+    ntk::Pose3D depth_pose;
+    depth_pose.setCameraParameters(dim, dim, dim/2.f, dim/2.f);
+    depth_pose.applyTransformBefore(cv::Vec3f(0.1, 0.2, 0.3), cv::Vec3f(0.2, 0.1, 0.5));
+    ntk::Pose3D rgb_pose = depth_pose;
+    rgb_pose.applyTransformAfter(cv::Vec3f(-0.1,0,0), cv::Vec3f(0.05,0,0));
+
+    VectorialProjector depth_projector (depth_pose);
+    vectorial::vec4f sse_sum (0,0,0,1);
+    for (int i = 0; i < 1; ++i)
+    {
+        for (int d = 0; d < dim; ++d)
+        for (int r = 0; r < dim; ++r)
+        for (int c = 0; c < dim; ++c)
+        {
+            if (buffer[d*dim*dim+r*dim+c] < 0)
+            {
+                vectorial::vec4f p3d = depth_projector.unprojectFromImage(cv::Point3f(c, r, d));
+                sse_sum += p3d;
+            }
+        }
+    }
+
+    tc.elapsedMsecs(" -- project all points ");
+    ntk_dbg_print(toPoint3f(sse_sum), 1);
+}
+
 int main()
 {
     ntk::ntk_debug_level = 1;
+
+    test_volume();
+    return 0;
 
     const int nb_it = 1;
     const int rows = 480;
