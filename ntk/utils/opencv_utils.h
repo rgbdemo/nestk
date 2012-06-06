@@ -190,6 +190,11 @@ inline cv::Vec3b toVec3b(const cv::Vec3f& v)
     return cv::Vec3b(v[0], v[1], v[2]);
 }
 
+inline cv::Vec3b toVec3b (const cv::Matx<float, 3, 1>& v)
+{
+    return cv::Vec3b(v(0), v(1), v(2));
+}
+
 inline cv::Vec3b toVec3b(const cv::Vec4b& v)
 {
     return cv::Vec3b(v[0], v[1], v[2]);
