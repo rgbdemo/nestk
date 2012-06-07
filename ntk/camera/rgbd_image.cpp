@@ -25,7 +25,7 @@
 
 #include <QDir>
 
-#if defined(USE_OPENNI) || defined(NESTK_USE_OPENNI)
+#if defined(USE_NITE) || defined(NESTK_USE_NITE)
 # include <ntk/gesture/skeleton.h>
 #else
 namespace ntk
@@ -171,7 +171,7 @@ namespace ntk
     other.m_camera_serial = m_camera_serial;
     other.m_timestamp = m_timestamp;
     other.m_depth_pose = m_depth_pose;
-#if defined(NESTK_USE_OPENNI) || defined(USE_OPENNI)
+#if defined(USE_NITE) || defined(NESTK_USE_NITE)
     if (m_skeleton)
     {
       if (!other.m_skeleton)

@@ -20,14 +20,17 @@
 #include "openni_grabber.h"
 
 #include <ntk/utils/opencv_utils.h>
-#include <ntk/gesture/body_event.h>
 #include <ntk/geometry/pose_3d.h>
 
 #ifndef WIN32
 #include <libusb-1.0/libusb.h>
 #endif
 
+#if defined(USE_NITE) || defined(NESTK_USE_NITE)
+#include <ntk/gesture/body_event.h>
 #include <XnVCircleDetector.h>
+#endif
+
 #include <XnLog.h>
 
 #include <QTemporaryFile>
@@ -316,8 +319,10 @@ bool OpenniGrabber :: connectToDevice()
 
         m_ni_user_generator.GetSkeletonCap().SetSkeletonProfile(XN_SKEL_PROFILE_ALL);
 
+#if defined(USE_NITE) || defined(NESTK_USE_NITE)
         if (m_body_event_detector)
             m_body_event_detector->initialize(m_driver.niContext(), m_ni_depth_generator);
+#endif
     }
 
     status = m_ni_depth_generator.StartGenerating();
@@ -373,8 +378,10 @@ bool OpenniGrabber :: disconnectFromDevice()
         m_ni_hands_generator.StopGenerating();
         m_ni_gesture_generator.StopGenerating();
     }
+#if defined(USE_NITE) || defined(NESTK_USE_NITE)
     if (m_body_event_detector)
         m_body_event_detector->shutDown();
+#endif
 
     m_ni_depth_generator.Release();
     m_ni_rgb_generator.Release();
@@ -556,14 +563,18 @@ void OpenniGrabber :: run()
     m_rgbd_image.userLabelsRef() = cv::Mat1b(m_calib_data->raw_depth_size);
     m_rgbd_image.userLabelsRef() = 0u;
 
+#if defined(USE_NITE) || defined(NESTK_USE_NITE)
     if (m_track_users)
         m_rgbd_image.setSkeletonData(new Skeleton());
+#endif
 
     m_current_image.userLabelsRef() = cv::Mat1b(m_calib_data->raw_depth_size);
     m_current_image.userLabelsRef() = 0u;
 
+#if defined(USE_NITE) || defined(NESTK_USE_NITE)
     if (m_track_users)
         m_current_image.setSkeletonData(new Skeleton());
+#endif
 
     if (m_has_rgb)
     {
@@ -616,8 +627,10 @@ void OpenniGrabber :: run()
             waitAndUpdateActiveGenerators();
         }
 
+#if defined(USE_NITE) || defined(NESTK_USE_NITE)
         if (m_track_users && m_body_event_detector)
             m_body_event_detector->update();
+#endif
 
         m_ni_depth_generator.GetMetaData(depthMD);
         if (m_has_rgb)
@@ -696,6 +709,7 @@ void OpenniGrabber :: run()
             XnUInt16 num_users = 15;
             m_ni_user_generator.GetUsers(user_ids, num_users);
 
+#if defined(USE_NITE) || defined(NESTK_USE_NITE)
             // FIXME: only one user supported.
             for (int i = 0; i < num_users; ++i)
             {
@@ -706,6 +720,7 @@ void OpenniGrabber :: run()
                     break;
                 }
             }
+#endif
         }
 
         if (m_subsampling_factor != 1)

@@ -244,9 +244,14 @@ IF (NESTK_USE_OPENNI)
        camera/openni_grabber.h
        camera/openni_grabber.cpp
        camera/openni_grabber_internals.hxx
+       gesture/ni_utils.h
+      )
+ENDIF()
+
+IF (NESTK_USE_NITE)
+  SET (ntk_sources ${ntk_sources}
        gesture/body_event.h
        gesture/body_event.cpp
-       gesture/ni_utils.h
        gesture/skeleton.h
        gesture/skeleton.cpp
       )

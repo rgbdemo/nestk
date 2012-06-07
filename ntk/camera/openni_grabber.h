@@ -21,7 +21,10 @@
 #define NTK_CAMERA_NITE_RGBD_GRABBER_H
 
 #include <ntk/camera/rgbd_grabber.h>
-#include <ntk/gesture/skeleton.h>
+
+#if defined(USE_NITE) || defined(NESTK_USE_NITE)
+# include <ntk/gesture/skeleton.h>
+#endif
 
 // OpenNI headers include windows.h on windows without preventing
 // preprocessor namespace pollution.
@@ -38,8 +41,11 @@
 
 #include <XnCodecIDs.h>
 #include <XnCppWrapper.h>
+
+#if defined(USE_NITE) || defined(NESTK_USE_NITE)
 #include <XnVSessionManager.h>
 #include <XnVPushDetector.h>
+#endif
 
 // Under certain odd circumstances, qhull/io.h can be incorrectly included
 // by XnPlatformWin32.h, dragging True and False as preprocessor macros,

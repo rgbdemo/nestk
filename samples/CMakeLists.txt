@@ -13,14 +13,17 @@ IF(NESTK_USE_KIN4WIN)
 ENDIF()
 
 IF (NESTK_USE_OPENNI)
-   ADD_EXECUTABLE(skeleton-tracking skeleton_tracking.cpp)
-   TARGET_LINK_LIBRARIES(skeleton-tracking nestk)
+
+   IF (NESTK_USE_NITE)
+       ADD_EXECUTABLE(skeleton-tracking skeleton_tracking.cpp)
+       TARGET_LINK_LIBRARIES(skeleton-tracking nestk)
+
+       ADD_EXECUTABLE(handpoint-tracking handpoint_tracking.cpp)
+       TARGET_LINK_LIBRARIES(handpoint-tracking nestk)
+   ENDIF()
 
    ADD_EXECUTABLE(grab-mesh grab_mesh.cpp)
    TARGET_LINK_LIBRARIES(grab-mesh nestk)
-
-   ADD_EXECUTABLE(handpoint-tracking handpoint_tracking.cpp)
-   TARGET_LINK_LIBRARIES(handpoint-tracking nestk)
 
    ADD_EXECUTABLE(openni-backend openni_backend.cpp)
    TARGET_LINK_LIBRARIES(openni-backend nestk)
