@@ -249,7 +249,7 @@ void MeshViewer :: addMeshToVertexBufferObject(const ntk::Mesh& mesh, const Pose
 #endif
 }
 
-void MeshViewer :: addMesh(const ntk::Mesh& mesh, const Pose3D& pose, MeshViewerMode mode)
+void MeshViewer :: addMesh(const ntk::Mesh& mesh, const Pose3D& pose, MeshViewerMode mode, bool influence_on_center)
 {  
     unsigned long start = ntk::Time::getMillisecondCounter();
 	
@@ -259,6 +259,7 @@ void MeshViewer :: addMesh(const ntk::Mesh& mesh, const Pose3D& pose, MeshViewer
     makeCurrent();
 
     // Compute new mesh center.
+    if (influence_on_center)
     {
         m_mesh_center = Point3f(0,0,0);
         int n_sample = 0;

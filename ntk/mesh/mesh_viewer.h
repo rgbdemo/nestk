@@ -69,7 +69,7 @@ public:
         cv::setIdentity(m_glcam_transform);
     }
 
-    void addMesh(const ntk::Mesh& mesh, const Pose3D& pose, MeshViewerMode mode);
+    void addMesh(const ntk::Mesh& mesh, const Pose3D& pose, MeshViewerMode mode, bool influence_on_center = true);
     void addMeshToDisplayList(const ntk::Mesh& mesh, const Pose3D& pose, MeshViewerMode mode);
     void addMeshToVertexBufferObject(const ntk::Mesh& mesh, const Pose3D& pose, MeshViewerMode mode);
     void addPlane(const ntk::Plane& plane);

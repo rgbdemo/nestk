@@ -108,6 +108,11 @@ public:
         return cv::Point3_<T>(x+(width/T(2)), y+(height/T(2)), z + (depth / T(2)));
     }
 
+    cv::Point3_<T> sizes() const
+    {
+        return cv::Point3_<T>(width, height, depth);
+    }
+
     bool isPointInside(const cv::Point3f& p) const
     {
         return (p.x >= x) && (p.y >= y) && (p.z >= z)
