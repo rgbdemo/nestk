@@ -25,16 +25,34 @@
 #include <ntk/numeric/utils.h>
 #include <ntk/utils/time.h>
 
+#include <opencv2/features2d/features2d.hpp>
+#include <opencv2/flann/flann.hpp>
+
 using namespace cv;
 
 namespace ntk
 {
 
+struct FeatureSet :: Impl
+{
+#ifdef HAVE_OPENCV_GREATER_THAN_2_3_0
+    typedef cv::flann::GenericIndex<cv::flann::L2<float> > IndexType;
+#else
+    typedef cv::flann::Index_<float> IndexType;
+#endif
+    ntk::Ptr< IndexType > descriptor_index;
+};
+
+FeatureSet::FeatureSet()
+    : impl(new Impl())
+{
+}
+
 void FeatureSet :: extractFromImage(const RGBDImage& image,
                                     const FeatureSetParams& params)
 {
     ntk::TimeCount tc("FeatureSet::extractFromImage", 1);
-    m_descriptor_index.release();
+    impl->descriptor_index.release();
 
     if (params.detector_type == "GPUSIFT")
     {
@@ -375,7 +393,7 @@ void FeatureSet :: buildDescriptorIndex()
 #else
     cv::flann::KDTreeIndexParams params(4);
 #endif
-    m_descriptor_index = new IndexType(m_descriptors, params);
+    impl->descriptor_index = new Impl::IndexType(m_descriptors, params);
 }
 
 void FeatureSet :: matchWith(const FeatureSet& rhs,
@@ -384,7 +402,7 @@ void FeatureSet :: matchWith(const FeatureSet& rhs,
 {
     ntk_ensure(featureType() == rhs.featureType(), "Cannot match with different feature type.");
 
-    if (!m_descriptor_index)
+    if (!impl->descriptor_index)
         buildDescriptorIndex();
 
     const cv::Mat1f& rhs_descriptors = rhs.descriptors();
@@ -402,7 +420,7 @@ void FeatureSet :: matchWith(const FeatureSet& rhs,
 #else
         cv::flann::SearchParams params(64);
 #endif
-        m_descriptor_index->knnSearch(query, indices, dists, 2, params);
+        impl->descriptor_index->knnSearch(query, indices, dists, 2, params);
         if (indices[0] < 0 || indices[1] < 0)
             continue;
         const double dist_ratio = dists[0]/dists[1];
@@ -413,5 +431,6 @@ void FeatureSet :: matchWith(const FeatureSet& rhs,
         matches.push_back(m);
     }
 }
+
 
 } // ntk
