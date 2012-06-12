@@ -237,6 +237,7 @@ IF(NESTK_USE_KIN4WIN)
        camera/kin4win_grabber.h
        camera/kin4win_grabber.cpp
     )
+    #SET_SOURCE_FILES_PROPERTIES(camera/kin4win_grabber.cpp PROPERTIES COMPILE_FLAGS "/clr")
 ENDIF()
 
 IF (NESTK_USE_OPENNI)
@@ -318,8 +319,6 @@ ENDIF (WIN32 OR APPLE)
 IF (WIN32)
   set(WINMM_LIBRARY winmm)
 ENDIF()
-
-MESSAGE("ZLIB: ${ZLIB_LIBRARIES}")
 
 TARGET_LINK_LIBRARIES(nestk
   ${Boost_LIBRARIES}

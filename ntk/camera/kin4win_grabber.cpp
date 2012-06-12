@@ -1,10 +1,10 @@
 #include "kin4win_grabber.h"
 
+#include <Ole2.h>
 #include "NuiApi.h"
 
 #include <ntk/utils/opencv_utils.h>
 #include <ntk/utils/time.h>
-#include <ntk/gesture/body_event.h>
 #include <ntk/geometry/pose_3d.h>
 
 #include <QDateTime>
@@ -71,6 +71,7 @@ public:
     , colorResolution(NUI_IMAGE_RESOLUTION_640x480)
     , sensor(0)
     , name(0)
+    , colorCoordinates(0)
     {
 
     }
@@ -140,6 +141,9 @@ public:
 
     WinRet init ()
     {
+        colorCoordinates = new long[getDepthHeight()*getDepthWidth()*2];
+        mappedDepthTmp = new float[getDepthHeight()*getDepthWidth()];
+
         WinRet ret;
         bool result;
 
@@ -180,6 +184,8 @@ public:
 
         ret = sensor->NuiImageStreamOpen(NUI_IMAGE_TYPE_DEPTH, depthResolution, 0, 2, nextDepthFrameEvent, &depthStreamHandle);
 
+        NuiImageStreamSetImageFrameFlags(depthStreamHandle, NUI_IMAGE_STREAM_FLAG_ENABLE_NEAR_MODE);
+
         if (FAILED(ret))
         {
             alert(Messages::depthStreamError);
@@ -187,7 +193,7 @@ public:
         }
 
         stopProcessingEvent = CreateEvent(0, FALSE, FALSE, 0);
-        processingThreadHandle = CreateThread(NULL, 0, processThread, this, 0, NULL);
+        processingThreadHandle = CreateThread(NULL, 0, processThread, this, 0, NULL);       
 
         return ret;
     }
@@ -254,7 +260,10 @@ public:
             uint8_t* buf = static_cast<uint8_t*>(lockedRect.pBits);
             // size_t  size = size_t(lockedRect.size);
 
-            cvtColor(cv::Mat4b(height, width, (cv::Vec4b*)buf), that->m_current_image.rawRgbRef(), CV_RGBA2RGB);
+            {
+                QWriteLocker locker(&that->m_lock);
+                cvtColor(cv::Mat4b(height, width, (cv::Vec4b*)buf), that->m_current_image.rawRgbRef(), CV_RGBA2RGB);
+            }
 
             // std::copy(buf, buf + 3 * width * height, (uint8_t*) that->m_current_image.rawRgbRef().ptr());
             // cvtColor(that->m_current_image.rawRgb(), that->m_current_image.rawRgbRef(), CV_RGB2BGR);
@@ -297,9 +306,16 @@ public:
             ntk_assert(width  == that->m_current_image.rawDepth().cols, "Bad width");
             ntk_assert(height == that->m_current_image.rawDepth().rows, "Bad height");
 
-            float* depth_buf = that->m_current_image.rawDepthRef().ptr<float>();
+            {
+                QWriteLocker locker(&that->m_lock);
+                float* depth_buf = that->m_current_image.rawDepthRef().ptr<float>();
+                mapDepthFrameToRgbFrame(buf, depth_buf);
+            }
+
+#if 0
             for (int i = 0; i < width * height; ++i)
                 *depth_buf++ = float(NuiDepthPixelToDepth(*buf++)) / 1000.f;
+#endif
 
             //DWORD frameWidth, frameHeight;
         
@@ -372,6 +388,8 @@ public:
             sensor->Release();
             sensor = 0;
         }
+
+        delete [] colorCoordinates; colorCoordinates = 0;
     }
 
     void zero()
@@ -470,11 +488,83 @@ public:
         return cv::Point3f(x, y, float(d) / 1000.f);
     }
 
+    void postprocessDepthData (float* depth_values)
+    {
+        static const int neighbors[6][2] = { {-1, 0}, {1, 0}, {0, -1}, {0, 1}, {-1, -1}, {1, 1} };
+        const size_t depth_width = getDepthWidth();
+        const size_t depth_height = getDepthHeight();
+
+        // Temporary buffer.    
+        std::copy(depth_values, depth_values + depth_width*depth_height, mappedDepthTmp);
+
+        for (int ref_r = 0; ref_r < depth_height; ++ref_r)
+        for (int ref_c = 0; ref_c < depth_width; ++ref_c)
+        {
+            float& d = depth_values[ref_r*depth_width+ref_c];
+            if (d > 1e-5) continue;
+
+            for (int neighb = 0; neighb < 6; ++neighb)
+            {
+                int r = ref_r + neighbors[neighb][0];
+                int c = ref_c + neighbors[neighb][1];
+
+                if (c >= 0 && c < depth_width && r >= 0 && r < depth_height)
+                {
+                    float neighb_d = mappedDepthTmp[r*depth_width+c];
+                    if (neighb_d > 1e-5)
+                    {
+                        d = mappedDepthTmp[r*depth_width+c];
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    void mapDepthFrameToRgbFrame (uint16_t* depth_d16, float* depth_values)
+    {
+        const size_t depth_width = getDepthWidth();
+        const size_t depth_height = getDepthHeight();
+
+        sensor->NuiImageGetColorPixelCoordinateFrameFromDepthPixelFrameAtResolution(
+                    colorResolution,
+                    depthResolution,
+                    depth_width*depth_height,
+                    depth_d16,
+                    depth_width*depth_height*2,
+                    colorCoordinates
+                    );
+
+        std::fill(depth_values, depth_values+depth_width*depth_height, 0.f);
+
+        for (int i = 0; i < depth_width*depth_height; ++i)
+        {
+            int c = colorCoordinates[i*2];
+            int r = colorCoordinates[i*2+1];
+
+            uint16_t d = *depth_d16++;
+            if (d == NUI_IMAGE_DEPTH_MINIMUM || d == NUI_IMAGE_DEPTH_MAXIMUM || d == NUI_IMAGE_DEPTH_NO_VALUE)
+                continue;
+
+            if (c >= 0 && c < depth_width && r >= 0 && r < depth_height)
+            {
+                
+                float depth = float(NuiDepthPixelToDepth(d)) / 1000.f;
+                int idx = r*depth_width+c;
+                depth_values[idx] = depth;
+            }
+        }
+    }
+
+
     Kin4WinGrabber* that;
 
     WinStr name;
 
     INuiSensor* sensor;
+
+    long* colorCoordinates;
+    float* mappedDepthTmp;
 
     NuiResolution depthResolution;
     WinHandle nextDepthFrameEvent;
@@ -542,7 +632,11 @@ bool Kin4WinGrabber :: connectToDevice()
 
     // FIXME: This should be done at connectToDevice time.
     {
-        nui->init();
+        WinRet ret = nui->init();
+
+        if (FAILED(ret))
+            return false;
+
         if (!m_calib_data)
         {
             estimateCalibration();
@@ -581,9 +675,18 @@ void Kin4WinGrabber :: estimateCalibration()
     // These factors were estimated using chessboard calibration.
     // They seem to accurately correct the bias in object sizes output by
     // the default parameters.
-    const double f_correction_factor = 528.0/570.34;
+    // const double f_correction_factor = 528.0/570.34;
+    const double f_correction_factor = 1.0; // FIXME: what should it be for Kinect for Windows?
     fx *= f_correction_factor;
     fy *= f_correction_factor;
+
+    printf("fx=%f\n", fx);
+    printf("fy=%f\n", fy);
+    printf("cx=%f\n", cx);
+    printf("cy=%f\n", cy);
+    ntk_dbg_print(fy, 1);
+    ntk_dbg_print(cx, 1);
+    ntk_dbg_print(cy, 1);
 
     // FIXME: this bias was not observed anymore in recent experiments.
     // const double cy_correction_factor = 267.0/240.0;
@@ -679,9 +782,12 @@ void Kin4WinGrabber :: run()
             int64 grab_time = ntk::Time::getMillisecondCounter();
             ntk_dbg_print(grab_time - last_grab_time, 2);
             last_grab_time = grab_time;
-            QWriteLocker locker(&m_lock);
 
-            m_current_image.swap(m_rgbd_image);
+            {
+                QWriteLocker locker(&m_lock);
+                m_current_image.swap(m_rgbd_image);
+                nui->postprocessDepthData(m_rgbd_image.rawDepthRef().ptr<float>());
+            }
 
             nui->dirtyDepth = true;
             nui->dirtyColor = true;
@@ -696,6 +802,17 @@ void Kin4WinGrabber :: run()
 ntk::Kin4WinDriver::Kin4WinDriver()
 {
     ntk_dbg(1) << "Initializing Kin4Win driver";
+
+    INuiSensor* sensor = 0;
+    // WinRet ret = NuiCreateSensorByIndex(0, &sensor);
+    // if (SUCCEEDED(ret))
+    {
+        DeviceInfo device;
+        device.serial = "unknown";
+        device.camera_type = "kin4win";
+        device.vendor = "Microsoft";
+        devices_info.push_back(device);
+    }
 
     if (ntk::ntk_debug_level >= 1)
     {
