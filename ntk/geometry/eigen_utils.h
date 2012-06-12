@@ -145,14 +145,16 @@ inline ntk::Pose3D toPose3D(const Eigen::Matrix4f& m)
 
 // FIXME: MSVC10 ICEs on the generic function definition.
 #ifdef _MSC_VER
-#define TO_EIGEN_MSVC_DEF       \
+#define TO_EIGEN_MSVC_DEF(H,W)  \
 {                               \
-  for (int r = 0; r < 3; ++r)   \
-    for (int c = 0; c < 3; ++c) \
+  for (int r = 0; r < H; ++r)   \
+    for (int c = 0; c < W; ++c) \
       ep(r,c) = mat(r,c);       \
 }
-inline void toEigen(const cv::Mat1f& mat, Eigen::Matrix4f& ep) TO_EIGEN_MSVC_DEF
-inline void toEigen(const cv::Mat1d& mat, Eigen::Matrix3d& ep) TO_EIGEN_MSVC_DEF
+inline void toEigen(const cv::Mat1f& mat, Eigen::Matrix<float, 4, 4>& ep) TO_EIGEN_MSVC_DEF(4,4)
+inline void toEigen(const cv::Mat1d& mat, Eigen::Matrix<double, 4, 4>& ep) TO_EIGEN_MSVC_DEF(4,4)
+inline void toEigen(const cv::Mat1f& mat, Eigen::Matrix<float, 3, 3>& ep) TO_EIGEN_MSVC_DEF(3,3)
+inline void toEigen(const cv::Mat1d& mat, Eigen::Matrix<double, 3, 3>& ep) TO_EIGEN_MSVC_DEF(3,3)
 #undef TO_EIGEN_MSVC_DEF
 #else
 template <typename CvScalarType, typename EScalarType, int H, int W>
