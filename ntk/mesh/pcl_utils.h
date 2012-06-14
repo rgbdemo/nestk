@@ -62,6 +62,18 @@ inline pcl::PointNormal toPcl(const cv::Point3f& p, const cv::Point3f& n)
     return r;
 }
 
+inline pcl::PointXYZRGB toPcl(const cv::Point3f& p, const cv::Vec3b& c)
+{
+    pcl::PointXYZRGB r;
+    r.x = p.x;
+    r.y = p.y;
+    r.z = p.z;
+    r.r = c[0];
+    r.g = c[1];
+    r.b = c[2];
+    return r;
+}
+
 inline cv::Point3f toOpencv(const pcl::PointXYZ& p)
 { return cv::Point3f(p.x, p.y, p.z); }
 
@@ -99,6 +111,9 @@ void meshToPointCloud(pcl::PointCloud<pcl::PointXYZ>& cloud,
                       const ntk::Mesh& mesh);
 
 void meshToPointCloud(pcl::PointCloud<pcl::PointNormal>& cloud,
+                      const ntk::Mesh& mesh);
+
+void meshToPointCloud(pcl::PointCloud<pcl::PointXYZRGB>& cloud,
                       const ntk::Mesh& mesh);
 
 void polygonMeshToMesh(ntk::Mesh& mesh, const pcl::PolygonMesh &polygon);

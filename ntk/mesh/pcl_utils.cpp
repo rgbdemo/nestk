@@ -178,6 +178,18 @@ void meshToPointCloud(pcl::PointCloud<pcl::PointNormal>& cloud,
     }
 }
 
+void meshToPointCloud(pcl::PointCloud<pcl::PointXYZRGB>& cloud,
+                      const ntk::Mesh& mesh)
+{
+    cloud.points.resize(mesh.vertices.size());
+    cloud.height = 1;
+    cloud.width = cloud.points.size();
+    foreach_idx(i, cloud.points)
+    {
+        cloud.points[i] = toPcl(mesh.vertices[i], mesh.colors[i]);
+    }
+}
+
 Eigen::Affine3f toPclCameraTransform(const Pose3D& pose)
 {
     Eigen::Affine3f mat;
@@ -200,9 +212,9 @@ Eigen::Affine3f toPclInvCameraTransform(const Pose3D& pose)
 
 void removeExtrapoledTriangles(ntk::Mesh& surface, const ntk::Mesh& ground_cloud, float radius)
 {
-    pcl::PointCloud<pcl::PointXYZ>::Ptr pcl_cloud (new pcl::PointCloud<pcl::PointXYZ>());
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr pcl_cloud (new pcl::PointCloud<pcl::PointXYZRGB>());
     meshToPointCloud(*pcl_cloud, ground_cloud);
-    pcl::octree::OctreePointCloudSearch<pcl::PointXYZ> octree (radius / 10.0f);
+    pcl::octree::OctreePointCloudSearch<pcl::PointXYZRGB> octree (radius / 10.0f);
     octree.setInputCloud (pcl_cloud);
     octree.addPointsFromInputCloud ();
 
@@ -213,12 +225,15 @@ void removeExtrapoledTriangles(ntk::Mesh& surface, const ntk::Mesh& ground_cloud
     {
         std::vector<int> pointIdxRadiusSearch;
         std::vector<float> pointRadiusSquaredDistance;
-        int nb_neighb = octree.radiusSearch (toPcl(surface.vertices[i]), radius,
+        int nb_neighb = octree.radiusSearch (toPcl(surface.vertices[i], surface.colors[i]), radius,
                                              pointIdxRadiusSearch, pointRadiusSquaredDistance);
         if (nb_neighb > 0)
         {
             // Ok, has a corresponding vertex in the original point cloud.
             filtered_surface.vertices.push_back(surface.vertices[i]);
+            // Closest point.
+            pcl::PointXYZRGB p = pcl_cloud->points[pointIdxRadiusSearch[0]];
+            filtered_surface.colors.push_back(cv::Vec3b(p.r, p.g, p.b));
             lookup_table[i] = filtered_surface.vertices.size()-1;
         }
     }

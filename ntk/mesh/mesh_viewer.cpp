@@ -60,7 +60,7 @@ void MeshViewer :: initializeGL()
     glEnable (GL_BLEND);
     glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     // glEnable(GL_POINT_SMOOTH);
-    glPointSize(1.0);
+    // glPointSize(1.0);
     updateBackgroundColor();
     resetCamera();
 }
