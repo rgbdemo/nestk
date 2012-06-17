@@ -27,6 +27,9 @@ namespace ntk
 {
   int ntk_debug_level = 0;
 
+  extern QTextStream qErr;
+  extern QTextStream qOut;
+
   void assert_failure(const char* where, const char* what, const char* cond)
   {
     std::cerr << "ASSERT failure in " << where << ": " << what
@@ -70,4 +73,13 @@ const NtkDebug& operator<<(const NtkDebug& d, const QStringList& rhs)
     d << ", " << *i;
 
   return d;
+}
+
+NtkDebug :: ~NtkDebug()
+{
+#ifdef _WIN32
+    ntk::qErr << "[DBG] " << s << "\n";
+#else
+    qDebug() << "[DBG]" << s;
+#endif
 }
