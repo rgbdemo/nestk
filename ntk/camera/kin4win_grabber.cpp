@@ -783,10 +783,13 @@ void Kin4WinGrabber :: run()
             ntk_dbg_print(grab_time - last_grab_time, 2);
             last_grab_time = grab_time;
 
+            m_current_image.setTimestamp(getCurrentTimestamp());
             {
                 QWriteLocker locker(&m_lock);
                 m_current_image.swap(m_rgbd_image);
                 nui->postprocessDepthData(m_rgbd_image.rawDepthRef().ptr<float>());
+                cv::flip(m_rgbd_image.rawDepth(), m_rgbd_image.rawDepthRef(), 1);
+                cv::flip(m_rgbd_image.rawRgb(), m_rgbd_image.rawRgbRef(), 1);
             }
 
             nui->dirtyDepth = true;
