@@ -64,4 +64,113 @@ bool RGBDModeler :: addNewView(const RGBDImage& image, Pose3D& depth_pose)
     return true;
 }
 
+RGBDModelerInOwnThread::~RGBDModelerInOwnThread()
+{
+    setThreadShouldExit();
+    wait(10000);
+}
+
+bool RGBDModelerInOwnThread::addNewView(const RGBDImage &image, Pose3D &depth_pose)
+{
+    if (!isRunning())
+        start();
+
+    ntk::TimeCount tc("INOWNTHREAD", 1);
+    FrameEventDataPtr data (new FrameEventData);
+    data->type = FrameEventData::NewImage;
+    image.copyTo(data->image);
+    data->pose = depth_pose;
+    newEvent(this, data);
+    tc.stop();
+    return true;
+}
+
+void RGBDModelerInOwnThread::computeMesh()
+{
+    FrameEventDataPtr data (new FrameEventData);
+    data->type = FrameEventData::ComputeMesh;
+    newEvent(&mesh_event_sender, data);
+}
+
+void RGBDModelerInOwnThread::computeSurfaceMesh()
+{
+    FrameEventDataPtr data (new FrameEventData);
+    data->type = FrameEventData::ComputeSurfaceMesh;
+    newEvent(&mesh_event_sender, data);
+}
+
+void RGBDModelerInOwnThread::computeAccurateVerticeColors()
+{
+    FrameEventDataPtr data (new FrameEventData);
+    data->type = FrameEventData::ComputeAccurateSurfaceColor;
+    newEvent(&mesh_event_sender, data);
+}
+
+void RGBDModelerInOwnThread::reset()
+{
+    FrameEventDataPtr data (new FrameEventData);
+    data->type = FrameEventData::Reset;
+    newEvent(&mesh_event_sender, data);
+}
+
+void RGBDModelerInOwnThread::run()
+{
+    while (!threadShouldExit())
+    {
+        EventListener::Event event = waitForNewEvent(200);
+        if (event.isNull())
+            continue;
+
+        FrameEventDataPtr data = dynamic_Ptr_cast<FrameEventData>(event.data);
+        ntk_assert(data, "No data!");
+
+        switch (data->type)
+        {
+        case FrameEventData::NewImage:
+        {
+            child->addNewView(data->image, data->pose);
+            break;
+        }
+
+        case FrameEventData::ComputeMesh:
+        {
+            child->computeMesh();
+            acquireLock();
+            m_mesh = child->currentMesh();
+            releaseLock();
+            break;
+        }
+
+        case FrameEventData::ComputeSurfaceMesh:
+        {
+            child->computeSurfaceMesh();
+            acquireLock();
+            m_mesh = child->currentMesh();
+            releaseLock();
+            break;
+        }
+
+        case FrameEventData::ComputeAccurateSurfaceColor:
+        {
+            child->computeAccurateVerticeColors();
+            acquireLock();
+            m_mesh = child->currentMesh();
+            releaseLock();
+            break;
+        }
+
+        case FrameEventData::Reset:
+        {
+            child->reset();
+            acquireLock();
+            m_mesh = child->currentMesh();
+            releaseLock();
+            break;
+        }
+        };
+
+        reportNewEventProcessed();
+    }
+}
+
 } // ntk
