@@ -85,6 +85,8 @@ bool SurfelsRGBDModeler :: addNewView(const RGBDImage& image_, Pose3D& depth_pos
         OpenniRGBDProcessor processor;
         // FIXME compute faster normals.
         processor.computeNormals(m_last_image);
+        cv::dilate(m_last_image.depthMask(), m_last_image.depthMaskRef(), cv::Mat(), cv::Point(-1,-1), 2);
+        cv::erode(m_last_image.depthMask(), m_last_image.depthMaskRef(), cv::Mat(), cv::Point(-1,-1), 8);
         // processor.computeNormalsPCL(image);
     }
 
