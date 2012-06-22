@@ -225,8 +225,8 @@ void removeExtrapoledTriangles(ntk::Mesh& surface, const ntk::Mesh& ground_cloud
     {
         std::vector<int> pointIdxRadiusSearch;
         std::vector<float> pointRadiusSquaredDistance;
-        int nb_neighb = octree.radiusSearch (toPcl(surface.vertices[i], surface.colors[i]), radius,
-                                             pointIdxRadiusSearch, pointRadiusSquaredDistance);
+        int nb_neighb = octree.radiusSearch (toPcl(surface.vertices[i], surface.hasColors() ? surface.colors[i] : cv::Vec3b(255,255,255)),
+                                             radius, pointIdxRadiusSearch, pointRadiusSquaredDistance);
         if (nb_neighb > 0)
         {
             // Ok, has a corresponding vertex in the original point cloud.
