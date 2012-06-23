@@ -28,6 +28,8 @@
 #include <opencv2/features2d/features2d.hpp>
 #include <opencv2/flann/flann.hpp>
 
+#include <cassert>
+
 using namespace cv;
 
 namespace ntk
@@ -52,6 +54,10 @@ void FeatureSet :: extractFromImage(const RGBDImage& image,
                                     const FeatureSetParams& params)
 {
     ntk::TimeCount tc("FeatureSet::extractFromImage", 1);
+
+    if(!impl->descriptor_index.empty())
+        buildDescriptorIndex();
+
     impl->descriptor_index.release();
 
     if (params.detector_type == "GPUSIFT")
@@ -420,6 +426,7 @@ void FeatureSet :: matchWith(const FeatureSet& rhs,
 #else
         cv::flann::SearchParams params(64);
 #endif
+        assert(!impl->descriptor_index.empty());
         impl->descriptor_index->knnSearch(query, indices, dists, 2, params);
         if (indices[0] < 0 || indices[1] < 0)
             continue;
