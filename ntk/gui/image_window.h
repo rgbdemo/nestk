@@ -38,6 +38,10 @@ class ImageWindowManager : public ntk::AsyncEventListener, public ntk::EventBroa
 private:
     struct ImageWindowManagerEventData : public ntk::EventData
     {
+        TYPEDEF_THIS(ImageWindowManagerEventData)
+
+        CLONABLE_EVENT_DATA
+
         std::string window_name;
         cv::Mat im;
     };

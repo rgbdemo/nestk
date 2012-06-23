@@ -83,6 +83,10 @@ namespace ntk
 
   class Mesh : public ntk::EventData
   {
+    TYPEDEF_THIS(Mesh)
+
+    CLONABLE_EVENT_DATA
+
   public:
     std::vector<cv::Point3f> vertices;
     std::vector<cv::Vec3b> colors;

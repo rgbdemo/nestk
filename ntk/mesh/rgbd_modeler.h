@@ -75,6 +75,10 @@ class RGBDModelerInOwnThread : public RGBDModeler, public EventProcessingBlockIn
 public:
     struct FrameEventData : public ntk::EventData
     {
+        TYPEDEF_THIS(FrameEventData)
+
+        CLONABLE_EVENT_DATA
+
         enum EventType { NewImage = 0,
                          ComputeMesh = 1,
                          ComputeSurfaceMesh = 2,

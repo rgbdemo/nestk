@@ -43,6 +43,10 @@ namespace ntk
  */
 class CV_EXPORTS RGBDImage : public ntk::EventData
 {
+    TYPEDEF_THIS(RGBDImage)
+
+    CLONABLE_EVENT_DATA
+
 public:
   RGBDImage() : m_calibration(0), m_skeleton(0), m_camera_serial("unknown"), m_timestamp(0) {}
 
