@@ -92,7 +92,7 @@ void SyncEventListener :: setEnabled(bool enabled)
 }
 
 const int
-SyncEventListener::event_timeout_msecs = 10;
+SyncEventListener::event_timeout_msecs = 100;
 
 EventListener::Event SyncEventListener :: waitForNewEvent()
 {
