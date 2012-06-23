@@ -94,7 +94,9 @@ public:
     bool enabled() const { return m_enabled; }
 
     virtual void newEvent(EventBroadcaster* sender = 0, EventDataPtr data = EventDataPtr());
-    Event waitForNewEvent(int timeout_msecs = 60000);
+
+    static const int event_timeout_msecs;
+    Event waitForNewEvent();
 
 private:
     bool m_enabled;

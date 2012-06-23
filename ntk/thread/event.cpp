@@ -91,7 +91,10 @@ void SyncEventListener :: setEnabled(bool enabled)
     m_condition.wakeAll();
 }
 
-EventListener::Event SyncEventListener :: waitForNewEvent(int timeout_msecs)
+const int
+SyncEventListener::event_timeout_msecs = 10;
+
+EventListener::Event SyncEventListener :: waitForNewEvent()
 {
     if (!m_enabled) return 0;
 
@@ -100,7 +103,7 @@ EventListener::Event SyncEventListener :: waitForNewEvent(int timeout_msecs)
     m_lock.lock();
     if (m_unprocessed_ordered_events.size() == 0)
     {
-        m_condition.wait(&m_lock, timeout_msecs);
+        m_condition.wait(&m_lock, event_timeout_msecs);
     }
 
     if (m_unprocessed_ordered_events.size() > 0)
@@ -140,7 +143,7 @@ void AsyncEventListener :: customEvent(QEvent* generic_event)
     while (m_event_signaled)
     {
         m_event_signaled = false;
-        Event event = waitForNewEvent(1000);
+        Event event = waitForNewEvent();
         handleAsyncEvent(event);
         // FIXME: this is important on Windows to avoid the application
         // spending all its time handling these custom events.

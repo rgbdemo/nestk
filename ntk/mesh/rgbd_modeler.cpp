@@ -67,7 +67,7 @@ bool RGBDModeler :: addNewView(const RGBDImage& image, Pose3D& depth_pose)
 RGBDModelerInOwnThread::~RGBDModelerInOwnThread()
 {
     setThreadShouldExit();
-    wait(10000);
+    wait();
 }
 
 bool RGBDModelerInOwnThread::addNewView(const RGBDImage &image, Pose3D &depth_pose)
@@ -117,7 +117,7 @@ void RGBDModelerInOwnThread::run()
 {
     while (!threadShouldExit())
     {
-        EventListener::Event event = waitForNewEvent(200);
+        EventListener::Event event = waitForNewEvent();
         if (event.isNull())
             continue;
 
