@@ -2,8 +2,67 @@
 #define IMAGE_WINDOW_H
 
 #include <ntk/thread/event.h>
-
+#include <QImage>
+#include <QString>
 #include <QMainWindow>
+
+namespace ntk
+{
+
+struct PublishedImage
+{
+    QString name;
+    QImage image;
+};
+
+struct PublishedImageEventData : public ntk::EventData
+{
+    TYPEDEF_THIS(PublishedImageEventData)
+
+    CLONABLE_EVENT_DATA
+
+    PublishedImage image;
+};
+
+ntk_ptr_typedefs(PublishedImageEventData)
+
+//------------------------------------------------------------------------------
+
+class ImagePublisher : public ntk::AsyncEventListener, public ntk::EventBroadcaster
+{
+public:
+    static ImagePublisher* getInstance();
+
+public:
+    // void showImage(const std::string& window_name, const QImage& im);
+    // void showImage(const std::string& window_name, const cv::Mat1f& im, double* min_val = 0, double* max_val = 0);
+    // void showImage(const std::string& window_name, const cv::Mat1b& im);
+    void publishImage (const std::string& image_name, const cv::Mat& im);
+
+protected:
+    virtual void handleAsyncEvent (Event event);
+
+private:
+    static ImagePublisher instance;
+    typedef std::map<std::string, PublishedImage*> images_map_type;
+    images_map_type published_images;
+
+private:
+    struct ImageEventData : public ntk::EventData
+    {
+        TYPEDEF_THIS(ImageEventData)
+
+        CLONABLE_EVENT_DATA
+
+        std::string image_name;
+        cv::Mat im;
+    };
+    ntk_ptr_typedefs(ImageEventData)
+};
+
+}
+
+//------------------------------------------------------------------------------
 
 namespace Ui {
 class ImageWindow;
@@ -13,8 +72,9 @@ namespace ntk {
 class ImageWidget;
 }
 
-namespace ntk
-{
+//------------------------------------------------------------------------------
+
+namespace ntk {
 
 class ImageWindow : public QMainWindow
 {
@@ -33,32 +93,25 @@ private:
     Ui::ImageWindow *ui;
 };
 
-class ImageWindowManager : public ntk::AsyncEventListener, public ntk::EventBroadcaster
+//------------------------------------------------------------------------------
+
+class ImageWindowManager : public EventListener
 {
-private:
-    struct ImageWindowManagerEventData : public ntk::EventData
-    {
-        TYPEDEF_THIS(ImageWindowManagerEventData)
-
-        CLONABLE_EVENT_DATA
-
-        std::string window_name;
-        cv::Mat im;
-    };
-    ntk_ptr_typedefs(ImageWindowManagerEventData)
-
 public:
     static ImageWindowManager* getInstance();
 
-    // void showImage(const std::string& window_name, const QImage& im);
-    // void showImage(const std::string& window_name, const cv::Mat1f& im, double* min_val = 0, double* max_val = 0);
-    // void showImage(const std::string& window_name, const cv::Mat1b& im);
-    void showImage(const std::string& window_name, const cv::Mat& im);
+public:
+     ImageWindowManager ();
+    ~ImageWindowManager ();
+
+public:
+    void disable ();
 
 protected:
-    virtual void handleAsyncEvent(Event event);
+    virtual void newEvent (EventBroadcaster* sender, EventDataPtr data);
 
 private:
+    bool disabled;
     static ImageWindowManager instance;
     typedef std::map<std::string, ImageWindow*> windows_map_type;
     windows_map_type windows;
