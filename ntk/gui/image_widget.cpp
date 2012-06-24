@@ -69,18 +69,21 @@ void ImageWidget :: setTexts(const std::vector<TextData> texts)
     update();
 }
 
-void ImageWidget :: setImage(const cv::Mat1b& im)
+bool
+ImageWidget :: setImage(QImage& image, const cv::Mat1b& im)
 {
-    if (m_image.width() != im.cols
-            || m_image.height() != im.rows)
+    bool geometryUpdated = false;
+
+    if (image.width() != im.cols
+            || image.height() != im.rows)
     {
-        m_image = QImage(im.cols, im.rows, QImage::Format_RGB32);
-        updateGeometry();
+        image = QImage(im.cols, im.rows, QImage::Format_RGB32);
+        geometryUpdated = true;
     }
 
     for (int r = 0; r < im.rows; ++r)
     {
-        QRgb* ptr = (QRgb*) m_image.scanLine(r);
+        QRgb* ptr = (QRgb*) image.scanLine(r);
         for (int c = 0; c < im.cols; ++c)
         {
             int v = im(r,c);
@@ -88,16 +91,20 @@ void ImageWidget :: setImage(const cv::Mat1b& im)
             ++ptr;
         }
     }
-    update();
+
+    return geometryUpdated;
 }
 
-void ImageWidget :: setImage(const cv::Mat1f& im, double* i_min_val, double* i_max_val)
+bool
+ImageWidget :: setImage(QImage& image, const cv::Mat1f& im, double* i_min_val, double* i_max_val)
 {
-    if (m_image.width() != im.cols
-            || m_image.height() != im.rows)
+    bool geometryUpdated = false;
+
+    if (image.width() != im.cols
+            || image.height() != im.rows)
     {
-        m_image = QImage(im.cols, im.rows, QImage::Format_RGB32);
-        updateGeometry();
+        image = QImage(im.cols, im.rows, QImage::Format_RGB32);
+        geometryUpdated = true;
     }
 
     double min_val, max_val;
@@ -110,13 +117,13 @@ void ImageWidget :: setImage(const cv::Mat1f& im, double* i_min_val, double* i_m
         minMaxLoc(im, &min_val, &max_val);
     if (min_val == max_val)
     {
-        m_image.fill(qRgb(0,0,0));
-        return;
+        image.fill(qRgb(0,0,0));
+        return geometryUpdated;
     }
 
     for (int r = 0; r < im.rows; ++r)
     {
-        QRgb* ptr = (QRgb*) m_image.scanLine(r);
+        QRgb* ptr = (QRgb*) image.scanLine(r);
         const float* cv_ptr = im.ptr<float>(r);
         for (int c = 0; c < im.cols; ++c)
         {
@@ -128,22 +135,26 @@ void ImageWidget :: setImage(const cv::Mat1f& im, double* i_min_val, double* i_m
             ++cv_ptr;
         }
     }
-    update();
+
+    return geometryUpdated;
 }
 
-void ImageWidget :: setImage(const cv::Mat3b& im)
+bool
+ImageWidget :: setImage(QImage& image, const cv::Mat3b& im)
 {
-    if (m_image.isNull()
-            || m_image.width() != im.cols
-            || m_image.height() != im.rows)
+    bool geometryUpdated = false;
+
+    if (image.isNull()
+            || image.width() != im.cols
+            || image.height() != im.rows)
     {
-        m_image = QImage(im.cols, im.rows, QImage::Format_RGB32);
-        updateGeometry();
+        image = QImage(im.cols, im.rows, QImage::Format_RGB32);
+        geometryUpdated = true;
     }
 
     for (int r = 0; r < im.rows; ++r)
     {
-        QRgb* ptr = (QRgb*) m_image.scanLine(r);
+        QRgb* ptr = (QRgb*) image.scanLine(r);
         const uchar* cv_ptr = im.ptr(r);
         for (int i = 0; i < im.cols; ++i)
         {
@@ -154,6 +165,31 @@ void ImageWidget :: setImage(const cv::Mat3b& im)
             *ptr++ = rgb;
         }
     }
+
+    return geometryUpdated;
+}
+
+void ImageWidget :: setImage(const cv::Mat1b& im)
+{
+    if (setImage(m_image, im))
+        updateGeometry();
+    
+    update();
+}
+
+void ImageWidget :: setImage(const cv::Mat1f& im, double* i_min_val, double* i_max_val)
+{
+    if (setImage(m_image, im, i_min_val, i_max_val))
+        updateGeometry();
+
+    update();
+}
+
+void ImageWidget :: setImage(const cv::Mat3b& im)
+{
+    if (setImage(m_image, im))
+        updateGeometry();
+
     update();
 }
 
