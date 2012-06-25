@@ -5,6 +5,7 @@
 #include <QImage>
 #include <QString>
 #include <QMainWindow>
+#include <QMutex>
 
 namespace ntk
 {
@@ -39,6 +40,9 @@ public:
     // void showImage(const std::string& window_name, const cv::Mat1b& im);
     void publishImage (const std::string& image_name, const cv::Mat& im);
 
+public:
+    QImage getPublishedImage (QString name) const;
+
 protected:
     virtual void handleAsyncEvent (Event event);
 
@@ -46,6 +50,7 @@ private:
     static ImagePublisher instance;
     typedef std::map<std::string, PublishedImage*> images_map_type;
     images_map_type published_images;
+    QMutex lock;
 
 private:
     struct ImageEventData : public ntk::EventData

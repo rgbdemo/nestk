@@ -1,5 +1,6 @@
 #include "image_window.h"
 #include "ui_image_window.h"
+#include <QMutexLocker>
 
 namespace ntk
 {
@@ -21,21 +22,44 @@ void ImagePublisher::publishImage(const std::string &image_name, const cv::Mat &
     newEvent(this, data);
 }
 
+QImage
+ImagePublisher::getPublishedImage (QString name) const
+{
+    const QMutexLocker _(const_cast<QMutex*>(&lock));
+
+    images_map_type::const_iterator it = published_images.find(name.toStdString());
+
+    if (it == published_images.end())
+    {
+        qWarning() << "No such published image: " << name;
+        return QImage();
+    }
+
+    return it->second->image;
+}
+
 void ImagePublisher::handleAsyncEvent(EventListener::Event event)
 {
     ImageEventDataPtr internalData = dynamic_Ptr_cast<ImageEventData>(event.data);
     ntk_assert(internalData, "Invalid data type, should not happen");
-    images_map_type::const_iterator it = published_images.find(internalData->image_name);
+
     PublishedImage* publishedImage = 0;
-    if (it == published_images.end())
     {
-        publishedImage = new PublishedImage();
-        published_images[internalData->image_name] = publishedImage;
-        publishedImage->name = QString::fromStdString(internalData->image_name);
-    }
-    else
-    {
-        publishedImage = it->second;
+        const QMutexLocker _(&lock);
+
+        images_map_type::const_iterator it = published_images.find(internalData->image_name);
+
+
+        if (it == published_images.end())
+        {
+            publishedImage = new PublishedImage();
+            published_images[internalData->image_name] = publishedImage;
+            publishedImage->name = QString::fromStdString(internalData->image_name);
+        }
+        else
+        {
+            publishedImage = it->second;
+        }
     }
 
     // publishedImage->image = internalData->image;
