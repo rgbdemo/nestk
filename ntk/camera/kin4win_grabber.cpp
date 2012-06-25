@@ -6,6 +6,7 @@
 #include <ntk/utils/opencv_utils.h>
 #include <ntk/utils/time.h>
 #include <ntk/geometry/pose_3d.h>
+#include <ntk/gui/image_window.h>
 
 #include <QDateTime>
 #include <string>
@@ -795,6 +796,10 @@ void Kin4WinGrabber :: run()
             nui->dirtyDepth = true;
             nui->dirtyColor = true;
         }
+
+        // FIXME: This should be generalized to other grabbers.
+        ImagePublisher::getInstance()->publishImage("depth", m_current_image.rawDepth());
+        ImagePublisher::getInstance()->publishImage("color", m_current_image.rawRgb());
 
         advertiseNewFrame();
     }
