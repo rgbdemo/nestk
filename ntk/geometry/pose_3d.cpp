@@ -414,6 +414,16 @@ void Pose3D :: saveToBundlerFile(const char* filename)
     f << t[0] << " " << t[1] << " " << t[2] << "\n";
 }
 
+QString Pose3D :: toString () const
+{
+    return QString("rotation: %1; translation: %2")
+        .arg(ntk::toString(cvEulerRotation()))
+        .arg(ntk::toString(cvTranslation()));
+    ;
+
+    // FIXME: Dump the remainder of the pose state.
+}
+
 void Pose3D :: saveToYaml(FileStorage& yaml) const
 {
     write_to_yaml(yaml, "rotation", cvEulerRotation());

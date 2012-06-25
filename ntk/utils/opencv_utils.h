@@ -24,6 +24,7 @@
 #include <ntk/utils/debug.h>
 #include <ntk/utils/serializable.h>
 #include <ntk/numeric/utils.h>
+#include <QString>
 
 class QImage;
 
@@ -154,6 +155,11 @@ void writeBoundingBoxToYamlFile(const std::string& filename, const ntk::Rect3f& 
 
 namespace ntk
 {
+
+inline QString toString (const cv::Vec3f& v)
+{
+    return QString("(%1, %2, %3)").arg(v[0]).arg(v[1]).arg(v[2]);
+}
 
 inline cv::Point3f toPoint3f(const cv::Vec4f& v)
 { return cv::Point3f(v[0], v[1], v[2]); }

@@ -23,6 +23,7 @@
 # include <ntk/core.h>
 # include <ntk/utils/xml_serializable.h>
 # include <ntk/numeric/utils.h>
+# include <QString>
 
 namespace ntk
 {
@@ -56,6 +57,7 @@ public:
   virtual void loadFromXmlElement(const XMLNode& element);
   virtual void saveToYaml(cv::FileStorage& yaml) const;
   virtual void loadFromYaml(cv::FileNode yaml);
+  virtual QString toString() const;
 
   /*! Parse a blender generated camera transform. */
   void parseBlenderFile(const char* filename, int image_width, int image_height);
