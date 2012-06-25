@@ -41,7 +41,7 @@ public:
      * @param distorsionCoeff 4x1 matrix (k1,k2,p1,p2)
      * @param size image size
      */
-    CameraParameters(cv::Mat cameraMatrix,cv::Mat distorsionCoeff,cv::Size size) throw(cv::Exception);
+    CameraParameters(cv::Mat cameraMatrix,cv::Mat distorsionCoeff,cv::Size size);
     /**Copy constructor
      */
     CameraParameters(const CameraParameters &CI) ;
@@ -56,18 +56,18 @@ public:
     CameraParameters & operator=(const CameraParameters &CI);
     /**Reads the camera parameters from a file generated using saveToFile.
      */
-    void readFromFile(string path)throw(cv::Exception);
+    void readFromFile(string path);
     /**Saves this to a file
      */
-    void saveToFile(string path)throw(cv::Exception);
+    void saveToFile(string path);
     
     /**Reads from a YAML file generated with the opencv2.2 calibration utility
      */
-    void readFromXMLFile(string filePath)throw(cv::Exception);
+    void readFromXMLFile(string filePath);
     
     /**Adjust the parameters to the size of the image indicated
      */
-    void resize(cv::Size size)throw(cv::Exception);
+    void resize(cv::Size size);
 
     /**Returns the location of the camera in the reference system given by the rotation and translation vectors passed
      * NOT TESTED
