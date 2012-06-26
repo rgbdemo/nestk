@@ -1,6 +1,7 @@
 #include "image_window.h"
 #include "ui_image_window.h"
 #include <QMutexLocker>
+#include <QHash>
 
 namespace ntk
 {
@@ -19,7 +20,11 @@ void ImagePublisher::publishImage(const std::string &image_name, const cv::Mat &
     ImageEventDataPtr data (new ImageEventData);
     data->image_name = image_name;
     im.copyTo(data->im);
-    newEvent(this, data);
+
+    // FIXME: Trick the event system into believing we have one sender per image name.
+    EventBroadcaster* fakeSender = reinterpret_cast<EventBroadcaster*>(qHash(image_name.c_str()));
+
+    newEvent(fakeSender, data);
 }
 
 QImage
