@@ -25,6 +25,12 @@
 #include <ntk/numeric/utils.h>
 #include <ntk/utils/time.h>
 
+#ifdef HAVE_OPENCV_GREATER_THAN_2_4_0
+#include <opencv2/features2d/features2d.hpp>
+#include <opencv2/nonfree/nonfree.hpp>
+#include <opencv2/photo/photo.hpp>
+#endif
+
 using namespace cv;
 
 namespace ntk
@@ -61,18 +67,25 @@ void FeatureSet :: extractFromImage(const RGBDImage& image,
     }
     else if (params.detector_type == "SIFT" || params.detector_type == "GPUSIFT")
     {
+#ifdef HAVE_OPENCV_GREATER_THAN_2_4_0
+        detector = new SiftFeatureDetector();
+#else
         detector = new SiftFeatureDetector(SIFT::DetectorParams::GET_DEFAULT_THRESHOLD(),
                                            SIFT::DetectorParams::GET_DEFAULT_EDGE_THRESHOLD());
+#endif
     }
     else if (params.detector_type == "SURF")
     {
-        detector = new SurfFeatureDetector(params.threshold > 0 ? params.threshold : 400 /*hessian_threshold*/,
-                                           3/*octaves*/, 4/*octave_layers*/);
+        detector = new cv::SurfFeatureDetector(params.threshold > 0 ? params.threshold : 400 /*hessian_threshold*/,
+                                               3/*octaves*/, 4/*octave_layers*/);
     }
     else if (params.detector_type == "SURF_BIGSCALE")
     {
+#ifdef HAVE_OPENCV_GREATER_THAN_2_4_0
+#else
         detector = new SurfFeatureDetector(params.threshold > 0 ? params.threshold : 400 /*hessian_threshold*/,
                                            2/*octaves*/, 3/*octave_layers*/);
+#endif
     }
     else
     {
