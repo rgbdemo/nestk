@@ -16,7 +16,7 @@ CameraParameters::CameraParameters() {
  * @param distorsionCoeff 4x1 matrix (k1,k2,p1,p2)
  * @param size image size
  */
-CameraParameters::CameraParameters(cv::Mat cameraMatrix,cv::Mat distorsionCoeff,cv::Size size) throw(cv::Exception) {
+CameraParameters::CameraParameters(cv::Mat cameraMatrix,cv::Mat distorsionCoeff,cv::Size size) {
     if (cameraMatrix.rows!=3 || cameraMatrix.cols!=3)
         throw cv::Exception(9000,"invalid input cameraMatrix","CameraParameters::CameraParameters",__FILE__,__LINE__);
     CameraMatrix=cameraMatrix;
@@ -64,7 +64,7 @@ cv::Point3f CameraParameters::getCameraLocation(cv::Mat Rvec,cv::Mat Tvec)
 
 /**Reads the camera parameters from file
  */
-void CameraParameters::readFromFile(string path)throw(cv::Exception)
+void CameraParameters::readFromFile(string path)
 {
 
     ifstream file(path.c_str());
@@ -94,7 +94,7 @@ void CameraParameters::readFromFile(string path)throw(cv::Exception)
 }
 /**Saves this to a file
   */
-void CameraParameters::saveToFile(string path)throw(cv::Exception)
+void CameraParameters::saveToFile(string path)
 {
     if (!isValid())  throw cv::Exception(9006,"invalid object","CameraParameters::saveToFile",__FILE__,__LINE__);
     ofstream file(path.c_str());
@@ -114,7 +114,7 @@ void CameraParameters::saveToFile(string path)throw(cv::Exception)
 
 /**Adjust the parameters to the size of the image indicated
  */
-void CameraParameters::resize(cv::Size size)throw(cv::Exception)
+void CameraParameters::resize(cv::Size size)
 {
     if (!isValid())  throw cv::Exception(9007,"invalid object","CameraParameters::resize",__FILE__,__LINE__);
     if (size==CamSize) return;
@@ -134,7 +134,7 @@ void CameraParameters::resize(cv::Size size)throw(cv::Exception)
  * 
  * 
  */
-void CameraParameters::readFromXMLFile(string filePath)throw(cv::Exception)
+void CameraParameters::readFromXMLFile(string filePath)
 {
     cv::FileStorage fs(filePath, cv::FileStorage::READ);
     int w=-1,h=-1;

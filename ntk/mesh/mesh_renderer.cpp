@@ -61,18 +61,22 @@ MeshRenderer :: ~MeshRenderer()
     delete m_pbuffer;
 }
 
-void MeshRenderer :: setPose(const Pose3D& pose, float arg_near_plane, float arg_far_plane)
+void MeshRenderer :: setPose(const Pose3D& pose, float* arg_near_plane, float* arg_far_plane)
 {
     VertexBufferObject& vbo = m_vertex_buffer_object;
     pose.cvCameraTransform().copyTo(vbo.model_view_matrix);
     // Transpose the matrix for OpenGL column-major.
     vbo.model_view_matrix = vbo.model_view_matrix.t();
 
-    float near_plane = arg_near_plane, far_plane = arg_far_plane;
-    // FIXME: if (near_plane < 0 || far_plane < 0)
-    estimateOptimalPlanes(pose, &near_plane, &far_plane);
-    m_last_near_plane = near_plane;
-    m_last_far_plane = far_plane;
+    if (!(arg_near_plane && arg_far_plane))
+    {
+        estimateOptimalPlanes(pose, &m_last_near_plane, &m_last_far_plane);
+    }
+    else
+    {
+        m_last_near_plane = *arg_near_plane;
+        m_last_far_plane = *arg_far_plane;
+    }
 
     m_pbuffer->makeCurrent();
     glMatrixMode (GL_MODELVIEW);
@@ -90,7 +94,9 @@ void MeshRenderer :: setPose(const Pose3D& pose, float arg_near_plane, float arg
     glViewport(dx, -dy, m_pbuffer->width(), m_pbuffer->height());
     if (pose.isOrthographic())
     {
-        gluOrtho2D(-pose.focalX()/2, pose.focalX()/2, -pose.focalY()/2, pose.focalY()/2);
+        ntk_dbg_print(pose.focalX()/2, 0);
+        ntk_dbg_print(pose.focalY()/2, 0);
+        glOrtho(-pose.focalX()/2, pose.focalX()/2, -pose.focalY()/2, pose.focalY()/2, m_last_near_plane, m_last_far_plane);
     }
     else
     {
@@ -98,7 +104,7 @@ void MeshRenderer :: setPose(const Pose3D& pose, float arg_near_plane, float arg
         // double fov2 = (180.0/M_PI) * 2.0*atan(image.cols/(2.0*pose.focalX()));
         // ntk_dbg_print(fov2, 2);
         // gluPerspective(fov2,  double(image.rows)/image.cols, near_plane, far_plane);
-        gluPerspective(fov, double(m_pbuffer->width())/m_pbuffer->height(), near_plane, far_plane);
+        gluPerspective(fov, double(m_pbuffer->width())/m_pbuffer->height(), m_last_near_plane, m_last_far_plane);
     }
 
     glMatrixMode (GL_MODELVIEW);
@@ -279,6 +285,8 @@ void MeshRenderer :: renderToImage(cv::Mat4b& image, int flags)
     tc_gl_current.stop();
 
     ntk::TimeCount tc_gl_render("gl_render", 2);
+
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     if (flags & WIREFRAME)
         glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );

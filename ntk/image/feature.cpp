@@ -25,22 +25,44 @@
 #include <ntk/numeric/utils.h>
 #include <ntk/utils/time.h>
 
-#ifdef HAVE_OPENCV_GREATER_THAN_2_4_0
 #include <opencv2/features2d/features2d.hpp>
+#include <opencv2/flann/flann.hpp>
+
+#ifdef HAVE_OPENCV_GREATER_THAN_2_4_0
 #include <opencv2/nonfree/nonfree.hpp>
-#include <opencv2/photo/photo.hpp>
 #endif
+
+#include <cassert>
 
 using namespace cv;
 
 namespace ntk
 {
 
+struct FeatureSet :: Impl
+{
+#ifdef HAVE_OPENCV_GREATER_THAN_2_3_0
+    typedef cv::flann::GenericIndex<cv::flann::L2<float> > IndexType;
+#else
+    typedef cv::flann::Index_<float> IndexType;
+#endif
+    ntk::Ptr< IndexType > descriptor_index;
+};
+
+FeatureSet::FeatureSet()
+    : impl(new Impl())
+{
+}
+
 void FeatureSet :: extractFromImage(const RGBDImage& image,
                                     const FeatureSetParams& params)
 {
     ntk::TimeCount tc("FeatureSet::extractFromImage", 1);
-    m_descriptor_index.release();
+
+    if(!impl->descriptor_index.empty())
+        buildDescriptorIndex();
+
+    impl->descriptor_index.release();
 
     if (params.detector_type == "GPUSIFT")
     {
@@ -81,11 +103,8 @@ void FeatureSet :: extractFromImage(const RGBDImage& image,
     }
     else if (params.detector_type == "SURF_BIGSCALE")
     {
-#ifdef HAVE_OPENCV_GREATER_THAN_2_4_0
-#else
         detector = new SurfFeatureDetector(params.threshold > 0 ? params.threshold : 400 /*hessian_threshold*/,
                                            2/*octaves*/, 3/*octave_layers*/);
-#endif
     }
     else
     {
@@ -115,16 +134,32 @@ void FeatureSet :: extractFromImage(const RGBDImage& image,
     else if (params.descriptor_type == "SURF64")
     {
         m_feature_type = Feature_SURF64;
-        extractor = new cv::SurfDescriptorExtractor(4 /* octaves */,
+#ifdef HAVE_OPENCV_GREATER_THAN_2_4_0
+        extractor = new cv::SurfDescriptorExtractor(400,
+                                                    4 /* octaves */,
                                                     2 /* octave layers */,
                                                     false /* extended */);
+#else
+        extractor = new cv::SurfDescriptorExtractor(400,
+                                                    4 /* octaves */,
+                                                    2 /* octave layers */,
+                                                    false /* extended */);
+#endif
     }
     else if (params.descriptor_type == "SURF128")
     {
         m_feature_type = Feature_SURF128;
-        extractor = new cv::SurfDescriptorExtractor(4 /* octaves */,
+#ifdef HAVE_OPENCV_GREATER_THAN_2_4_0
+        extractor = new cv::SurfDescriptorExtractor(400,
+                                                    4 /* octaves */,
                                                     2 /* octave layers */,
                                                     true /* extended */);
+#else
+        extractor = new cv::SurfDescriptorExtractor(400,
+                                                    4 /* octaves */,
+                                                    2 /* octave layers */,
+                                                    true /* extended */);
+#endif
     }
     else
     {
@@ -137,10 +172,24 @@ void FeatureSet :: extractFromImage(const RGBDImage& image,
     // Remove keypoints without depth if the option is set.
     if (params.only_features_with_depth)
     {
+        const Pose3D depth_pose = image.depthPose();
+        const Pose3D rgb_pose = image.rgbPose();
         foreach_idx(i, keypoints)
         {
-            if (image.rgbPixelHasDepth(keypoints[i].pt.y, keypoints[i].pt.x))
+            float y = keypoints[i].pt.y;
+            float x = keypoints[i].pt.x;
+            if (image.rgbPixelHasDepth(y, x))
+            {
+                float d = image.mappedDepth()(y, x);
+                if (image.depthMask().data)
+                {
+                    cv::Point3f p = rgb_pose.unprojectFromImage(cv::Point3f(x, y, d));
+                    p = depth_pose.projectToImage(p);
+                    if (is_yx_in_range(image.depthMask(), p.y, p.x) && !image.depthMask()(p.y, p.x))
+                        continue;
+                }
                 filtered_keypoints.push_back(keypoints[i]);
+            }
         }
     }
     else
@@ -373,7 +422,7 @@ void FeatureSet :: buildDescriptorIndex()
 #else
     cv::flann::KDTreeIndexParams params(4);
 #endif
-    m_descriptor_index = new IndexType(m_descriptors, params);
+    impl->descriptor_index = new Impl::IndexType(m_descriptors, params);
 }
 
 void FeatureSet :: matchWith(const FeatureSet& rhs,
@@ -382,7 +431,7 @@ void FeatureSet :: matchWith(const FeatureSet& rhs,
 {
     ntk_ensure(featureType() == rhs.featureType(), "Cannot match with different feature type.");
 
-    if (!m_descriptor_index)
+    if (!impl->descriptor_index)
         buildDescriptorIndex();
 
     const cv::Mat1f& rhs_descriptors = rhs.descriptors();
@@ -400,7 +449,8 @@ void FeatureSet :: matchWith(const FeatureSet& rhs,
 #else
         cv::flann::SearchParams params(64);
 #endif
-        m_descriptor_index->knnSearch(query, indices, dists, 2, params);
+        assert(!impl->descriptor_index.empty());
+        impl->descriptor_index->knnSearch(query, indices, dists, 2, params);
         if (indices[0] < 0 || indices[1] < 0)
             continue;
         const double dist_ratio = dists[0]/dists[1];
@@ -411,5 +461,6 @@ void FeatureSet :: matchWith(const FeatureSet& rhs,
         matches.push_back(m);
     }
 }
+
 
 } // ntk

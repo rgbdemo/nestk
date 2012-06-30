@@ -345,7 +345,7 @@ void calibrationCorners(const std::string& image_name,
 
     cv::Mat gray_image;
     cvtColor(image, gray_image, CV_BGR2GRAY);
-    if (pattern == PatternChessboard)
+    if (ok && pattern == PatternChessboard)
     {
         cornerSubPix(gray_image, corners, Size(5,5), Size(-1,-1),
                      cvTermCriteria( CV_TERMCRIT_EPS+CV_TERMCRIT_ITER, 30, 0.1 ));
@@ -578,22 +578,34 @@ void kinect_shift_ir_to_depth(cv::Mat3b& im)
     imwrite("/tmp/after.png", im);
 }
 
-void loadImageList(const QDir& image_dir,
-                   const QStringList& view_list,
-                   ntk::RGBDProcessor& processor,
-                   RGBDCalibration& calibration,
+void loadImageList(const QStringList& view_dirs,
+                   RGBDProcessor *processor,
+                   RGBDCalibration *calibration,
                    std::vector<RGBDImage>& images)
 {
     images.clear();
+    for (int i_view_dir = 0; i_view_dir < view_dirs.size(); ++i_view_dir)
+    {
+        RGBDImage image;
+        image.loadFromDir(QDir(view_dirs[i_view_dir]).absolutePath().toStdString(), calibration, processor);
+        images.push_back(image);
+    }
+}
+
+void loadImageList(const QDir& image_dir,
+                   const QStringList& view_list,
+                   ntk::RGBDProcessor* processor,
+                   RGBDCalibration* calibration,
+                   std::vector<RGBDImage>& images)
+{
+    QStringList view_dirs;
     for (int i_image = 0; i_image < view_list.size(); ++i_image)
     {
         QString filename = view_list[i_image];
-        QDir cur_image_dir (image_dir.absoluteFilePath(filename));
-
-        RGBDImage image;
-        image.loadFromDir(cur_image_dir.absolutePath().toStdString(), &calibration, &processor);
-        images.push_back(image);
+        view_dirs.append(image_dir.absoluteFilePath(filename));
     }
+
+    loadImageList(view_dirs, processor, calibration, images);
 }
 
 void getCalibratedCheckerboardCorners(const std::vector<RGBDImage>& images,
@@ -770,7 +782,10 @@ static float computeScaleFactorMean(const std::vector<Point2f>& current_view_cor
             ++n_values;
         }
     }
-    mean /= n_values;
+    if (n_values > 0)
+        mean /= n_values;
+    else
+        mean = 0.f;
     ntk_dbg_print(mean, 1);
     return mean;
 }
@@ -787,13 +802,21 @@ float calibrate_kinect_scale_factor(const std::vector<RGBDImage>& images,
         if (corners[i].size() == 0)
             continue;
 
-        scale_factor_mean += computeScaleFactorMean(corners[i], images[i], pattern_width, pattern_height, pattern_size);
-        ++n_factor_terms;
+        float scale = computeScaleFactorMean(corners[i], images[i], pattern_width, pattern_height, pattern_size);
+        if (scale > 1e-5)
+        {
+            scale_factor_mean += scale;
+            ++n_factor_terms;
+        }
     }
 
-    scale_factor_mean /= n_factor_terms;
+    if (n_factor_terms > 0)
+    {
+        scale_factor_mean /= n_factor_terms;
+        return scale_factor_mean;
+    }
 
-    return n_factor_terms > 0 ? scale_factor_mean : 1.0f;
+    return 0.f;
 }
 
 } // ntk

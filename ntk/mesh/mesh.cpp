@@ -22,6 +22,7 @@
 
 #include <ntk/utils/debug.h>
 #include <ntk/utils/opencv_utils.h>
+#include <ntk/numeric/utils.h>
 
 // #include <opencv/cv.h>
 
@@ -125,7 +126,7 @@ void Mesh::saveToPlyFile(const char* filename) const
         std::string texture_filename = filename;
         if (texture_filename.size() > 3)
         {
-            texture_filename.erase(texture_filename.size()-4, 3); // remove .ply
+            texture_filename.erase(texture_filename.size()-4, 4); // remove .ply
             texture_filename += ".png";
         }
         else
@@ -181,7 +182,9 @@ void Mesh::saveToPlyFile(const char* filename) const
         ply_file << vertices[i].x << " " << vertices[i].y << " " << vertices[i].z;
 
         if (hasNormals())
-            ply_file << " " << normals[i].x << " " << normals[i].y << " " << normals[i].z;
+            ply_file << " " << (ntk::math::isnan(normals[i].x) ? 0 : normals[i].x)
+                     << " " << (ntk::math::isnan(normals[i].y) ? 0 : normals[i].y)
+                     << " " << (ntk::math::isnan(normals[i].z) ? 0 : normals[i].z);
 
         if (hasTexcoords())
         {
@@ -201,9 +204,10 @@ void Mesh::saveToPlyFile(const char* filename) const
             ply_file << faces[i].numVertices();
             for (unsigned j = 0; j < faces[i].numVertices(); ++j)
                 ply_file << " " << faces[i].indices[j];
+
             if (hasTexcoords() && !hasFaceTexcoords())
             {
-                ply_file << " 6";
+                ply_file << "\n6";
                 for (unsigned j = 0; j < faces[i].numVertices(); ++j)
                 {
                     ply_file << " " << texcoords[faces[i].indices[j]].x;
@@ -212,7 +216,7 @@ void Mesh::saveToPlyFile(const char* filename) const
             }
             else if (hasFaceTexcoords())
             {
-                ply_file << " 6";
+                ply_file << "\n6";
                 for (unsigned j = 0; j < faces[i].numVertices(); ++j)
                 {
                     ply_file << " " << face_texcoords[i].u[j];
@@ -587,6 +591,13 @@ void Mesh :: addMesh(const ntk::Mesh& rhs)
         colors.insert(colors.end(), rhs.colors.begin(), rhs.colors.end());
     }
 
+    bool has_normals = hasNormals();
+    if (has_normals)
+    {
+        ntk_throw_exception_if(!rhs.hasNormals(), "Cannot merge different kind of meshes.");
+        normals.insert(normals.end(), rhs.normals.begin(), rhs.normals.end());
+    }
+
     for (int i = 0; i < rhs.faces.size(); ++i)
     {
         Face face = rhs.faces[i];
@@ -628,6 +639,121 @@ void Mesh::computeNormalsFromFaces()
         ntk::normalize(v);
         normals[i] = v;
     }
+}
+
+void Mesh::computeVertexFaceMap(std::vector< std::vector<int> >& faces_per_vertex)
+{
+    faces_per_vertex.resize(vertices.size());
+    foreach_idx(face_i, faces)
+    {
+        for (int v_i = 0; v_i < 3; ++v_i)
+        {
+            faces_per_vertex[faces[face_i].indices[v_i]].push_back(face_i);
+        }
+    }
+}
+
+struct VertexComparator
+{
+    VertexComparator(const std::vector<cv::Point3f>& vertices) : vertices(vertices) {}
+
+    bool operator()(int i1, int i2) const
+    {
+        return vertices[i1] < vertices[i2];
+    }
+
+    const std::vector<cv::Point3f>& vertices;
+};
+
+void Mesh::removeDuplicatedVertices()
+{
+    std::vector<int> ordered_indices (vertices.size());
+    foreach_idx(i, ordered_indices) ordered_indices[i] = i;
+
+    VertexComparator comparator (vertices);
+    std::sort(stl_bounds(ordered_indices), comparator);
+
+    std::map<int, int> vertex_alias;
+
+    int i = 0;
+    int j = i;
+    for (; i < ordered_indices.size() - 1; )
+    {
+        j = i + 1;
+        while (j < ordered_indices.size() && vertices[ordered_indices[i]] == vertices[ordered_indices[j]])
+        {
+            vertex_alias[ordered_indices[j]] = ordered_indices[i];
+            vertices[ordered_indices[j]] = infinite_point();
+            ++j;
+        }
+        i = j;
+    }
+
+    foreach_idx(face_i, faces)
+    {
+        foreach_idx(v_i, faces[face_i])
+        {
+            std::map<int, int>::const_iterator it = vertex_alias.find(faces[face_i].indices[v_i]);
+            if (it != vertex_alias.end())
+            {
+                faces[face_i].indices[v_i] = it->second;
+            }
+        }
+    }
+}
+
+void Mesh::removeIsolatedVertices()
+{
+    std::vector<int> new_indices (vertices.size());
+    int cur_index = 0;
+    foreach_idx(i, vertices)
+    {
+        if (isnan(vertices[i]))
+        {
+            new_indices[i] = -1;
+        }
+        else
+        {
+            new_indices[i] = cur_index;
+            ++cur_index;
+        }
+    }
+
+    ntk::Mesh new_mesh;
+    new_mesh.vertices.resize(cur_index);
+
+    if (hasColors())
+        new_mesh.colors.resize(cur_index);
+    if (hasNormals())
+        new_mesh.normals.resize(cur_index);
+    if (hasTexcoords())
+        new_mesh.texcoords.resize(cur_index);
+
+    foreach_idx(i, vertices)
+    {
+        if (new_indices[i] < 0) continue;
+        new_mesh.vertices[new_indices[i]] = vertices[i];
+        if (hasColors())
+            new_mesh.colors[new_indices[i]] = colors[i];
+        if (hasNormals())
+            new_mesh.normals[new_indices[i]] = normals[i];
+        if (hasTexcoords())
+            new_mesh.texcoords[new_indices[i]] = texcoords[i];
+    }
+
+    foreach_idx(face_i, faces)
+    {
+        foreach_idx(v_i, faces[face_i])
+        {
+            int old_index = faces[face_i].indices[v_i];
+            faces[face_i].indices[v_i] = new_indices[old_index];
+        }
+    }
+
+    vertices = new_mesh.vertices;
+    colors = new_mesh.colors;
+    normals = new_mesh.normals;
+    texcoords = new_mesh.texcoords;
 }
 
 } // end of ntk

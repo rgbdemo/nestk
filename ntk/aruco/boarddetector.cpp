@@ -125,7 +125,7 @@ void BoardDetector::rotateXAxis(Mat &rotation)
 }
 
 
-void Board::glGetModelViewMatrix(   double modelview_matrix[16])throw(cv::Exception)
+void Board::glGetModelViewMatrix(   double modelview_matrix[16])
 {
     //check if paremeters are valid
     bool invalid=false;

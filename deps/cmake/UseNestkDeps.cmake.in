@@ -6,6 +6,9 @@ INCLUDE_DIRECTORIES( BEFORE ${nestk_deps_SOURCE_DIR} ${nestk_deps_BINARY_DIR} )
 ## Eigen stuff.
 INCLUDE_DIRECTORIES( ${nestk_deps_SOURCE_DIR}/eigen)
 
+## Vectorial stuff.
+INCLUDE_DIRECTORIES( ${nestk_deps_SOURCE_DIR}/vectorial/include)
+
 # For libfreenect
 IF (NESTK_USE_FREENECT AND NESTK_USE_EMBEDDED_FREENECT)
     if (WIN32)

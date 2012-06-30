@@ -28,8 +28,11 @@ public:
     ~Kin4WinDriver();
 
 public:
-    //int numDevices() const;
-    //const DeviceInfo& deviceInfo(int index) const;
+    int numDevices() const { return devices_info.size(); }
+    const DeviceInfo& deviceInfo(int index) const { return devices_info[index]; }
+
+private:
+    std::vector<DeviceInfo> devices_info;
 };
 
 class Kin4WinGrabber : public ntk::RGBDGrabber

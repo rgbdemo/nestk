@@ -29,6 +29,11 @@ EventData::~EventData()
 {
 }
 
+EventDataPtr EventData::clone() const
+{
+    abort(); // not implemented
+}
+
 EventListener::EventListener()
     : m_last_frame_tick(0),
       m_framerate(0),
@@ -91,9 +96,13 @@ void SyncEventListener :: setEnabled(bool enabled)
     m_condition.wakeAll();
 }
 
+const int
+SyncEventListener::event_timeout_msecs = 100;
+
 EventListener::Event SyncEventListener :: waitForNewEvent(int timeout_msecs)
-{
+{    
     if (!m_enabled) return 0;
+    if (timeout_msecs < 0) timeout_msecs = event_timeout_msecs;
 
     Event last_event;
 
@@ -140,7 +149,7 @@ void AsyncEventListener :: customEvent(QEvent* generic_event)
     while (m_event_signaled)
     {
         m_event_signaled = false;
-        Event event = waitForNewEvent(1000);
+        Event event = waitForNewEvent();
         handleAsyncEvent(event);
         // FIXME: this is important on Windows to avoid the application
         // spending all its time handling these custom events.

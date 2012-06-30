@@ -37,8 +37,6 @@
 
 #include <XnCodecIDs.h>
 #include <XnCppWrapper.h>
-#include <XnVSessionManager.h>
-#include <XnVPushDetector.h>
 
 // Under certain odd circumstances, qhull/io.h can be incorrectly included
 // by XnPlatformWin32.h, dragging True and False as preprocessor macros,

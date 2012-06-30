@@ -75,8 +75,8 @@ namespace ntk
   public:
     void setMesh(const Mesh& mesh);
     void setPose(const Pose3D& pose,
-                 float near_plane_in_meters = -1, /* automatic */
-                 float far_plane_in_meters = -1); /* automatic */
+                 float* near_plane_in_meters = 0, /* automatic */
+                 float* far_plane_in_meters = 0); /* automatic */
 
   public:
     const cv::Mat1f& depthBuffer() const { return m_depth_buffer; }
@@ -85,6 +85,7 @@ namespace ntk
   public:
     void renderToImage(cv::Mat4b& image, int flags);
     void setTransparency(float f) { m_transparency = f; }
+    void setClipPlanes(float near_plane_z, float far_plane_z) { m_last_near_plane = near_plane_z; m_last_far_plane = far_plane_z; }
 
   protected:
     void computeDepthBuffer();

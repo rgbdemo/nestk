@@ -184,12 +184,14 @@ ImageSegmentorFromMarkers::ImageSegmentorFromMarkers(const ntk::MarkerSetup& mar
         }
     }
 
+#if 0
     bounding_box.y -= 0.05; // FIXME: foot is shifted from the board.
     bounding_box.height += 0.05; // FIXME: foot is shifted from the board.
     bounding_box.x -= 0.05;
     bounding_box.width += 0.1; // FIXME: foot is shifted from the board.
     bounding_box.z = 0.05; // 5cm from the plane to exclude the markerboard.
     bounding_box.depth = 0.3; // 30cm from the plane
+#endif
 
     ntk_dbg_print(bounding_box, 1);
 
@@ -207,6 +209,25 @@ bool ImageSegmentorFromMarkers::initializeFromFirstImage(const ntk::RGBDImage &i
     normalized_pose = estimator.estimatedPose();
     delta_normalized_pose = normalized_pose;
     delta_normalized_pose.applyTransformBefore(image.calibration()->depth_pose->inverted());
+    return true;
+}
+
+bool ImageSegmentorFromBoundingBox::filterImage(RGBDImage &image, const Pose3D &estimated_pose)
+{
+    cv::Mat1b& depth_mask_im = image.depthMaskRef();
+    const cv::Mat1f& depth_im = image.depth();
+    for_all_rc(depth_mask_im)
+    {
+        if (!depth_mask_im(r,c))
+            continue;
+
+        if (depth_im(r,c) < 1e-5)
+            continue;
+
+        cv::Point3f p = estimated_pose.unprojectFromImage(cv::Point2f(c, r), depth_im(r,c));
+        if (!bounding_box.isPointInside(p))
+            depth_mask_im(r,c) = 0;
+    }
     return true;
 }
 

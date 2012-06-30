@@ -414,6 +414,16 @@ void Pose3D :: saveToBundlerFile(const char* filename)
     f << t[0] << " " << t[1] << " " << t[2] << "\n";
 }
 
+QString Pose3D :: toString () const
+{
+    return QString("rotation: %1; translation: %2")
+        .arg(ntk::toString(cvEulerRotation()))
+        .arg(ntk::toString(cvTranslation()));
+    ;
+
+    // FIXME: Dump the remainder of the pose state.
+}
+
 void Pose3D :: saveToYaml(FileStorage& yaml) const
 {
     write_to_yaml(yaml, "rotation", cvEulerRotation());
@@ -813,7 +823,7 @@ cv::Point3f Pose3D :: projectToImage(const cv::Point3f& p) const
     return toVec3f(impl->projectToImage(ep));
 }
 
-void Pose3D :: projectToImage(const cv::Mat3f& voxels, const cv::Mat1b& mask, cv::Mat3f& pixels) const
+void Pose3D :: projectToImage(const cv::Mat4f& voxels, const cv::Mat1b& mask, cv::Mat4f& pixels) const
 {
     Eigen::Vector4d epix;
     Eigen::Vector4d evox;
@@ -821,12 +831,12 @@ void Pose3D :: projectToImage(const cv::Mat3f& voxels, const cv::Mat1b& mask, cv
 
     for (int r = 0; r < voxels.rows; ++r)
     {
-        const Vec3f* voxels_data = voxels.ptr<Vec3f>(r);
+        const Vec4f* voxels_data = voxels.ptr<Vec4f>(r);
         const uchar* mask_data = mask.ptr<uchar>(r);
-        Vec3f* pixels_data = pixels.ptr<Vec3f>(r);
+        Vec4f* pixels_data = pixels.ptr<Vec4f>(r);
         for (int c = 0; c < voxels.cols; ++c)
         {
-            if (!mask_data[c])
+            if (mask.data && !mask_data[c])
                 continue;
             evox(0) = voxels_data[c][0];
             evox(1) = voxels_data[c][1];
@@ -840,7 +850,7 @@ void Pose3D :: projectToImage(const cv::Mat3f& voxels, const cv::Mat1b& mask, cv
 }
 
 #if 1
-void Pose3D :: unprojectFromImage(const cv::Mat1f& pixels, const cv::Mat1b& mask, cv::Mat3f& voxels) const
+void Pose3D :: unprojectFromImage(const cv::Mat1f& pixels, const cv::Mat1b& mask, cv::Mat4f& voxels) const
 {
     Eigen::Vector4d epix;
     Eigen::Vector4d evox;
@@ -851,10 +861,10 @@ void Pose3D :: unprojectFromImage(const cv::Mat1f& pixels, const cv::Mat1b& mask
     {
         const float* pixels_data = pixels.ptr<float>(r);
         const uchar* mask_data = mask.ptr<uchar>(r);
-        Vec3f* voxels_data = voxels.ptr<Vec3f>(r);
+        Vec4f* voxels_data = voxels.ptr<Vec4f>(r);
         for (int c = 0; c < pixels.cols; ++c)
         {
-            if (!mask_data[c])
+            if (mask.data && !mask_data[c])
                 continue;
             const float d = pixels_data[c];
             epix(0) = c*d;
@@ -864,11 +874,12 @@ void Pose3D :: unprojectFromImage(const cv::Mat1f& pixels, const cv::Mat1b& mask
             voxels_data[c][0] = evox(0);
             voxels_data[c][1] = evox(1);
             voxels_data[c][2] = evox(2);
+            voxels_data[c][3] = evox(3);
         }
     }
 }
 #else
-void Pose3D :: unprojectFromImage(const cv::Mat1f& pixels, const cv::Mat1b& mask, cv::Mat3f& voxels) const
+void Pose3D :: unprojectFromImage(const cv::Mat1f& pixels, const cv::Mat1b& mask, cv::Mat4f& voxels) const
 {
     cv::Mat1f unproj = cvInvProjectionMatrix();
 
@@ -881,7 +892,7 @@ void Pose3D :: unprojectFromImage(const cv::Mat1f& pixels, const cv::Mat1b& mask
     {
         const float* pixels_data = pixels.ptr<float>(r);
         const uchar* mask_data = mask.ptr<uchar>(r);
-        Vec3f* voxels_data = voxels.ptr<Vec3f>(r);
+        Vec4f* voxels_data = voxels.ptr<Vec4f>(r);
         for (int c = 0; c < pixels.cols; ++c)
         {
             if (!mask[c])
@@ -982,6 +993,15 @@ void Pose3D :: applyTransformAfterRodrigues(const cv::Vec3f& cvTranslation, cons
                                                        axis));
     impl->camera_transform.pretranslate(toEigenVector3d(cvTranslation));
     impl->computeProjectiveTransform();
+}
+
+cv::Vec2f Pose3D::distanceWith(const Pose3D &rhs) const
+{
+    Eigen::Quaterniond p(impl->camera_transform.rotation().matrix());
+    Eigen::Quaterniond q(rhs.impl->camera_transform.rotation().matrix());
+    float angle = p.angularDistance(q);
+    float translation = cv::norm(cvTranslation()-rhs.cvTranslation());
+    return cv::Vec2f (translation, angle);
 }
 
 const NtkDebug& operator<<(const NtkDebug& os, const Pose3D& p)

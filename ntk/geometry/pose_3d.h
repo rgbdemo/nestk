@@ -23,6 +23,7 @@
 # include <ntk/core.h>
 # include <ntk/utils/xml_serializable.h>
 # include <ntk/numeric/utils.h>
+# include <QString>
 
 namespace ntk
 {
@@ -56,6 +57,7 @@ public:
   virtual void loadFromXmlElement(const XMLNode& element);
   virtual void saveToYaml(cv::FileStorage& yaml) const;
   virtual void loadFromYaml(cv::FileNode yaml);
+  virtual QString toString() const;
 
   /*! Parse a blender generated camera transform. */
   void parseBlenderFile(const char* filename, int image_width, int image_height);
@@ -231,7 +233,7 @@ public:
   cv::Point3f projectToImage(const cv::Point3f& p) const;
 
   /*! Project a set of 3D points onto image plane. */
-  void projectToImage(const cv::Mat3f& voxels, const cv::Mat1b& mask, cv::Mat3f& pixels) const;
+  void projectToImage(const cv::Mat4f& voxels, const cv::Mat1b& mask, cv::Mat4f& pixels) const;
 
   /*! Project a point from image plane to 3D using the given depth. */
   cv::Point3f unprojectFromImage(const cv::Point2f& p, double depth) const;
@@ -239,7 +241,15 @@ public:
   { return unprojectFromImage(cv::Point2f(p.x,p.y), p.z); }
 
   /*! Project a set of image points to 3D. */
-  void unprojectFromImage(const cv::Mat1f& pixels, const cv::Mat1b& mask, cv::Mat3f& voxels) const;
+  void unprojectFromImage(const cv::Mat1f& pixels, const cv::Mat1b& mask, cv::Mat4f& voxels) const;
+
+public:
+  /*!
+   * Compute the euclidian distance between two poses.
+   * First component is translation, second is angle
+   * between the two quaternions.
+   */
+  cv::Vec2f distanceWith(const Pose3D& rhs) const;
 
 private:
   double m_focal_x;

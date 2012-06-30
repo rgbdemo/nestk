@@ -37,8 +37,8 @@ class QStringList;
 class NtkDebug
 {
   public:
-    virtual ~NtkDebug()
-    { qDebug() << "[DBG]" << s; }
+    virtual ~NtkDebug();
+    // { qDebug() << "[DBG]" << s; }
 
   public:
     void print(const ntk::XmlSerializable& rhs) const;

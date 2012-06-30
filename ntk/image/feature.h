@@ -24,8 +24,6 @@
 #include <ntk/camera/rgbd_image.h>
 #include <ntk/utils/xml_serializable.h>
 #include <ntk/geometry/pose_3d.h>
-#include <opencv2/features2d/features2d.hpp>
-#include <opencv2/flann/flann.hpp>
 
 namespace ntk
 {
@@ -97,7 +95,7 @@ public:
                        Feature_BRIEF64 };
 
 public:
-    FeatureSet() {}
+    FeatureSet();
     ~FeatureSet() {}
 
 public:
@@ -153,12 +151,10 @@ private:
     void buildDescriptorIndex();
 
 private:
-#ifdef HAVE_OPENCV_GREATER_THAN_2_3_0
-    typedef cv::flann::GenericIndex<cv::flann::L2<float> > IndexType;
-#else
-    typedef cv::flann::Index_<float> IndexType;
-#endif
-    ntk::Ptr< IndexType > m_descriptor_index;
+    struct Impl; // use pimpl to avoid exposing flann, that gives conflicts with PCL.
+
+private:
+    ntk::Ptr<Impl> impl;
     char m_feature_type;
     unsigned m_descriptor_size;
     std::vector<FeaturePoint> m_locations;

@@ -64,6 +64,21 @@ private:
   mutable QMutex m_mutex;
 };
 
+template <class T>
+class LockedResource
+{
+public:
+    LockedResource(T* ptr = 0) : ptr(ptr) {}
+
+public:
+    T* acquire() { mutex.lock(); return ptr; }
+    void release() { mutex.unlock(); }
+
+private:
+    T* ptr;
+    QMutex mutex;
+};
+
 } // ntk
 
 #endif // NTK_THREAD_UTILS_H

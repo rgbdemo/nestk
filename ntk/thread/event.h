@@ -37,13 +37,30 @@ namespace ntk
 
 class EventBroadcaster;
 
+struct EventData;
+
+ntk_ptr_typedefs(EventData)
+
 /*! Base class for objects that can be transmitted through events. */
 struct CV_EXPORTS EventData
 {
     virtual ~EventData();
+
+public:
+    virtual EventDataPtr clone () const;
 };
 
-ntk_ptr_typedefs(EventData)
+#define TYPEDEF_THIS(Class) \
+private:                    \
+    typedef Class This;     \
+public:
+
+#define CLONABLE_EVENT_DATA                          \
+public:                                              \
+    virtual ::ntk::EventDataPtr clone () const       \
+    {                                                \
+        return ::ntk::EventDataPtr(new This(*this)); \
+    }                                                \
 
 class EventListener
 {
@@ -55,7 +72,27 @@ public:
         {}
 
         bool isNull() const { return sender == 0; }
+#if 0
+        Event (const Event& copy)
+        : sender(copy.sender)
+        , data(copy.data->clone())
+        {
 
+        }
+
+        Event& operator= (const Event& rhs)
+        {
+            Event that(rhs);
+            this->swap(that);
+            return *this;
+        }
+
+        void swap (Event& other)
+        {
+            std::swap(sender, other.sender);
+            std::swap(data, other.data);
+        }
+#endif
         EventBroadcaster* sender;
         EventDataPtr data;
     };
@@ -94,7 +131,9 @@ public:
     bool enabled() const { return m_enabled; }
 
     virtual void newEvent(EventBroadcaster* sender = 0, EventDataPtr data = EventDataPtr());
-    Event waitForNewEvent(int timeout_msecs = 60000);
+
+    static const int event_timeout_msecs;
+    Event waitForNewEvent(int timeout_msecs = -1);
 
 private:
     bool m_enabled;

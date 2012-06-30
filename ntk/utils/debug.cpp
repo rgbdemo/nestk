@@ -23,9 +23,117 @@
 #include <iostream>
 #include <QStringList>
 
+#include <QtGlobal>
+#include <QMutex>
+#include <QMutexLocker>
+
+typedef const char* CString;
+
+#if _WIN32
+#define WIN32_LEAN_AND_MEAN
+#define VC_EXTRA_LEAN
+#include <windows.h>
+void printWindowsDebugOutputLine (CString prefix, CString message)
+{
+    std::string line(prefix);
+    line += message;
+    line += "\r\n";
+    OutputDebugString(line.c_str());
+}
+
+void printStandardLine (CString prefix, CString message)
+{
+    printWindowsDebugOutputLine(prefix, message);
+    std::cout << prefix << message << std::endl;
+}
+
+void printErrorLine (CString prefix, CString message)
+{
+    printWindowsDebugOutputLine(prefix, message);
+    std::cerr << prefix << message << std::endl;
+}
+
+void printLogLine (CString prefix, CString message)
+{
+    printWindowsDebugOutputLine(prefix, message);
+    std::clog << prefix << message << std::endl;
+}
+#else
+#include <iostream>
+void printStandardLine (CString prefix, CString message)
+{
+    std::cout << prefix << message << std::endl;
+}
+void printErrorLine (CString prefix, CString message)
+{
+    std::cerr << prefix << message << std::endl;
+}
+void printLogLine (CString prefix, CString message)
+{
+    std::clog << prefix << message << std::endl;
+}
+#endif
+
+void handleMsg (QtMsgType type, CString msg)
+{
+    switch (type)
+    {
+        case QtDebugMsg:
+            printLogLine("Debug: ", msg);
+            break;
+        case QtWarningMsg:
+            printErrorLine("Warning: ", msg);
+            break;
+        case QtCriticalMsg:
+            printErrorLine("Critical: ", msg);
+            break;
+        case QtFatalMsg:
+            printStandardLine("Fatal: ", msg);
+            abort();
+    }
+}
+
+struct MsgHandler
+{
+    static void init ()
+    {
+        qInstallMsgHandler(handleMsg);
+    }
+
+    static void quit ()
+    {
+        qInstallMsgHandler(0);
+    }
+
+
+    MsgHandler ()
+    {
+        init();
+    }
+
+    ~MsgHandler ()
+    {
+        quit();
+    }
+
+    static QMutex mutex;
+
+    static void use ()
+    {
+        const QMutexLocker _(&mutex);
+
+        static const MsgHandler instance;
+    }
+};
+
+QMutex MsgHandler::mutex;
+
 namespace ntk
 {
   int ntk_debug_level = 0;
+
+  extern QTextStream qErr;
+  extern QTextStream qOut;
 
   void assert_failure(const char* where, const char* what, const char* cond)
   {
@@ -70,4 +178,11 @@ const NtkDebug& operator<<(const NtkDebug& d, const QStringList& rhs)
     d << ", " << *i;
 
   return d;
+}
+
+NtkDebug :: ~NtkDebug()
+{
+    MsgHandler::use();
+
+    qDebug() << "[DBG]" << s;
 }

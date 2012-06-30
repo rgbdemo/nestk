@@ -69,7 +69,7 @@ public:
     /**Given the extrinsic camera parameters returns the GL_MODELVIEW matrix for opengl.
     * Setting this matrix, the reference corrdinate system will be set in this board
      */
-    void glGetModelViewMatrix(double modelview_matrix[16])throw(cv::Exception);
+    void glGetModelViewMatrix(double modelview_matrix[16]);
 
     /**Creates a printable image of the board
      */

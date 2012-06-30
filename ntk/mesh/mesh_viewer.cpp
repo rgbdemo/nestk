@@ -60,7 +60,7 @@ void MeshViewer :: initializeGL()
     glEnable (GL_BLEND);
     glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     // glEnable(GL_POINT_SMOOTH);
-    glPointSize(1.0);
+    // glPointSize(1.0);
     updateBackgroundColor();
     resetCamera();
 }
@@ -249,7 +249,7 @@ void MeshViewer :: addMeshToVertexBufferObject(const ntk::Mesh& mesh, const Pose
 #endif
 }
 
-void MeshViewer :: addMesh(const ntk::Mesh& mesh, const Pose3D& pose, MeshViewerMode mode)
+void MeshViewer :: addMesh(const ntk::Mesh& mesh, const Pose3D& pose, MeshViewerMode mode, bool influence_on_center)
 {  
     unsigned long start = ntk::Time::getMillisecondCounter();
 	
@@ -259,6 +259,7 @@ void MeshViewer :: addMesh(const ntk::Mesh& mesh, const Pose3D& pose, MeshViewer
     makeCurrent();
 
     // Compute new mesh center.
+    if (influence_on_center)
     {
         m_mesh_center = Point3f(0,0,0);
         int n_sample = 0;
@@ -634,6 +635,8 @@ void MeshViewer :: paintGL()
     static float lightPosF[]={0.0,0.0,1.0,0.0};
     glLightfv(GL_LIGHT0,GL_POSITION,lightPosF);
     glPopMatrix();
+
+    glPointSize(m_point_size);
 
     if (m_show_grid)
         drawGrid();

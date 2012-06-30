@@ -32,6 +32,11 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/PolygonMesh.h>
+#include <pcl/TextureMesh.h>
+
+#ifdef HAVE_PCL_GREATER_THAN_1_5_1
+#include <pcl/segmentation/planar_region.h>
+#endif
 
 #include <vector>
 
@@ -60,7 +65,22 @@ inline pcl::PointNormal toPcl(const cv::Point3f& p, const cv::Point3f& n)
     return r;
 }
 
+inline pcl::PointXYZRGB toPcl(const cv::Point3f& p, const cv::Vec3b& c)
+{
+    pcl::PointXYZRGB r;
+    r.x = p.x;
+    r.y = p.y;
+    r.z = p.z;
+    r.r = c[0];
+    r.g = c[1];
+    r.b = c[2];
+    return r;
+}
+
 inline cv::Point3f toOpencv(const pcl::PointXYZ& p)
+{ return cv::Point3f(p.x, p.y, p.z); }
+
+inline cv::Point3f toOpencv(const pcl::PointNormal& p)
 { return cv::Point3f(p.x, p.y, p.z); }
 
 Eigen::Affine3f toPclCameraTransform(const Pose3D& pose);
@@ -84,6 +104,10 @@ void rgbdImageToPointCloud(pcl::PointCloud<PointT>& cloud,
                            int subsampling_factor = 1,
                            bool keep_dense = false);
 
+#ifdef HAVE_PCL_GREATER_THAN_1_5_1
+void planarRegionToMesh(ntk::Mesh& mesh, const pcl::PlanarRegion<pcl::PointNormal> &region);
+#endif
+
 template <class PointT>
 void pointCloudToMesh(ntk::Mesh& mesh,
                       const pcl::PointCloud<PointT>& cloud);
@@ -94,7 +118,14 @@ void meshToPointCloud(pcl::PointCloud<pcl::PointXYZ>& cloud,
 void meshToPointCloud(pcl::PointCloud<pcl::PointNormal>& cloud,
                       const ntk::Mesh& mesh);
 
-void polygonMeshToMesh(ntk::Mesh& mesh, pcl::PolygonMesh& polygon);
+void meshToPointCloud(pcl::PointCloud<pcl::PointXYZRGB>& cloud,
+                      const ntk::Mesh& mesh);
+
+void polygonMeshToMesh(ntk::Mesh& mesh, const pcl::PolygonMesh &polygon);
+
+void meshToPolygonMesh(pcl::PolygonMesh& polygon, const ntk::Mesh& mesh);
+void meshToPolygonMeshWithNormals(pcl::PolygonMesh& polygon, const ntk::Mesh& mesh);
+void meshToTextureMesh(pcl::TextureMesh& texture_mesh, const ntk::Mesh& mesh);
 
 template <class PointT>
 void sampledRgbdImageToPointCloud(pcl::PointCloud<PointT>& cloud,

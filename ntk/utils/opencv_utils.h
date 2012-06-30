@@ -23,6 +23,8 @@
 #include <ntk/core.h>
 #include <ntk/utils/debug.h>
 #include <ntk/utils/serializable.h>
+#include <ntk/numeric/utils.h>
+#include <QString>
 
 class QImage;
 
@@ -42,6 +44,13 @@ inline bool operator<(const cv::Point2i& p1, const cv::Point2i& p2)
     return p1.x < p2.x;
 }
 
+inline bool operator<(const cv::Point3f& p1, const cv::Point3f& p2)
+{
+    if (p1.x != p2.x) return p1.x < p2.x;
+    if (p1.y != p2.y) return p1.y < p2.y;
+    return p1.z < p2.z;
+}
+
 const NtkDebug& operator<<(const NtkDebug& stream, const cv::Mat1f& m);
 const NtkDebug& operator<<(const NtkDebug& stream, const cv::Mat1d& m);
 
@@ -57,6 +66,11 @@ public:
     Rect3_() :
         x(0), y(0), z(0),
         width(-1), height(-1), depth(-1)
+    {}
+
+    Rect3_(T x, T y, T z, T width, T height, T depth) :
+        x(x), y(y), z(z),
+        width(width), height(height), depth(depth)
     {}
 
     void extendToInclude(const cv::Point3f& p)
@@ -95,6 +109,11 @@ public:
         return cv::Point3_<T>(x+(width/T(2)), y+(height/T(2)), z + (depth / T(2)));
     }
 
+    cv::Point3_<T> sizes() const
+    {
+        return cv::Point3_<T>(width, height, depth);
+    }
+
     bool isPointInside(const cv::Point3f& p) const
     {
         return (p.x >= x) && (p.y >= y) && (p.z >= z)
@@ -129,11 +148,21 @@ StreamType& operator<<(StreamType& output, const Rect3_<Type>& box)
 }
 
 ntk::Rect3f bounding_box(const std::vector<cv::Point3f>& points);
+ntk::Rect3f readBoundingBoxFromYamlFile(const std::string& filename);
+void writeBoundingBoxToYamlFile(const std::string& filename, const ntk::Rect3f& bbox);
 
 }
 
 namespace ntk
 {
+
+inline QString toString (const cv::Vec3f& v)
+{
+    return QString("(%1, %2, %3)").arg(v[0]).arg(v[1]).arg(v[2]);
+}
+
+inline cv::Point3f toPoint3f(const cv::Vec4f& v)
+{ return cv::Point3f(v[0], v[1], v[2]); }
 
 inline cv::Point2f toPoint2f(const cv::Point& p)
 { return cv::Point2f(p.x, p.y); }
@@ -151,9 +180,50 @@ inline cv::Vec3f infinite_point()
                      std::numeric_limits<float>::quiet_NaN());
 }
 
+inline bool isnan(const cv::Point3f& p)
+{ return ntk::math::isnan(p.x); }
+
+inline bool isnan(const cv::Vec3f& p)
+{ return ntk::math::isnan(p[0]); }
+
 inline void fillWithNan(cv::Mat3f& im)
 {
     std::fill((cv::Vec3f*)im.datastart, (cv::Vec3f*)im.dataend, infinite_point());
+}
+
+inline cv::Vec3f toVec3f(const cv::Vec3b& v)
+{
+    return cv::Vec3f(v[0], v[1], v[2]);
+}
+
+inline cv::Vec3b toVec3b(const cv::Vec3f& v)
+{
+    return cv::Vec3b(v[0], v[1], v[2]);
+}
+
+inline cv::Vec3b toVec3b (const cv::Matx<float, 3, 1>& v)
+{
+    return cv::Vec3b(v(0), v(1), v(2));
+}
+
+inline cv::Vec3b toVec3b(const cv::Vec4b& v)
+{
+    return cv::Vec3b(v[0], v[1], v[2]);
+}
+
+inline cv::Vec3f vec_min(const cv::Vec3f& v1, const cv::Vec3f& v2)
+{
+    return cv::Vec3f(std::min(v1[0], v2[0]), std::min(v1[1], v2[1]), std::min(v1[2], v2[2]));
+}
+
+inline cv::Vec3f vec_max(const cv::Vec3f& v1, const cv::Vec3f& v2)
+{
+    return cv::Vec3f(std::max(v1[0], v2[0]), std::max(v1[1], v2[1]), std::max(v1[2], v2[2]));
+}
+
+inline cv::Vec3f vec_round(const cv::Vec3f& v)
+{
+    return cv::Vec3f(ntk::math::rnd(v[0]), ntk::math::rnd(v[1]), ntk::math::rnd(v[2]));
 }
 
 template <class ScalarType>
@@ -253,6 +323,13 @@ inline cv::Vec3b bgr_to_rgb(const cv::Vec3b& v)
 { return cv::Vec3b(v[2], v[1], v[0]); }
 
 void adjustRectToImage(cv::Rect& rect, const cv::Size& image_size);
+
+inline cv::Mat3b rotate90(const cv::Mat3b& im)
+{
+    cv::Mat3b res = im.t();
+    cv::flip(res, res, 1);
+    return res;
+}
 
 }
 

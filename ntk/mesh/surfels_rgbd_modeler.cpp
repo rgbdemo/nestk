@@ -79,25 +79,26 @@ bool SurfelsRGBDModeler :: addNewView(const RGBDImage& image_, Pose3D& depth_pos
     ntk::TimeCount tc("SurfelsRGBDModeler::addNewView", 2);
     const float max_camera_normal_angle = ntk::deg_to_rad(90);
 
-    RGBDImage image;
-    image_.copyTo(image);
+    image_.copyTo(m_last_image);
     if (!image_.normal().data)
     {
         OpenniRGBDProcessor processor;
         // FIXME compute faster normals.
-        processor.computeNormals(image);
+        processor.computeNormals(m_last_image);
+        cv::dilate(m_last_image.depthMask(), m_last_image.depthMaskRef(), cv::Mat(), cv::Point(-1,-1), 2);
+        cv::erode(m_last_image.depthMask(), m_last_image.depthMaskRef(), cv::Mat(), cv::Point(-1,-1), 8);
         // processor.computeNormalsPCL(image);
     }
 
     Pose3D rgb_pose = depth_pose;
-    rgb_pose.toRightCamera(image.calibration()->rgb_intrinsics, image.calibration()->R, image.calibration()->T);
+    rgb_pose.toRightCamera(m_last_image.calibration()->rgb_intrinsics, m_last_image.calibration()->R, m_last_image.calibration()->T);
 
     Pose3D world_to_camera_normal_pose;
     world_to_camera_normal_pose.applyTransformBefore(cv::Vec3f(0,0,0), depth_pose.cvEulerRotation());
     Pose3D camera_to_world_normal_pose = world_to_camera_normal_pose;
     camera_to_world_normal_pose.invert();
 
-    const Mat1f& depth_im = image.depth();
+    const Mat1f& depth_im = m_last_image.depth();
     Mat1b covered_pixels (depth_im.size());
     covered_pixels = 0;
 
@@ -119,13 +120,13 @@ bool SurfelsRGBDModeler :: addNewView(const RGBDImage& image_, Pose3D& depth_pos
         int c = ntk::math::rnd(surfel_2d.x);
         int d = ntk::math::rnd(surfel_2d.z);
         if (!is_yx_in_range(depth_im, r, c)
-                || !image.depthMask()(r, c)
-                || !image.isValidNormal(r,c))
+                || !m_last_image.depthMask()(r, c)
+                || !m_last_image.isValidNormal(r,c))
             continue;
 
         const float update_max_dist = getCompatibilityDistance(depth_im(r,c));
 
-        Vec3f camera_normal = image.normal()(r, c);
+        Vec3f camera_normal = m_last_image.normal()(r, c);
         normalize(camera_normal);
 
         Vec3f world_normal = camera_to_world_normal_pose.cameraTransform(camera_normal);
@@ -170,7 +171,7 @@ bool SurfelsRGBDModeler :: addNewView(const RGBDImage& image_, Pose3D& depth_pos
         const float depth = depth_im(r,c) + m_global_depth_offset;
 
         Point3f p3d = depth_pose.unprojectFromImage(Point2f(c,r), depth);
-        cv::Vec3b rgb_color = bgr_to_rgb(image.mappedRgb()(r, c));
+        cv::Vec3b rgb_color = bgr_to_rgb(m_last_image.mappedRgb()(r, c));
 
         Surfel image_surfel;
         image_surfel.location = p3d;
@@ -205,7 +206,7 @@ bool SurfelsRGBDModeler :: addNewView(const RGBDImage& image_, Pose3D& depth_pos
     for (int r = 0; r < depth_im.rows; r += 1)
         for (int c = 0; c < depth_im.cols; c += 1)
         {
-            if (!image.depthMask()(r,c) || covered_pixels(r,c) || !image.isValidNormal(r,c))
+            if (!m_last_image.depthMask()(r,c) || covered_pixels(r,c) || !m_last_image.isValidNormal(r,c))
                 continue;
             float depth = depth_im(r,c) + m_global_depth_offset;
             if (depth < 1e-5)
@@ -215,9 +216,9 @@ bool SurfelsRGBDModeler :: addNewView(const RGBDImage& image_, Pose3D& depth_pos
             if (!m_bounding_box.isEmpty() && !m_bounding_box.isPointInside(p3d))
                 continue;
 
-            cv::Vec3b rgb_color = bgr_to_rgb(image.mappedRgb()(r,c));
+            cv::Vec3b rgb_color = bgr_to_rgb(m_last_image.mappedRgb()(r,c));
 
-            Vec3f camera_normal = image.normal()(r, c);
+            Vec3f camera_normal = m_last_image.normal()(r, c);
             normalize(camera_normal);
 
             Vec3f world_normal = camera_to_world_normal_pose.cameraTransform(camera_normal);

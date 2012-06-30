@@ -19,13 +19,50 @@
 
 #include <ntk/core.h>
 #include <ntk/utils/debug.h>
+#include <ntk/mesh/mesh.h>
+#include <ntk/mesh/pcl_utils.h>
 
 #include <pcl/common/common.h>
 #include <pcl/common/distances.h>
 #include <pcl/common/eigen.h>
 #include <pcl/point_types.h>
 
+#include <pcl/surface/poisson.h>
+
 using pcl::PointXYZ;
+
+void testPoisson()
+{
+    ntk::Mesh mesh;
+    mesh.addCube(cv::Point3f(0,0,0), cv::Point3f(1,1,1));
+
+    pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZRGBNormal>);
+    cloud->width = 10;
+    cloud->height = 1;
+    cloud->points.resize(10);
+    for (int i = 0; i < 10; ++i)
+    {
+        pcl::PointXYZRGBNormal p;
+        p.x = i;
+        p.y = i*2;
+        p.z = i;
+        p.normal_x = 1;
+        p.normal_y = 0;
+        p.normal_z = 0;
+        p.r = 0;
+        p.g = 0;
+        p.b = 0;
+        cloud->points[i] = p;
+    }
+
+    pcl::Poisson<pcl::PointXYZRGBNormal> poisson;
+    poisson.setInputCloud(cloud);
+    pcl::PolygonMesh pcl_mesh;
+    poisson.performReconstruction(pcl_mesh);
+
+    polygonMeshToMesh(mesh, pcl_mesh);
+    mesh.saveToPlyFile("poisson.ply");
+}
 
 void test1()
 {
@@ -72,6 +109,7 @@ void test2()
 
 int main (int argc, char** argv)
 {
-  test1();
-  test2();
+  // test1();
+  // test2();
+    testPoisson();
 }

@@ -120,6 +120,9 @@ IF (NESTK_USE_EMBEDDED_EIGEN)
   ADD_SUBDIRECTORY(eigen)
 ENDIF()
 
+## Vectorial
+ADD_SUBDIRECTORY(vectorial)
+
 ENDIF(NOT NESTK_USE_ROS)
 
 ################################################################################

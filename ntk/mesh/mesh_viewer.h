@@ -63,17 +63,20 @@ public:
           m_lookat_up(0, 1, 0),
           m_clear_color(0.f, 0.f, 0.2f, 1.f),
           m_use_vertex_buffer_object(false),
-          m_show_grid(false)
+          m_show_grid(false),
+          m_point_size(1.0f)
     {
         cv::setIdentity(m_glcam_transform);
     }
 
-    void addMesh(const ntk::Mesh& mesh, const Pose3D& pose, MeshViewerMode mode);
+    void addMesh(const ntk::Mesh& mesh, const Pose3D& pose, MeshViewerMode mode, bool influence_on_center = true);
     void addMeshToDisplayList(const ntk::Mesh& mesh, const Pose3D& pose, MeshViewerMode mode);
     void addMeshToVertexBufferObject(const ntk::Mesh& mesh, const Pose3D& pose, MeshViewerMode mode);
     void addPlane(const ntk::Plane& plane);
     void swapScene();
     void setVertexBufferObjectMode(bool enable) { m_use_vertex_buffer_object = enable; }
+
+    void setPointSize(float size) { m_point_size = size; }
 
     void resetCamera();
     void rotateCamera(const cv::Vec3f& axis,
@@ -146,6 +149,7 @@ protected:
     cv::Vec4f m_clear_color;
     bool m_use_vertex_buffer_object;
     bool m_show_grid;
+    float m_point_size;
 };
 
 } // ntk
