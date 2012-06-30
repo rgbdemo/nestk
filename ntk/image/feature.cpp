@@ -34,6 +34,10 @@
 
 #include <cassert>
 
+#ifdef HAVE_OPENCV_GREATER_THAN_2_4_0
+#include <opencv2/nonfree/nonfree.hpp>
+#endif
+
 using namespace cv;
 
 namespace ntk
@@ -103,8 +107,11 @@ void FeatureSet :: extractFromImage(const RGBDImage& image,
     }
     else if (params.detector_type == "SURF_BIGSCALE")
     {
+#ifdef HAVE_OPENCV_GREATER_THAN_2_4_0
+#else
         detector = new SurfFeatureDetector(params.threshold > 0 ? params.threshold : 400 /*hessian_threshold*/,
                                            2/*octaves*/, 3/*octave_layers*/);
+#endif
     }
     else
     {
