@@ -27,12 +27,15 @@
 #include <pcl/common/eigen.h>
 #include <pcl/point_types.h>
 
+#ifdef HAVE_PCL_GREATER_THAN_1_5_1
 #include <pcl/surface/poisson.h>
+#endif
 
 using pcl::PointXYZ;
 
 void testPoisson()
 {
+#ifdef HAVE_PCL_GREATER_THAN_1_5_1
     ntk::Mesh mesh;
     mesh.addCube(cv::Point3f(0,0,0), cv::Point3f(1,1,1));
 
@@ -62,6 +65,7 @@ void testPoisson()
 
     polygonMeshToMesh(mesh, pcl_mesh);
     mesh.saveToPlyFile("poisson.ply");
+#endif
 }
 
 void test1()
