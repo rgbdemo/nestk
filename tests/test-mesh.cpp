@@ -44,7 +44,7 @@ void test_renderer(Mesh& mesh)
   TimeCount tc_render("Rendering 100 times", 1);
   for (int i = 0; i < 100; ++i)
   {
-    pose.applyTransformAfter(cv::Vec3f(0.02,0,0), cv::Vec3f(0,0,0));
+    pose.applyTransformAfter(cv::Vec3f(0.02f, 0, 0), cv::Vec3f(0, 0, 0));
     TimeCount tc_render_one("Rendering", 1);
     renderer.setMesh(mesh);
     float near = 0.3f, far = 5.f;

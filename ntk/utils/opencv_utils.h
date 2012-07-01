@@ -80,9 +80,9 @@ public:
             x = p.x;
             y = p.y;
             z = p.z;
-            width = 1e-5;
-            height = 1e-5;
-            depth = 1e-5;
+            width = 1e-5f;
+            height = 1e-5f;
+            depth = 1e-5f;
         }
         else
         {

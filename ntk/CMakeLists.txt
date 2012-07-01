@@ -9,7 +9,7 @@ SET ( ntk_sources
 
      core.h
      ntk.h
-     aruco/aruco.h 
+     aruco/aruco.h
      aruco/board.cpp
      aruco/boarddetector.cpp
      aruco/boarddetector.h
@@ -70,7 +70,7 @@ SET ( ntk_sources
      image/feature.h
      image/feature.cpp
      image/sift.h
-     image/sift.cpp # WARNING: sift.cpp is also compiled internally by opencv.
+     image/sift.cpp
      image/sift_gpu.h
      image/sift_gpu.cpp
      image/siftgpu/SiftGPU.h

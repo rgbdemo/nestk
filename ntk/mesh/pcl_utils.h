@@ -33,7 +33,10 @@
 #include <pcl/point_types.h>
 #include <pcl/PolygonMesh.h>
 #include <pcl/TextureMesh.h>
+
+#ifdef HAVE_PCL_GREATER_THAN_1_5_1
 #include <pcl/segmentation/planar_region.h>
+#endif
 
 #include <vector>
 
@@ -101,7 +104,9 @@ void rgbdImageToPointCloud(pcl::PointCloud<PointT>& cloud,
                            int subsampling_factor = 1,
                            bool keep_dense = false);
 
+#ifdef HAVE_PCL_GREATER_THAN_1_5_1
 void planarRegionToMesh(ntk::Mesh& mesh, const pcl::PlanarRegion<pcl::PointNormal> &region);
+#endif
 
 template <class PointT>
 void pointCloudToMesh(ntk::Mesh& mesh,

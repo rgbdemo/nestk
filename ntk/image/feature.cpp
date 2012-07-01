@@ -28,6 +28,10 @@
 #include <opencv2/features2d/features2d.hpp>
 #include <opencv2/flann/flann.hpp>
 
+#ifdef HAVE_OPENCV_GREATER_THAN_2_4_0
+#include <opencv2/nonfree/nonfree.hpp>
+#endif
+
 #include <cassert>
 
 #ifdef HAVE_OPENCV_GREATER_THAN_2_4_0
@@ -137,16 +141,32 @@ void FeatureSet :: extractFromImage(const RGBDImage& image,
     else if (params.descriptor_type == "SURF64")
     {
         m_feature_type = Feature_SURF64;
-        extractor = new cv::SurfDescriptorExtractor(4 /* octaves */,
+#ifdef HAVE_OPENCV_GREATER_THAN_2_4_0
+        extractor = new cv::SurfDescriptorExtractor(400,
+                                                    4 /* octaves */,
                                                     2 /* octave layers */,
                                                     false /* extended */);
+#else
+        extractor = new cv::SurfDescriptorExtractor(400,
+                                                    4 /* octaves */,
+                                                    2 /* octave layers */,
+                                                    false /* extended */);
+#endif
     }
     else if (params.descriptor_type == "SURF128")
     {
         m_feature_type = Feature_SURF128;
-        extractor = new cv::SurfDescriptorExtractor(4 /* octaves */,
+#ifdef HAVE_OPENCV_GREATER_THAN_2_4_0
+        extractor = new cv::SurfDescriptorExtractor(400,
+                                                    4 /* octaves */,
                                                     2 /* octave layers */,
                                                     true /* extended */);
+#else
+        extractor = new cv::SurfDescriptorExtractor(400,
+                                                    4 /* octaves */,
+                                                    2 /* octave layers */,
+                                                    true /* extended */);
+#endif
     }
     else
     {
@@ -267,14 +287,13 @@ void FeatureSet :: extractFromImageUsingSiftPP(const RGBDImage& image,
     int O = -1;
     const int S = levels;
     const int omin = -1;
-    float const sigman = .5 ;
-    float const sigma0 = 1.6 * powf(2.0f, 1.0f / S) ;
-    float threshold = 0.01; // closer to Lowe.
+    float const sigman = .5f ;
+    float const sigma0 = 1.6f * powf(2.0f, 1.0f / S) ;
+    float threshold = 0.01f; // closer to Lowe.
     float edgeThreshold  = 10.0f;
     int unnormalized = 0;
-    float magnif = 3.0;
+    float magnif = 3.0f;
 
-    VL::PgmBuffer buffer;
     cv::Mat1f fim(image.rgbAsGray().size());
     for_all_rc(fim) fim(r, c) = image.rgbAsGray()(r, c) / 255.0;
 

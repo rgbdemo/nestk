@@ -288,9 +288,7 @@ PlyFile *open_for_writing_ply(
   int file_type
 )
 {
-  int i;
   PlyFile *plyfile;
-  PlyElement *elem;
   char *name;
   FILE *fp;
 
@@ -433,9 +431,7 @@ void element_count_ply(
   int nelems
 )
 {
-  int i;
   PlyElement *elem;
-  PlyProperty *prop;
 
   /* look for appropriate element */
   elem = find_element (plyfile, elem_name);
@@ -559,7 +555,7 @@ Entry:
 
 void put_element_ply(PlyFile *plyfile, void *elem_ptr)
 {
-  int i,j,k;
+  int j,k;
   FILE *fp = plyfile->fp;
   PlyElement *elem;
   PlyProperty *prop;
@@ -1404,8 +1400,6 @@ Compare two strings.  Returns 1 if they are the same, 0 if not.
 
 int equal_strings(const char *s1, const char *s2)
 {
-  int i;
-
   while (*s1 && *s2)
     if (*s1++ != *s2++)
       return (0);
@@ -1510,7 +1504,7 @@ Entry:
 
 void ascii_get_element(PlyFile *plyfile, char *elem_ptr)
 {
-  int i,j,k;
+  int j,k;
   PlyElement *elem;
   PlyProperty *prop;
   char **words;
@@ -1645,7 +1639,7 @@ Entry:
 
 void binary_get_element(PlyFile *plyfile, char *elem_ptr)
 {
-  int i,j,k;
+  int j,k;
   PlyElement *elem;
   PlyProperty *prop;
   FILE *fp = plyfile->fp;
@@ -1797,7 +1791,6 @@ Exit:
 char **get_words(FILE *fp, int *nwords, char **orig_line)
 {
 #define BIG_STRING 4096
-  int i,j;
   static char str[BIG_STRING];
   static char str_copy[BIG_STRING];
   char **words;
@@ -2410,8 +2403,6 @@ Entry:
 
 void add_property (PlyFile *plyfile, char **words, int nwords)
 {
-  int prop_type;
-  int count_type;
   PlyProperty *prop;
   PlyElement *elem;
 
@@ -2859,9 +2850,7 @@ void describe_element_ply(
   int nelems
 )
 {
-  int i;
   PlyElement *elem;
-  PlyProperty *prop;
 
   /* look for appropriate element */
   elem = find_element (plyfile, elem_name);
@@ -3143,8 +3132,6 @@ Entry:
 
 void start_props_ply (PlyFile *ply, PlyPropRules *rules)
 {
-  int i;
-  int count;
   PlyElement *elem = rules->elem;
 
   /* save pointer to the rules in the PLY object */

@@ -259,6 +259,7 @@ void removeExtrapoledTriangles(ntk::Mesh& surface, const ntk::Mesh& ground_cloud
     surface = filtered_surface;
 }
 
+#ifdef HAVE_PCL_GREATER_THAN_1_5_1
 void planarRegionToMesh(ntk::Mesh& mesh, const pcl::PlanarRegion<pcl::PointNormal>& region)
 {
     pcl::PolygonMeshPtr polygon (new pcl::PolygonMesh());
@@ -283,5 +284,6 @@ void planarRegionToMesh(ntk::Mesh& mesh, const pcl::PlanarRegion<pcl::PointNorma
 
     polygonMeshToMesh(mesh, triangles);
 }
+#endif
 
 } // ntk

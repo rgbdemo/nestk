@@ -570,8 +570,8 @@ void kinect_shift_ir_to_depth(cv::Mat3b& im)
     t = 0.f;
     t(0,0) = 1;
     t(1,1) = 1;
-    t(0,2) = -4.8;
-    t(1,2) = -3.9;
+    t(0,2) = -4.8f;
+    t(1,2) = -3.9f;
     cv::Mat3b tmp;
     warpAffine(im, tmp, t, im.size());
     im = tmp;

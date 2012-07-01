@@ -76,14 +76,14 @@ void new_code()
 {
   Pose3D p;
   p.setCameraParameters(500,400,322,235);
-  p.applyTransformBefore(Vec3f(-4, 3, 0.1), Vec3f(-0.1, 0.2, 0.3));
-  p.applyTransformAfter(Vec3f(4, 4, 0.2), Vec3f(0.5, 0.2, 0.3));
-  p.applyTransformBefore(Vec3f(2, 3, -0.1), Vec3f(0.1, -0.1, 0.3));
-  p.applyTransformBefore(Vec3f(4, -0.2, 0.3), Vec3f(-0.1, 0.5, 0.3));
-  p.applyTransformAfter(Vec3f(8, 3, 0.4), Vec3f(0.4, 0.2, -0.3));
+  p.applyTransformBefore(Vec3f(-4, 3, 0.1f), Vec3f(-0.1f, 0.2f, 0.3f));
+  p.applyTransformAfter(Vec3f(4, 4, 0.2f), Vec3f(0.5f, 0.2f, 0.3f));
+  p.applyTransformBefore(Vec3f(2, 3, -0.1f), Vec3f(0.1f, -0.1f, 0.3f));
+  p.applyTransformBefore(Vec3f(4, -0.2f, 0.3f), Vec3f(-0.1f, 0.5f, 0.3f));
+  p.applyTransformAfter(Vec3f(8, 3, 0.4f), Vec3f(0.4f, 0.2f, -0.3f));
 
-  Point3f p1 (3.4, 5.8, 4.2);
-  Point3f p2 (-0.3, -5.8, 0.1);
+  Point3f p1 (3.4f, 5.8f, 4.2f);
+  Point3f p2 (-0.3f, -5.8f, 0.1f);
 
   Point3f p1b = p.projectToImage(p1);
   Point3f p2b = p.projectToImage(p2);
@@ -115,8 +115,8 @@ void simple_code()
   ntk_dbg_print(p.projectToImage(Point3f(1,1,-2)), 0);
   // 200,0,2
 
-  p.applyTransformBefore(Vec3f(1,0,0), Vec3f(0,0,M_PI/2));
-  p.applyTransformBefore(Vec3f(0.5,1,0.2), Vec3f(0.1,0.2,0.3));
+  p.applyTransformBefore(Vec3f(1,0,0), Vec3f(0,0, static_cast<float>(M_PI)/2));
+  p.applyTransformBefore(Vec3f(0.5f, 1, 0.2f), Vec3f(0.1f, 0.2f, 0.3f));
   ntk_dbg_print(p.cameraTransform(Point3f(1,1,-2)), 0);
 }
 
@@ -125,15 +125,15 @@ void euler_code()
   {
     Pose3D p;
     p.setCameraParameters(200,200,100,100);
-    p.applyTransformBefore(Vec3f(0,0,0), Vec3f(0,0,3.14));
+    p.applyTransformBefore(Vec3f(0,0,0), Vec3f(0, 0, static_cast<float>(M_PI)));
     ntk_dbg_print(p, 0);
     ntk_dbg_print(p.cameraTransform(Point3f(1,2,3)), 0);
   }
 
   Pose3D p;
   p.setCameraParameters(200,200,100,100);
-  p.applyTransformBefore(Vec3f(1,2,3), Vec3f(1,2,0.5));
-  p.applyTransformBefore(Vec3f(2,3,4), Vec3f(2,-1,0.8));
+  p.applyTransformBefore(Vec3f(1,2,3), Vec3f(1, 2, 0.5f));
+  p.applyTransformBefore(Vec3f(2,3,4), Vec3f(2, -1, 0.8f));
 
   Pose3D p2;
   p2.setCameraParameters(200,200,100,100);

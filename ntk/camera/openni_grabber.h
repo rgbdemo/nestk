@@ -153,8 +153,11 @@ public:
     /*! Grab IR images instead of RGB images. */
     virtual void setIRMode(bool ir);
 
-	/*! Set whether custom bayer decoding should be used. */
-	void setCustomBayerDecoding(bool enable) { m_custom_bayer_decoding = enable; }
+    /*! Set whether custom bayer decoding should be used. */
+    void setCustomBayerDecoding(bool enable) { m_custom_bayer_decoding = enable; }
+
+    /*! Set whether hardware registraition should be used */
+    void UseHardwareRegistration(bool enable) { m_hardware_registration = enable; }
 
 public:
     // Nite accessors.
@@ -209,6 +212,7 @@ private:
     bool m_high_resolution;
     bool m_mirrored;
     bool m_custom_bayer_decoding;
+    bool m_hardware_registration;
 
     /*! the default xml config file */
     static const std::string DEFAULT_XML_CONFIG_FILE;

@@ -69,7 +69,7 @@ struct TableObjectRGBDModeler :: CurrentImageData
 
 TableObjectRGBDModeler :: TableObjectRGBDModeler() : RGBDModeler(),
     m_cluster_id(0),
-    m_resolution(0.003),
+    m_resolution(0.003f),
     m_depth_margin(0.f),
     m_first_view(true),
     m_depth_filling(true),
@@ -245,7 +245,7 @@ void TableObjectRGBDModeler :: computeAccurateVerticeColors()
         if (is_yx_in_range(m_last_image.rgb(), r, c))
         {
             float d = renderer.depthBuffer()(r,c);
-            if (flt_eq(p.z, d, 1e-2))
+            if (flt_eq(p.z, d, 1e-2f))
             {
                 color = bgr_to_rgb(m_last_image.rgb()(r,c));
             }
@@ -390,7 +390,7 @@ void TableObjectRGBDModeler :: fillGridWithNewPoints(CurrentImageData& d)
     const Pose3D& rgb_pose = d.rgb_pose;
 
     // Minimum for object points is 3mm from the plane.
-    const float min_plane_dist = 0.003;
+    const float min_plane_dist = 0.003f;
 
     foreach_idx(i, object_points)
     {
@@ -436,7 +436,7 @@ void TableObjectRGBDModeler :: removeInconsistentObjectVoxels(CurrentImageData& 
     const RGBDImage& image = *(d.image);
     const Pose3D& depth_pose = d.depth_pose;
 
-    const float depth_margin = 0.001; // 1 mm
+    const float depth_margin = 0.001f; // 1 mm
     const Mat1f& depth_im = image.depth();
 
     // Remove voxels object that project onto the background.

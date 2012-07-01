@@ -266,9 +266,9 @@ void BodyEventDetector :: initializeKalman()
     // Derivates model is dx = dx' * 0.2
     // This means derivate is assumed to decrease with time.
     // This avoids a too strong inertia.
-    m_kalman.transitionMatrix.at<float>(1,1) = 0.2;
-    m_kalman.transitionMatrix.at<float>(3,3) = 0.2;
-    m_kalman.transitionMatrix.at<float>(5,5) = 0.2;
+    m_kalman.transitionMatrix.at<float>(1,1) = 0.2f;
+    m_kalman.transitionMatrix.at<float>(3,3) = 0.2f;
+    m_kalman.transitionMatrix.at<float>(5,5) = 0.2f;
 
     setIdentity(m_kalman.measurementMatrix, 1);
     // Decrease or increase the process noise to change the
@@ -276,12 +276,12 @@ void BodyEventDetector :: initializeKalman()
     setIdentity(m_kalman.processNoiseCov, 5e-2);
     setIdentity(m_kalman.measurementNoiseCov, 1);
     // Estimated empirically.
-    m_kalman.measurementNoiseCov.at<float>(0,0) = 0.3918431;
-    m_kalman.measurementNoiseCov.at<float>(1,1) = 0.0236481;
-    m_kalman.measurementNoiseCov.at<float>(2,2) = 0.6588200;
-    m_kalman.measurementNoiseCov.at<float>(3,3) = 0.0848109;
-    m_kalman.measurementNoiseCov.at<float>(4,4) = 0.202737;
-    m_kalman.measurementNoiseCov.at<float>(5,5) = 0.0257873;
+    m_kalman.measurementNoiseCov.at<float>(0,0) = 0.3918431f;
+    m_kalman.measurementNoiseCov.at<float>(1,1) = 0.0236481f;
+    m_kalman.measurementNoiseCov.at<float>(2,2) = 0.6588200f;
+    m_kalman.measurementNoiseCov.at<float>(3,3) = 0.0848109f;
+    m_kalman.measurementNoiseCov.at<float>(4,4) = 0.202737f;
+    m_kalman.measurementNoiseCov.at<float>(5,5) = 0.0257873f;
     setIdentity(m_kalman.errorCovPost, 1e-1);
 }
 
@@ -365,11 +365,11 @@ void BodyEventDetector :: OnPointUpdate(const XnVHandPointContext* pContext)
     uint64 timestamp = ntk::Time::getMillisecondCounter();
     // We want derivates in mm/ms
     float deltat = 1.0f / (timestamp - m_prev_timestamps[0]);
-    if (ntk_isnan(deltat)) deltat = 1.0/30.0;
-    if (deltat < 1) deltat = 1.0/30.0;
+    if (ntk_isnan(deltat)) deltat = 1.0f/30.0f;
+    if (deltat < 1) deltat = 1.0f/30.0f;
 
     float deltat_prev = 1.0f / (m_prev_timestamps[0] - m_prev_timestamps[1]);
-    if (ntk_isnan(deltat_prev)) deltat_prev = 1.0/30.0;
+    if (ntk_isnan(deltat_prev)) deltat_prev = 1.0f/30.0f;
     Point3f prev_derivate = (m_prev_hand_points[0]-m_prev_hand_points[1]) * (deltat_prev);
 
     Point3f raw_pos_3d = toPoint3f(pContext->ptPosition);

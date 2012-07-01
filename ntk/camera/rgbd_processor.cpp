@@ -22,6 +22,11 @@
 #include <ntk/utils/time.h>
 #include <ntk/geometry/pose_3d.h>
 #include <ntk/image/bilateral_filter.h>
+#include <ntk/camera/calibration.h>
+
+#include <opencv2/nonfree/nonfree.hpp>
+#include <opencv2/photo/photo.hpp>
+#include <opencv2/nonfree/features2d.hpp>
 
 #ifdef NESTK_USE_PCL
 #include <ntk/mesh/pcl_utils.h>
@@ -41,12 +46,12 @@ namespace ntk
             m_image(0),
             //m_flags(FixGeometry | FixBias | UndistortImages | ComputeNormals),
             m_flags(RGBDProcessorFlags::UndistortImages),
-            m_min_depth(0.3),
-            m_max_depth(10.0),
+            m_min_depth(0.3f),
+            m_max_depth(10.0f),
             m_max_normal_angle(80),
-            m_max_time_depth_delta(0.1),
-            m_max_spatial_depth_delta(0.1),
-            m_mapping_resolution(1.0),
+            m_max_time_depth_delta(0.1f),
+            m_max_spatial_depth_delta(0.1f),
+            m_mapping_resolution(1.0f),
             m_min_amplitude(1000),
             m_max_amplitude(-1)
     {
@@ -124,7 +129,7 @@ namespace ntk
         for_all_rc(depth_im)
         {
             cv::Vec3f n = estimate_normal_from_depth(depth_im, depth_pose,
-                                                     r, c, 0.03,
+                                                     r, c, 0.03f,
                                                      dx.data ? &dx : 0, dy.data ? &dy : 0);
             normal_im(r,c) = n;
         }
@@ -274,8 +279,8 @@ namespace ntk
 
         if (m_image->calibration())
         {
-            if (!flt_eq(m_image->calibration()->depth_multiplicative_correction_factor, 1.0, 1e-5)
-                    || !flt_eq(m_image->calibration()->depth_additive_correction_factor, 0.0, 1e-5))
+            if (!flt_eq(m_image->calibration()->depth_multiplicative_correction_factor, 1.0f, 1e-5f)
+                    || !flt_eq(m_image->calibration()->depth_additive_correction_factor, 0.0f, 1e-5f))
             {
                 float factor = m_image->calibration()->depth_multiplicative_correction_factor;
                 float offset = m_image->calibration()->depth_additive_correction_factor;
@@ -468,7 +473,7 @@ namespace ntk
     void RGBDProcessor :: bilateralFilter(RGBDImage& image)
     {
         cv::Mat1f tmp;
-        depth_bilateralFilter(image.depthRef(), tmp, 7, 20, 20, 0.01);
+        depth_bilateralFilter(image.depthRef(), tmp, 7, 20, 20, 0.01f);
         tmp.copyTo(image.depthRef());
     }
 
@@ -639,9 +644,9 @@ namespace ntk
 
     void RGBDProcessor :: computeKinectDepthTanh()
     {
-        const float k1 = 1.1863;
-        const float k2 = 2842.5;
-        const float k3 = 0.1236;
+        const float k1 = 1.1863f;
+        const float k2 = 2842.5f;
+        const float k3 = 0.1236f;
 
         cv::Mat1f& depth_im = m_image->depthRef();
         for_all_rc(depth_im)
@@ -742,7 +747,7 @@ namespace ntk
             {
                 int v = 255*6*(depth_data[c]-min_val)/(max_val-min_val);
                 if (v < 0) v = 0;
-                char r,g,b;
+                unsigned char r,g,b;
                 int lb = v & 0xff;
                 switch (v / 256) {
                 case 0:

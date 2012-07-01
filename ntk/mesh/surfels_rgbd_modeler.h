@@ -31,7 +31,10 @@ namespace ntk
 class SurfelsRGBDModeler : public RGBDModeler
 {
 public:
-    SurfelsRGBDModeler() : m_min_views(2), m_resolution(0.005), m_update_max_normal_angle(60)
+    SurfelsRGBDModeler() 
+      : m_min_views(2), 
+      m_resolution(0.005f), 
+      m_update_max_normal_angle(60)
     {}
 
 public:

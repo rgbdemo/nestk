@@ -16,7 +16,7 @@ estimateNewPose(Pose3D& new_pose,
                 const FeatureSet& image_features,
                 const std::vector<cv::DMatch>& matches)
 {
-    const float err_threshold = 0.05;
+    const float err_threshold = 0.05f;
 
     std::vector<Point3f> ref_points;
     std::vector<Point3f> img_points;
@@ -77,7 +77,7 @@ bool RelativePoseEstimatorFromRgbFeatures::estimateNewPose()
     tc.elapsedMsecs(" -- extract features from Image -- ");
 
     std::vector<cv::DMatch> matches;
-    m_target_features.matchWith(image_features, matches, 0.8*0.8);
+    m_target_features.matchWith(image_features, matches, 0.8f*0.8f);
     tc.elapsedMsecs(" -- match features -- ");
     ntk_dbg_print(matches.size(), 1);
 

@@ -82,7 +82,7 @@ int main(int argc, char **argv)
     pcl::PointCloud<pcl::PointXYZ>::Ptr filtered_cloud (new pcl::PointCloud<pcl::PointXYZ>());
     rgbdImageToPointCloud(*cloud, image);
     pcl::VoxelGrid<pcl::PointXYZ> grid;
-    grid.setLeafSize (0.01, 0.01, 0.01); // leaf size is 1 cm
+    grid.setLeafSize (0.01f, 0.01f, 0.01f); // leaf size is 1 cm
     grid.setFilterFieldName ("z");
     grid.setFilterLimits (-2.0, 0); // keep only data between 0 and 2 meters.
     grid.setInputCloud(cloud);

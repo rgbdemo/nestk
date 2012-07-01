@@ -177,7 +177,7 @@ void Marker::rotateXAxis(Mat &rotation)
     Rodrigues(rotation, R);
     //create a rotation matrix for x axis
     cv::Mat RX=cv::Mat::eye(3,3,CV_32FC1);
-    float angleRad=M_PI/2;
+    float angleRad=static_cast<float>(M_PI/2);
     RX.at<float>(1,1)=cos(angleRad);
     RX.at<float>(1,2)=-sin(angleRad);
     RX.at<float>(2,1)=sin(angleRad);

@@ -30,7 +30,7 @@ class PlaneRemover
 {
 public:
     PlaneRemover()
-        : m_max_dist(0.01),
+        : m_max_dist(0.01f),
           m_max_normal_angle(60)
     {}
 
