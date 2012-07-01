@@ -13,7 +13,6 @@ IF(NESTK_USE_KIN4WIN)
 ENDIF()
 
 IF (NESTK_USE_OPENNI)
-
    IF (NESTK_USE_NITE)
        ADD_EXECUTABLE(skeleton-tracking skeleton_tracking.cpp)
        TARGET_LINK_LIBRARIES(skeleton-tracking nestk)
