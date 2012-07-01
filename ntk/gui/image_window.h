@@ -2,6 +2,7 @@
 #define IMAGE_WINDOW_H
 
 #include <ntk/thread/event.h>
+
 #include <QImage>
 #include <QString>
 #include <QMainWindow>
@@ -100,23 +101,32 @@ private:
 
 //------------------------------------------------------------------------------
 
-class ImageWindowManager : public EventListener
+class ImageWindowManager : public ntk::AsyncEventListener, public ntk::EventBroadcaster
 {
+private:
+    struct ImageWindowManagerEventData : public ntk::EventData
+    {
+        TYPEDEF_THIS(ImageWindowManagerEventData)
+
+        CLONABLE_EVENT_DATA
+
+        std::string window_name;
+        cv::Mat im;
+    };
+    ntk_ptr_typedefs(ImageWindowManagerEventData)
+
 public:
     static ImageWindowManager* getInstance();
 
-public:
-     ImageWindowManager ();
-    ~ImageWindowManager ();
-
-public:
-    void disable ();
+    // void showImage(const std::string& window_name, const QImage& im);
+    // void showImage(const std::string& window_name, const cv::Mat1f& im, double* min_val = 0, double* max_val = 0);
+    // void showImage(const std::string& window_name, const cv::Mat1b& im);
+    void showImage(const std::string& window_name, const cv::Mat& im);
 
 protected:
-    virtual void newEvent (EventBroadcaster* sender, EventDataPtr data);
+    virtual void handleAsyncEvent(Event event);
 
 private:
-    bool disabled;
     static ImageWindowManager instance;
     typedef std::map<std::string, ImageWindow*> windows_map_type;
     windows_map_type windows;

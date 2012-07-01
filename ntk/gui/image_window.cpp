@@ -1,5 +1,8 @@
 #include "image_window.h"
 #include "ui_image_window.h"
+
+#include <ntk/utils/time.h>
+
 #include <QMutexLocker>
 #include <QHash>
 
@@ -89,8 +92,8 @@ void ImagePublisher::handleAsyncEvent(EventListener::Event event)
         break;
     }
 
-    //default:
-    //    ntk_dbg(0) << "Unsupported image type";
+        //default:
+        //    ntk_dbg(0) << "Unsupported image type";
     }
 
     PublishedImageEventDataPtr data(new PublishedImageEventData());
@@ -103,8 +106,8 @@ void ImagePublisher::handleAsyncEvent(EventListener::Event event)
 //------------------------------------------------------------------------------
 
 ImageWindow::ImageWindow(QWidget *parent)
-: QMainWindow(parent)
-, ui(new Ui::ImageWindow)
+    : QMainWindow(parent)
+    , ui(new Ui::ImageWindow)
 {
     ui->setupUi(this);
 }
@@ -135,38 +138,26 @@ ImageWindowManager *ImageWindowManager::getInstance()
     return &instance;
 }
 
-ImageWindowManager::ImageWindowManager()
-: disabled(false)
+void ImageWindowManager::showImage(const std::string &window_name, const cv::Mat &im)
 {
-    ImagePublisher::getInstance()->addEventListener (this);
+    ImageWindowManagerEventDataPtr data (new ImageWindowManagerEventData);
+    data->window_name = window_name;
+    im.copyTo(data->im);
+    newEvent(this, data);
 }
 
-ImageWindowManager::~ImageWindowManager()
+void ImageWindowManager::handleAsyncEvent(EventListener::Event event)
 {
-    // FIXME: Make this work.
-    // ImagePublisher::getInstance()->removeEventListener(this);
-}
-
-void ImageWindowManager::disable ()
-{
-    disabled = true;
-}
-
-void ImageWindowManager::newEvent (EventBroadcaster* sender, EventDataPtr data)
-{
-    if (disabled)
-        return;
-
-    PublishedImageEventDataPtr publishedImageData = dynamic_Ptr_cast<PublishedImageEventData>(data);
-    ntk_assert(publishedImageData, "Invalid data type, should not happen");
-    windows_map_type::const_iterator it = windows.find(publishedImageData->image.name.toStdString());
+    ImageWindowManagerEventDataPtr data = dynamic_Ptr_cast<ImageWindowManagerEventData>(event.data);
+    ntk_assert(data, "Invalid data type, should not happen");
+    windows_map_type::const_iterator it = windows.find(data->window_name);
     ImageWindow* window = 0;
     if (it == windows.end())
     {
         window = new ImageWindow();
-        windows[publishedImageData->image.name.toStdString()] = window;
-        window->setWindowTitle(publishedImageData->image.name);
-        QWidget::connect(window->imageWidget(), SIGNAL(mouseMoved(int, int)), window, SLOT(onImageMouseMoved(int,int)));
+        windows[data->window_name] = window;
+        window->setWindowTitle(data->window_name.c_str());
+        connect(window->imageWidget(), SIGNAL(mouseMoved(int, int)), window, SLOT(onImageMouseMoved(int,int)));
         window->imageWidget()->setRatioKeeping(true);
     }
     else
@@ -174,22 +165,31 @@ void ImageWindowManager::newEvent (EventBroadcaster* sender, EventDataPtr data)
         window = it->second;
     }
 
-    window->imageWidget()->setImage(publishedImageData->image.image);
+    switch (data->im.type())
+    {
+    case CV_MAT_TYPE(CV_8UC3): {
+        cv::Mat3b mat_ = data->im;
+        window->imageWidget()->setImage(mat_);
+        break;
+    }
+
+    case CV_MAT_TYPE(CV_8UC1): {
+        cv::Mat1b mat_ = data->im;
+        window->imageWidget()->setImage(mat_);
+        break;
+    }
+
+    case CV_MAT_TYPE(CV_32FC1): {
+        cv::Mat1f mat_ = data->im;
+        window->imageWidget()->setImage(mat_);
+        break;
+    }
+
+    default:
+        ntk_dbg(0) << "Unsupported image type";
+    }
 
     window->show();
-}
-
-namespace {
-
-    struct ImageWindowManagerInstance
-    {
-        ImageWindowManagerInstance ()
-        {
-            ImageWindowManager::getInstance();
-        }
-    };
-
-    ImageWindowManagerInstance imageWindowManagerInstance;
 }
 
 } // ntk
