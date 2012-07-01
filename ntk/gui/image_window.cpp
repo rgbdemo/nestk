@@ -25,7 +25,7 @@ void ImagePublisher::publishImage(const std::string &image_name, const cv::Mat &
     im.copyTo(data->im);
 
     // FIXME: Trick the event system into believing we have one sender per image name.
-    EventBroadcaster* fakeSender = reinterpret_cast<EventBroadcaster*>(qHash(image_name.c_str()));
+    EventBroadcaster* fakeSender = reinterpret_cast<EventBroadcaster*>(qHash(QByteArray(image_name.c_str())));
 
     newEvent(fakeSender, data);
 }
