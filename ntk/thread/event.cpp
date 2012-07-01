@@ -31,7 +31,9 @@ EventData::~EventData()
 
 EventDataPtr EventData::clone() const
 {
-    abort(); // not implemented
+    // not implemented, but do not make it pure virtual to avoid
+    // breaking compatibility with existing code.   
+    abort();
     return EventDataPtr();
 }
 
