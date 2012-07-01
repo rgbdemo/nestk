@@ -29,6 +29,13 @@ EventData::~EventData()
 {
 }
 
+EventDataPtr EventData::clone() const
+{
+    // not implemented, but do not make it pure virtual to avoid
+    // breaking compatibility with existing code.
+    abort();
+}
+
 EventListener::EventListener()
     : m_last_frame_tick(0),
       m_framerate(0),
@@ -92,18 +99,21 @@ void SyncEventListener :: setEnabled(bool enabled)
 }
 
 const int
-SyncEventListener::event_timeout_msecs = 100;
+SyncEventListener::event_timeout_msecs = 1000;
 
-EventListener::Event SyncEventListener :: waitForNewEvent()
+EventListener::Event SyncEventListener :: waitForNewEvent(int timeout_msecs)
 {
     if (!m_enabled) return 0;
+
+    if (timeout_msecs < 0)
+        timeout_msecs = event_timeout_msecs;
 
     Event last_event;
 
     m_lock.lock();
     if (m_unprocessed_ordered_events.size() == 0)
     {
-        m_condition.wait(&m_lock, event_timeout_msecs);
+        m_condition.wait(&m_lock, timeout_msecs);
     }
 
     if (m_unprocessed_ordered_events.size() > 0)

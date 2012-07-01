@@ -23,10 +23,6 @@
 #include <ntk/geometry/pose_3d.h>
 #include <ntk/image/bilateral_filter.h>
 
-#include <opencv2/nonfree/nonfree.hpp>
-#include <opencv2/photo/photo.hpp>
-#include <opencv2/nonfree/features2d.hpp>
-
 #ifdef NESTK_USE_PCL
 #include <ntk/mesh/pcl_utils.h>
 #include <pcl/features/integral_image_normal.h>

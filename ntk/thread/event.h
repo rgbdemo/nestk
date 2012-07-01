@@ -47,7 +47,7 @@ struct CV_EXPORTS EventData
     virtual ~EventData();
 
 public:
-    virtual EventDataPtr clone () const = 0;
+    virtual EventDataPtr clone () const;
 };
 
 #define TYPEDEF_THIS(Class) \
@@ -133,7 +133,7 @@ public:
     virtual void newEvent(EventBroadcaster* sender = 0, EventDataPtr data = EventDataPtr());
 
     static const int event_timeout_msecs;
-    Event waitForNewEvent();
+    Event waitForNewEvent(int timeout_msecs = -1);
 
 private:
     bool m_enabled;
