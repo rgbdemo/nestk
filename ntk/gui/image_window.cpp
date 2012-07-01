@@ -14,7 +14,7 @@ ImagePublisher ImagePublisher::instance;
 ImagePublisher *ImagePublisher::getInstance()
 {
     // if (!instance)
-    //     instance = new ImageWindowManager;
+    //     instance = new DirectImageWindowManager;
     return &instance;
 }
 
@@ -129,26 +129,26 @@ void ImageWindow::onImageMouseMoved(int x, int y)
 
 //------------------------------------------------------------------------------
 
-ImageWindowManager ImageWindowManager::instance;
+DirectImageWindowManager DirectImageWindowManager::instance;
 
-ImageWindowManager *ImageWindowManager::getInstance()
+DirectImageWindowManager *DirectImageWindowManager::getInstance()
 {
     // if (!instance)
-    //     instance = new ImageWindowManager;
+    //     instance = new DirectImageWindowManager;
     return &instance;
 }
 
-void ImageWindowManager::showImage(const std::string &window_name, const cv::Mat &im)
+void DirectImageWindowManager::showImage(const std::string &window_name, const cv::Mat &im)
 {
-    ImageWindowManagerEventDataPtr data (new ImageWindowManagerEventData);
+    DirectImageWindowManagerEventDataPtr data (new DirectImageWindowManagerEventData);
     data->window_name = window_name;
     im.copyTo(data->im);
     newEvent(this, data);
 }
 
-void ImageWindowManager::handleAsyncEvent(EventListener::Event event)
+void DirectImageWindowManager::handleAsyncEvent(EventListener::Event event)
 {
-    ImageWindowManagerEventDataPtr data = dynamic_Ptr_cast<ImageWindowManagerEventData>(event.data);
+    DirectImageWindowManagerEventDataPtr data = dynamic_Ptr_cast<DirectImageWindowManagerEventData>(event.data);
     ntk_assert(data, "Invalid data type, should not happen");
     windows_map_type::const_iterator it = windows.find(data->window_name);
     ImageWindow* window = 0;
@@ -190,6 +190,74 @@ void ImageWindowManager::handleAsyncEvent(EventListener::Event event)
     }
 
     window->show();
+}
+
+//------------------------------------------------------------------------------
+
+ImageWindowManager ImageWindowManager::instance;
+
+ImageWindowManager *ImageWindowManager::getInstance()
+{
+    // if (!instance)
+    //     instance = new ImageWindowManager;
+    return &instance;
+}
+
+ImageWindowManager::ImageWindowManager()
+: disabled(false)
+{
+    ImagePublisher::getInstance()->addEventListener (this);
+}
+
+ImageWindowManager::~ImageWindowManager()
+{
+    // FIXME: Make this work.
+    // ImagePublisher::getInstance()->removeEventListener(this);
+}
+
+void ImageWindowManager::disable ()
+{
+    disabled = true;
+}
+
+void ImageWindowManager::newEvent (EventBroadcaster* sender, EventDataPtr data)
+{
+    if (disabled)
+        return;
+
+    PublishedImageEventDataPtr publishedImageData = dynamic_Ptr_cast<PublishedImageEventData>(data);
+    ntk_assert(publishedImageData, "Invalid data type, should not happen");
+    windows_map_type::const_iterator it = windows.find(publishedImageData->image.name.toStdString());
+    ImageWindow* window = 0;
+    if (it == windows.end())
+    {
+        window = new ImageWindow();
+        windows[publishedImageData->image.name.toStdString()] = window;
+        window->setWindowTitle(publishedImageData->image.name);
+        QWidget::connect(window->imageWidget(), SIGNAL(mouseMoved(int, int)), window, SLOT(onImageMouseMoved(int,int)));
+        window->imageWidget()->setRatioKeeping(true);
+    }
+    else
+    {
+        window = it->second;
+    }
+
+    window->imageWidget()->setImage(publishedImageData->image.image);
+
+    window->show();
+}
+
+namespace {
+
+    struct ImageWindowManagerInstance
+    {
+        ImageWindowManagerInstance ()
+        {
+            ImageWindowManager::getInstance();
+        }
+    };
+
+    ImageWindowManagerInstance imageWindowManagerInstance;
 }
 
 } // ntk

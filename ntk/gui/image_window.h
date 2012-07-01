@@ -101,22 +101,22 @@ private:
 
 //------------------------------------------------------------------------------
 
-class ImageWindowManager : public ntk::AsyncEventListener, public ntk::EventBroadcaster
+class DirectImageWindowManager : public ntk::AsyncEventListener, public ntk::EventBroadcaster
 {
 private:
-    struct ImageWindowManagerEventData : public ntk::EventData
+    struct DirectImageWindowManagerEventData : public ntk::EventData
     {
-        TYPEDEF_THIS(ImageWindowManagerEventData)
+        TYPEDEF_THIS(DirectImageWindowManagerEventData)
 
         CLONABLE_EVENT_DATA
 
         std::string window_name;
         cv::Mat im;
     };
-    ntk_ptr_typedefs(ImageWindowManagerEventData)
+    ntk_ptr_typedefs(DirectImageWindowManagerEventData)
 
 public:
-    static ImageWindowManager* getInstance();
+    static DirectImageWindowManager* getInstance();
 
     // void showImage(const std::string& window_name, const QImage& im);
     // void showImage(const std::string& window_name, const cv::Mat1f& im, double* min_val = 0, double* max_val = 0);
@@ -127,6 +127,30 @@ protected:
     virtual void handleAsyncEvent(Event event);
 
 private:
+    static DirectImageWindowManager instance;
+    typedef std::map<std::string, ImageWindow*> windows_map_type;
+    windows_map_type windows;
+};
+
+//------------------------------------------------------------------------------
+
+class ImageWindowManager : public EventListener
+{
+public:
+    static ImageWindowManager* getInstance();
+
+public:
+     ImageWindowManager ();
+    ~ImageWindowManager ();
+
+public:
+    void disable ();
+
+protected:
+    virtual void newEvent (EventBroadcaster* sender, EventDataPtr data);
+
+private:
+    bool disabled;
     static ImageWindowManager instance;
     typedef std::map<std::string, ImageWindow*> windows_map_type;
     windows_map_type windows;
