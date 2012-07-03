@@ -50,7 +50,7 @@ public:
   {}
 
 public:
-  void setThreadShouldExit() { m_thread_should_exit = true; }
+  void setThreadShouldExit(bool thread_should_exit = true) { m_thread_should_exit = thread_should_exit; }
 
   bool threadShouldExit() const { return m_thread_should_exit; }
 
