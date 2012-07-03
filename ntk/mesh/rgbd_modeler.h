@@ -95,7 +95,9 @@ public:
     {};
 
 public:
-    RGBDModelerInOwnThread(RGBDModelerPtr child) : child (child)
+    RGBDModelerInOwnThread(Name name, RGBDModelerPtr child)
+    : EventProcessingBlockInOwnThread(name)
+    , child (child)
     {}
 
     virtual ~RGBDModelerInOwnThread();

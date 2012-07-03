@@ -17,8 +17,7 @@
  * Author: Nicolas Burrus <nicolas.burrus@uc3m.es>, (C) 2010
  */
 
-#ifndef NTK_THREAD_EVENT_H
-#define NTK_THREAD_EVENT_H
+#pragma once
 
 #include <ntk/core.h>
 #include <ntk/thread/utils.h>
@@ -29,6 +28,7 @@
 #include <QMutex>
 #include <QEvent>
 
+#include <string>
 #include <list>
 #include <deque>
 
@@ -40,6 +40,8 @@ class EventBroadcaster;
 struct EventData;
 
 ntk_ptr_typedefs(EventData)
+
+//------------------------------------------------------------------------------
 
 /*! Base class for objects that can be transmitted through events. */
 struct CV_EXPORTS EventData
@@ -61,6 +63,8 @@ public:                                              \
     {                                                \
         return ::ntk::EventDataPtr(new This(*this)); \
     }                                                \
+
+//------------------------------------------------------------------------------
 
 class EventListener
 {
@@ -115,6 +119,8 @@ private:
     int m_frame_count;
 };
 
+//------------------------------------------------------------------------------
+
 /*!
  * Listen to events and allows subclasses to waitForEvents.
  * There is no buffer, only one event will be kept from each source.
@@ -142,6 +148,8 @@ private:
     std::deque<Event> m_unprocessed_ordered_events;
 };
 
+//------------------------------------------------------------------------------
+
 class EventBroadcasterUpdated : public QObject, public QEvent
 {
     Q_OBJECT
@@ -162,6 +170,8 @@ protected:
     EventBroadcaster* m_broadcaster;
     EventDataPtr m_data;
 };
+
+//------------------------------------------------------------------------------
 
 class AsyncEventListener : public QObject, public SyncEventListener
 {
@@ -191,10 +201,54 @@ private:
     std::vector<EventListener*> m_listeners;
 };
 
+//------------------------------------------------------------------------------
+
 class EventProcessingBlockInOwnThread : public ntk::Thread, public SyncEventListener, public EventBroadcaster
 {
+    friend class EventProcessingBlockInOwnThreadDebugger;
+
+    Q_OBJECT
+
+public:
+    typedef QString Name;
+
+public:
+     EventProcessingBlockInOwnThread (Name name);
+    ~EventProcessingBlockInOwnThread ();
+
+signals:
+    void dbg_started    (EventProcessingBlockInOwnThread*);
+    void dbg_finished   (EventProcessingBlockInOwnThread*);
+    void dbg_terminated (EventProcessingBlockInOwnThread*);
+
+public slots:
+    void on_started    ();
+    void on_finished   ();
+    void on_terminated ();
+
+protected:
+    const Name name;
 };
 
 } // ntk
 
-#endif // NTK_THREAD_EVENT_H
+//------------------------------------------------------------------------------
+
+namespace ntk {
+
+class EventProcessingBlockInOwnThreadDebugger : public QObject
+{
+    Q_OBJECT
+
+public slots:
+    void constructed (EventProcessingBlockInOwnThread* that);
+    void destroyed   (EventProcessingBlockInOwnThread* that);
+    void started     (EventProcessingBlockInOwnThread* that);
+    void finished    (EventProcessingBlockInOwnThread* that);
+    void terminated  (EventProcessingBlockInOwnThread* that);
+
+private:
+    QMutex mutex;
+};
+
+}

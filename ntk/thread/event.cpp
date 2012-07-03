@@ -21,6 +21,7 @@
 #include <ntk/utils/time.h>
 
 #include <QApplication>
+#include <QMutex>
 
 namespace ntk
 {
@@ -59,6 +60,8 @@ void EventListener::reportNewEventProcessed()
 }
 
 } // ntk
+
+//------------------------------------------------------------------------------
 
 namespace ntk
 {
@@ -181,3 +184,103 @@ void EventBroadcaster :: broadcastEvent(EventDataPtr data)
 
 }  // ntk
 
+//------------------------------------------------------------------------------
+
+namespace ntk {
+
+#define SERIALIZED const QMutexLocker _(&mutex);
+
+void EventProcessingBlockInOwnThreadDebugger::constructed (EventProcessingBlockInOwnThread* that)
+{
+    SERIALIZED
+
+    // QTextStream qs(stdout);
+    qDebug() << "EventProcessingBlockInOwnThread: constructed: " << that->name << endl;
+}
+
+void EventProcessingBlockInOwnThreadDebugger::destroyed (EventProcessingBlockInOwnThread* that)
+{
+    SERIALIZED
+
+    // QTextStream qs(stdout);
+    qDebug() << "EventProcessingBlockInOwnThread: destroyed: " << that->name << endl;
+}
+
+void EventProcessingBlockInOwnThreadDebugger::started (EventProcessingBlockInOwnThread* that)
+{
+    SERIALIZED
+
+    // QTextStream qs(stdout);
+    qDebug() << "EventProcessingBlockInOwnThread: started: " << that->name << endl;
+}
+
+void EventProcessingBlockInOwnThreadDebugger::finished (EventProcessingBlockInOwnThread* that)
+{
+    SERIALIZED
+
+    // QTextStream qs(stdout);
+    qDebug() << "EventProcessingBlockInOwnThread: finished: " << that->name << endl;
+}
+
+void EventProcessingBlockInOwnThreadDebugger::terminated (EventProcessingBlockInOwnThread* that)
+{
+    SERIALIZED
+
+    // QTextStream qs(stdout);
+    qDebug() << "EventProcessingBlockInOwnThread: terminated: " << that->name << endl;
+}
+
+#undef SERIALIZED
+
+namespace {
+
+EventProcessingBlockInOwnThreadDebugger debugger;
+
+}
+
+EventProcessingBlockInOwnThread::EventProcessingBlockInOwnThread (Name name)
+: name(name)
+{
+    debugger.constructed(this);
+
+    QObject::connect(this, SIGNAL(dbg_started   (EventProcessingBlockInOwnThread*)), &debugger, SLOT(started   (EventProcessingBlockInOwnThread*)));
+    QObject::connect(this, SIGNAL(dbg_finished  (EventProcessingBlockInOwnThread*)), &debugger, SLOT(finished  (EventProcessingBlockInOwnThread*)));
+    QObject::connect(this, SIGNAL(dbg_terminated(EventProcessingBlockInOwnThread*)), &debugger, SLOT(terminated(EventProcessingBlockInOwnThread*)));
+
+    QObject::connect(this, SIGNAL(started   ()), this, SLOT(on_started   ()));
+    QObject::connect(this, SIGNAL(finished  ()), this, SLOT(on_finished  ()));
+    QObject::connect(this, SIGNAL(terminated()), this, SLOT(on_terminated()));
+}
+
+EventProcessingBlockInOwnThread::~EventProcessingBlockInOwnThread ()
+{
+    QObject::disconnect(this, SIGNAL(terminated()), this, SLOT(on_terminated()));
+    QObject::disconnect(this, SIGNAL(finished  ()), this, SLOT(on_finished  ()));
+    QObject::disconnect(this, SIGNAL(started   ()), this, SLOT(on_started   ()));
+
+    QObject::disconnect(this, SIGNAL(dbg_terminated(EventProcessingBlockInOwnThread*)), &debugger, SLOT(terminated(EventProcessingBlockInOwnThread*)));
+    QObject::disconnect(this, SIGNAL(dbg_finished  (EventProcessingBlockInOwnThread*)), &debugger, SLOT(finished  (EventProcessingBlockInOwnThread*)));
+    QObject::disconnect(this, SIGNAL(dbg_started   (EventProcessingBlockInOwnThread*)), &debugger, SLOT(started   (EventProcessingBlockInOwnThread*)));
+
+    debugger.destroyed(this);
+}
+
+void
+EventProcessingBlockInOwnThread::on_started ()
+{
+    emit dbg_started(this);
+}
+
+void
+EventProcessingBlockInOwnThread::on_finished ()
+{
+    emit dbg_finished(this);
+}
+
+void
+EventProcessingBlockInOwnThread::on_terminated ()
+{
+    emit dbg_terminated(this);
+}
+
+}
