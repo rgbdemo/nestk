@@ -24,6 +24,8 @@
 #include <ntk/image/bilateral_filter.h>
 #include <ntk/camera/calibration.h>
 
+#include <opencv2/photo/photo.hpp>
+
 #ifdef NESTK_USE_PCL
 #include <ntk/mesh/pcl_utils.h>
 #include <pcl/features/integral_image_normal.h>
