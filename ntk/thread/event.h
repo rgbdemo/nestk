@@ -193,12 +193,14 @@ private:
 class EventBroadcaster
 {
 public:
-    virtual void addEventListener(EventListener* updater);
+    virtual void addEventListener    (EventListener* listener);
+    virtual void removeEventListener (EventListener* listener);
     virtual void removeAllEventListeners();
     virtual void broadcastEvent(EventDataPtr data = EventDataPtr());
 
 private:
-    std::vector<EventListener*> m_listeners;
+    typedef std::vector<EventListener*> Listeners;
+    Listeners m_listeners;
 };
 
 //------------------------------------------------------------------------------

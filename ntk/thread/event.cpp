@@ -22,6 +22,7 @@
 
 #include <QApplication>
 #include <QMutex>
+#include <algorithm>
 
 namespace ntk
 {
@@ -166,9 +167,22 @@ void AsyncEventListener :: customEvent(QEvent* generic_event)
     m_handler_running = false;
 }
 
-void EventBroadcaster :: addEventListener(EventListener* updater)
+void EventBroadcaster :: addEventListener(EventListener* listener)
 {
-    m_listeners.push_back(updater);
+    if (m_listeners.end() != std::find(m_listeners.begin(), m_listeners.end(), listener))
+        return;
+
+    m_listeners.push_back(listener);
+}
+
+void EventBroadcaster :: removeEventListener(EventListener* listener)
+{
+    Listeners::iterator i = std::find(m_listeners.begin(), m_listeners.end(), listener);
+
+    if (m_listeners.end() == i)
+        return;
+
+    m_listeners.erase(i);
 }
 
 void EventBroadcaster :: removeAllEventListeners()
