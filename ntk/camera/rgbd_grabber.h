@@ -82,6 +82,9 @@ public:
   /*! Set the tilt angle for motorized grabbers such as Kinect. */
   virtual void setTiltAngle(int angle) {}
 
+  /*! Optimize the sensor for near objects. */
+  virtual void setNearMode(bool enable) {}
+
   /*! Return the current framerate. */
   virtual double frameRate() const { return m_framerate; }
 
