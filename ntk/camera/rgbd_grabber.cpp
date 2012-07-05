@@ -19,8 +19,8 @@ al Public License for more details.
  */
 
 #include "rgbd_grabber.h"
-
 #include <ntk/utils/time.h>
+#include <QMutexLocker>
 
 namespace ntk
 {
@@ -56,7 +56,7 @@ void RGBDGrabber :: advertiseNewFrame()
 
 void RGBDGrabber :: stop()
 {
-    setShouldExit();
+    setThreadShouldExit();
     newEvent();
     wait();
 }
@@ -74,4 +74,16 @@ float ntk::RGBDGrabber::getCurrentTimestamp()
     {
         return (ntk::Time::getMillisecondCounter() - m_initial_timestamp) / 1000.f;
     }
+}
+
+void ntk::RGBDGrabber::setThreadShouldExit (bool should_exit)
+{
+    QMutexLocker _(&mutex);
+    m_should_exit = should_exit;
+}
+
+bool ntk::RGBDGrabber::threadShouldExit () const
+{
+    QMutexLocker _(const_cast<QMutex*>(&mutex));
+    return m_should_exit;
 }

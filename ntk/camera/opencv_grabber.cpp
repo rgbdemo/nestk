@@ -45,7 +45,7 @@ void OpencvGrabber :: run()
   cv::Mat3b logitech_image (m_image_size);
   m_rgbd_image.rawRgbRef().create(m_image_size);
 
-  while (!m_should_exit)
+  while (!threadShouldExit())
   {
     waitForNewEvent();
     m_logitech_capture >> logitech_image;    

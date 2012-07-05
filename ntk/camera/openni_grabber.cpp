@@ -534,7 +534,7 @@ void OpenniGrabber :: estimateCalibration()
 
 void OpenniGrabber :: run()
 {
-    m_should_exit = false;
+    setThreadShouldExit(false);
     m_current_image.setCalibration(m_calib_data);
     m_rgbd_image.setCalibration(m_calib_data);
 
@@ -621,7 +621,7 @@ void OpenniGrabber :: run()
         oversampled_image.userLabelsRef().create(oversampled_image.rawDepth().size());
     }
 
-    while (!m_should_exit)
+    while (!threadShouldExit())
     {
         waitForNewEvent();
         ntk_dbg(2) << format("[%x] running iteration", this);
