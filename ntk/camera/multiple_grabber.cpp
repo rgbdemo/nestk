@@ -122,7 +122,7 @@ void ntk::MultipleGrabber::copyImagesTo(std::vector<RGBDImage>& images)
 
 void ntk::MultipleGrabber::run()
 {
-    m_should_exit = false;
+    setThreadShouldExit(false);
 
     if (m_grabbers.size() < 1)
     {
@@ -146,7 +146,7 @@ void ntk::MultipleGrabber::run()
         m_grabbers[0]->start();
     }
 
-    while (!m_should_exit)
+    while (!threadShouldExit())
     {
         if (isSynchronous())
         {

@@ -52,7 +52,7 @@ void FileGrabber::run()
     m_rgbd_image.setCameraSerial(cameraSerial());
     m_buffer_image.setCameraSerial(cameraSerial());
 
-    while (!m_should_exit)
+    while (!threadShouldExit())
     {
         waitForNewEvent();
 

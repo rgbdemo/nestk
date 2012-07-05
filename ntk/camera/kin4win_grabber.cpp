@@ -793,11 +793,11 @@ void Kin4WinGrabber :: run()
 {
     QMutexLocker ni_locker(&m_ni_mutex);
 
-    m_should_exit = false;
+    setThreadShouldExit(false);
 
     int64 last_grab_time = 0;
 
-    while (!m_should_exit)
+    while (!threadShouldExit())
     {
         waitForNewEvent();
 

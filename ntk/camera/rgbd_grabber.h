@@ -55,8 +55,9 @@ public:
 
 public:
   /*! Tell the grabber thread to stop grabbing. */
-  virtual void setShouldExit() { m_should_exit = true; }
+  void setThreadShouldExit (bool should_exit = true);
 
+public:
   /*! Tell whether the grabber should loop when no more data is available. */
   void setLoop(bool loop) { m_loop = loop; }
 
@@ -152,6 +153,7 @@ public:
   bool isConnected() const { return m_connected; }
 
 protected:
+  bool threadShouldExit () const;
   void advertiseNewFrame();
   float getCurrentTimestamp();
 
@@ -161,7 +163,6 @@ protected:
   QWaitCondition m_condition;
   ntk::RGBDCalibration* m_calib_data;
   RGBDImage m_rgbd_image;
-  bool m_should_exit;
   uint64 m_last_frame_tick;
   double m_framerate;
   int m_frame_count;
@@ -169,6 +170,10 @@ protected:
   std::string m_camera_serial;
   uint64 m_initial_timestamp;
   bool m_loop;
+
+private:
+  QMutex mutex;
+  bool m_should_exit;
 };
 
 } // ntk
