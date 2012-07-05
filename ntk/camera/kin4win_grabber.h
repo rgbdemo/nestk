@@ -42,6 +42,7 @@ class Kin4WinGrabber : public ntk::RGBDGrabber
 public:
     Kin4WinGrabber(Kin4WinDriver& driver, int camera_id = 0);
     Kin4WinGrabber(Kin4WinDriver& driver, const std::string& camera_serial);
+    virtual ~Kin4WinGrabber();
 
 public:
     virtual bool connectToDevice();

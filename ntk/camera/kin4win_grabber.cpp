@@ -630,6 +630,15 @@ Kin4WinGrabber :: Kin4WinGrabber(Kin4WinDriver& driver, const std::string& camer
     }
 }
 
+Kin4WinGrabber::~Kin4WinGrabber()
+{
+    // FIXME: RGBDGrabber calls stop in its own destructor,
+    // destructors get called in derived-to-base order,
+    // and stop is a virtual method.
+    // Trouble.
+    RGBDGrabber::stop();
+}
+
 bool Kin4WinGrabber :: connectToDevice()
 {
     QMutexLocker ni_locker(&m_ni_mutex);
