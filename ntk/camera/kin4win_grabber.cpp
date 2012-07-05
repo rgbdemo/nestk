@@ -231,6 +231,17 @@ public:
                     nextColorFrame();
                     break;
             }
+
+            if (that->m_near_mode_changed)
+            {
+                ntk_dbg_print(that->m_near_mode_changed, 0);
+                ntk_dbg_print(that->m_near_mode, 0);
+                if (that->m_near_mode)
+                    NuiImageStreamSetImageFrameFlags(depthStreamHandle, NUI_IMAGE_STREAM_FLAG_ENABLE_NEAR_MODE);
+                else
+                    NuiImageStreamSetImageFrameFlags(depthStreamHandle, 0);
+                that->m_near_mode_changed = false;
+            }
         }
 
         return 0;
@@ -591,7 +602,9 @@ namespace ntk
 Kin4WinGrabber :: Kin4WinGrabber(Kin4WinDriver& driver, int camera_id) :
     nui(new Nui(this)),
     m_driver(driver),
-    m_camera_id(camera_id)
+    m_camera_id(camera_id),
+    m_near_mode(true),
+    m_near_mode_changed(true)
 {
 
 }
@@ -659,6 +672,14 @@ bool Kin4WinGrabber :: disconnectFromDevice()
     nui->unInit();
 
     return false;
+}
+
+void Kin4WinGrabber::setNearMode(bool enable)
+{
+    m_near_mode = enable;
+    m_near_mode_changed = true;
+    ntk_dbg_print(m_near_mode, 0);
+    ntk_dbg_print(m_near_mode_changed, 0);
 }
 
 void Kin4WinGrabber :: estimateCalibration()

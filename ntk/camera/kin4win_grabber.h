@@ -46,6 +46,7 @@ public:
 public:
     virtual bool connectToDevice();
     virtual bool disconnectFromDevice();
+    virtual void setNearMode(bool enable);
 
 protected:
     virtual void run();
@@ -60,6 +61,8 @@ private:
     std::string m_camera_serial;
     RGBDImage m_current_image;
     static QMutex m_ni_mutex;
+    bool m_near_mode;
+    bool m_near_mode_changed;
 };
 
 }
