@@ -26,6 +26,7 @@
 # include <QWaitCondition>
 # include <iostream>
 # include <string>
+# include <sstream>
 
 namespace ntk
 {
@@ -58,18 +59,26 @@ namespace ntk
     uint64 elapsedMsecs(const std::string& marker = "") const
     {
         uint64 delta = ntk::Time::getMillisecondCounter()-m_start;
-        ntk_dbg(m_debug_level) << "[TIME (step)] elapsed in " << m_name << marker << delta << " msecs";
+        if (m_debug_level <= ntk_debug_level)
+            full_text << "[" << marker << " = " << delta << "ms]";
+        return delta;
+    }
+
+    uint64 elapsedMsecsNoPrint() const
+    {
+        uint64 delta = ntk::Time::getMillisecondCounter()-m_start;
         return delta;
     }
 
     void stop(const std::string& marker = "")
     {
       uint64 delta = ntk::Time::getMillisecondCounter() - m_start;
-      ntk_dbg(m_debug_level) << "[TIME] elapsed in " << m_name << marker << ": " << delta << " msecs";
+      ntk_dbg(m_debug_level) << "[TIME] elapsed in " << m_name << marker << ": " << delta << " ms " << full_text.str();
     }
 
   private:
     std::string m_name;
+    mutable std::ostringstream full_text;
     uint64 m_start;
     int m_debug_level;
   };

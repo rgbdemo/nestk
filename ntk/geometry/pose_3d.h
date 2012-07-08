@@ -25,6 +25,9 @@
 # include <ntk/numeric/utils.h>
 # include <QString>
 
+# include <Eigen/Core>
+# include <Eigen/Geometry>
+
 namespace ntk
 {
 
@@ -159,6 +162,9 @@ public:
 
   /*! Returns the camera transform as an OpenCV double 4x4 matrix. */
   const cv::Mat1d cvCameraTransformd() const;
+
+  /*! Returns the camera transform as an Eigen double 4x4 matrix. */
+  const Eigen::Isometry3d& eigenCameraTransform() const;
 
   /*!
    * Returns the camera transform as an OpenCV 3x3 rotation matrix

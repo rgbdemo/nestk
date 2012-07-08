@@ -748,6 +748,11 @@ const cv::Mat1d Pose3D :: cvCameraTransformd() const
     return m;
 }
 
+const Eigen::Isometry3d &Pose3D::eigenCameraTransform() const
+{
+    return impl->camera_transform;
+}
+
 void Pose3D::cvRotationMatrixTranslation(cv::Mat1d& translation, cv::Mat1d& rotation) const
 {
     translation.create(3,1);

@@ -47,7 +47,7 @@ ntk_ptr_typedefs(ImageSegmentor)
 class ImageSegmentorFromBoundingBox : public ImageSegmentor
 {
 public:
-    ImageSegmentorFromBoundingBox(const ntk::Rect3f& bbox) : bounding_box(bbox) {}
+    ImageSegmentorFromBoundingBox(const ntk::Rect3f& bbox, bool approx_2d = false) : bounding_box(bbox), approx_2d(approx_2d) {}
     virtual ~ImageSegmentorFromBoundingBox() {}
 
 public:
@@ -58,6 +58,7 @@ public:
 
 protected:
     ntk::Rect3f bounding_box;
+    bool approx_2d;
 };
 ntk_ptr_typedefs(ImageSegmentorFromBoundingBox)
 

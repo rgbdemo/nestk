@@ -1,6 +1,7 @@
 #include "image_segmentor.h"
 
 #include <ntk/detection/table_object_detector.h>
+#include <ntk/utils/sse.h>
 
 namespace ntk
 {
@@ -216,6 +217,24 @@ bool ImageSegmentorFromBoundingBox::filterImage(RGBDImage &image, const Pose3D &
 {
     cv::Mat1b& depth_mask_im = image.depthMaskRef();
     const cv::Mat1f& depth_im = image.depth();
+    VectorialProjector projector (estimated_pose);
+
+    ntk::Rect3f bbox_2d;
+    if (approx_2d)
+    {
+        float x_vals[2] = { bounding_box.x, bounding_box.x + bounding_box.width };
+        float y_vals[2] = { bounding_box.y, bounding_box.y + bounding_box.height };
+        float z_vals[2] = { bounding_box.z, bounding_box.z + bounding_box.depth };
+
+        for (int x = 0; x < 2; ++x)
+            for (int y = 0; y < 2; ++y)
+                for (int z = 0; z < 2; ++z)
+                {
+                    cv::Point3f p(x_vals[x], y_vals[y], z_vals[z]);
+                    bbox_2d.extendToInclude(estimated_pose.projectToImage(p));
+                }
+    }
+
     for_all_rc(depth_mask_im)
     {
         if (!depth_mask_im(r,c))
@@ -224,8 +243,21 @@ bool ImageSegmentorFromBoundingBox::filterImage(RGBDImage &image, const Pose3D &
         if (depth_im(r,c) < 1e-5)
             continue;
 
-        cv::Point3f p = estimated_pose.unprojectFromImage(cv::Point2f(c, r), depth_im(r,c));
-        if (!bounding_box.isPointInside(p))
+        cv::Point3f p (c, r, depth_im(r,c));
+
+        bool ok = false;
+
+        if (approx_2d)
+        {
+            ok = bbox_2d.isPointInside(p);
+        }
+        else
+        {
+            cv::Point3f p = toPoint3f(projector.unprojectFromImage(p));
+            ok = bounding_box.isPointInside(p);
+        }
+
+        if (!ok)
             depth_mask_im(r,c) = 0;
     }
     return true;
