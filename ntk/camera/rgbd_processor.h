@@ -230,6 +230,23 @@ public:
 void compute_color_encoded_depth(const cv::Mat1f& depth, cv::Mat3b& color_dept,
                                  double* min_val = 0, double* max_val = 0);
 
+
+class DepthVisualizer
+{
+public:
+    DepthVisualizer()
+    {
+        buildLookup();
+    }
+
+    void computeColorEncoded(const cv::Mat1f& depth_im, cv::Mat3b& color_depth_im,
+                             double* i_min_val, double* i_max_val);
+
+private:
+    void buildLookup();
+    cv::Vec3b color_lookup[255*6+1];
+};
+
 } // ntk
 
 #endif // NTK_CAMERA_RGBD_PROCESSOR_H

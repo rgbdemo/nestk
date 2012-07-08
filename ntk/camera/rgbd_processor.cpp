@@ -720,6 +720,99 @@ namespace ntk
         }
     }
 
+    void DepthVisualizer::buildLookup()
+    {
+        for (int v = 0; v < 255*6+1; ++v)
+        {
+            unsigned char r,g,b;
+            int lb = v & 0xff;
+            switch (v / 256) {
+            case 0:
+                r = 255;
+                g = 255-lb;
+                b = 255-lb;
+                break;
+            case 1:
+                r = 255;
+                g = lb;
+                b = 0;
+                break;
+            case 2:
+                r = 255-lb;
+                g = 255;
+                b = 0;
+                break;
+            case 3:
+                r = 0;
+                g = 255;
+                b = lb;
+                break;
+            case 4:
+                r = 0;
+                g = 255-lb;
+                b = 255;
+                break;
+            case 5:
+                r = 0;
+                g = 0;
+                b = 255-lb;
+                break;
+            default:
+                r = 0;
+                g = 0;
+                b = 0;
+                break;
+            }
+            if (v == 0)
+            {
+                r = g = b = 0;
+            }
+            color_lookup[v] = cv::Vec3b(b,g,r);
+        }
+    }
+
+    void DepthVisualizer::computeColorEncoded(const cv::Mat1f& depth_im, cv::Mat3b& color_depth_im,
+                                              double* i_min_val, double* i_max_val)
+    {
+        double min_val, max_val;
+        if (i_min_val && i_max_val)
+        {
+            min_val = *i_min_val;
+            max_val = *i_max_val;
+        }
+        else
+        {
+            minMaxLoc(depth_im, &min_val, &max_val);
+        }
+
+        color_depth_im.create(depth_im.size());
+
+#if 1
+        const float* depth_data = depth_im.ptr<float>(0);
+        const float* end_depth_data = depth_data + depth_im.rows*depth_im.cols;
+        cv::Vec3b* depth_color_data = color_depth_im.ptr<cv::Vec3b>(0);
+        const float norm = 1.f/(max_val-min_val);
+        while (depth_data != end_depth_data)
+        {
+            int v = 255*6*(*depth_data-min_val)*norm;
+            *depth_color_data = color_lookup[v];
+            ++depth_color_data;
+            ++depth_data;
+        }
+#else
+        for (int r = 0; r < depth_im.rows; ++r)
+        {
+            const float* depth_data = depth_im.ptr<float>(r);
+            cv::Vec3b* depth_color_data = color_depth_im.ptr<cv::Vec3b>(r);
+            for (int c = 0; c < depth_im.cols; ++c)
+            {
+                int v = 255*6*(depth_data[c]-min_val)/(max_val-min_val);
+                depth_color_data[c] = color_lookup[v];
+            }
+        }
+#endif
+    }
+	  
     void compute_color_encoded_depth(const cv::Mat1f& depth_im, cv::Mat3b& color_depth_im,
                                      double* i_min_val, double* i_max_val)
     {

@@ -506,7 +506,7 @@ public:
         const size_t depth_width = getDepthWidth();
         const size_t depth_height = getDepthHeight();
 
-        // Temporary buffer.    
+        // Temporary buffer.
         std::copy(depth_values, depth_values + depth_width*depth_height, mappedDepthTmp);
 
         for (int ref_r = 0; ref_r < depth_height; ++ref_r)
