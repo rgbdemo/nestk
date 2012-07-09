@@ -77,15 +77,15 @@ public:
     }
 
 public:
-    bool hasParameter(const QString& name) const
+    virtual bool hasParameter(const QString& name) const
     { return parameter_set->hasParameter(name); }
 
-    void setParameter(const QString& name, QVariant value)
+    virtual void setParameter(const QString& name, QVariant value)
     {
         parameter_set->setParameter(name, value);
     }
 
-    QVariant getParameter(const QString& name, QVariant default_value = QVariant()) const
+    virtual QVariant getParameter(const QString& name, QVariant default_value = QVariant()) const
     {
         QVariant result = parameter_set->getParameter(name, default_value);
         return result;
@@ -93,7 +93,7 @@ public:
 
     virtual void onParameterUpdated(const QString& name, const QVariant& value) {}
 
-    ParameterSet* parameterSet() { return parameter_set; }
+    virtual ParameterSet* parameterSet() { return parameter_set; }
 
 protected:
     ParameterSet* parameter_set;
