@@ -795,6 +795,8 @@ void Kin4WinGrabber :: run()
 
     setThreadShouldExit(false);
 
+    // setTargetFrameRate(20.f);
+
     int64 last_grab_time = 0;
 
     while (!threadShouldExit())

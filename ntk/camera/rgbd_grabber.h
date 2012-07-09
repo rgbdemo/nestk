@@ -46,7 +46,8 @@ public:
       m_connected(false),
       m_camera_serial("unknown"),
       m_initial_timestamp(0),
-      m_loop(false)
+      m_loop(false),
+      m_target_framerate(-1)
   {
     setSynchronous(false);
   }
@@ -63,6 +64,9 @@ public:
 
   /*! Tell whether infrared images should be output. */
   virtual void setIRMode(bool ir) {}
+
+  /*! Set target framerate. */
+  virtual void setTargetFrameRate(float rate) { m_target_framerate = rate; }
 
   /*! Set the integration time for Time-of-Flight cameras. */
   virtual void setIntegrationTime(double value) {}
@@ -170,6 +174,7 @@ protected:
   std::string m_camera_serial;
   uint64 m_initial_timestamp;
   bool m_loop;
+  float m_target_framerate;
 
 private:
   QMutex mutex;

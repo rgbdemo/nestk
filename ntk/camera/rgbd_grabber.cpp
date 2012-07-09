@@ -43,12 +43,22 @@ void RGBDGrabber :: advertiseNewFrame()
     ++m_frame_count;
     float tick = ntk::Time::getMillisecondCounter();
     float delta_tick = (tick - m_last_frame_tick);
+
+    if (m_target_framerate > 0)
+    {
+        float target_delta = m_frame_count * 1000.f/m_target_framerate;
+        if (delta_tick < target_delta)
+        {
+            ntk::sleep(target_delta - delta_tick);
+        }
+    }
+
     if (delta_tick > 1000)
     {
         m_framerate = (1000.f * m_frame_count) / (delta_tick);
         m_last_frame_tick = tick;
         m_frame_count = 0;
-    }
+    }    
 
     m_condition.wakeAll();
     broadcastEvent();
