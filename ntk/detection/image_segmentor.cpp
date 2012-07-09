@@ -243,18 +243,18 @@ bool ImageSegmentorFromBoundingBox::filterImage(RGBDImage &image, const Pose3D &
         if (depth_im(r,c) < 1e-5)
             continue;
 
-        cv::Point3f p (c, r, depth_im(r,c));
+        cv::Point3f p2d (c, r, depth_im(r,c));
 
         bool ok = false;
 
         if (approx_2d)
         {
-            ok = bbox_2d.isPointInside(p);
+            ok = bbox_2d.isPointInside(p2d);
         }
         else
         {
-            cv::Point3f p = toPoint3f(projector.unprojectFromImage(p));
-            ok = bounding_box.isPointInside(p);
+            cv::Point3f p3d = toPoint3f(projector.unprojectFromImage(p2d));
+            ok = bounding_box.isPointInside(p3d);
         }
 
         if (!ok)
