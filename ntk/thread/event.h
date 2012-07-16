@@ -215,7 +215,7 @@ public:
     typedef QString Name;
 
 public:
-     EventProcessingBlockInOwnThread (Name name);
+     EventProcessingBlockInOwnThread (Name name = "unknown");
     ~EventProcessingBlockInOwnThread ();
 
 signals:
