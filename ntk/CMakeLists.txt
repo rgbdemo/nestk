@@ -246,6 +246,15 @@ IF (NESTK_USE_FREENECT)
        camera/freenect_grabber.cpp)
 ENDIF()
 
+IF(NESTK_USE_PMDSDK)
+    SET(ntk_sources ${ntk_sources}
+       camera/pmd_grabber.h
+       camera/pmd_grabber.cpp
+       camera/pmd_rgb_grabber.h
+       camera/pmd_rgb_grabber.cpp
+    )
+ENDIF()
+
 IF(NESTK_USE_PCL)
     SET (ntk_sources ${ntk_sources}
          detection/plane_estimator.h

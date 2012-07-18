@@ -44,6 +44,11 @@ IF (NESTK_USE_FREENECT)
    TARGET_LINK_LIBRARIES(libfreenect-backend nestk)
 ENDIF()
 
+IF (NESTK_USE_PMDSDK)
+   ADD_EXECUTABLE(pmd-backend pmd_backend.cpp)
+   TARGET_LINK_LIBRARIES(pmd-backend nestk)
+ENDIF()
+
 IF (NESTK_USE_PCL)
     ADD_EXECUTABLE(pcl-compatibility pcl_compatibility.cpp)
     TARGET_LINK_LIBRARIES(pcl-compatibility nestk)
