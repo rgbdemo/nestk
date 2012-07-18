@@ -32,6 +32,7 @@ EventData::~EventData()
 EventDataPtr EventData::clone() const
 {
     abort(); // not implemented
+    return EventDataPtr();
 }
 
 EventListener::EventListener()
