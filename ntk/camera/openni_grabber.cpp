@@ -259,7 +259,7 @@ bool OpenniGrabber :: connectToDevice()
         XnMapOutputMode rgb_mode;
         if (m_high_resolution)
         {
-            rgb_mode.nFPS = 15;
+            rgb_mode.nFPS = is_kinect ? 15 : 30;
             rgb_mode.nXRes = 1280;
             rgb_mode.nYRes = 1024;
         }
