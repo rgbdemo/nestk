@@ -61,6 +61,7 @@ void MeshViewer :: initializeGL()
     glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     // glEnable(GL_POINT_SMOOTH);
     // glPointSize(1.0);
+
     updateBackgroundColor();
     resetCamera();
 }
@@ -277,6 +278,9 @@ void MeshViewer :: addMesh(const ntk::Mesh& mesh, const Pose3D& pose, MeshViewer
     GLuint texture;
     if (mesh.texture.data)
     {
+        if ((mesh.texture.cols % 2 != 0) || (mesh.texture.rows % 2 != 0))
+            glEnable(GL_TEXTURE_RECTANGLE_NV);
+
         glGenTextures( 1, &texture );
         m_upcoming_textures.push_back(texture);
         glBindTexture( GL_TEXTURE_2D, texture );

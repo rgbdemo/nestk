@@ -33,7 +33,7 @@ using namespace cv;
 namespace ntk
 {
 
-PmdGrabber :: PmdGrabber() : m_integration_time(1000)
+PmdGrabber :: PmdGrabber() : m_integration_time(2000)
 {
 }
 
@@ -88,10 +88,99 @@ bool PmdGrabber :: connectToDevice()
         return false;
     }
 
-    //setIntegrationTime(m_integration_time);
+    if (!m_calib_data)
+        estimateCalibration();
+
+    setIntegrationTime(m_integration_time);
     //ntk_dbg(0) << "Integration time set.";
 
     return true;
+}
+
+void PmdGrabber :: estimateCalibration()
+{
+    m_calib_data = new RGBDCalibration();
+
+    m_calib_data->setRawRgbSize(cv::Size(m_image_size.width, m_image_size.height));
+    m_calib_data->setRgbSize(cv::Size(m_image_size.width, m_image_size.height));
+    m_calib_data->raw_depth_size = cv::Size(m_image_size.width, m_image_size.height);
+    m_calib_data->depth_size = cv::Size(m_image_size.width, m_image_size.height);
+
+    float fx, fy, cx, cy;
+    float k1, k2, k3, p1, p2;
+
+    char pmd_output[256];
+
+    checkError(pmdSourceCommand(m_hnd, pmd_output, 255, "GetSerialNumber"));
+    ntk_dbg_print(pmd_output, 1);
+
+    checkError(pmdSourceCommand(m_hnd, pmd_output, 255, "IsCalibrationDataLoaded"));
+    ntk_dbg_print(pmd_output, 1);
+
+    checkError(pmdSourceCommand(m_hnd, pmd_output, 255, "GetLensParameters"));
+    ntk_dbg_print(pmd_output, 1);
+
+    std::stringstream ss (pmd_output);
+    ss >> fx >> fy >> cx >> cy >> k1 >> k2 >> p1 >> p2 >> k3;
+
+    m_calib_data->rgb_intrinsics = cv::Mat1d(3,3);
+    setIdentity(m_calib_data->rgb_intrinsics);
+    m_calib_data->rgb_intrinsics(0,0) = fx;
+    m_calib_data->rgb_intrinsics(1,1) = fy;
+    m_calib_data->rgb_intrinsics(0,2) = cx;
+    m_calib_data->rgb_intrinsics(1,2) = cy;
+
+    m_calib_data->rgb_distortion = cv::Mat1d(1,5);
+    m_calib_data->rgb_distortion(0,0) = k1;
+    m_calib_data->rgb_distortion(0,1) = k2;
+    m_calib_data->rgb_distortion(0,2) = p1;
+    m_calib_data->rgb_distortion(0,3) = p2;
+    m_calib_data->rgb_distortion(0,4) = k3;
+    m_calib_data->zero_rgb_distortion = false;
+
+    m_calib_data->depth_intrinsics = cv::Mat1d(3,3);
+    setIdentity(m_calib_data->depth_intrinsics);
+    m_calib_data->depth_intrinsics(0,0) = fx;
+    m_calib_data->depth_intrinsics(1,1) = fy;
+    m_calib_data->depth_intrinsics(0,2) = cx;
+    m_calib_data->depth_intrinsics(1,2) = cy;
+
+    m_calib_data->depth_distortion = cv::Mat1d(1,5);
+    m_calib_data->depth_distortion(0,0) = k1;
+    m_calib_data->depth_distortion(0,1) = k2;
+    m_calib_data->depth_distortion(0,2) = p1;
+    m_calib_data->depth_distortion(0,3) = p2;
+    m_calib_data->depth_distortion(0,4) = k3;
+    m_calib_data->zero_depth_distortion = false;
+
+    cv::initUndistortRectifyMap(m_calib_data->depth_intrinsics,
+                                m_calib_data->depth_distortion,
+                                cv::Mat(), // R
+                                m_calib_data->depth_intrinsics, // newCameraMatrix
+                                m_image_size,
+                                CV_16SC2,
+                                m_calib_data->depth_undistort_map1,
+                                m_calib_data->depth_undistort_map2);
+
+    m_calib_data->rgb_undistort_map1 = m_calib_data->depth_undistort_map1;
+    m_calib_data->rgb_undistort_map2 = m_calib_data->depth_undistort_map2;
+
+    m_calib_data->R = Mat1d(3,3);
+    setIdentity(m_calib_data->R);
+
+    m_calib_data->T = Mat1d(3,1);
+    m_calib_data->T = 0.;
+
+    m_calib_data->depth_pose = new Pose3D();
+    m_calib_data->depth_pose->setCameraParametersFromOpencv(m_calib_data->depth_intrinsics);
+
+    m_calib_data->rgb_pose = new Pose3D();
+    m_calib_data->rgb_pose->toRightCamera(m_calib_data->rgb_intrinsics,
+                                          m_calib_data->R,
+                                          m_calib_data->T);
+
+    m_calib_data->updatePoses();
+    m_calib_data->camera_type = "pmdnano";
 }
 
 void PmdGrabber :: checkError (int code)
@@ -149,15 +238,6 @@ void PmdGrabber :: run()
 void PmdRgbProcessor :: processImage(RGBDImage& image)
 {
   RGBDProcessor::processImage(image);
-  //ntk_dbg_print(hasFilterFlag(RGBDProcessor::FlipColorImage), 0);
-  for_all_rc(image.amplitudeRef())
-  {
-    const float amp = image.amplitude()(r,c);
-    if (amp > 1)
-    {
-      image.amplitudeRef()(r,c) = log(amp);
-    }
-  }
 }
 
 } // ntk

@@ -50,6 +50,7 @@ public:
 
 protected:
   virtual void run();
+  void estimateCalibration();
 
 private:
   PMDHandle m_hnd;
@@ -68,6 +69,7 @@ public:
   {
     // setFilterFlag(RGBDProcessorFlags::FlipColorImage, true);
     setFilterFlag(RGBDProcessorFlags::FixGeometry, true);
+    setFilterFlag(RGBDProcessorFlags::NoAmplitudeIntensityUndistort, true);
   }
 
   virtual void processImage(RGBDImage& image);

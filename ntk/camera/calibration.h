@@ -238,7 +238,8 @@ void calibrate_kinect_rgb(const std::vector<ntk::RGBDImage>& images,
                           float pattern_size,
                           ntk::PatternType pattern_type,
                           bool ignore_distortions,
-                          bool fix_center);
+                          bool fix_center,
+                          int default_flags = CV_CALIB_USE_INTRINSIC_GUESS | CV_CALIB_FIX_ASPECT_RATIO);
 
 } // ntk
 

@@ -409,10 +409,13 @@ namespace ntk
                   m_image->calibration()->depth_undistort_map2,
                   CV_INTER_LINEAR);
 
-            remap(m_image->rawIntensityRef(), m_image->intensityRef(),
-                  m_image->calibration()->depth_undistort_map1,
-                  m_image->calibration()->depth_undistort_map2,
-                  CV_INTER_LINEAR);
+            if (m_image->rawIntensityRef().data)
+            {
+                remap(m_image->rawIntensityRef(), m_image->intensityRef(),
+                      m_image->calibration()->depth_undistort_map1,
+                      m_image->calibration()->depth_undistort_map2,
+                      CV_INTER_LINEAR);
+            }
         }
     }
 

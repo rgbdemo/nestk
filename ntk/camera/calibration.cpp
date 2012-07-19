@@ -716,7 +716,8 @@ void calibrate_kinect_rgb(const std::vector<RGBDImage>& images,
                           float pattern_size,
                           ntk::PatternType pattern_type,
                           bool ignore_distortions,
-                          bool fix_center)
+                          bool fix_center,
+                          int default_flags)
 {
     std::vector< std::vector<Point3f> > pattern_points;
     calibrationPattern(pattern_points,
@@ -725,7 +726,7 @@ void calibrate_kinect_rgb(const std::vector<RGBDImage>& images,
 
     ntk_assert(pattern_points.size() == good_corners.size(), "Invalid points size");
 
-    int flags = CV_CALIB_USE_INTRINSIC_GUESS | CV_CALIB_FIX_ASPECT_RATIO;
+    int flags = default_flags;
     if (ignore_distortions)
         flags |= CV_CALIB_ZERO_TANGENT_DIST;
     if (fix_center)

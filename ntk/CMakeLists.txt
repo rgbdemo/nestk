@@ -34,6 +34,8 @@ SET ( ntk_sources
      camera/rgbd_frame_recorder.cpp
      camera/rgbd_grabber.h
      camera/rgbd_grabber.cpp
+     camera/rgbd_grabber_factory.h
+     camera/rgbd_grabber_factory.cpp
      camera/rgbd_image.h
      camera/rgbd_image.cpp
      camera/rgbd_processor.h
