@@ -59,6 +59,8 @@ RGBDGrabberFactory::getDefaultGrabberType()
 }
 
 RGBDGrabberFactory::RGBDGrabberFactory()
+    : ni_driver(0),
+      kin4win_driver(0)
 {
 }
 
@@ -196,6 +198,17 @@ RGBDGrabberFactory::GrabberData RGBDGrabberFactory::createPmdGrabber(const Param
     return data;
 }
 
+RGBDCalibration* RGBDGrabberFactory::tryLoadCalibration(const Params& params)
+{
+    ntk::RGBDCalibration* calib_data = 0;
+    if (!params.calibration_file.empty())
+    {
+        calib_data = new RGBDCalibration();
+        calib_data->loadFromFile(params.calibration_file.c_str());
+    }
+    return calib_data;
+}
+
 std::vector<RGBDGrabberFactory::GrabberData>
 RGBDGrabberFactory::createGrabbers(const ntk::RGBDGrabberFactory::Params &params)
 {
@@ -219,26 +232,39 @@ RGBDGrabberFactory::createGrabbers(const ntk::RGBDGrabberFactory::Params &params
 
         case FREENECT:
         {
-            data = createOpenNIGrabber(params);
+            data = createFreenectGrabber(params);
             break;
         }
 
         case KIN4WIN:
         {
-            data = createOpenNIGrabber(params);
+            data = createKin4winGrabber(params);
             break;
         }
 
         case PMD:
         {
-            data = createOpenNIGrabber(params);
+            data = createPmdGrabber(params);
             break;
         }
         };
     }
 
     if (data.grabber)
+    {
+        if (params.synchronous)
+            data.grabber->setSynchronous(true);
+        RGBDCalibration* calibration = tryLoadCalibration(params);
+        if (calibration)
+            data.grabber->setCalibrationData(*calibration);
         grabbers.push_back(data);
+    }
+    else
+    {
+        ntk_dbg(0) << "[ERROR] Could not create grabber: " << data.message;
+    }
+
+    return grabbers;
 }
 
 } // ntk

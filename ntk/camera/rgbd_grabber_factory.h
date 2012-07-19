@@ -12,7 +12,7 @@ class Kin4WinDriver;
 class RGBDGrabberFactory
 {
 public:
-    enum grabber_type { DEFAULT = 0, OPENNI = 0, FREENECT = 1, KIN4WIN = 2, PMD = 3 };
+    enum grabber_type { DEFAULT = 0, OPENNI = 1, FREENECT = 2, KIN4WIN = 3, PMD = 4 };
 
     static grabber_type getDefaultGrabberType();
 
@@ -24,6 +24,7 @@ public:
         int camera_id;
         std::string directory;
         std::string image;
+        std::string calibration_file;
         bool synchronous;
         bool track_users;
         bool high_resolution;
@@ -50,6 +51,9 @@ protected:
     GrabberData createKin4winGrabber(const Params& params);
     GrabberData createPmdGrabber(const Params& params);
     RGBDProcessor* createProcessor(const Params& params);
+    RGBDCalibration* tryLoadCalibration(const Params& params);
+
+protected:
     OpenniDriver* ni_driver;
     Kin4WinDriver* kin4win_driver;
 };
