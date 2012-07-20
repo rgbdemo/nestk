@@ -38,7 +38,7 @@ void PmdRgbGrabber :: run()
   RGBDImage current_pmd;
   m_rgbd_image.setCalibration(m_calib_data);
 
-  while (!m_should_exit)
+  while (!threadShouldExit())
   {
     waitForNewEvent();
     m_pmd_grabber.newEvent(this);

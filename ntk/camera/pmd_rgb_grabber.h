@@ -78,9 +78,9 @@ public:
 
   virtual void setShouldExit()
   {
-    RGBDGrabber::setShouldExit();
-    m_rgb_grabber.setShouldExit();
-    m_pmd_grabber.setShouldExit();
+    RGBDGrabber::setThreadShouldExit();
+    m_rgb_grabber.setThreadShouldExit();
+    m_pmd_grabber.setThreadShouldExit();
   }
 
   virtual void setSynchronous(bool sync)

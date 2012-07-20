@@ -40,8 +40,6 @@ SET ( ntk_sources
      camera/rgbd_image.cpp
      camera/rgbd_processor.h
      camera/rgbd_processor.cpp
-     projector/calibration.h
-     projector/calibration.cpp
      geometry/affine_transform.h
      geometry/affine_transform.cpp
      geometry/eigen_utils.h
@@ -49,8 +47,6 @@ SET ( ntk_sources
      geometry/incremental_pose_estimator.cpp
      geometry/incremental_pose_estimator_from_rgb_features.h
      geometry/incremental_pose_estimator_from_rgb_features.cpp
-     geometry/incremental_pose_estimator_from_markers.h
-     geometry/incremental_pose_estimator_from_markers.cpp
      geometry/plane.h
      geometry/plane.cpp
      geometry/polygon.h
@@ -59,8 +55,6 @@ SET ( ntk_sources
      geometry/pose_3d.cpp
      geometry/relative_pose_estimator.h
      geometry/relative_pose_estimator.cpp
-     geometry/relative_pose_estimator_from_image.h
-     geometry/relative_pose_estimator_from_image.cpp
      geometry/relative_pose_estimator_markers.h
      geometry/relative_pose_estimator_markers.cpp
      geometry/similarity_transform.h
@@ -127,6 +121,8 @@ SET ( ntk_sources
      numeric/differential_evolution_solver.cpp
      numeric/differential_evolution_minimizer.h
      numeric/differential_evolution_minimizer.cpp
+     projector/calibration.h
+     projector/calibration.cpp
      stats/distributions.h
      stats/distributions.cpp
      stats/estimation.cpp
@@ -152,6 +148,8 @@ SET ( ntk_sources
      utils/opencv_utils.cpp
      utils/progressive.h
      utils/progressive.cpp
+     utils/parameter_set.h
+     utils/parameter_set.cpp
      utils/qt_utils.h
      utils/qt_utils.cpp
      utils/sse.h
@@ -164,6 +162,26 @@ SET ( ntk_sources
      utils/xml_serializable.h
      utils/xml_serializable.cpp
 )
+
+QT4_WRAP_UI(uic_sources
+  gui/image_window.ui
+)
+
+QT4_WRAP_CPP(moc_sources
+  gui/image_widget.h
+  gui/image_window.h
+  mesh/mesh_viewer.h
+  thread/event.h
+  utils/progressive.h
+)
+
+# Workaround a bug with i386 on Mac that cannot compile this particular
+# file, error is:
+# non-relocatable subtraction expression, "LC36" minus "L00000000103$pb"
+IF(APPLE AND (CMAKE_OSX_ARCHITECTURES MATCHES "i386"))
+  SET_SOURCE_FILES_PROPERTIES(numeric/levenberg_marquart_minimizer.cpp
+    PROPERTIES COMPILE_FLAGS "-O0")
+ENDIF()
 
 IF (NESTK_BUILD_OBJECT_DETECTION)
   SET ( ntk_sources ${ntk_sources}
@@ -233,7 +251,7 @@ IF (NESTK_USE_OPENNI)
       )
 ENDIF()
 
-IF (NESTK_USE_OPENNI)
+IF (NESTK_USE_NITE)
   SET (ntk_sources ${ntk_sources}
        gesture/body_event.h
        gesture/body_event.cpp
@@ -242,7 +260,7 @@ IF (NESTK_USE_OPENNI)
       )
 ENDIF()
 
-IF (NESTK_USE_FREENECT)
+IF (NESTK_USE_FREENECT OR USE_FREENECT)
   SET (ntk_sources ${ntk_sources}
        camera/freenect_grabber.h
        camera/freenect_grabber.cpp)
@@ -259,12 +277,21 @@ ENDIF()
 
 IF(NESTK_USE_PCL)
     SET (ntk_sources ${ntk_sources}
+         detection/image_segmentor.h
+         detection/image_segmentor.cpp
          detection/plane_estimator.h
          detection/plane_estimator.cpp
          detection/table_object_detector.h
          detection/table_object_detector.hpp
-     	 geometry/relative_pose_estimator_icp.h
-     	 geometry/relative_pose_estimator_icp.cpp
+         geometry/incremental_pose_estimator_from_markers.h
+         geometry/incremental_pose_estimator_from_markers.cpp
+         geometry/relative_pose_estimator_icp.h
+         geometry/relative_pose_estimator_icp.hpp
+         geometry/relative_pose_estimator_icp.cpp
+         geometry/relative_pose_estimator_from_features.h
+         geometry/relative_pose_estimator_from_features.cpp
+         geometry/relative_pose_estimator_from_image.h
+         geometry/relative_pose_estimator_from_image.cpp
          geometry/relative_pose_estimator_tabletop.h
          geometry/relative_pose_estimator_tabletop.cpp
          mesh/table_object_rgbd_modeler.h
@@ -272,48 +299,23 @@ IF(NESTK_USE_PCL)
          mesh/pcl_utils.h
          mesh/pcl_utils.hpp
          mesh/pcl_utils.cpp
+         mesh/grid_rgbd_modeler.h
+         mesh/grid_rgbd_modeler.cpp
     )
 ENDIF()
 
-IF (NESTK_USE_OPENCL)
+IF (NESTK_USE_OPENCL OR USE_OPENCL)
   SET (ntk_sources ${ntk_sources}
        gpu/opencl.cpp
        gpu/opencl.h
    )
 ENDIF()
 
-IF(NESTK_USE_PCL)
-    SET (ntk_sources ${ntk_sources}
-         mesh/pcl_utils.h
-         mesh/pcl_utils.cpp
-        )
-ENDIF(NESTK_USE_PCL)
-
 IF (NESTK_USE_ROS)
   SET (ntk_sources ${ntk_sources}
      ros/ros_rgbd_grabber.h
      ros/ros_rgbd_grabber.cpp)
 ENDIF(NESTK_USE_ROS)
-
-QT4_WRAP_UI(uic_sources
-  gui/image_window.ui
-)
-
-QT4_WRAP_CPP(moc_sources
-  gui/image_widget.h
-  gui/image_window.h
-  mesh/mesh_viewer.h
-  thread/event.h
-  utils/progressive.h
-)
-
-# Workaround a bug with i386 on Mac that cannot compile this particular
-# file, error is:
-# non-relocatable subtraction expression, "LC36" minus "L00000000103$pb"
-IF(APPLE AND (CMAKE_OSX_ARCHITECTURES MATCHES "i386"))
-  SET_SOURCE_FILES_PROPERTIES(numeric/levenberg_marquart_minimizer.cpp
-    PROPERTIES COMPILE_FLAGS "-O0")
-ENDIF()
 
 IF (IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/private")
    SET(HAVE_NESTK_PRIVATE 1)
@@ -335,7 +337,7 @@ TARGET_LINK_LIBRARIES(nestk
   ${GSL_LIBRARIES}
   ${OPENCL_LIBRARIES}
   ${GLEW_LIBRARIES}
-  ${GLUT_LIBRARY}
+  ${GLUT_glut_LIBRARY}
   ${OPENGL_LIBRARIES}
   ${PCL_LIBRARIES}
   ${CUDA_LIBRARIES}

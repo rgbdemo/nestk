@@ -71,19 +71,30 @@ void PmdGrabber :: setOffset(int indexFreq)
 
 bool PmdGrabber :: connectToDevice()
 {
-    checkError(pmdOpen (&m_hnd, "camboardnano", "", "camboardnanoproc", ""));
-    ntk_dbg(0) << "Camera opened.";
+    if (m_connected)
+        return true;
 
-    checkError(pmdUpdate(m_hnd));
-
-    PMDDataDescription dd;
-    checkError(pmdGetSourceDataDescription (m_hnd, &dd));
-    m_image_size.width = dd.img.numColumns;
-    m_image_size.height = dd.img.numRows;
-
-    if (dd.subHeaderType != PMD_IMAGE_DATA)
+    try
     {
-        ntk_dbg(0) << "Source data is not an image!";
+        checkError(pmdOpen (&m_hnd, "camboardnano", "", "camboardnanoproc", ""));
+        ntk_dbg(0) << "Camera opened.";
+
+        checkError(pmdUpdate(m_hnd));
+
+        PMDDataDescription dd;
+        checkError(pmdGetSourceDataDescription (m_hnd, &dd));
+        m_image_size.width = dd.img.numColumns;
+        m_image_size.height = dd.img.numRows;
+
+        if (dd.subHeaderType != PMD_IMAGE_DATA)
+        {
+            ntk_dbg(0) << "Source data is not an image!";
+            pmdClose (m_hnd);
+            return false;
+        }
+    }
+    catch (...)
+    {
         pmdClose (m_hnd);
         return false;
     }
@@ -94,6 +105,7 @@ bool PmdGrabber :: connectToDevice()
     setIntegrationTime(m_integration_time);
     //ntk_dbg(0) << "Integration time set.";
 
+    m_connected = true;
     return true;
 }
 
@@ -113,6 +125,8 @@ void PmdGrabber :: estimateCalibration()
 
     checkError(pmdSourceCommand(m_hnd, pmd_output, 255, "GetSerialNumber"));
     ntk_dbg_print(pmd_output, 1);
+
+    setCameraSerial(pmd_output);
 
     checkError(pmdSourceCommand(m_hnd, pmd_output, 255, "IsCalibrationDataLoaded"));
     ntk_dbg_print(pmd_output, 1);
@@ -190,6 +204,7 @@ void PmdGrabber :: checkError (int code)
         char err[256];
         pmdGetLastError (m_hnd, err, 256);
         pmdClose (m_hnd);
+        ntk_dbg(0) << cv::format("PMD Error code=%d, text=%s", code, err);
         ntk_throw_exception(cv::format("PMD Error code=%d, text=%s", code, err));
     }
 }
@@ -200,8 +215,10 @@ void PmdGrabber :: run()
     cv::Mat1f amplitude(m_image_size);
     cv::Mat1f intensity(m_image_size);
     cv::Mat_<unsigned> flags(m_image_size);
+    m_rgbd_image.setCameraSerial(cameraSerial());
+    m_rgbd_image.setCalibration(m_calib_data);
 
-    while (!m_should_exit)
+    while (!threadShouldExit())
     {
         waitForNewEvent();
 
@@ -238,6 +255,8 @@ void PmdGrabber :: run()
 void PmdRgbProcessor :: processImage(RGBDImage& image)
 {
   RGBDProcessor::processImage(image);
+  image.mappedDepthRef() = image.depth();
+  image.mappedRgbRef() = image.rgb();
 }
 
 } // ntk
