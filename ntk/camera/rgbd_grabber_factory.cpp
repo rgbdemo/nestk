@@ -160,7 +160,7 @@ RGBDGrabberFactory::GrabberData RGBDGrabberFactory::createKin4winGrabber(const P
     if (!kin4win_driver)
         kin4win_driver = new Kin4WinDriver;
 
-    Kin4WinGrabber* k_grabber = new Kin4WinGrabber(kin4win_driver);
+    Kin4WinGrabber* k_grabber = new Kin4WinGrabber(*kin4win_driver);
     bool ok = k_grabber->connectToDevice();
     if (!ok)
     {
