@@ -24,6 +24,8 @@
 #include <ntk/camera/rgbd_grabber.h>
 #include <map>
 
+#if NESTK_USE_PMD
+
 #include "pmdsdk2.h"
 
 namespace ntk
@@ -76,5 +78,7 @@ public:
 };
 
 }
+
+#endif
 
 #endif // ! NTK_CAMERA_PMD_GRABBER_H_

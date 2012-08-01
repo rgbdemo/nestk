@@ -27,6 +27,8 @@
 #include <QApplication>
 #include <QEvent>
 
+#if NESTK_USE_PMD
+
 using namespace cv;
 
 namespace ntk
@@ -61,3 +63,5 @@ void PmdRgbGrabber :: run()
 }
 
 } // ntk
+
+#endif

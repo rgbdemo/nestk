@@ -26,6 +26,8 @@
 #include <iostream>
 #include <sstream>
 
+#if NESTK_USE_PMD
+
 using namespace std;
 
 using namespace cv;
@@ -260,3 +262,5 @@ void PmdRgbProcessor :: processImage(RGBDImage& image)
 }
 
 } // ntk
+
+#endif

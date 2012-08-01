@@ -31,6 +31,8 @@
 
 #include <QThread>
 
+#if NESTK_USE_PMD
+
 namespace ntk
 {
 
@@ -99,5 +101,7 @@ private:
 };
 
 } // ntk
+
+#endif
 
 #endif // NTK_CAMERA_PMD_RGB_GRABBER_H
