@@ -190,6 +190,7 @@ void PmdGrabber :: checkError (int code)
         char err[256];
         pmdGetLastError (m_hnd, err, 256);
         pmdClose (m_hnd);
+        std::cerr << cv::format("PMD Error code=%d, text=%s\n", code, err);
         ntk_throw_exception(cv::format("PMD Error code=%d, text=%s", code, err));
     }
 }
