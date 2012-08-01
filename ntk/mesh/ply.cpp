@@ -1541,17 +1541,24 @@ void ascii_get_element(PlyFile *plyfile, char *elem_ptr)
   else
     other_flag = 0;
 
-  /* read in the element */
-
-  words = get_words (plyfile->fp, &nwords, &orig_line);
-  if (words == NULL) {
-    fprintf (stderr, "ply_get_element: unexpected end of file\n");
-    exit (-1);
-  }
-
+  words = 0;
   which_word = 0;
+  nwords = 0;
 
   for (j = 0; j < elem->nprops; j++) {
+
+    if (words == 0 || which_word == nwords)
+    {
+      /* read in the element */
+      free (words);
+      words = get_words (plyfile->fp, &nwords, &orig_line);
+      if (words == NULL) {
+        fprintf (stderr, "ply_get_element: unexpected end of file\n");
+        exit (-1);
+      }
+
+      which_word = 0;
+    }
 
     prop = elem->props[j];
     store_it = (elem->store_prop[j] | other_flag);
@@ -1824,6 +1831,13 @@ char **get_words(FILE *fp, int *nwords, char **orig_line)
     }
     else if (*ptr == '\n') {
       *ptr = ' ';
+      *ptr2 = '\0';
+      break;
+    }
+    else if (*ptr == '\r') {
+      *ptr = ' ';
+      if (*(ptr + 1) != '\0' && *(ptr + 1) == '\n')
+        *++ptr = ' ';
       *ptr2 = '\0';
       break;
     }
@@ -2379,13 +2393,17 @@ int get_prop_type(char *type_name)
 
   /* try to match the type name */
   for (i = StartType + 1; i < EndType; i++)
+  {
     if (equal_strings (type_name, type_names[i]))
       return (i);
+  }
 
   /* see if we can match an old type name */
   for (i = StartType + 1; i < EndType; i++)
+  {
     if (equal_strings (type_name, old_type_names[i]))
       return (i);
+  }
 
   /* if we get here, we didn't find the type */
   return (0);

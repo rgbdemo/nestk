@@ -75,9 +75,9 @@ ply::PlyProperty available_vertex_properties[] = {
 };
 
 ply::PlyProperty available_face_properties[] = { /* list of property information for a face */
-                                                 {"vertex_indices", PLY_Int32, PLY_Int32, offsetof(PlyFace,verts),
-                                                  1, Uint8, Uint8, offsetof(PlyFace,nverts)},
-                                               };
+    {"vertex_indices", PLY_Int32, PLY_Int32, offsetof(PlyFace,verts), 1, Uint8, Uint8, offsetof(PlyFace,nverts)},
+    {"texcoord", Float32, Float32, offsetof(PlyFace,texcoord), 1, Uint8, Uint8, offsetof(PlyFace,ntexcoord)},
+};
 
 
 
@@ -249,7 +249,7 @@ void Mesh::loadFromPlyFile(const char* filename)
     std::vector<PlyVertex> ply_vertices;
     std::vector<PlyFace> ply_faces;
 
-    FILE* mesh_file = fopen(filename, "r");
+    FILE* mesh_file = fopen(filename, "rb");
     int err = errno;
     if (err)
     {
@@ -312,6 +312,12 @@ void Mesh::loadFromPlyFile(const char* filename)
 
             /* set up for getting face elements */
             setup_property_ply (ply_file, &available_face_properties[0]);
+
+            if (has_property(ply_file, "face", "texcoord"))
+            {
+                setup_property_ply (ply_file, &available_face_properties[1]);
+            }
+
             // setup_property_ply (ply_file, &global::face_props[1]);
 
             /* grab all the face elements */
