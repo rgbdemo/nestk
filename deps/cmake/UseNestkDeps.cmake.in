@@ -93,29 +93,37 @@ IF (NESTK_USE_PMDSDK AND NESTK_USE_EMBEDDED_PMDSDK)
   IF (UNIX AND NOT APPLE)
       IF (ARCHITECTURE_IS_X86_64)
         MESSAGE("Using 64bit camcube libraries.")
-        INCLUDE_DIRECTORIES(${nestk_deps_SOURCE_DIR}/pmdsdk/x86-64/include)
-        LINK_DIRECTORIES(${nestk_deps_SOURCE_DIR}/pmdsdk/x86-64/lib)
+        INCLUDE_DIRECTORIES(${nestk_deps_SOURCE_DIR}/pmdsdk/linux/x86-64/include)
+        LINK_DIRECTORIES(${nestk_deps_SOURCE_DIR}/pmdsdk/linux/x86-64/lib)
         execute_process(
-          COMMAND mkdir -p "${EXECUTABLE_OUTPUT_PATH}"
-          COMMAND cp -f ${nestk_deps_SOURCE_DIR}/pmdsdk/x86-64/lib/camboardnano.L64.pap ${EXECUTABLE_OUTPUT_PATH}/camboardnano.L64.pap
-          COMMAND cp -f ${nestk_deps_SOURCE_DIR}/pmdsdk/x86-64/lib/camboardnanoproc.L64.ppp ${EXECUTABLE_OUTPUT_PATH}/camboardnanoproc.L64.ppp)
+          COMMAND ${CMAKE_COMMAND} -E make_directory "${EXECUTABLE_OUTPUT_PATH}"
+          COMMAND ${CMAKE_COMMAND} -E copy ${nestk_deps_SOURCE_DIR}/pmdsdk/linux/x86-64/lib/camboardnano.L64.pap ${EXECUTABLE_OUTPUT_PATH}/camboardnano.L64.pap
+          COMMAND ${CMAKE_COMMAND} -E copy ${nestk_deps_SOURCE_DIR}/pmdsdk/linux/x86-64/lib/camboardnanoproc.L64.ppp ${EXECUTABLE_OUTPUT_PATH}/camboardnanoproc.L64.ppp)
       ELSE ()
         MESSAGE("Using 32bit camcube libraries.")
-        INCLUDE_DIRECTORIES(${nestk_deps_SOURCE_DIR}/pmdsdk/x86/include)
-        LINK_DIRECTORIES(${nestk_deps_SOURCE_DIR}/pmdsdk/x86/lib)
+        INCLUDE_DIRECTORIES(${nestk_deps_SOURCE_DIR}/pmdsdk/linux/x86/include)
+        LINK_DIRECTORIES(${nestk_deps_SOURCE_DIR}/pmdsdk/linux/x86/lib)
         execute_process(
-          COMMAND mkdir -p "${EXECUTABLE_OUTPUT_PATH}"
-          COMMAND cp -f ${nestk_deps_SOURCE_DIR}/pmdsdk/x86/lib/camboardnano.L32.pap ${EXECUTABLE_OUTPUT_PATH}/camboardnano.L32.pap
-          COMMAND cp -f ${nestk_deps_SOURCE_DIR}/pmdsdk/x86/lib/camboardnanoproc.L32.ppp ${EXECUTABLE_OUTPUT_PATH}/camboardnanoproc.L32.ppp)
+          COMMAND ${CMAKE_COMMAND} -E make_directory "${EXECUTABLE_OUTPUT_PATH}"
+          COMMAND ${CMAKE_COMMAND} -E copy ${nestk_deps_SOURCE_DIR}/pmdsdk/linux/x86/lib/camboardnano.L32.pap ${EXECUTABLE_OUTPUT_PATH}/camboardnano.L32.pap
+          COMMAND ${CMAKE_COMMAND} -E copy ${nestk_deps_SOURCE_DIR}/pmdsdk/linux/x86/lib/camboardnanoproc.L32.ppp ${EXECUTABLE_OUTPUT_PATH}/camboardnanoproc.L32.ppp)
       ENDIF()
   ELSEIF (WIN32)
     MESSAGE("Using Win32 camcube library.")
     IF (ARCHITECTURE_IS_X86_64)
-        INCLUDE_DIRECTORIES(${nestk_deps_SOURCE_DIR}/pmdsdk/x86-64/include)
-        LINK_DIRECTORIES(${nestk_deps_SOURCE_DIR}/pmdsdk/pmdsdk/x86-64/lib)
+        INCLUDE_DIRECTORIES(${nestk_deps_SOURCE_DIR}/pmdsdk/windows/x86-64/include)
+        LINK_DIRECTORIES(${nestk_deps_SOURCE_DIR}/pmdsdk/pmdsdk/windows/x86-64/lib)
+        execute_process(
+          COMMAND ${CMAKE_COMMAND} -E make_directory -p "${EXECUTABLE_OUTPUT_PATH}"
+          COMMAND ${CMAKE_COMMAND} -E copy ${nestk_deps_SOURCE_DIR}/pmdsdk/windows/x86-64/lib/camboardnano.W64.pap ${EXECUTABLE_OUTPUT_PATH}/camboardnano.W64.pap
+          COMMAND ${CMAKE_COMMAND} -E copy ${nestk_deps_SOURCE_DIR}/pmdsdk/windows/x86-64/lib/camboardnanoproc.W64.ppp ${EXECUTABLE_OUTPUT_PATH}/camboardnanoproc.W64.ppp)
     ELSE()
-        INCLUDE_DIRECTORIES(${nestk_deps_SOURCE_DIR}/pmdsdk/x86/include)
-        LINK_DIRECTORIES(${nestk_deps_SOURCE_DIR}/pmdsdk/pmdsdk/x86/lib)
+        INCLUDE_DIRECTORIES(${nestk_deps_SOURCE_DIR}/pmdsdk/windows/x86/include)
+        LINK_DIRECTORIES(${nestk_deps_SOURCE_DIR}/pmdsdk/pmdsdk/windows/x86/lib)
+        execute_process(
+          COMMAND ${CMAKE_COMMAND} -E make_directory -p "${EXECUTABLE_OUTPUT_PATH}"
+          COMMAND ${CMAKE_COMMAND} -E copy ${nestk_deps_SOURCE_DIR}/pmdsdk/windows/x86/lib/camboardnano.W32.pap ${EXECUTABLE_OUTPUT_PATH}/camboardnano.W32.pap
+          COMMAND ${CMAKE_COMMAND} -E copy ${nestk_deps_SOURCE_DIR}/pmdsdk/windows/x86/lib/camboardnanoproc.W32.ppp ${EXECUTABLE_OUTPUT_PATH}/camboardnanoproc.W32.ppp)
     ENDIF()
   ELSE()
     MESSAGE(FATAL_ERROR "PMDSDK support is not available on this platform. Only Linux and Windows are available.")
