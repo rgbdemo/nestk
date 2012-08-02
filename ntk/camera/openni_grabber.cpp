@@ -402,7 +402,7 @@ bool OpenniGrabber :: disconnectFromDevice()
 void OpenniGrabber :: waitAndUpdateActiveGenerators()
 {
     // If there is only one device, call this global function.
-    if (m_driver.numDevices() == 1) // FIXME: does this result into unsynchronized frames?
+    if (0 && m_driver.numDevices() == 1) // FIXME: does this result into unsynchronized frames?
     {
         m_driver.niContext().WaitOneUpdateAll(m_ni_depth_generator);
         // m_driver.niContext().WaitAndUpdateAll();

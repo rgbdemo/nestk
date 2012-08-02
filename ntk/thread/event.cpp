@@ -98,7 +98,7 @@ void SyncEventListener :: setEnabled(bool enabled)
 }
 
 const int
-SyncEventListener::event_timeout_msecs = 100;
+SyncEventListener::event_timeout_msecs = -1;
 
 EventListener::Event SyncEventListener :: waitForNewEvent(int timeout_msecs)
 {    
@@ -172,7 +172,7 @@ void EventBroadcaster :: removeAllEventListeners()
 void EventBroadcaster :: broadcastEvent(EventDataPtr data)
 {
     foreach_idx(i, m_listeners)
-            m_listeners[i]->newEvent(this, data);
+        m_listeners[i]->newEvent(this, data);
 }
 
 }  // ntk
