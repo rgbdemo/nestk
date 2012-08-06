@@ -341,7 +341,7 @@ bool OpenniGrabber :: connectToDevice()
         if (m_high_resolution)
             setCustomBayerDecoding(false);
 
-        ntk_dbg_print(m_custom_bayer_decoding, 0);
+        ntk_dbg_print(m_custom_bayer_decoding, 1);
         if (m_custom_bayer_decoding)
         {
             // Grayscale to get raw Bayer pattern.
