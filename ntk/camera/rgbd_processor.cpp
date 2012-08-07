@@ -798,6 +798,7 @@ namespace ntk
         while (depth_data != end_depth_data)
         {
             int v = 255*6*(*depth_data-min_val)*norm;
+            v = ntk::saturate_to_range(v, 0, 255*6);
             *depth_color_data = color_lookup[v];
             ++depth_color_data;
             ++depth_data;
