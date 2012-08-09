@@ -66,7 +66,7 @@ namespace ntk
   {
   public:
     // Flags
-    enum { NORMAL = 0, WIREFRAME = 1, RANDOM_COLORS = 2, TRANSPARENCY = 4, LIGHTING = 8 };
+    enum { NORMAL = 0, WIREFRAME = 0x1, RANDOM_COLORS = 0x2, TRANSPARENCY = 0x4, LIGHTING = 0x8, OUTLINE = 0x10 };
 
   public:
     MeshRenderer(int image_width, int image_height, float transparency = 1.0);

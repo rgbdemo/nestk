@@ -326,6 +326,14 @@ void MeshRenderer :: renderToImage(cv::Mat4b& image, int flags)
         glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, vbo.faces_id);
         glNormal3f(0, 0, 1);
         glDrawElements(GL_TRIANGLES, vbo.nb_faces*3, GL_UNSIGNED_INT, 0);
+
+        if (flags & OUTLINE)
+        {
+            // Draw again for outline.
+            glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+            glDrawElements(GL_TRIANGLES, vbo.nb_faces*3, GL_UNSIGNED_INT, 0);
+            glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+        }
     }
     else
     {

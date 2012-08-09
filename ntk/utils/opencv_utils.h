@@ -167,6 +167,8 @@ inline cv::Point3f toPoint3f(const cv::Vec4f& v)
 inline cv::Point2f toPoint2f(const cv::Point& p)
 { return cv::Point2f(p.x, p.y); }
 
+inline cv::Vec3f nearest_pixel(const cv::Vec3f& p)
+{ return cv::Vec3f(ntk::math::rnd(p[0]), ntk::math::rnd(p[1]), p[2]); }
 
 inline cv::Point2f box_center(const cv::Rect_<float>& bbox)
 {
