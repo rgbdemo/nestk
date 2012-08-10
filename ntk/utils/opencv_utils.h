@@ -170,6 +170,31 @@ inline cv::Point2f toPoint2f(const cv::Point& p)
 inline cv::Vec3f nearest_pixel(const cv::Vec3f& p)
 { return cv::Vec3f(ntk::math::rnd(p[0]), ntk::math::rnd(p[1]), p[2]); }
 
+template <class T>
+inline T bilinear_sample(const cv::Mat_<T>& img, float y, float x)
+{
+    int px = (int) x; // floor of x
+    int py = (int) y; // floor of y
+    const T& p1 = img(y,x);
+    const T& p2 = is_yx_in_range(img,   y, x+1) ? img(  y, x+1) : p1;
+    const T& p3 = is_yx_in_range(img, y+1,   x) ? img(y+1,   x) : p1;
+    const T& p4 = is_yx_in_range(img, y+1, x+1) ? img(y+1, x+1) : p1;
+
+    // Calculate the weights for each pixel
+    float fx = x - px;
+    float fy = y - py;
+    float fx1 = 1.0f - fx;
+    float fy1 = 1.0f - fy;
+
+    float w1 = fx1 * fy1;
+    float w2 = fx  * fy1;
+    float w3 = fx1 * fy;
+    float w4 = fx  * fy;
+
+    T r = p1*w1 + p2*w2 + p3*w3 + p4*w4;
+    return r;
+}
+
 inline cv::Point2f box_center(const cv::Rect_<float>& bbox)
 {
     return cv::Point2f(bbox.x + bbox.width/2.0, bbox.y + bbox.height/2.0);
