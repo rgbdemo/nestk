@@ -647,7 +647,7 @@ void Mesh::computeNormalsFromFaces()
     }
 }
 
-void Mesh::computeVertexFaceMap(std::vector< std::vector<int> >& faces_per_vertex)
+void Mesh::computeVertexFaceMap(std::vector< std::vector<int> >& faces_per_vertex) const
 {
     faces_per_vertex.resize(vertices.size());
     foreach_idx(face_i, faces)
@@ -655,6 +655,35 @@ void Mesh::computeVertexFaceMap(std::vector< std::vector<int> >& faces_per_verte
         for (int v_i = 0; v_i < 3; ++v_i)
         {
             faces_per_vertex[faces[face_i].indices[v_i]].push_back(face_i);
+        }
+    }
+}
+
+void Mesh::computeFaceNeighbors(std::vector< std::vector<int> >& faces_neighbors,
+                                const std::vector< std::vector<int> >& faces_per_vertex) const
+{
+    faces_neighbors.resize(faces.size());
+
+    foreach_idx(face_i, faces)
+    {
+        for (int v_i = 0; v_i < 3; ++v_i)
+        {
+            int vertex_index = faces[face_i].indices[v_i];
+            const std::vector<int>& faces_for_this_vertex = faces_per_vertex[vertex_index];
+            foreach_idx(neighb_i, faces_for_this_vertex)
+            {
+                const int neighb_face = faces_for_this_vertex[neighb_i];
+
+                std::vector<int>& this_face_neighbors = faces_neighbors[face_i];
+
+                if (neighb_face == face_i)
+                    continue;
+
+                if (std::find(stl_bounds(this_face_neighbors), neighb_face) != this_face_neighbors.end())
+                    continue;
+
+                this_face_neighbors.push_back(neighb_face);
+            }
         }
     }
 }
