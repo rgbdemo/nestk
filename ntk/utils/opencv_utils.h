@@ -358,6 +358,8 @@ inline cv::Mat3b rotate90(const cv::Mat3b& im)
     return res;
 }
 
+float triangleArea(const cv::Point2f& p1, const cv::Point2f& p2, const cv::Point2f& p3);
+
 }
 
 namespace cv     // FIXME: has to be put in its

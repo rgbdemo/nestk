@@ -415,4 +415,10 @@ cv::Point3f computeCentroid(const std::vector<cv::Point3f>& points)
       writeMatrix(output_file, "bounding_box", mat);
   }
 
+  float triangleArea(const cv::Point2f& p1, const cv::Point2f& p2, const cv::Point2f& p3)
+  {
+      float tmp = p1.x*p2.y - p1.x*p3.y + p2.x*p3.y - p2.x*p1.y + p3.x*p1.y - p3.x*p2.y;
+      return 0.5f * std::abs(tmp);
+  }
+
 }
