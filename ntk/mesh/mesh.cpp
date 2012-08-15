@@ -31,6 +31,7 @@
 #include <fstream>
 #include <cstring>
 #include <errno.h>
+#include <set>
 
 using namespace cv;
 
@@ -686,6 +687,69 @@ void Mesh::computeFaceNeighbors(std::vector< std::vector<int> >& faces_neighbors
             }
         }
     }
+}
+
+void Mesh::computeEdges(std::vector< Edge >& edges,
+                        std::vector< std::vector<int> >& edges_per_vertex,
+                        const std::vector< std::vector<int> >& faces_per_vertex) const
+{
+    edges.reserve(faces.size()*2);
+    edges_per_vertex.resize(vertices.size());
+
+    foreach_idx(face_i, faces)
+    {
+        const Face& face = faces[face_i];
+        for (int i = 0; i < 2; ++i)
+        for (int j = i+1; j < 3; ++j)
+        {
+            Edge e;
+            e.v1 = face.indices[i];
+            e.v2 = face.indices[j];
+            if (e.v1 > e.v2)
+                std::swap(e.v1, e.v2);
+
+            e.f1 = face_i;
+            e.f2 = -1;
+
+            const std::vector<int>& faces_v1 = faces_per_vertex[e.v1];
+            const std::vector<int>& faces_v2 = faces_per_vertex[e.v2];
+
+            bool found = false;
+
+            // Look for the other common face.
+            for (int k = 0; !found && k < faces_v1.size(); ++k)
+            {
+                // We want the other face.
+                if (faces_v1[k] == face_i)
+                    continue;
+
+                for (int l = 0; !found && l < faces_v2.size(); ++l)
+                {
+                    if (faces_v1[k] != faces_v2[l])
+                        continue;
+
+                    e.f2 = faces_v1[k];
+                    found = true;
+                }
+            }
+
+            if ((e.f2 >= 0) && (e.f2 < e.f1))
+                continue; // already added when processing f1.
+
+            e.length = cv::norm(vertices[e.v1] - vertices[e.v2]);
+
+            int edge_index = edges.size();
+            edges_per_vertex[e.v1].push_back(edge_index);
+            edges_per_vertex[e.v2].push_back(edge_index);
+
+            edges.push_back(e);
+        }
+    }
+}
+
+float Mesh::computeLength(const Edge &edge) const
+{
+    return cv::norm(vertices[edge.v1] - vertices[edge.v2]);
 }
 
 struct VertexComparator

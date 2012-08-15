@@ -56,9 +56,75 @@ namespace ntk
 
     Face() {}
 
-    unsigned indices[3];
+    bool isValid() const { return indices[0] >= 0; }
+    void kill() { indices[0] = -1; }
+
+    int findIndexOf(int vertex) const
+    {
+        for (int k = 0; k < numVertices(); ++k)
+            if (indices[k] == vertex)
+                return k;
+        return -1;
+    }
+
+    int indices[3];
     static int numVertices() { return 3; }
     static size_t size() { return 3; }
+  };
+
+  class Edge
+  {
+  public:
+      Edge() : v1(-1) {}
+
+      void setValue(int v1, int v2, int f1, int f2, float length)
+      {
+          if (v1 < v2)
+          {
+              this->v1 = v1;
+              this->v2 = v2;
+          }
+          else
+          {
+              this->v1 = v2;
+              this->v2 = v1;
+          }
+          this->f1 = f1;
+          this->f2 = f2;
+          this->length = length;
+      }
+
+      bool isValid() const { return v1 >= 0; }
+      void kill() { v1 = -1; }
+
+      // Vertex indices
+      int v1;
+      int v2;
+
+      // Adjacent faces indices
+      int f1;
+      int f2;
+
+      float length;
+
+      bool hasVertex(int vertex) const
+      {
+          return v1 == vertex || v2 == vertex;
+      }
+
+      void updateFace(int old_index, int new_index)
+      {
+          if (f1 == old_index) f1 = new_index;
+          if (f2 == old_index) f2 = new_index;
+      }
+
+      bool operator<(const Edge& rhs) const
+      {
+          if (v1 != rhs.v1) return v1 < rhs.v1;
+          if (v2 != rhs.v2) return v2 < rhs.v2;
+          if (f1 != rhs.f1) return f1 < rhs.f1;
+          return f2 < rhs.f2;
+      }
   };
 
   struct FaceTexcoord
@@ -111,6 +177,11 @@ namespace ntk
     void computeVertexFaceMap(std::vector< std::vector<int> >& faces_per_vertex) const;
     void computeFaceNeighbors(std::vector< std::vector<int> >& faces_neighbors,
                               const std::vector< std::vector<int> >& faces_per_vertex) const;
+    void computeEdges(std::vector< Edge >& edges,
+                      std::vector< std::vector<int> >& edges_per_vertex,
+                      const std::vector< std::vector<int> >& faces_per_vertex) const;
+
+    float computeLength(const Edge& edge) const;
 
     // Cleaning
   public:
