@@ -855,4 +855,31 @@ void Mesh::removeIsolatedVertices()
     texcoords = new_mesh.texcoords;
 }
 
+cv::Point3f barycentricCoordinates(const cv::Point3f ref_points[3], const cv::Point3f& p)
+{
+    // http://stackoverflow.com/questions/5066686/projecting-to-a-2d-plane-for-barycentric-calculations
+    float triArea =  cv::norm((ref_points[1] - ref_points[0]).cross(ref_points[2] - ref_points[0])) * 0.5f;
+    float u = (cv::norm((ref_points[1] - p).cross(ref_points[2] - p)) * 0.5f) / triArea;
+    float v = (cv::norm((ref_points[0] - p ).cross(ref_points[2] - p )) * 0.5f) / triArea;
+    float w = (cv::norm((ref_points[0] - p ).cross(ref_points[1] - p)) * 0.5f) / triArea;
+    return cv::Point3f(u, v, w);
+}
+
+cv::Point3f fastBarycentricCoordinates(const cv::Point3f ref_points[3], const cv::Point3f& p)
+{
+    abort(); // does not work, e.g. with z=0 on all points.
+
+    // http://stackoverflow.com/questions/5066686/projecting-to-a-2d-plane-for-barycentric-calculations
+    float x0 = ref_points[0].x, y0 = ref_points[0].y, z0 = ref_points[0].z;
+    float x1 = ref_points[1].x, y1 = ref_points[1].y, z1 = ref_points[1].z;
+    float x2 = ref_points[2].x, y2 = ref_points[2].y, z2 = ref_points[2].z;
+    float xp = p.x,             yp = p.y,             zp = p.z;
+
+    float det = x0*(y1*z2 - y2*z1) + x1*(y2*z0 - z2*y0) + x2*(y0*z1 - y1*z0);
+    float b0 = ((x1*y2-x2*y1)*zp + xp*(y1*z2-y2*z1) + yp*(x2*z1-x1*z2)) / det;
+    float b1 = ((x2*y0-x0*y2)*zp + xp*(y2*z0-y0*z2) + yp*(x0*z2-x2*z0)) / det;
+    float b2 = ((x0*y1-x1*y0)*zp + xp*(y0*z1-y1*z0) + yp*(x1*z0-x0*z1)) / det;
+    return cv::Point3f(b0, b1, b2);
+}
+
 } // end of ntk

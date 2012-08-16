@@ -205,6 +205,8 @@ namespace ntk
 
   void generate_mesh_from_cube(Mesh& mesh, const ntk::Rect3f& cube);
 
+  cv::Point3f barycentricCoordinates(const cv::Point3f ref_points[3], const cv::Point3f& p);
+  cv::Point3f fastBarycentricCoordinates(const cv::Point3f ref_points[3], const cv::Point3f& p);
 
 } // ntk
 
