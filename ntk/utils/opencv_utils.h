@@ -125,6 +125,10 @@ public:
 };
 
 typedef Rect3_<float> Rect3f;
+typedef cv::Rect_<float> Rect2f;
+
+void extendToInclude(cv::Rect& rect, const cv::Point &p);
+bool leftRectFitIntoRight(const cv::Rect& left, const cv::Rect& right);
 
 template < typename StreamType, typename Type >
 StreamType& operator>>(StreamType& input, Rect3_<Type>& box)

@@ -56,6 +56,21 @@ const NtkDebug& operator<<(const NtkDebug& stream, const cv::Mat1f& m)
 namespace ntk
 {
 
+void extendToInclude(cv::Rect& rect, const cv::Point& p)
+{
+    if (rect.area() == 0)
+        rect = cv::Rect(p.x, p.y, 1, 1);
+    else
+        rect |= cv::Rect(p.x, p.y, 1, 1);
+}
+
+bool leftRectFitIntoRight(const cv::Rect& left, const cv::Rect& right)
+{
+    if (left.width <= right.width && left.height <= right.height)
+        return true;
+    return false;
+}
+
 cv::Point3f computeCentroid(const std::vector<cv::Point3f>& points)
 {
     cv::Point3f centroid (0,0,0);
