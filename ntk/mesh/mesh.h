@@ -167,6 +167,7 @@ namespace ntk
     void saveToPlyFile(const char* filename) const;
     cv::Point3f centerize();
     cv::Point3f center() const;
+    cv::Vec3f getFaceNormal(int face_i) const;
     void addCube(const cv::Point3f& center, const cv::Point3f& sizes, const cv::Vec3b& color = cv::Vec3b(255,0,0));
     void addSurfel(const Surfel& surfel);
     void addPointFromSurfel(const Surfel& surfel);

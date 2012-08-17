@@ -120,6 +120,16 @@ Point3f Mesh :: center() const
     return center;
 }
 
+cv::Vec3f Mesh::getFaceNormal(int face_i) const
+{
+    const Face& face = faces[face_i];
+    Vec3f v01 = vertices[face.indices[1]] - vertices[face.indices[0]];
+    Vec3f v02 = vertices[face.indices[2]] - vertices[face.indices[0]];
+    Vec3f n = v01.cross(v02);
+    ntk::normalize(n);
+    return n;
+}
+
 void Mesh::saveToPlyFile(const char* filename) const
 {   
     if (texture.data)
