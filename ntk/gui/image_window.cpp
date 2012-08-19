@@ -49,6 +49,11 @@ ImagePublisher::getPublishedImage (QString name) const
 void ImagePublisher::handleAsyncEvent(EventListener::Event event)
 {
     ImageEventDataPtr internalData = dynamic_Ptr_cast<ImageEventData>(event.data);
+    if (!internalData)
+    {
+        ntk_dbg(0) << "Invalid data type in handleAsyncEvent, should not happen.";
+        return;
+    }
     ntk_assert(internalData, "Invalid data type, should not happen");
 
     PublishedImage* publishedImage = 0;
