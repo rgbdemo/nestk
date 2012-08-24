@@ -23,6 +23,7 @@
 #include <ntk/geometry/pose_3d.h>
 #include <ntk/camera/rgbd_image.h>
 #include <ntk/camera/calibration.h>
+#include <ntk/image/feature.h>
 
 namespace ntk
 {
@@ -47,11 +48,25 @@ ntk_ptr_typedefs(IncrementalPoseEstimator)
 class IncrementalPoseEstimatorFromImage : public IncrementalPoseEstimator
 {
 public:
+    struct FeatureCorrespondance
+    {
+        int feature_index;
+        int train_feature_index;
+        int train_image_index;
+        float distance;
+    };
+
+public:
     virtual void addNewImage(const RGBDImage& image)
     { image.copyTo(m_new_image); }
 
+    const std::vector<FeatureCorrespondance>& getLastCorrespondances() { return last_correspondances; }
+    const std::vector<ntk::FeaturePoint>& getLastFeaturePoints() const { return last_feature_points; }
+
 protected:
     RGBDImage m_new_image;
+    std::vector<FeatureCorrespondance> last_correspondances;
+    std::vector<ntk::FeaturePoint> last_feature_points;
 };
 ntk_ptr_typedefs(IncrementalPoseEstimatorFromImage)
 

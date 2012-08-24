@@ -76,6 +76,7 @@ private:
                            const RGBDImage& image,
                            const FeatureSet& features,
                            const std::vector<cv::DMatch>& best_matches,
+                           std::vector<bool>& valid_matches,
                            int closest_view_index);
 
 #ifdef NESTK_USE_PCL

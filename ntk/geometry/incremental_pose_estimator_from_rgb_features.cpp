@@ -80,6 +80,7 @@ estimateDeltaPose(Pose3D& new_rgb_pose,
                   const RGBDImage& image,
                   const FeatureSet& image_features,
                   const std::vector<cv::DMatch>& best_matches,
+                  std::vector<bool>& valid_matches,
                   int closest_view_index)
 {
     const float err_threshold = 0.005f;
@@ -124,8 +125,7 @@ estimateDeltaPose(Pose3D& new_rgb_pose,
     }
 
     // double error = rms_optimize_3d(new_pose, ref_points, img_points);
-    std::vector<bool> valid_points;
-    double error = rms_optimize_ransac(new_rgb_pose, ref_points, img_points, valid_points, false /* use_depth */);
+    double error = rms_optimize_ransac(new_rgb_pose, ref_points, img_points, valid_matches, false /* use_depth */);
     error /= ref_points.size();
 
     ntk_dbg_print(error, 1);
@@ -158,6 +158,7 @@ bool IncrementalPoseEstimatorFromRgbFeatures::estimateCurrentPose()
     ntk_ensure(image.mappedDepth().data, "Image must have depth mapping.");
     FeatureSet image_features;
     image_features.extractFromImage(image, m_feature_parameters);
+    last_feature_points = image_features.locations();
     tc.elapsedMsecs(" -- extract features from Image -- ");
 
     Pose3D new_pose = *image.calibration()->depth_pose;
@@ -190,8 +191,10 @@ bool IncrementalPoseEstimatorFromRgbFeatures::estimateCurrentPose()
         {
             Pose3D delta_pose = new_pose;
 
+            std::vector<bool> valid_points;
+
             // Estimate the relative pose w.r.t the closest view.
-            if (!estimateDeltaPose(new_rgb_pose, image, image_features, best_matches, closest_view_index))
+            if (!estimateDeltaPose(new_rgb_pose, image, image_features, best_matches, valid_points, closest_view_index))
                 pose_ok = false;
 
             tc.elapsedMsecs(" -- estimateDeltaPose -- ");
