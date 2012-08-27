@@ -54,7 +54,7 @@ void FileGrabber::run()
 
     while (!threadShouldExit())
     {
-        waitForNewEvent();
+        waitForNewEvent(100000); // unlimited.
 
         if (m_current_image_index >= m_image_list.size())
         {

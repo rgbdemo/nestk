@@ -156,6 +156,7 @@ bool IncrementalPoseEstimatorFromRgbFeatures::estimateCurrentPose()
     }
 
     ntk_ensure(image.mappedDepth().data, "Image must have depth mapping.");
+
     FeatureSet image_features;
     image_features.extractFromImage(image, m_feature_parameters);
     last_feature_points = image_features.locations();
