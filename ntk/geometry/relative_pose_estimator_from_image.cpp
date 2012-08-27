@@ -26,7 +26,7 @@ estimateNewPose(Pose3D& new_pose,
     foreach_idx(i, matches)
     {
         const cv::DMatch& m = matches[i];
-        const FeaturePoint& ref_loc = m_target_features.locations()[m.trainIdx];
+        const FeaturePoint& ref_loc = m_target_features->locations()[m.trainIdx];
         const FeaturePoint& img_loc = image_features.locations()[m.queryIdx];
 
         ntk_assert(ref_loc.depth > 0, "Match without depth, should not appear");
@@ -66,7 +66,7 @@ bool RelativePoseEstimatorFromRgbFeatures::estimateNewPose()
 
     ntk::TimeCount tc("RelativePoseEstimator", 1);
 
-    if (m_target_features.locations().size() < 1)
+    if (m_target_features->locations().size() < 1)
         computeTargetFeatures();
 
     m_num_matches = 0;
@@ -77,7 +77,7 @@ bool RelativePoseEstimatorFromRgbFeatures::estimateNewPose()
     tc.elapsedMsecs(" -- extract features from Image -- ");
 
     std::vector<cv::DMatch> matches;
-    m_target_features.matchWith(image_features, matches, 0.8f*0.8f);
+    m_target_features->matchWith(image_features, matches, 0.8f*0.8f);
     tc.elapsedMsecs(" -- match features -- ");
     ntk_dbg_print(matches.size(), 1);
 
@@ -108,7 +108,7 @@ bool RelativePoseEstimatorFromRgbFeatures::estimateNewPose()
 
 void RelativePoseEstimatorFromRgbFeatures::resetTarget()
 {
-    m_target_features = FeatureSet();
+    m_target_features = toPtr(new FeatureSet);
     m_target_image = 0;
     m_estimated_pose = Pose3D();
 }
@@ -116,7 +116,7 @@ void RelativePoseEstimatorFromRgbFeatures::resetTarget()
 void RelativePoseEstimatorFromRgbFeatures::setTargetPose(const Pose3D& pose)
 {
     m_target_pose = pose;
-    m_target_features = FeatureSet();
+    m_target_features = toPtr(new FeatureSet);
 }
 
 void RelativePoseEstimatorFromRgbFeatures::setTargetImage(const RGBDImage &image)
@@ -127,17 +127,17 @@ void RelativePoseEstimatorFromRgbFeatures::setTargetImage(const RGBDImage &image
     {
         m_target_pose = *m_target_image->calibration()->depth_pose;
     }
-    m_target_features = FeatureSet();
+    m_target_features = toPtr(new FeatureSet);
 }
 
 void RelativePoseEstimatorFromRgbFeatures::computeTargetFeatures()
 {
-    m_target_features.extractFromImage(*m_target_image, m_feature_parameters);
+    m_target_features->extractFromImage(*m_target_image, m_feature_parameters);
 
     Pose3D rgb_pose = m_target_pose;
     rgb_pose.toRightCamera(m_target_image->calibration()->rgb_intrinsics,
                            m_target_image->calibration()->R, m_target_image->calibration()->T);
-    m_target_features.compute3dLocation(rgb_pose);
+    m_target_features->compute3dLocation(rgb_pose);
 }
 
 } // ntk

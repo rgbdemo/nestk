@@ -37,7 +37,8 @@ class RelativePoseEstimatorFromRgbFeatures : public RelativePoseEstimatorFromIma
 {
 public:
     RelativePoseEstimatorFromRgbFeatures(const FeatureSetParams& params)
-        : m_feature_parameters(params),
+        : m_target_features(new FeatureSet),
+          m_feature_parameters(params),
           m_min_matches(10),
           m_num_matches(0)
     {
@@ -63,7 +64,7 @@ private:
     void computeTargetFeatures();
 
 private:
-    FeatureSet m_target_features;
+    ntk::Ptr<FeatureSet> m_target_features;
     FeatureSetParams m_feature_parameters;
     int m_min_matches;
     int m_num_matches;

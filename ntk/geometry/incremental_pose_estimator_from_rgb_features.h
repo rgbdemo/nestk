@@ -88,7 +88,7 @@ private:
 #endif
 
 private:
-    std::vector < FeatureSet > m_features;
+    std::vector < ntk::Ptr<FeatureSet> > m_features;
     std::vector< ImageData > m_image_data;
     FeatureSetParams m_feature_parameters;
     bool m_use_icp;

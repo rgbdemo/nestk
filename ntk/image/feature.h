@@ -86,6 +86,10 @@ struct FeatureSetParams
  */
 class FeatureSet : public XmlSerializable
 {
+private: // non copiable
+    FeatureSet(const FeatureSet& rhs);
+    FeatureSet& operator = (const FeatureSet& rhs);
+
 public:
     /*! Descriptor type */
     enum FeatureType { Feature_SIFT,

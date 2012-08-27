@@ -64,7 +64,7 @@ computeNumMatchesWithPrevious(const RGBDImage& image,
          --i)
     {
         std::vector<cv::DMatch> current_matches;
-        m_features[i].matchWith(features, current_matches, 0.8f*0.8f);
+        m_features[i]->matchWith(features, current_matches, 0.8f*0.8f);
         ntk_dbg_print(current_matches.size(), 1);
         if (current_matches.size() > best_matches.size())
         {
@@ -103,7 +103,7 @@ estimateDeltaPose(Pose3D& new_rgb_pose,
     foreach_idx(i, best_matches)
     {
         const cv::DMatch& m = best_matches[i];
-        const FeatureSet& ref_set = m_features[closest_view_index];
+        const FeatureSet& ref_set = *m_features[closest_view_index];
         const FeaturePoint& ref_loc = ref_set.locations()[m.trainIdx];
         const FeaturePoint& img_loc = image_features.locations()[m.queryIdx];
 
@@ -157,9 +157,9 @@ bool IncrementalPoseEstimatorFromRgbFeatures::estimateCurrentPose()
 
     ntk_ensure(image.mappedDepth().data, "Image must have depth mapping.");
 
-    FeatureSet image_features;
-    image_features.extractFromImage(image, m_feature_parameters);
-    last_feature_points = image_features.locations();
+    ntk::Ptr<FeatureSet> image_features (new FeatureSet);
+    image_features->extractFromImage(image, m_feature_parameters);
+    last_feature_points = image_features->locations();
     tc.elapsedMsecs(" -- extract features from Image -- ");
 
     Pose3D new_pose = *image.calibration()->depth_pose;
@@ -173,7 +173,7 @@ bool IncrementalPoseEstimatorFromRgbFeatures::estimateCurrentPose()
     if (m_image_data.size() > 0)
     {
         std::vector<cv::DMatch> best_matches;
-        closest_view_index = computeNumMatchesWithPrevious(image, image_features, best_matches);
+        closest_view_index = computeNumMatchesWithPrevious(image, *image_features, best_matches);
         tc.elapsedMsecs(" -- computeNumMatchesWithPrevious -- ");
         ntk_dbg_print(closest_view_index, 1);
         ntk_dbg_print(best_matches.size(), 1);
@@ -195,7 +195,7 @@ bool IncrementalPoseEstimatorFromRgbFeatures::estimateCurrentPose()
             std::vector<bool> valid_points;
 
             // Estimate the relative pose w.r.t the closest view.
-            if (!estimateDeltaPose(new_rgb_pose, image, image_features, best_matches, valid_points, closest_view_index))
+            if (!estimateDeltaPose(new_rgb_pose, image, *image_features, best_matches, valid_points, closest_view_index))
                 pose_ok = false;
 
             tc.elapsedMsecs(" -- estimateDeltaPose -- ");
@@ -260,9 +260,9 @@ bool IncrementalPoseEstimatorFromRgbFeatures::estimateCurrentPose()
             }
 #endif
             image_data.depth_pose = new_pose;
-            image_features.compute3dLocation(new_rgb_pose);
+            image_features->compute3dLocation(new_rgb_pose);
             m_features.push_back(image_features);
-            ntk_dbg_print(image_features.locations().size(), 1);
+            ntk_dbg_print(image_features->locations().size(), 1);
             m_image_data.push_back(image_data);
             tc.elapsedMsecs(" -- Finishing -- ");
         }
