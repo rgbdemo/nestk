@@ -99,6 +99,8 @@ public:
           m_marker_setup_estimated(false)
     {}
 
+    virtual IncrementalPoseEstimatorFromMarkers* clone() const { return new IncrementalPoseEstimatorFromMarkers(*this); }
+
 public:
     void setMarkerSize(float size);
     void setMarkerSetup(const MarkerSetup& setup);

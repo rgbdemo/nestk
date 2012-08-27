@@ -58,6 +58,11 @@ FeatureSet::FeatureSet()
 {
 }
 
+FeatureSet::~FeatureSet()
+{
+    delete impl;
+}
+
 void FeatureSet :: extractFromImage(const RGBDImage& image,
                                     const FeatureSetParams& params)
 {

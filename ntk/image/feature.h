@@ -96,7 +96,7 @@ public:
 
 public:
     FeatureSet();
-    ~FeatureSet() {}
+    ~FeatureSet();
 
 public:
     virtual void fillXmlElement(XMLNode& element) const {}
@@ -154,7 +154,7 @@ private:
     struct Impl; // use pimpl to avoid exposing flann, that gives conflicts with PCL.
 
 private:
-    ntk::Ptr<Impl> impl;
+    Impl* impl;
     char m_feature_type;
     unsigned m_descriptor_size;
     std::vector<FeaturePoint> m_locations;

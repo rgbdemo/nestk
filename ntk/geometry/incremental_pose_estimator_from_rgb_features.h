@@ -52,6 +52,8 @@ public:
         reset();
     }
 
+    virtual IncrementalPoseEstimatorFromRgbFeatures* clone() const { return new IncrementalPoseEstimatorFromRgbFeatures(*this); }
+
     virtual bool estimateCurrentPose();
     virtual void reset();
     void setIncrementalModel(bool enable) { m_incremental_model = enable; }

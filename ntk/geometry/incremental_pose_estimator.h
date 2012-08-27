@@ -33,6 +33,7 @@ class IncrementalPoseEstimator
 public:
     virtual bool estimateCurrentPose() = 0;
     virtual void reset() { m_current_pose = Pose3D(); }
+    virtual IncrementalPoseEstimator* clone() const = 0;
 
 public:
     //! Return the last estimated pose.
@@ -63,6 +64,8 @@ public:
     const std::vector<FeatureCorrespondance>& getLastCorrespondances() { return last_correspondances; }
     const std::vector<ntk::FeaturePoint>& getLastFeaturePoints() const { return last_feature_points; }
 
+    virtual IncrementalPoseEstimatorFromImage* clone() const = 0;
+
 protected:
     RGBDImage m_new_image;
     std::vector<FeatureCorrespondance> last_correspondances;
@@ -80,6 +83,7 @@ class IncrementalPoseEstimatorFromFile : public IncrementalPoseEstimatorFromImag
 {
 public:
     virtual bool estimateCurrentPose();
+    virtual IncrementalPoseEstimatorFromFile* clone() const { return new IncrementalPoseEstimatorFromFile(*this); }
 };
 
 /*!
@@ -102,6 +106,8 @@ public:
 
     virtual void reset() { m_current_pose = m_initial_pose; }
 
+    virtual IncrementalPoseEstimatorFromDelta* clone() const { return new IncrementalPoseEstimatorFromDelta(*this); }
+
 private:
     Pose3D m_initial_pose;
     Pose3D m_delta_pose;
@@ -116,6 +122,8 @@ public:
             m_current_pose = *m_new_image.calibration()->depth_pose;
         return true;
     }
+
+    virtual DummyIncrementalPoseEstimator* clone() const { return new DummyIncrementalPoseEstimator(*this); }
 };
 
 } // ntk

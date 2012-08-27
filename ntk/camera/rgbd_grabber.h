@@ -39,7 +39,6 @@ class RGBDGrabber : public QThread, public EventBroadcaster, public SyncEventLis
 public:
   RGBDGrabber()
     : m_calib_data(0),
-      m_should_exit(0),
       m_last_frame_tick(0),
       m_framerate(0),
       m_frame_count(0),
@@ -47,7 +46,8 @@ public:
       m_camera_serial("unknown"),
       m_initial_timestamp(0),
       m_loop(false),
-      m_target_framerate(-1)
+      m_target_framerate(-1),
+      m_should_exit(0)
   {
     setSynchronous(false);
   }
