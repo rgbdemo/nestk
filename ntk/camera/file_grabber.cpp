@@ -73,6 +73,7 @@ void FileGrabber::run()
         if (m_is_directory)
         {
             QString filepath = m_path.absoluteFilePath(m_image_list[m_current_image_index]);
+            ntk_dbg(1) << "Reading " << filepath;
             {
                 QWriteLocker locker(&m_lock);
                 m_rgbd_image.loadFromDir(filepath.toStdString(), m_calib_data);
