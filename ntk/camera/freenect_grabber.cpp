@@ -156,7 +156,7 @@ bool FreenectGrabber :: disconnectFromDevice()
 
 void FreenectGrabber :: run()
 {
-    m_should_exit = false;
+    setThreadShouldExit(false);
     m_current_image.setCalibration(m_calib_data);
     m_rgbd_image.setCalibration(m_calib_data);
 
@@ -171,7 +171,7 @@ void FreenectGrabber :: run()
     startKinect();
     int64 last_grab_time = 0;
 
-    while (!m_should_exit)
+    while (!threadShouldExit())
     {
         waitForNewEvent();
         while (m_depth_transmitted || m_rgb_transmitted)

@@ -28,6 +28,10 @@
 #include <ntk/stats/histogram.h>
 #include <ntk/stats/distributions.h>
 
+#ifdef HAVE_OPENCV_GREATER_THAN_2_4_0
+#   include <opencv2/nonfree/features2d.hpp>
+#endif
+
 #include <fstream>
 
 using namespace ntk;
