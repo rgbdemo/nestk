@@ -30,6 +30,10 @@
 #include <pcl/features/normal_3d.h>
 #endif
 
+#ifdef HAVE_OPENCV_GREATER_THAN_2_4_0
+# include "opencv2/photo/photo.hpp"
+#endif
+
 // FIXME: The KdTreeFLANN class template instantiation (from kdtree_flann.h)
 // indirectly triggered later in this compilation unit will fail if the cv
 // namespace is pulled at the top-level one. Fully-qualify cv symbols, for now.

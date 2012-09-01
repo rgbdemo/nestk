@@ -278,7 +278,7 @@ bool OpenniGrabber :: connectToDevice()
             m_ni_depth_generator.GetAlternativeViewPointCap().SetViewPoint(m_ni_rgb_generator);
         }
 
-        if (!is_kinect && m_ni_depth_generator.IsCapabilitySupported(XN_CAPABILITY_FRAME_SYNC))
+        if (!is_kinect && m_ni_depth_generator.IsCapabilitySupported(XN_CAPABILITY_FRAME_SYNC) && !m_high_resolution)
         {
             ntk_dbg(1) << "Frame Sync supported.";
             status = m_ni_depth_generator.GetFrameSyncCap ().FrameSyncWith (m_ni_rgb_generator);
@@ -338,6 +338,10 @@ bool OpenniGrabber :: connectToDevice()
         status = m_ni_rgb_generator.StartGenerating();
         m_driver.checkXnError(status, "RGB::StartGenerating");
 
+        if (m_high_resolution)
+            setCustomBayerDecoding(false);
+
+        ntk_dbg_print(m_custom_bayer_decoding, 1);
         if (m_custom_bayer_decoding)
         {
             // Grayscale to get raw Bayer pattern.
@@ -402,7 +406,7 @@ bool OpenniGrabber :: disconnectFromDevice()
 void OpenniGrabber :: waitAndUpdateActiveGenerators()
 {
     // If there is only one device, call this global function.
-    if (m_driver.numDevices() == 1) // FIXME: does this result into unsynchronized frames?
+    if (0 && m_driver.numDevices() == 1) // FIXME: does this result into unsynchronized frames?
     {
         m_driver.niContext().WaitOneUpdateAll(m_ni_depth_generator);
         // m_driver.niContext().WaitAndUpdateAll();

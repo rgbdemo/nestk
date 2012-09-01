@@ -71,6 +71,13 @@ SET(NESTK_USE_GLEW 1)
 ADD_DEFINITIONS(-DNESTK_USE_GLEW)
 
 ## GLUT
+if(WIN32)
+    IF(CMAKE_CL_64)
+        set(GLUT_glut_LIBRARY "${nestk_deps_SOURCE_DIR}/win32/glut-msvc/glut64.lib" CACHE FILEPATH "" FORCE)
+      ELSE()
+        set(GLUT_glut_LIBRARY "${nestk_deps_SOURCE_DIR}/win32/glut-msvc/glut32.lib" CACHE FILEPATH "" FORCE)
+    ENDIF()
+endif()
 FIND_PACKAGE(GLUT REQUIRED)
 SET(NESTK_USE_GLUT 1)
 
