@@ -47,7 +47,8 @@ void OpencvGrabber :: run()
 
   while (!threadShouldExit())
   {
-    waitForNewEvent();
+    waitForNewEvent(-1); // Use infinite timeout in order to honor sync mode.
+
     m_logitech_capture >> logitech_image;    
 
     //ntk_assert(logitech_image.cols == m_image_size.width, "Wrong image size");

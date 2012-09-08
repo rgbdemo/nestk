@@ -802,7 +802,7 @@ void Kin4WinGrabber :: run()
 
     while (!threadShouldExit())
     {
-        waitForNewEvent();
+        waitForNewEvent(-1); // Use infinite timeout in order to honor sync mode.
 
         while (nui->dirtyDepth || nui->dirtyColor)
         {

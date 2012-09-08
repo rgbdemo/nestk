@@ -222,7 +222,7 @@ void PmdGrabber :: run()
 
     while (!threadShouldExit())
     {
-        waitForNewEvent();
+        waitForNewEvent(-1); // Use infinite timeout in order to honor sync mode.
 
         checkError(pmdUpdate(m_hnd));
         // checkError(pmdGetIntensities(m_hnd, intensity[0], sizeof(float)*m_image_size.width*m_image_size.height));

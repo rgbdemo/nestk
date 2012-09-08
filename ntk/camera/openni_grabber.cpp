@@ -632,7 +632,8 @@ void OpenniGrabber :: run()
 
     while (!threadShouldExit())
     {
-        waitForNewEvent();
+        waitForNewEvent(-1); // Use infinite timeout in order to honor sync mode.
+
         ntk_dbg(2) << format("[%x] running iteration", this);
 
         {

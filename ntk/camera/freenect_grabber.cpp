@@ -173,7 +173,8 @@ void FreenectGrabber :: run()
 
     while (!threadShouldExit())
     {
-        waitForNewEvent();
+        waitForNewEvent(-1); // Use infinite timeout in order to honor sync mode.
+
         while (m_depth_transmitted || m_rgb_transmitted)
             freenect_process_events(f_ctx);
 

@@ -57,7 +57,7 @@ void FileGrabber::run()
 
     while (!threadShouldExit())
     {
-        waitForNewEvent(100000); // unlimited.
+        waitForNewEvent(-1); // Use infinite timeout in order to honor sync mode.
 
         if (m_current_image_index >= m_image_list.size())
         {
