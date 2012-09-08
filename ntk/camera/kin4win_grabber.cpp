@@ -636,6 +636,7 @@ Kin4WinGrabber::~Kin4WinGrabber()
     // destructors get called in derived-to-base order,
     // and stop is a virtual method.
     // Trouble.
+    disconnectFromDevice();
     RGBDGrabber::stop();
 }
 
