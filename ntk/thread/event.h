@@ -139,7 +139,7 @@ public:
     virtual void newEvent(EventBroadcaster* sender = 0, EventDataPtr data = EventDataPtr());
 
     static const int event_timeout_msecs;
-    Event waitForNewEvent(int timeout_msecs = -1);
+    Event waitForNewEvent(int timeout_msecs = event_timeout_msecs);
 
 private:
     bool m_enabled;
