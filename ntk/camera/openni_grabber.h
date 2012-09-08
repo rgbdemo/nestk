@@ -157,7 +157,7 @@ public:
     void setCustomBayerDecoding(bool enable) { m_custom_bayer_decoding = enable; }
 
     /*! Set whether hardware registraition should be used */
-    void UseHardwareRegistration(bool enable) { m_hardware_registration = enable; }
+    void setUseHardwareRegistration(bool enable) { m_hardware_registration = enable; }
 
 public:
     // Nite accessors.

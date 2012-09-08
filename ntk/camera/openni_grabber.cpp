@@ -288,7 +288,7 @@ bool OpenniGrabber :: connectToDevice()
         status = m_ni_ir_generator.Create(m_driver.niContext(), &query);
         m_driver.checkXnError(status, "Create infrared generator");
         XnMapOutputMode ir_mode;
-        ir_mode.nFPS = 15;
+        ir_mode.nFPS = is_kinect ? 15 : 30;
         ir_mode.nXRes = 1280;
         ir_mode.nYRes = 1024;
         m_ni_ir_generator.SetMapOutputMode(ir_mode);
@@ -414,11 +414,16 @@ void OpenniGrabber :: waitAndUpdateActiveGenerators()
     }
 
     // Multiple kinect, only wait for our stream.
-    m_ni_depth_generator.WaitAndUpdateData();
     if (m_get_infrared)
+    {
+        // No depth in IR mode.
         m_ni_ir_generator.WaitAndUpdateData();
+    }
     else
+    {
+        m_ni_depth_generator.WaitAndUpdateData();
         m_ni_rgb_generator.WaitAndUpdateData();
+    }
 
     // FIXME: for some reason, hand events are not generated using this.
     // Only WaitAndUpdateAll generates the events.
