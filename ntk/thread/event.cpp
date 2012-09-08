@@ -202,7 +202,35 @@ void EventBroadcaster :: broadcastEvent(EventDataPtr data)
 
 namespace ntk {
 
-#define SERIALIZED const QMutexLocker _(&mutex);
+namespace {
+
+EventProcessingBlockInOwnThreadDebugger* debuggerInstance = 0;
+int debuggerCount = 0;
+QMutex debuggerMutex;
+
+#define SERIALIZED const QMutexLocker _(&debuggerMutex);
+
+EventProcessingBlockInOwnThreadDebugger& debugger ()
+{
+    SERIALIZED
+
+    if (0 == debuggerInstance)
+        debuggerInstance = new EventProcessingBlockInOwnThreadDebugger;
+
+    return *debuggerInstance;
+}
+
+}
+
+EventProcessingBlockInOwnThreadDebugger::EventProcessingBlockInOwnThreadDebugger ()
+{
+
+}
+
+EventProcessingBlockInOwnThreadDebugger::~EventProcessingBlockInOwnThreadDebugger ()
+{
+
+}
 
 void EventProcessingBlockInOwnThreadDebugger::constructed (EventProcessingBlockInOwnThread* that)
 {
@@ -210,6 +238,8 @@ void EventProcessingBlockInOwnThreadDebugger::constructed (EventProcessingBlockI
 
     // QTextStream qs(stdout);
     qDebug() << "EventProcessingBlockInOwnThread: constructed: " << that->name << endl;
+
+    ++debuggerCount;
 }
 
 void EventProcessingBlockInOwnThreadDebugger::destroyed (EventProcessingBlockInOwnThread* that)
@@ -218,6 +248,12 @@ void EventProcessingBlockInOwnThreadDebugger::destroyed (EventProcessingBlockInO
 
     // QTextStream qs(stdout);
     qDebug() << "EventProcessingBlockInOwnThread: destroyed: " << that->name << endl;
+
+    if (0 < --debuggerCount)
+        return;
+
+    delete this;
+    debuggerInstance = 0;
 }
 
 void EventProcessingBlockInOwnThreadDebugger::started (EventProcessingBlockInOwnThread* that)
@@ -246,20 +282,14 @@ void EventProcessingBlockInOwnThreadDebugger::terminated (EventProcessingBlockIn
 
 #undef SERIALIZED
 
-namespace {
-
-EventProcessingBlockInOwnThreadDebugger debugger;
-
-}
-
 EventProcessingBlockInOwnThread::EventProcessingBlockInOwnThread (Name name)
 : name(name)
 {
-    debugger.constructed(this);
+    debugger().constructed(this);
 
-    QObject::connect(this, SIGNAL(dbg_started   (EventProcessingBlockInOwnThread*)), &debugger, SLOT(started   (EventProcessingBlockInOwnThread*)));
-    QObject::connect(this, SIGNAL(dbg_finished  (EventProcessingBlockInOwnThread*)), &debugger, SLOT(finished  (EventProcessingBlockInOwnThread*)));
-    QObject::connect(this, SIGNAL(dbg_terminated(EventProcessingBlockInOwnThread*)), &debugger, SLOT(terminated(EventProcessingBlockInOwnThread*)));
+    QObject::connect(this, SIGNAL(dbg_started   (EventProcessingBlockInOwnThread*)), &debugger(), SLOT(started   (EventProcessingBlockInOwnThread*)));
+    QObject::connect(this, SIGNAL(dbg_finished  (EventProcessingBlockInOwnThread*)), &debugger(), SLOT(finished  (EventProcessingBlockInOwnThread*)));
+    QObject::connect(this, SIGNAL(dbg_terminated(EventProcessingBlockInOwnThread*)), &debugger(), SLOT(terminated(EventProcessingBlockInOwnThread*)));
 
     QObject::connect(this, SIGNAL(started   ()), this, SLOT(on_started   ()));
     QObject::connect(this, SIGNAL(finished  ()), this, SLOT(on_finished  ()));
@@ -272,11 +302,11 @@ EventProcessingBlockInOwnThread::~EventProcessingBlockInOwnThread ()
     QObject::disconnect(this, SIGNAL(finished  ()), this, SLOT(on_finished  ()));
     QObject::disconnect(this, SIGNAL(started   ()), this, SLOT(on_started   ()));
 
-    QObject::disconnect(this, SIGNAL(dbg_terminated(EventProcessingBlockInOwnThread*)), &debugger, SLOT(terminated(EventProcessingBlockInOwnThread*)));
-    QObject::disconnect(this, SIGNAL(dbg_finished  (EventProcessingBlockInOwnThread*)), &debugger, SLOT(finished  (EventProcessingBlockInOwnThread*)));
-    QObject::disconnect(this, SIGNAL(dbg_started   (EventProcessingBlockInOwnThread*)), &debugger, SLOT(started   (EventProcessingBlockInOwnThread*)));
+    QObject::disconnect(this, SIGNAL(dbg_terminated(EventProcessingBlockInOwnThread*)), &debugger(), SLOT(terminated(EventProcessingBlockInOwnThread*)));
+    QObject::disconnect(this, SIGNAL(dbg_finished  (EventProcessingBlockInOwnThread*)), &debugger(), SLOT(finished  (EventProcessingBlockInOwnThread*)));
+    QObject::disconnect(this, SIGNAL(dbg_started   (EventProcessingBlockInOwnThread*)), &debugger(), SLOT(started   (EventProcessingBlockInOwnThread*)));
 
-    debugger.destroyed(this);
+    debugger().destroyed(this);
 }
 
 void

@@ -232,15 +232,15 @@ protected:
     const Name name;
 };
 
-} // ntk
-
 //------------------------------------------------------------------------------
-
-namespace ntk {
 
 class EventProcessingBlockInOwnThreadDebugger : public QObject
 {
     Q_OBJECT
+
+public:
+     EventProcessingBlockInOwnThreadDebugger ();
+    ~EventProcessingBlockInOwnThreadDebugger ();
 
 public slots:
     void constructed (EventProcessingBlockInOwnThread* that);
@@ -248,9 +248,6 @@ public slots:
     void started     (EventProcessingBlockInOwnThread* that);
     void finished    (EventProcessingBlockInOwnThread* that);
     void terminated  (EventProcessingBlockInOwnThread* that);
-
-private:
-    QMutex mutex;
 };
 
-}
+} // ntk
