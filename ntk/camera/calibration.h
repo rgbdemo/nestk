@@ -61,6 +61,9 @@ public:
   const cv::Size& rgbSize() const { return rgb_size; }
   void setRgbSize(cv::Size s) { rgb_size = s; }
 
+  /*! Size of the infrared image. */
+  cv::Size irSize() const { return cv::Size(1280, 1024); }
+
   /*! Size of raw rgb images. */
   const cv::Size& rawRgbSize() const { return raw_rgb_size; }
   void setRawRgbSize(cv::Size s) { raw_rgb_size = s; }
@@ -68,6 +71,9 @@ public:
   /*! Size of the depth image. */
   const cv::Size& rawDepthSize() const { return raw_depth_size; }
   const cv::Size& depthSize() const { return depth_size; }
+
+  /*! Deduce infrared intrinsics from depth intrinsics. */
+  cv::Mat1d irIntrinsicsFromDepth() const;
 
   /*! Intrinsics 3x3 matrix for the rgb channel */
   cv::Mat1d rgb_intrinsics;
@@ -241,6 +247,17 @@ void calibrate_kinect_rgb(const std::vector<ntk::RGBDImage>& images,
                           bool ignore_distortions,
                           bool fix_center,
                           int default_flags = CV_CALIB_USE_INTRINSIC_GUESS | CV_CALIB_FIX_ASPECT_RATIO);
+
+void calibrate_kinect_depth_infrared(const std::vector<RGBDImage>& images,
+                                     const std::vector< std::vector<cv::Point2f> >& good_corners,
+                                     RGBDCalibration& calibration,
+                                     int pattern_width,
+                                     int pattern_height,
+                                     float pattern_size,
+                                     ntk::PatternType pattern_type,
+                                     bool ignore_distortions,
+                                     bool fix_center,
+                                     int default_flags = CV_CALIB_USE_INTRINSIC_GUESS | CV_CALIB_FIX_ASPECT_RATIO);
 
 } // ntk
 

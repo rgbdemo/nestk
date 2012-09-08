@@ -256,6 +256,17 @@ void RGBDCalibration :: saveToFile(const char* filename) const
     output_file.release();
 }
 
+cv::Mat1d RGBDCalibration::irIntrinsicsFromDepth() const
+{
+    // FIXME: only valid for Primesense cameras.
+    cv::Mat1d ir_intrinsics;
+    depth_intrinsics.copyTo(ir_intrinsics);
+    ir_intrinsics(0,0) *= 2.;
+    ir_intrinsics(1,1) *= 2.;
+    ir_intrinsics(0,2) *= 2.;
+    ir_intrinsics(1,2) *= 2.;
+    return ir_intrinsics;
+}
 
 } // ntk
 
@@ -702,11 +713,30 @@ void calibrateStereoFromCheckerboard(const std::vector< std::vector<Point2f> >& 
     cv::Mat zero_dist (calibration.depth_distortion.size(), calibration.depth_distortion.type());
     zero_dist = Scalar(0);
 
+    cv::Size image_size;
+    if (use_intensity)
+    {
+        image_size = calibration.irSize();
+    }
+    else
+    {
+        image_size = calibration.rgbSize();
+    }
+
+    cv::Mat1d intrinsics;
+    if (use_intensity)
+    {
+        intrinsics = calibration.irIntrinsicsFromDepth();
+    }
+    else
+    {
+        intrinsics = calibration.rgb_intrinsics;
+    }
+
     stereoCalibrate(pattern_points,
-                    undistorted_good_ref_corners, undistorted_good_corners,
-                    use_intensity ? calibration.depth_intrinsics : calibration.rgb_intrinsics, zero_dist,
-                    use_intensity ? calibration.depth_intrinsics : calibration.rgb_intrinsics, zero_dist,
-                    calibration.rgbSize(),
+                    undistorted_good_ref_corners, undistorted_good_corners,                    
+                    intrinsics, zero_dist, intrinsics, zero_dist,
+                    image_size,
                     R, T, E, F,
                     TermCriteria(TermCriteria::COUNT+TermCriteria::EPS, 50, 1e-6),
                     CALIB_FIX_INTRINSIC|CALIB_SAME_FOCAL_LENGTH);
@@ -730,6 +760,51 @@ void calibrateStereoFromCheckerboard(const std::vector< std::vector<Point2f> >& 
 
     R.copyTo(calibration.R_extrinsics);
     T.copyTo(calibration.T_extrinsics);
+}
+
+void calibrate_kinect_depth_infrared(const std::vector<RGBDImage>& images,
+                                     const std::vector< std::vector<Point2f> >& good_corners,
+                                     RGBDCalibration& calibration,
+                                     int pattern_width,
+                                     int pattern_height,
+                                     float pattern_size,
+                                     ntk::PatternType pattern_type,
+                                     bool ignore_distortions,
+                                     bool fix_center,
+                                     int default_flags)
+{
+    std::vector< std::vector<Point3f> > pattern_points;
+    calibrationPattern(pattern_points,
+                       pattern_width, pattern_height, pattern_size,
+                       good_corners.size());
+
+    ntk_assert(pattern_points.size() == good_corners.size(), "Invalid points size");
+
+    int flags = default_flags;
+    if (ignore_distortions)
+        flags |= CV_CALIB_ZERO_TANGENT_DIST;
+    if (fix_center)
+        flags |= CV_CALIB_FIX_PRINCIPAL_POINT;
+
+    double width_ratio = calibration.irSize().width / calibration.depthSize().width;
+    calibration.depth_intrinsics(0,0) *= width_ratio;
+    calibration.depth_intrinsics(1,1) *= width_ratio;
+    calibration.depth_intrinsics(0,2) *= width_ratio;
+    calibration.depth_intrinsics(1,2) *= width_ratio;
+
+    std::vector<Mat> rvecs, tvecs;
+    double reprojection_error = calibrateCamera(pattern_points, good_corners, calibration.irSize(),
+                                                calibration.depth_intrinsics, calibration.depth_distortion,
+                                                rvecs, tvecs, flags);
+    ntk_dbg_print(reprojection_error, 0);
+
+    if (ignore_distortions)
+        calibration.depth_distortion = 0.f;
+
+    calibration.depth_intrinsics(0,0) /= width_ratio;
+    calibration.depth_intrinsics(1,1) /= width_ratio;
+    calibration.depth_intrinsics(0,2) /= width_ratio;
+    calibration.depth_intrinsics(1,2) /= width_ratio;
 }
 
 void calibrate_kinect_rgb(const std::vector<RGBDImage>& images,
