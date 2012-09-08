@@ -614,7 +614,8 @@ void getCalibratedCheckerboardCorners(const std::vector<RGBDImage>& images,
                                       PatternType pattern_type,
                                       std::vector< std::vector<Point2f> >& all_corners,
                                       std::vector< std::vector<Point2f> >& good_corners,
-                                      bool show_corners)
+                                      bool show_corners,
+                                      bool use_intensity)
 {
     static int k = 0;
     k++;
@@ -625,10 +626,32 @@ void getCalibratedCheckerboardCorners(const std::vector<RGBDImage>& images,
     {
         const RGBDImage& image = images[i_image];
 
+        cv::Mat3b color_image;
+        if (use_intensity)
+        {
+            color_image = toMat3b(normalize_toMat1b(image.intensity()));
+            kinect_shift_ir_to_depth(color_image);
+            // FIXME: quite tricky but works on most cases.
+            for_all_rc(color_image)
+            {
+                int v = color_image(r,c)[0];
+                if (v > 50)
+                    color_image(r,c) = cv::Vec3b(255,255,255);
+                else
+                {
+                    v = v*255/50;
+                    color_image(r,c) = cv::Vec3b(v, v, v);
+                }
+            }
+        }
+        else
+            color_image = image.rgb();
+        imwrite("debug_color.png", color_image);
+
         std::vector<Point2f> current_view_corners;
         calibrationCorners(cv::format("corners%02d-%02d", k, i_image), "",
                            pattern_width, pattern_height,
-                           current_view_corners, image.rgb(), 1,
+                           current_view_corners, color_image, 1,
                            pattern_type);
 
         if (current_view_corners.size() == pattern_height*pattern_width)
@@ -636,7 +659,7 @@ void getCalibratedCheckerboardCorners(const std::vector<RGBDImage>& images,
             all_corners[i_image] = current_view_corners;
             good_corners.push_back(current_view_corners);
             if (show_corners)
-                showCheckerboardCorners(image.rgb(), current_view_corners, 1);
+                showCheckerboardCorners(color_image, current_view_corners, 1);
         }
         else
         {
@@ -651,7 +674,8 @@ void calibrateStereoFromCheckerboard(const std::vector< std::vector<Point2f> >& 
                                      int pattern_width,
                                      int pattern_height,
                                      float pattern_size,
-                                     ntk::RGBDCalibration& calibration)
+                                     ntk::RGBDCalibration& calibration,
+                                     bool use_intensity)
 {
     ntk_assert(undistorted_ref_corners.size() == undistorted_corners.size(), "Size should be equal.");
     std::vector< std::vector<Point2f> > undistorted_good_corners;
@@ -680,8 +704,8 @@ void calibrateStereoFromCheckerboard(const std::vector< std::vector<Point2f> >& 
 
     stereoCalibrate(pattern_points,
                     undistorted_good_ref_corners, undistorted_good_corners,
-                    calibration.rgb_intrinsics, zero_dist,
-                    calibration.rgb_intrinsics, zero_dist,
+                    use_intensity ? calibration.depth_intrinsics : calibration.rgb_intrinsics, zero_dist,
+                    use_intensity ? calibration.depth_intrinsics : calibration.rgb_intrinsics, zero_dist,
                     calibration.rgbSize(),
                     R, T, E, F,
                     TermCriteria(TermCriteria::COUNT+TermCriteria::EPS, 50, 1e-6),

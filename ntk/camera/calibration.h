@@ -223,12 +223,13 @@ void getCalibratedCheckerboardCorners(const std::vector<RGBDImage>& images,
                                       PatternType pattern_type,
                                       std::vector< std::vector<cv::Point2f> >& all_corners,
                                       std::vector< std::vector<cv::Point2f> >& good_corners,
-                                      bool show_corners = true);
+                                      bool show_corners = true,
+                                      bool use_intensity = false);
 
 void calibrateStereoFromCheckerboard(const std::vector< std::vector<cv::Point2f> >& undistorted_ref_corners,
                                      const std::vector< std::vector<cv::Point2f> >& undistorted_corners,
                                      int pattern_width, int pattern_height, float pattern_size,
-                                     ntk::RGBDCalibration &calibration);
+                                     ntk::RGBDCalibration &calibration, bool use_intensity = false);
 
 void calibrate_kinect_rgb(const std::vector<ntk::RGBDImage>& images,
                           const std::vector< std::vector<cv::Point2f> >& good_corners,
