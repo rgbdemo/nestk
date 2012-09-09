@@ -41,6 +41,10 @@ class Pose3D;
 class RGBDCalibration
 {
 public:
+    static const float infraredDepthOffsetX() { return -4.8f; }
+    static const float infraredDepthOffsetY() { return -3.9f; }
+
+public:
   RGBDCalibration();
 
   ~RGBDCalibration();
@@ -62,7 +66,7 @@ public:
   void setRgbSize(cv::Size s) { rgb_size = s; }
 
   /*! Size of the infrared image. */
-  cv::Size irSize() const { return cv::Size(1280, 1024); }
+  const cv::Size& infraredSize() const { return infrared_size; }
 
   /*! Size of raw rgb images. */
   const cv::Size& rawRgbSize() const { return raw_rgb_size; }
@@ -73,7 +77,10 @@ public:
   const cv::Size& depthSize() const { return depth_size; }
 
   /*! Deduce infrared intrinsics from depth intrinsics. */
-  cv::Mat1d irIntrinsicsFromDepth() const;
+  void computeInfraredIntrinsicsFromDepth();
+
+  /*! Deduce depth intrinsics from infrared intrinsics. */
+  void computeDepthIntrinsicsFromInfrared();
 
   /*! Intrinsics 3x3 matrix for the rgb channel */
   cv::Mat1d rgb_intrinsics;
@@ -89,6 +96,12 @@ public:
 
   /*! Distortion 1x5 matrix for depth channel. */
   cv::Mat1d depth_distortion;
+
+  /*! Intrinsics 3x3 matrix for the infrared channel */
+  cv::Mat1d infrared_intrinsics;
+
+  /*! Distortion 1x5 matrix for infrared channel. */
+  cv::Mat1d infrared_distortion;
 
   /*! Whether there are distortions for the depth image or not. */
   bool zero_depth_distortion;
@@ -141,6 +154,8 @@ public:
 
   cv::Size raw_depth_size;
   cv::Size depth_size;
+
+  cv::Size infrared_size;
 
   /**
     * Name of the camera. This can be used to create an appropriate processor.
@@ -206,7 +221,7 @@ void showCheckerboardCorners(const cv::Mat3b& image,
                              int wait_time = 10);
 
 // Apply translation coeffs, see http://www.ros.org/wiki/kinect_calibration/technical
-void kinect_shift_ir_to_depth(cv::Mat3b& im);
+void kinect_shift_ir_to_depth(cv::Mat3b& im, bool highres = false);
 
 void loadImageList(const QStringList& view_dirs,
                    ntk::RGBDProcessor* processor,

@@ -110,9 +110,6 @@ EventListener::Event SyncEventListener :: waitForNewEvent(int timeout_msecs)
 {
     if (!m_enabled) return 0;
 
-    if (timeout_msecs < 0)
-        timeout_msecs = event_timeout_msecs;
-
     Event last_event;
 
     m_lock.lock();

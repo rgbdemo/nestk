@@ -82,6 +82,8 @@ void RGBDCalibration::copyTo(RGBDCalibration &rhs) const
     rhs.zero_depth_distortion = zero_depth_distortion;
     depth_intrinsics.copyTo(rhs.depth_intrinsics);
     depth_distortion.copyTo(rhs.depth_distortion);
+    infrared_intrinsics.copyTo(rhs.infrared_intrinsics);
+    infrared_distortion.copyTo(rhs.infrared_distortion);
     R_extrinsics.copyTo(rhs.R_extrinsics);
     T_extrinsics.copyTo(rhs.T_extrinsics);
     R.copyTo(rhs.R);
@@ -109,6 +111,8 @@ void RGBDCalibration::copyTo(RGBDCalibration &rhs) const
     rhs.raw_depth_size = raw_depth_size;
     rhs.depth_size = depth_size;
 
+    rhs.infrared_size = infrared_size;
+
     rhs.camera_type = camera_type;
 }
 
@@ -135,7 +139,8 @@ void RGBDCalibration :: loadFromFile(const char* filename)
     zero_rgb_distortion = rgb_distortion(0,0) < 1e-5 ? true : false;
     readMatrix(calibration_file, "depth_intrinsics", depth_intrinsics);
     readMatrix(calibration_file, "depth_distortion", depth_distortion);
-    zero_depth_distortion = depth_distortion(0,0) < 1e-5 ? true : false;;
+    zero_depth_distortion = depth_distortion(0,0) < 1e-5 ? true : false;
+
     readMatrix(calibration_file, "R", R);
     readMatrix(calibration_file, "T", T);
     cv::Mat1i size_mat;
@@ -143,7 +148,6 @@ void RGBDCalibration :: loadFromFile(const char* filename)
     rgb_size = cv::Size(size_mat(0,0), size_mat(0,1));
     readMatrix(calibration_file, "raw_rgb_size", size_mat);
     raw_rgb_size = cv::Size(size_mat(0,0), size_mat(0,1));
-    cv::Mat1i rgb_size_mat;
     readMatrix(calibration_file, "depth_size", size_mat);
     depth_size = cv::Size(size_mat(0,0), size_mat(0,1));
     readMatrix(calibration_file, "raw_depth_size", size_mat);
@@ -156,6 +160,28 @@ void RGBDCalibration :: loadFromFile(const char* filename)
     catch (...)
     {
         ntk_dbg(0) << "Warning: could not load extrinsics (R_extrinsics, T_extrinsics).";
+    }
+
+    try
+    {
+        cv::Mat1i size_mat;
+        readMatrix(calibration_file, "infrared_size", size_mat);
+        infrared_size = cv::Size(size_mat(0,0), size_mat(0,1));
+    }
+    catch (...)
+    {
+        ntk_dbg(1) << "Could not read infrared image size, setting default 1280x1024";
+        infrared_size = cv::Size(1280, 1024);
+    }
+
+    try
+    {
+        readMatrix(calibration_file, "infrared_intrinsics", infrared_intrinsics);
+        readMatrix(calibration_file, "infrared_distortion", infrared_distortion);
+    } catch (...)
+    {
+        ntk_dbg(1) << "Warning: cannot read infrared camera intrinsics, computing from depth.";
+        computeInfraredIntrinsicsFromDepth();
     }
 
     cv::Mat1f depth_calib (1,2);
@@ -212,6 +238,8 @@ void RGBDCalibration :: saveToFile(const char* filename) const
     writeMatrix(output_file, "rgb_distortion", rgb_distortion);
     writeMatrix(output_file, "depth_intrinsics", depth_intrinsics);
     writeMatrix(output_file, "depth_distortion", depth_distortion);
+    writeMatrix(output_file, "infrared_intrinsics", infrared_intrinsics);
+    writeMatrix(output_file, "infrared_distortion", infrared_distortion);
     writeMatrix(output_file, "R", R);
     writeMatrix(output_file, "T", T);
     writeMatrix(output_file, "R_extrinsics", R_extrinsics);
@@ -233,6 +261,10 @@ void RGBDCalibration :: saveToFile(const char* filename) const
     size_matrix(0,0) = raw_depth_size.width;
     size_matrix(0,1) = raw_depth_size.height;
     writeMatrix(output_file, "raw_depth_size", size_matrix);
+
+    size_matrix(0,0) = infrared_size.width;
+    size_matrix(0,1) = infrared_size.height;
+    writeMatrix(output_file, "infrared_size", size_matrix);
 
     {
         cv::Mat1f depth_calib (1,2);
@@ -256,16 +288,47 @@ void RGBDCalibration :: saveToFile(const char* filename) const
     output_file.release();
 }
 
-cv::Mat1d RGBDCalibration::irIntrinsicsFromDepth() const
+void RGBDCalibration::computeInfraredIntrinsicsFromDepth()
 {
-    // FIXME: only valid for Primesense cameras.
-    cv::Mat1d ir_intrinsics;
-    depth_intrinsics.copyTo(ir_intrinsics);
-    ir_intrinsics(0,0) *= 2.;
-    ir_intrinsics(1,1) *= 2.;
-    ir_intrinsics(0,2) *= 2.;
-    ir_intrinsics(1,2) *= 2.;
-    return ir_intrinsics;
+    depth_intrinsics.copyTo(infrared_intrinsics);
+    depth_distortion.copyTo(infrared_distortion);
+
+    double& fx = infrared_intrinsics(0,0);
+    double& fy = infrared_intrinsics(1,1);
+    double& cx = infrared_intrinsics(0,2);
+    double& cy = infrared_intrinsics(1,2);
+
+    ntk_dbg(1) << cv::format("fx: %f fy: %f cx: %f cy: %f\n", fx, fy, cx, cy);
+
+    cx -= infraredDepthOffsetX();
+    cy -= infraredDepthOffsetY();
+    double ratio = double(infrared_size.width) / depth_size.width;
+    ntk_dbg_print(ratio, 1);
+    fx *= ratio;
+    fy *= ratio;
+    cx *= ratio;
+    cy *= ratio;
+
+    ntk_dbg(1) << cv::format("fx: %f fy: %f cx: %f cy: %f\n", fx, fy, cx, cy);
+}
+
+void RGBDCalibration::computeDepthIntrinsicsFromInfrared()
+{
+    infrared_intrinsics.copyTo(depth_intrinsics);
+    infrared_distortion.copyTo(depth_distortion);
+
+    double& fx = depth_intrinsics(0,0);
+    double& fy = depth_intrinsics(1,1);
+    double& cx = depth_intrinsics(0,2);
+    double& cy = depth_intrinsics(1,2);
+
+    double ratio = double(infrared_size.width) / depth_size.width;
+    fx /= ratio;
+    fy /= ratio;
+    cx /= ratio;
+    cy /= ratio;
+    cx += infraredDepthOffsetX();
+    cy += infraredDepthOffsetY();
 }
 
 } // ntk
@@ -574,15 +637,16 @@ double computeCalibrationError(const cv::Mat& F,
     return avgErr / (points_in_rgb.size() + points_in_depth.size());
 }
 
-void kinect_shift_ir_to_depth(cv::Mat3b& im)
+void kinect_shift_ir_to_depth(cv::Mat3b& im, bool highres)
 {
     imwrite("/tmp/before.png", im);
+    float factor = highres ? 2.0f : 1.0f;
     cv::Mat1f t (2, 3);
     t = 0.f;
     t(0,0) = 1;
     t(1,1) = 1;
-    t(0,2) = -4.8f;
-    t(1,2) = -3.9f;
+    t(0,2) = -4.8f * factor;
+    t(1,2) = -3.9f * factor;
     cv::Mat3b tmp;
     warpAffine(im, tmp, t, im.size());
     im = tmp;
@@ -641,7 +705,7 @@ void getCalibratedCheckerboardCorners(const std::vector<RGBDImage>& images,
         if (use_intensity)
         {
             color_image = toMat3b(normalize_toMat1b(image.intensity()));
-            kinect_shift_ir_to_depth(color_image);
+            // kinect_shift_ir_to_depth(color_image, true);
             // FIXME: quite tricky but works on most cases.
             for_all_rc(color_image)
             {
@@ -716,7 +780,7 @@ void calibrateStereoFromCheckerboard(const std::vector< std::vector<Point2f> >& 
     cv::Size image_size;
     if (use_intensity)
     {
-        image_size = calibration.irSize();
+        image_size = calibration.infraredSize();
     }
     else
     {
@@ -726,7 +790,7 @@ void calibrateStereoFromCheckerboard(const std::vector< std::vector<Point2f> >& 
     cv::Mat1d intrinsics;
     if (use_intensity)
     {
-        intrinsics = calibration.irIntrinsicsFromDepth();
+        intrinsics = calibration.infrared_intrinsics;
     }
     else
     {
@@ -786,25 +850,14 @@ void calibrate_kinect_depth_infrared(const std::vector<RGBDImage>& images,
     if (fix_center)
         flags |= CV_CALIB_FIX_PRINCIPAL_POINT;
 
-    double width_ratio = calibration.irSize().width / calibration.depthSize().width;
-    calibration.depth_intrinsics(0,0) *= width_ratio;
-    calibration.depth_intrinsics(1,1) *= width_ratio;
-    calibration.depth_intrinsics(0,2) *= width_ratio;
-    calibration.depth_intrinsics(1,2) *= width_ratio;
-
     std::vector<Mat> rvecs, tvecs;
-    double reprojection_error = calibrateCamera(pattern_points, good_corners, calibration.irSize(),
-                                                calibration.depth_intrinsics, calibration.depth_distortion,
+    double reprojection_error = calibrateCamera(pattern_points, good_corners, calibration.infraredSize(),
+                                                calibration.infrared_intrinsics, calibration.infrared_distortion,
                                                 rvecs, tvecs, flags);
     ntk_dbg_print(reprojection_error, 0);
 
     if (ignore_distortions)
-        calibration.depth_distortion = 0.f;
-
-    calibration.depth_intrinsics(0,0) /= width_ratio;
-    calibration.depth_intrinsics(1,1) /= width_ratio;
-    calibration.depth_intrinsics(0,2) /= width_ratio;
-    calibration.depth_intrinsics(1,2) /= width_ratio;
+        calibration.infrared_distortion = 0.f;
 }
 
 void calibrate_kinect_rgb(const std::vector<RGBDImage>& images,
