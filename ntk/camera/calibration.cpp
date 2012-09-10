@@ -300,8 +300,8 @@ void RGBDCalibration::computeInfraredIntrinsicsFromDepth()
 
     ntk_dbg(1) << cv::format("fx: %f fy: %f cx: %f cy: %f\n", fx, fy, cx, cy);
 
-    cx -= infraredDepthOffsetX();
-    cy -= infraredDepthOffsetY();
+    cx = cx - infraredDepthOffsetX();
+    cy = cy - infraredDepthOffsetY() + 16;
     double ratio = double(infrared_size.width) / depth_size.width;
     ntk_dbg_print(ratio, 1);
     fx *= ratio;
@@ -327,8 +327,10 @@ void RGBDCalibration::computeDepthIntrinsicsFromInfrared()
     fy /= ratio;
     cx /= ratio;
     cy /= ratio;
-    cx += infraredDepthOffsetX();
-    cy += infraredDepthOffsetY();
+    cx = cx + infraredDepthOffsetX();
+    cy = cy + infraredDepthOffsetY() - 16;
+    // cx = cx;
+    // cy = cy - 16;
 }
 
 } // ntk

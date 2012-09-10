@@ -41,8 +41,8 @@ class Pose3D;
 class RGBDCalibration
 {
 public:
-    static const float infraredDepthOffsetX() { return -4.8f; }
-    static const float infraredDepthOffsetY() { return -3.9f; }
+    static float infraredDepthOffsetX() { return -3.f; }
+    static float infraredDepthOffsetY() { return -3.f; }
 
 public:
   RGBDCalibration();

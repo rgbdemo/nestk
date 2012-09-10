@@ -449,10 +449,10 @@ void OpenniGrabber :: estimateCalibration()
     double fx = -(p.X-cx);
     double fy = p.Y-cy;
 
-    // These factors were estimated using chessboard calibration.
-    // They seem to accurately correct the bias in object sizes output by
-    // the default parameters.
-    const double f_correction_factor = 528.0/570.34;
+    // When hardware alignment is enabled, to focus length has to be adjusted
+    // to match the color one. This empirical factor computed by averaging checkerboard
+    // calibrations seem quite good.
+    const double f_correction_factor = m_hardware_registration ? 528.0/570.34 : 1.0;
     fx *= f_correction_factor;
     fy *= f_correction_factor;
 
