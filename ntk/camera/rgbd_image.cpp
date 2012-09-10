@@ -256,4 +256,14 @@ namespace ntk
       m_depth_pose.toLeftCamera(m_calibration->depth_intrinsics, m_calibration->R, m_calibration->T);
   }
 
+  bool RGBDImage::hasEmptyRawDepthImage() const
+  {
+      for_all_rc(rawDepth())
+      {
+          if (rawDepth()(r,c) > 1e-5)
+              return false;
+      }
+      return true;
+  }
+
 } // ntk

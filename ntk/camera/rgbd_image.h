@@ -219,6 +219,9 @@ public:
   Pose3D rgbPose() const;
   void setRgbPose(const Pose3D& pose);
 
+  /*! Whether the image does not have any depth pixel. */
+  bool hasEmptyRawDepthImage() const;
+
 private:
   cv::Mat3b m_rgb;
   cv::Mat1b m_rgb_as_gray;
