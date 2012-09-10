@@ -65,6 +65,22 @@ SET ( ntk_sources
      gui/image_window.cpp
      gui/screen_grabber.h
      gui/screen_grabber.cpp
+     hub/hub.h
+     hub/hub.cpp
+     hub/update.h
+     hub/update.cpp
+     hub/updates.h
+     hub/updates.cpp
+     hub/updates/image-update.h
+     hub/updates/image-update.cpp
+     hub/updates/log-update.h
+     hub/updates/log-update.cpp
+     hub/updates/progress-update.h
+     hub/updates/progress-update.cpp
+     hub/updates/status-update.h
+     hub/updates/status-update.cpp
+     hub/outlet.h
+     hub/outlet.cpp
      image/bilateral_filter.h
      image/bilateral_filter.cpp
      image/color_model.h
@@ -173,6 +189,7 @@ QT4_WRAP_CPP(moc_sources
   mesh/mesh_viewer.h
   thread/event.h
   utils/progressive.h
+  hub/outlet.h
 )
 
 # Workaround a bug with i386 on Mac that cannot compile this particular
