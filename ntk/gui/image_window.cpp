@@ -148,7 +148,9 @@ void DirectImageWindowManager::showImage(const std::string &window_name, const c
     DirectImageWindowManagerEventDataPtr data (new DirectImageWindowManagerEventData);
     data->window_name = window_name;
     im.copyTo(data->im);
-    newEvent(this, data);
+    // FIXME: hacky. Make sure the sender url are different for each window to avoid
+    // compressing multiple signals into one.
+    newEvent(this + qHash(QByteArray(window_name.c_str())), data);
 }
 
 void DirectImageWindowManager::handleAsyncEvent(EventListener::Event event)

@@ -539,6 +539,7 @@ void OpenniGrabber :: estimateCalibration()
                                           m_calib_data->T);
 
     m_calib_data->camera_type = "kinect-ni";
+    m_calib_data->computeInfraredIntrinsicsFromDepth();
 }
 
 void OpenniGrabber :: run()

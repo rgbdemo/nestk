@@ -128,6 +128,14 @@ EventListener::Event SyncEventListener :: waitForNewEvent(int timeout_msecs)
     return last_event;
 }
 
+int SyncEventListener::currentQueueSize() const
+{
+    m_lock.lock();
+    int value = m_unprocessed_ordered_events.size();
+    m_lock.unlock();
+    return value;
+}
+
 void AsyncEventListener :: newEvent(EventBroadcaster* sender, EventDataPtr data)
 {
     SyncEventListener::newEvent(sender, data);
@@ -152,7 +160,9 @@ void AsyncEventListener :: customEvent(QEvent* generic_event)
 
     generic_event->accept();
     m_handler_running = true;
-    while (m_event_signaled)
+    const int queue_size = currentQueueSize();
+    int i = 0;
+    while (m_event_signaled || i < queue_size)
     {
         m_event_signaled = false;
         Event event = waitForNewEvent();
@@ -160,6 +170,7 @@ void AsyncEventListener :: customEvent(QEvent* generic_event)
         // FIXME: this is important on Windows to avoid the application
         // spending all its time handling these custom events.
         QApplication::processEvents();
+        ++i;
     }
     m_handler_running = false;
 }

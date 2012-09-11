@@ -141,6 +141,9 @@ public:
     static const int event_timeout_msecs;
     Event waitForNewEvent(int timeout_msecs = event_timeout_msecs);
 
+protected:
+    int currentQueueSize() const;
+
 private:
     bool m_enabled;
     mutable QMutex m_lock;
