@@ -25,6 +25,7 @@
 #include <ntk/numeric/levenberg_marquart_minimizer.h>
 #include <ntk/utils/opencv_utils.h>
 #include <ntk/mesh/mesh.h>
+#include <ntk/hub/hub.h>
 
 // FIXME: disable until PCL and OpenCV conflict get solved.
 #undef NESTK_USE_PCL
@@ -177,9 +178,13 @@ bool IncrementalPoseEstimatorFromRgbFeatures::estimateCurrentPose()
         tc.elapsedMsecs(" -- computeNumMatchesWithPrevious -- ");
         ntk_dbg_print(closest_view_index, 1);
         ntk_dbg_print(best_matches.size(), 1);
-#ifdef HEAVY_DEBUG
+
         cv::Mat3b debug_img;
-        m_features[closest_view_index].drawMatches(m_image_data[closest_view_index].color, image.rgb(), image_features, best_matches, debug_img);
+        // m_features[closest_view_index]->drawMatches(m_image_data[closest_view_index].color, image.rgb(), *image_features, best_matches, debug_img);
+        m_features[closest_view_index]->draw(m_image_data[closest_view_index].color, debug_img);
+        ntk::hub::Hub::getInstance()->setImage("features_output", debug_img);
+
+#ifdef HEAVY_DEBUG
         imwrite("/tmp/debug_matches.png", debug_img);
 #endif
 
