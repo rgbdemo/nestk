@@ -20,6 +20,7 @@ public:
 public:
     QString getStatus (QString name) const;
     void    setStatus (QString name, QString status);
+    void  clearStatus (QString name);
 
 private:
     typedef QHash<QString, QString> Statuses;

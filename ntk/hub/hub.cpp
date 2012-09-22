@@ -52,6 +52,12 @@ Hub::setStatus (QString name, QString status)
     postUpdate(new StatusUpdate(name, status));
 }
 
+void
+Hub::clearStatus (QString name)
+{
+    postUpdate(new StatusUpdate(name, QString()));
+}
+
 //------------------------------------------------------------------------------
 
 qreal
