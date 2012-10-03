@@ -224,6 +224,8 @@ namespace ntk
       if (m_use_color)
       {
         p2d_rgb = rgb_pose.projectToImage(p3d);
+        if (!is_yx_in_range(image.rgb(), p2d_rgb.y, p2d_rgb.x))
+            continue;
         texcoords = Point2f(p2d_rgb.x/image.rgb().cols, p2d_rgb.y/image.rgb().rows);
       }
       else
