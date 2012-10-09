@@ -721,37 +721,51 @@ void Mesh::computeEdges(std::vector< Edge >& edges,
             e.f1 = face_i;
             e.f2 = -1;
 
+            e.length = cv::norm(vertices[e.v1] - vertices[e.v2]);
+
             const std::vector<int>& faces_v1 = faces_per_vertex[e.v1];
             const std::vector<int>& faces_v2 = faces_per_vertex[e.v2];
 
-            bool found = false;
+            int n_edges = 0;
+            bool border_edge = true;
 
             // Look for the other common face.
-            for (int k = 0; !found && k < faces_v1.size(); ++k)
+            for (int k = 0; k < faces_v1.size(); ++k)
             {
                 // We want the other face.
                 if (faces_v1[k] == face_i)
                     continue;
 
-                for (int l = 0; !found && l < faces_v2.size(); ++l)
+                for (int l = 0; l < faces_v2.size(); ++l)
                 {
                     if (faces_v1[k] != faces_v2[l])
                         continue;
 
+                    // make sure we do not consider it as a border edge later.
+                    border_edge = false;
+
+                    if (faces_v1[k] < e.f1)
+                        continue; // already added when processing f1.
+
                     e.f2 = faces_v1[k];
-                    found = true;
+                    int edge_index = edges.size();
+                    edges_per_vertex[e.v1].push_back(edge_index);
+                    edges_per_vertex[e.v2].push_back(edge_index);
+                    edges.push_back(e);
+                    ++n_edges;
                 }
             }
 
-            if ((e.f2 >= 0) && (e.f2 < e.f1))
-                continue; // already added when processing f1.
+            if (n_edges > 1)
+                ntk_dbg(1) << "Warning: not two-manifold.";
 
-            e.length = cv::norm(vertices[e.v1] - vertices[e.v2]);
+            if (!border_edge)
+                continue; // already added
 
+            // No second adjacent face, add the border edge.
             int edge_index = edges.size();
             edges_per_vertex[e.v1].push_back(edge_index);
             edges_per_vertex[e.v2].push_back(edge_index);
-
             edges.push_back(e);
         }
     }
@@ -774,7 +788,7 @@ struct VertexComparator
     const std::vector<cv::Point3f>& vertices;
 };
 
-void Mesh::removeDuplicatedVertices()
+void Mesh::removeDuplicatedVertices(float max_dist)
 {
     std::vector<int> ordered_indices (vertices.size());
     foreach_idx(i, ordered_indices) ordered_indices[i] = i;
@@ -789,7 +803,8 @@ void Mesh::removeDuplicatedVertices()
     for (; i < ordered_indices.size() - 1; )
     {
         j = i + 1;
-        while (j < ordered_indices.size() && vertices[ordered_indices[i]] == vertices[ordered_indices[j]])
+        while (j < ordered_indices.size()
+               && flt_eq(vertices[ordered_indices[i]], vertices[ordered_indices[j]], max_dist))
         {
             vertex_alias[ordered_indices[j]] = ordered_indices[i];
             vertices[ordered_indices[j]] = infinite_point();
@@ -855,6 +870,7 @@ void Mesh::removeIsolatedVertices()
         foreach_idx(v_i, faces[face_i])
         {
             int old_index = faces[face_i].indices[v_i];
+            ntk_assert(new_indices[old_index] >= 0, "Inconsistent face.");
             faces[face_i].indices[v_i] = new_indices[old_index];
         }
     }
@@ -863,6 +879,159 @@ void Mesh::removeIsolatedVertices()
     colors = new_mesh.colors;
     normals = new_mesh.normals;
     texcoords = new_mesh.texcoords;
+}
+
+struct FaceComparatorByIndices
+{
+    FaceComparatorByIndices(const std::vector<Face>& faces) : faces(faces) {}
+
+    bool operator()(int i1, int i2) const
+    {
+        for (int k = 0; k < 3; ++k)
+        {
+            if (faces[i1].indices[k] != faces[i2].indices[k])
+                return faces[i1].indices[k] < faces[i2].indices[k];
+        }
+        return false;
+    }
+
+    const std::vector<Face>& faces;
+};
+
+void Mesh::removeDuplicatedFaces()
+{
+    std::vector<int> ordered_indices (faces.size());
+    foreach_idx(i, ordered_indices) ordered_indices[i] = i;
+
+    foreach_idx(i, faces) faces[i].sort();
+
+    FaceComparatorByIndices comparator (faces);
+    std::sort(stl_bounds(ordered_indices), comparator);
+
+    std::vector<Face> new_faces;
+    new_faces.reserve(faces.size());
+
+    std::vector<FaceTexcoord> new_face_texcoords;
+    new_face_texcoords.reserve(face_texcoords.size());
+
+    Face prev_face (-1, -1, -1);
+    for (int i = 0; i < ordered_indices.size(); ++i)
+    {
+        const int face_i = ordered_indices[i];
+        const Face& face = faces[face_i];
+        if (face == prev_face)
+        {
+            ntk_dbg(2) << "Removing duplicate face.";
+            continue;
+        }
+
+        prev_face = face;
+        new_faces.push_back(face);
+        if (hasFaceTexcoords())
+            new_face_texcoords.push_back(face_texcoords[face_i]);
+    }
+
+    faces = new_faces;
+    face_texcoords = new_face_texcoords;
+}
+
+struct FaceComparatorByArea
+{
+    FaceComparatorByArea(const Mesh& mesh) : mesh(mesh) {}
+
+    bool operator()(int i1, int i2) const
+    {
+        return mesh.faceArea(i1) < mesh.faceArea(i2);
+    }
+
+    const Mesh& mesh;
+};
+
+void Mesh::removeNonManifoldFaces()
+{
+    std::vector< std::vector<int> > faces_per_vertex;
+    computeVertexFaceMap(faces_per_vertex);
+
+    foreach_idx(face_i, faces)
+    {
+        const Face& face = faces[face_i];
+        if (!face.isValid())
+            continue;
+
+        for (int i = 0; i < 2; ++i)
+        for (int j = i+1; j < 3; ++j)
+        {
+            int v1 = face.indices[i];
+            int v2 = face.indices[j];
+            if (v1 > v2)
+                std::swap(v1, v2);
+
+            const std::vector<int>& faces_v1 = faces_per_vertex[v1];
+            const std::vector<int>& faces_v2 = faces_per_vertex[v2];
+
+            std::vector<int> adjacent_faces;
+            adjacent_faces.push_back(face_i);
+
+            // Look for the other common face.
+            for (int k = 0; k < faces_v1.size(); ++k)
+            {
+                // We want other faces.
+                if (faces_v1[k] == face_i)
+                    continue;
+
+                if (!faces[faces_v1[k]].isValid())
+                    continue;
+
+                for (int l = 0; l < faces_v2.size(); ++l)
+                {
+                    if (faces_v1[k] != faces_v2[l])
+                        continue;
+
+                    adjacent_faces.push_back(faces_v1[k]);
+                }
+            }
+
+            if (adjacent_faces.size() <= 2)
+                continue; // ok, two-manifold.
+
+            std::sort(stl_bounds(adjacent_faces), FaceComparatorByArea(*this));
+            for (int k = 0; k < adjacent_faces.size() - 2; ++k)
+            {
+                faces[adjacent_faces[k]].kill();
+            }
+        }
+    }
+}
+
+float Mesh::faceArea(int face_id) const
+{
+    const Face& face = faces[face_id];
+    return triangleArea(vertices[face.indices[0]], vertices[face.indices[1]], vertices[face.indices[2]]);
+}
+
+void Mesh::removeDegeneratedFaces()
+{
+    std::vector<Face> new_faces;
+    new_faces.reserve(faces.size());
+
+    std::vector<FaceTexcoord> new_face_texcoords;
+    new_face_texcoords.reserve(face_texcoords.size());
+
+    foreach_idx(face_i, faces)
+    {
+        const Face& face = faces[face_i];
+        if (!face.isValid()
+                || face.indices[0] == face.indices[1]
+                || face.indices[0] == face.indices[2]
+                || face.indices[1] == face.indices[2])
+            continue;
+        new_faces.push_back(face);
+        if (hasFaceTexcoords())
+            new_face_texcoords.push_back(face_texcoords[face_i]);
+    }
+
+    faces = new_faces;
+    face_texcoords = new_face_texcoords;
 }
 
 cv::Point3f barycentricCoordinates(const cv::Point3f ref_points[3], const cv::Point3f& p)
@@ -890,6 +1059,16 @@ cv::Point3f fastBarycentricCoordinates(const cv::Point3f ref_points[3], const cv
     float b1 = ((x2*y0-x0*y2)*zp + xp*(y2*z0-y0*z2) + yp*(x0*z2-x2*z0)) / det;
     float b2 = ((x0*y1-x1*y0)*zp + xp*(y0*z1-y1*z0) + yp*(x1*z0-x0*z1)) / det;
     return cv::Point3f(b0, b1, b2);
+}
+
+void Face::sort()
+{
+    const int old_indices[3] = { indices[0], indices[1], indices[2] };
+    const int min_index = std::min_element(indices, indices+3) - indices;
+    for (int i = 0; i < 3; ++i)
+    {
+        indices[i] = old_indices[(min_index+i)%3];
+    }
 }
 
 } // end of ntk

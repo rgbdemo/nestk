@@ -59,6 +59,11 @@ namespace ntk
     bool isValid() const { return indices[0] >= 0; }
     void kill() { indices[0] = -1; }
 
+    bool operator==(const Face& rhs) const
+    { return indices[0] == rhs.indices[0] && indices[1] == rhs.indices[1] && indices[2] == rhs.indices[2]; }
+
+    void sort();
+
     int findIndexOf(int vertex) const
     {
         for (int k = 0; k < numVertices(); ++k)
@@ -186,8 +191,16 @@ namespace ntk
 
     // Cleaning
   public:
-    void removeDuplicatedVertices();
+    void removeDuplicatedVertices(float max_dist = 1e-10);
     void removeIsolatedVertices();
+    void removeDegeneratedFaces();
+    void removeDuplicatedFaces();
+
+    /*!
+     * Make sure no edge has more than 2 adjacent faces.
+     * If it happens, remove the smallest faces.
+     */
+    void removeNonManifoldFaces();
 
   public:
     bool hasColors() const { return colors.size() == vertices.size(); }
@@ -195,6 +208,9 @@ namespace ntk
     bool hasTexcoords() const { return texcoords.size() > 0; }
     bool hasFaceTexcoords() const { return face_texcoords.size() > 0; }
     bool hasFaces() const { return faces.size() > 0; }
+
+  public:
+    float faceArea(int face_id) const;
 
   public:
     void clear();
