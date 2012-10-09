@@ -708,7 +708,8 @@ void getCalibratedCheckerboardCorners(const std::vector<RGBDImage>& images,
         {
             color_image = toMat3b(normalize_toMat1b(image.intensity()));
             // kinect_shift_ir_to_depth(color_image, true);
-            // FIXME: quite tricky but works on most cases.
+            // FIXME: quite tricky but works for some cases.
+#if 0
             for_all_rc(color_image)
             {
                 int v = color_image(r,c)[0];
@@ -720,6 +721,7 @@ void getCalibratedCheckerboardCorners(const std::vector<RGBDImage>& images,
                     color_image(r,c) = cv::Vec3b(v, v, v);
                 }
             }
+#endif
         }
         else
             color_image = image.rgb();
