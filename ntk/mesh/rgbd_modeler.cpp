@@ -73,7 +73,7 @@ RGBDModelerInOwnThread::~RGBDModelerInOwnThread()
 
 bool RGBDModelerInOwnThread::addNewView(const RGBDImage &image, Pose3D &depth_pose)
 {
-    ntk::TimeCount tc("INOWNTHREAD", 1);
+    ntk::TimeCount tc("INOWNTHREAD", 2);
     FrameEventDataPtr data (new FrameEventData);
     data->type = FrameEventData::NewImage;
     image.copyTo(data->image);
