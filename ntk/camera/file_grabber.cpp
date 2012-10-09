@@ -44,7 +44,7 @@ FileGrabber::FileGrabber(const std::string& path, bool is_directory)
     setCameraSerial(QDir(path.c_str()).dirName().toStdString());
 
     // Loop by default.
-    m_loop = true;
+    m_loop = false;
 }
 
 void FileGrabber::run()
