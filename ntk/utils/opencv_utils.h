@@ -57,6 +57,13 @@ const NtkDebug& operator<<(const NtkDebug& stream, const cv::Mat1d& m);
 namespace ntk
 {
 
+inline bool flt_eq(const cv::Point3f& p1, const cv::Point3f& p2, float max_dist)
+{
+    return flt_eq(p1.x, p2.x, max_dist)
+            && flt_eq(p1.y, p2.y, max_dist)
+            && flt_eq(p1.z, p2.z, max_dist);
+}
+
 cv::Point3f computeCentroid(const std::vector<cv::Point3f>& points);
 
 template <class T>
@@ -363,6 +370,7 @@ inline cv::Mat3b rotate90(const cv::Mat3b& im)
 }
 
 float triangleArea(const cv::Point2f& p1, const cv::Point2f& p2, const cv::Point2f& p3);
+float triangleArea(const cv::Point3f& p1, const cv::Point3f& p2, const cv::Point3f& p3);
 
 }
 

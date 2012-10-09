@@ -436,4 +436,11 @@ cv::Point3f computeCentroid(const std::vector<cv::Point3f>& points)
       return 0.5f * std::abs(tmp);
   }
 
+  float triangleArea(const cv::Point3f& p1, const cv::Point3f& p2, const cv::Point3f& p3)
+  {
+      cv::Point3f p21 = p2 - p1;
+      cv::Point3f p31 = p3 - p1;
+      return 0.5f*cv::norm(p21.cross(p31));
+  }
+
 }
