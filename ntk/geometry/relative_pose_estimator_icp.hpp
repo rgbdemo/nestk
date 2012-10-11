@@ -228,6 +228,7 @@ computeRegistration(Pose3D& relative_pose,
     reg.setMaximumIterations (m_max_iterations);
     reg.setTransformationEpsilon (1e-10);
     reg.setMaxCorrespondenceDistance (m_distance_threshold);
+    reg.setRANSACOutlierRejectionThreshold(m_ransac_outlier_threshold);
     reg.setInputCloud (source_cloud);
     reg.setInputTarget (target_cloud);
     reg.align (aligned_cloud);

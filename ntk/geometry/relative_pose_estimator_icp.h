@@ -106,6 +106,7 @@ class RelativePoseEstimatorICPWithNormals : public RelativePoseEstimatorICP<Poin
 
     using super::m_max_iterations;
     using super::m_distance_threshold;
+    using super::m_ransac_outlier_threshold;
 
 protected:
     virtual bool computeRegistration(Pose3D& relative_pose,
