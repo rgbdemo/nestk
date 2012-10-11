@@ -211,6 +211,46 @@ void sampledRgbdImageToPointCloud(pcl::PointCloud<PointT>& cloud,
     }
 }
 
+template <>
+void sampledRgbdImageToPointCloud(pcl::PointCloud<pcl::PointNormal>& cloud,
+                                  const RGBDImage& image,
+                                  const Pose3D& pose,
+                                  int n_samples)
+{
+    cloud.width = n_samples;
+    cloud.height = 1;
+    cloud.points.resize(n_samples);
+    cv::RNG rng;
+
+    Pose3D rotation_pose;
+    rotation_pose.applyTransformAfter(cv::Vec3f(0,0,0), pose.cvEulerRotation());
+
+    int i = 0;
+    while (i < n_samples)
+    {
+        int r = rng(image.depth().rows);
+        int c = rng(image.depth().cols);
+        if (!image.depthMask()(r,c) || image.depth()(r,c) < 1e-5)
+            continue;
+
+        if (!image.isValidNormal(r,c))
+            continue;
+
+        cv::Point3f p = pose.unprojectFromImage(cv::Point2f(c,r), image.depth()(r,c));
+        cloud.points[i].x = p.x;
+        cloud.points[i].y = p.y;
+        cloud.points[i].z = p.z;
+
+        cv::Vec3f normal = image.normal()(r,c);
+        cv::Vec3f n = rotation_pose.invCameraTransform(normal);
+        cloud.points[i].normal_x = n[0];
+        cloud.points[i].normal_y = n[1];
+        cloud.points[i].normal_z = n[2];
+
+        i += 1;
+    }
+}
+
 template <class PointT>
 void removeNan(pcl::PointCloud<PointT>& clean_cloud, typename pcl::PointCloud<PointT>::ConstPtr source_cloud)
 {

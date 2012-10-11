@@ -161,6 +161,7 @@ computeRegistration(Pose3D& relative_pose,
     pcl::IterativeClosestPoint<PointT, PointT> reg;
     reg.setMaximumIterations (m_max_iterations);
     reg.setTransformationEpsilon (1e-10);
+    reg.setRANSACOutlierRejectionThreshold(m_ransac_outlier_threshold);
     reg.setMaxCorrespondenceDistance (m_distance_threshold);
     reg.setInputCloud (m_filtered_source);
     reg.setInputTarget (m_filtered_target);
@@ -209,7 +210,7 @@ computeRegistration(Pose3D& relative_pose,
 #ifndef HAVE_PCL_GREATER_THAN_1_2_0
     return super::computeRegistration(relative_pose, source_cloud, target_cloud, aligned_cloud);
 #else
-    pcl::IterativeClosestPointNonLinear<PointT, PointT> reg;
+    pcl::IterativeClosestPoint<PointT, PointT> reg;
     typedef pcl::registration::TransformationEstimationPointToPlaneLLS<PointT, PointT> PointToPlane;
     boost::shared_ptr<PointToPlane> point_to_plane (new PointToPlane);
     reg.setTransformationEstimation (point_to_plane);

@@ -56,6 +56,7 @@ public:
     RelativePoseEstimatorICP()
         : m_distance_threshold(0.05),
           m_voxel_leaf_size(0.005),
+          m_ransac_outlier_threshold(0.01),
           m_max_iterations(20)
     {}
 
@@ -68,6 +69,9 @@ public:
 
     /*! Set the maximal number of ICP iterations. */
     void setMaxIterations(int n) { m_max_iterations = n; }
+
+    /*! Set the outlier rehjection threshold for RANSAC. */
+    void setRANSACOutlierRejectionThreshold(double th) { m_ransac_outlier_threshold = th; }
 
 public:
     virtual bool estimateNewPose();
@@ -86,6 +90,7 @@ protected:
 protected:
     double m_distance_threshold;
     double m_voxel_leaf_size;
+    double m_ransac_outlier_threshold;
     int m_max_iterations;
     PointCloudPtr m_filtered_target;
     PointCloudPtr m_filtered_source;
