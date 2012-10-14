@@ -54,6 +54,8 @@ public:
 
     virtual IncrementalPoseEstimatorFromRgbFeatures* clone() const { return new IncrementalPoseEstimatorFromRgbFeatures(*this); }
 
+    virtual ntk::Ptr<FeatureSet> getLastImageFeatures() const { return m_features.back(); }
+
     virtual bool estimateCurrentPose();
     virtual void reset();
     void setIncrementalModel(bool enable) { m_incremental_model = enable; }
@@ -66,7 +68,7 @@ private:
         pcl::PointCloud<pcl::PointXYZ>::Ptr sampled_cloud;
 #endif
         Pose3D depth_pose;
-        cv::Mat3b color;
+        RGBDImage image;
     };
 
 private:
@@ -74,12 +76,20 @@ private:
     int computeNumMatchesWithPrevious(const RGBDImage& image,
                                       const FeatureSet& features,
                                       std::vector<cv::DMatch>& best_matches);
-    bool estimateDeltaPose(Pose3D& new_pose,
+#if 0
+    bool estimateDeltaPose(Pose3D& new_rgb_pose,
                            const RGBDImage& image,
                            const FeatureSet& features,
                            const std::vector<cv::DMatch>& best_matches,
                            std::vector<bool>& valid_matches,
                            int closest_view_index);
+#else
+    bool estimateDeltaPose(Pose3D& new_depth_pose,
+                           const RGBDImage& image,
+                           ntk::Ptr<FeatureSet> features,
+                           const std::vector<cv::DMatch>& best_matches,
+                           int closest_view_index);
+#endif
 
 #ifdef NESTK_USE_PCL
     bool optimizeWithICP(pcl::PointCloud<pcl::PointXYZ>::ConstPtr cloud_source,

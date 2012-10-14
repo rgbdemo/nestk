@@ -35,6 +35,8 @@ namespace ntk
  */
 class RelativePoseEstimatorFromRgbFeatures : public RelativePoseEstimatorFromImages
 {
+    typedef RelativePoseEstimatorFromImages super;
+
 public:
     RelativePoseEstimatorFromRgbFeatures(const FeatureSetParams& params)
         : m_target_features(new FeatureSet),
@@ -47,7 +49,12 @@ public:
         resetTarget();
     }
 
+    virtual void setSourceImage(const RGBDImage &image);
+    virtual void setSourceImage(const RGBDImage &image, ntk::Ptr<FeatureSet> features);
+
+    virtual void setTargetImage(const RGBDImage &image, ntk::Ptr<FeatureSet> features);
     virtual void setTargetImage(const RGBDImage &image);
+
     virtual void setTargetPose(const Pose3D& pose);
     virtual bool estimateNewPose();
 
@@ -65,6 +72,7 @@ private:
 
 private:
     ntk::Ptr<FeatureSet> m_target_features;
+    ntk::Ptr<FeatureSet> m_source_features;
     FeatureSetParams m_feature_parameters;
     int m_min_matches;
     int m_num_matches;

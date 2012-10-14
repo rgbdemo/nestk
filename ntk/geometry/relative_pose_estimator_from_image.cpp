@@ -16,12 +16,10 @@ estimateNewPose(Pose3D& new_pose,
                 const FeatureSet& image_features,
                 const std::vector<cv::DMatch>& matches)
 {
-    const float err_threshold = 0.05f;
+    const float err_threshold = 0.005f;
 
     std::vector<Point3f> ref_points;
     std::vector<Point3f> img_points;
-    std::vector<cv::KeyPoint> ref_keypoints;
-    std::vector<cv::KeyPoint> img_keypoints;
 
     foreach_idx(i, matches)
     {
@@ -48,6 +46,7 @@ estimateNewPose(Pose3D& new_pose,
 
     std::vector<bool> valid_points;
     double error = rms_optimize_ransac(new_pose, ref_points, img_points, valid_points, false /* use_depth */);
+    error /= ref_points.size();
 
     ntk_dbg_print(error, 1);
     ntk_dbg_print(new_pose, 2);
@@ -64,17 +63,22 @@ bool RelativePoseEstimatorFromRgbFeatures::estimateNewPose()
     ntk_assert(m_target_image, "You must call setTargetImage before!");
     const RGBDImage& image = *m_source_image;
 
+    ntk_ensure(image.mappedDepth().data, "Image must have depth mapping.");
+
     ntk::TimeCount tc("RelativePoseEstimator", 1);
 
     if (m_target_features->locations().size() < 1)
         computeTargetFeatures();
 
+    if (m_source_features->locations().size() < 1)
+    {
+        m_source_features->extractFromImage(image, m_feature_parameters);
+        tc.elapsedMsecs(" -- extract features from Image -- ");
+    }
+
     m_num_matches = 0;
 
-    ntk_ensure(image.mappedDepth().data, "Image must have depth mapping.");
-    FeatureSet image_features;
-    image_features.extractFromImage(image, m_feature_parameters);
-    tc.elapsedMsecs(" -- extract features from Image -- ");
+    FeatureSet& image_features = *m_source_features;
 
     std::vector<cv::DMatch> matches;
     m_target_features->matchWith(image_features, matches, 0.8f*0.8f);
@@ -130,6 +134,13 @@ void RelativePoseEstimatorFromRgbFeatures::setTargetImage(const RGBDImage &image
     m_target_features = toPtr(new FeatureSet);
 }
 
+void RelativePoseEstimatorFromRgbFeatures::setSourceImage(const RGBDImage &image)
+{
+    ntk_ensure(image.calibration(), "Image must be calibrated.");
+    super::setSourceImage(image);
+    m_source_features = toPtr(new FeatureSet);
+}
+
 void RelativePoseEstimatorFromRgbFeatures::computeTargetFeatures()
 {
     m_target_features->extractFromImage(*m_target_image, m_feature_parameters);
@@ -138,6 +149,19 @@ void RelativePoseEstimatorFromRgbFeatures::computeTargetFeatures()
     rgb_pose.toRightCamera(m_target_image->calibration()->rgb_intrinsics,
                            m_target_image->calibration()->R, m_target_image->calibration()->T);
     m_target_features->compute3dLocation(rgb_pose);
+}
+
+void RelativePoseEstimatorFromRgbFeatures::setSourceImage(const RGBDImage &image, ntk::Ptr<FeatureSet> features)
+{
+    ntk_ensure(image.calibration(), "Image must be calibrated.");
+    super::setSourceImage(image);
+    m_source_features = features;
+}
+
+void RelativePoseEstimatorFromRgbFeatures::setTargetImage(const RGBDImage &image, ntk::Ptr<FeatureSet> features)
+{
+    setTargetImage(image);
+    m_target_features = features;
 }
 
 } // ntk

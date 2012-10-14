@@ -19,6 +19,7 @@
 
 #include "incremental_pose_estimator_from_rgb_features.h"
 
+#include <ntk/geometry/relative_pose_estimator_from_image.h>
 #include <ntk/utils/time.h>
 #include <ntk/utils/stl.h>
 #include <ntk/stats/histogram.h>
@@ -77,6 +78,30 @@ computeNumMatchesWithPrevious(const RGBDImage& image,
 }
 
 bool IncrementalPoseEstimatorFromRgbFeatures::
+estimateDeltaPose(Pose3D& new_depth_pose,
+                  const RGBDImage& image,
+                  ntk::Ptr<FeatureSet> image_features,
+                  const std::vector<cv::DMatch>& best_matches,
+                  int closest_view_index)
+{
+    const float err_threshold = 0.005f;
+
+    ntk_dbg_print(new_depth_pose, 2);
+    const ImageData& ref_image_data = m_image_data[closest_view_index];
+
+    RelativePoseEstimatorFromRgbFeatures estimator (m_feature_parameters);
+    estimator.setTargetPose(new_depth_pose);
+    estimator.setTargetImage(ref_image_data.image, m_features[closest_view_index]);
+    estimator.setSourceImage(image, image_features);
+    bool ok = estimator.estimateNewPose();
+    if (!ok)
+        return false;
+    new_depth_pose = estimator.estimatedSourcePose();
+    return ok;
+}
+
+#if 0
+bool IncrementalPoseEstimatorFromRgbFeatures::
 estimateDeltaPose(Pose3D& new_rgb_pose,
                   const RGBDImage& image,
                   const FeatureSet& image_features,
@@ -98,8 +123,6 @@ estimateDeltaPose(Pose3D& new_rgb_pose,
 
     std::vector<Point3f> ref_points;
     std::vector<Point3f> img_points;
-    std::vector<cv::KeyPoint> ref_keypoints;
-    std::vector<cv::KeyPoint> img_keypoints;
 
     foreach_idx(i, best_matches)
     {
@@ -137,6 +160,16 @@ estimateDeltaPose(Pose3D& new_rgb_pose,
     else
         return false;
 }
+#endif
+
+static void copy_only_useful_fields(const RGBDImage& src, RGBDImage& other)
+{
+    src.rgb().copyTo(other.rgbRef());
+    other.setCalibration(src.calibration());
+    other.setDirectory(src.directory());
+    other.setCameraSerial(src.cameraSerial());
+    other.setTimestamp(src.timestamp());
+}
 
 bool IncrementalPoseEstimatorFromRgbFeatures::estimateCurrentPose()
 {
@@ -160,13 +193,16 @@ bool IncrementalPoseEstimatorFromRgbFeatures::estimateCurrentPose()
 
     ntk::Ptr<FeatureSet> image_features (new FeatureSet);
     image_features->extractFromImage(image, m_feature_parameters);
-    last_feature_points = image_features->locations();
     tc.elapsedMsecs(" -- extract features from Image -- ");
 
+#if 0
     Pose3D new_pose = *image.calibration()->depth_pose;
     Pose3D new_rgb_pose = new_pose;
     new_rgb_pose.toRightCamera(image.calibration()->rgb_intrinsics,
                                image.calibration()->R, image.calibration()->T);
+#else
+    Pose3D new_pose = *image.calibration()->depth_pose;
+#endif
     bool pose_ok = true;
 
     int closest_view_index = -1;
@@ -181,7 +217,7 @@ bool IncrementalPoseEstimatorFromRgbFeatures::estimateCurrentPose()
 
         cv::Mat3b debug_img;
         // m_features[closest_view_index]->drawMatches(m_image_data[closest_view_index].color, image.rgb(), *image_features, best_matches, debug_img);
-        m_features[closest_view_index]->draw(m_image_data[closest_view_index].color, debug_img);
+        m_features[closest_view_index]->draw(m_image_data[closest_view_index].image.rgb(), debug_img);
         ntk::hub::Hub::getInstance()->setImage("features_output", debug_img);
 
 #ifdef HEAVY_DEBUG
@@ -189,14 +225,17 @@ bool IncrementalPoseEstimatorFromRgbFeatures::estimateCurrentPose()
 #endif
 
         new_pose = m_image_data[closest_view_index].depth_pose;
+#if 0
         new_rgb_pose = new_pose;
         new_rgb_pose.toRightCamera(image.calibration()->rgb_intrinsics,
                                    image.calibration()->R, image.calibration()->T);
+#endif
 
         if (best_matches.size() > 0)
         {
             Pose3D delta_pose = new_pose;
 
+#if 0
             std::vector<bool> valid_points;
 
             // Estimate the relative pose w.r.t the closest view.
@@ -208,6 +247,10 @@ bool IncrementalPoseEstimatorFromRgbFeatures::estimateCurrentPose()
             new_pose = new_rgb_pose;
             new_pose.toLeftCamera(image.calibration()->depth_intrinsics,
                                   image.calibration()->R, image.calibration()->T);
+#else
+            if (!estimateDeltaPose(new_pose, image, image_features, best_matches, closest_view_index))
+                pose_ok = false;
+#endif
 
             // Compute the difference between the reference image pose and the new image one.
             delta_pose.invert();
@@ -247,7 +290,7 @@ bool IncrementalPoseEstimatorFromRgbFeatures::estimateCurrentPose()
 
     if (pose_ok)
     {
-        new_rgb_pose = new_pose;
+        Pose3D new_rgb_pose = new_pose;
         new_rgb_pose.toRightCamera(image.calibration()->rgb_intrinsics,
                                    image.calibration()->R, image.calibration()->T);
 
@@ -256,7 +299,7 @@ bool IncrementalPoseEstimatorFromRgbFeatures::estimateCurrentPose()
         if (m_incremental_model || first_pass)
         {
             ImageData image_data;
-            image.rgb().copyTo(image_data.color);
+            copy_only_useful_fields(image, image_data.image);
 #ifdef NESTK_USE_PCL
             if (m_use_icp)
             {

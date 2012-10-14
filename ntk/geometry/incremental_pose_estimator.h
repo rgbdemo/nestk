@@ -61,15 +61,12 @@ public:
     virtual void addNewImage(const RGBDImage& image)
     { image.copyTo(m_new_image); }
 
-    const std::vector<FeatureCorrespondance>& getLastCorrespondances() { return last_correspondances; }
-    const std::vector<ntk::FeaturePoint>& getLastFeaturePoints() const { return last_feature_points; }
+    virtual ntk::Ptr<FeatureSet> getLastImageFeatures() const { return ntk::Ptr<FeatureSet>(); }
 
     virtual IncrementalPoseEstimatorFromImage* clone() const = 0;
 
 protected:
     RGBDImage m_new_image;
-    std::vector<FeatureCorrespondance> last_correspondances;
-    std::vector<ntk::FeaturePoint> last_feature_points;
 };
 ntk_ptr_typedefs(IncrementalPoseEstimatorFromImage)
 
