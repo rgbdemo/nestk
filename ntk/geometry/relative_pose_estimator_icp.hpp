@@ -111,8 +111,8 @@ bool RelativePoseEstimatorICP<PointT> :: estimateNewPose()
         ntk::Mesh mesh1, mesh2;
         pointCloudToMesh(mesh1, *m_filtered_source);
         pointCloudToMesh(mesh2, *m_filtered_target);
-        mesh1.saveToPlyFile("/tmp/debug_mesh_source.ply");
-        mesh2.saveToPlyFile("/tmp/debug_mesh_target.ply");
+        mesh1.saveToPlyFile("debug_mesh_source.ply");
+        mesh2.saveToPlyFile("debug_mesh_target.ply");
     }
 
     // The source cloud should be smaller than the target one.
@@ -130,14 +130,20 @@ bool RelativePoseEstimatorICP<PointT> :: estimateNewPose()
     if (!ok)
         return false;
 
-    if (!swap_source_and_target)
+    if (swap_source_and_target)
         relative_pose.invert();
 
     ntk_dbg_print(relative_pose.cvTranslation(), 1);
 
+#if 0
     m_estimated_pose = m_target_pose;
     m_estimated_pose.applyTransformBefore(relative_pose);
     m_estimated_pose.applyTransformAfter(m_initial_pose);
+#endif
+    // Be careful. Poses are actually inverse camera transform in 3D space.
+    // inverse(newpose) = inverse(relative_pose) * inverse(target_pose)
+    m_estimated_pose = m_initial_pose;
+    m_estimated_pose.applyTransformBefore(relative_pose.inverted());
 
     return true;
 }
@@ -172,8 +178,8 @@ computeRegistration(Pose3D& relative_pose,
         ntk::Mesh mesh1, mesh2;
         pointCloudToMesh(mesh1, aligned_cloud);
         pointCloudToMesh(mesh2, *target_cloud);
-        mesh1.saveToPlyFile("/tmp/debug_icp_1.ply");
-        mesh2.saveToPlyFile("/tmp/debug_icp_2.ply");
+        mesh1.saveToPlyFile("debug_icp_1.ply");
+        mesh2.saveToPlyFile("debug_icp_2.ply");
     }
 
     if (!reg.hasConverged())
@@ -237,6 +243,15 @@ computeRegistration(Pose3D& relative_pose,
     {
       ntk_dbg(1) << "ICP did not converge, ignoring.";
       return false;
+    }
+
+    if (0)
+    {
+        ntk::Mesh mesh1, mesh2;
+        pointCloudToMesh(mesh1, aligned_cloud);
+        pointCloudToMesh(mesh2, *target_cloud);
+        mesh1.saveToPlyFile("debug_icp_1.ply");
+        mesh2.saveToPlyFile("debug_icp_2.ply");
     }
 
 #if 0
