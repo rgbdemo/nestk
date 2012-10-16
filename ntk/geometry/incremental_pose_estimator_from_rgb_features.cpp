@@ -58,7 +58,7 @@ computeNumMatchesWithPrevious(const RGBDImage& image,
 {
     const int min_number_of_matches = 100;
     int best_prev_image = 0;
-    // If at least 30 matches have been found with one image, stop searching.
+    // If at least 100 matches have been found with one image, stop searching.
     // Start with the last one, more likely to have a similar point of view.
 
     for (int i = m_features.size()-1;

@@ -53,6 +53,7 @@ SET ( ntk_sources
      geometry/polygon.cpp
      geometry/pose_3d.h
      geometry/pose_3d.cpp
+     geometry/pose_graph_optimizer.h
      geometry/relative_pose_estimator.h
      geometry/relative_pose_estimator.cpp
      geometry/relative_pose_estimator_markers.h
@@ -334,6 +335,12 @@ IF (NESTK_USE_ROS)
      ros/ros_rgbd_grabber.cpp)
 ENDIF(NESTK_USE_ROS)
 
+IF (NESTK_USE_G2O)
+  SET (ntk_sources ${ntk_sources}
+      geometry/pose_graph_optimizer_g2o.h
+      geometry/pose_graph_optimizer_g2o.cpp)
+ENDIF(NESTK_USE_G2O)
+
 IF (IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/private")
    SET(HAVE_NESTK_PRIVATE 1)
 ENDIF()
@@ -352,6 +359,7 @@ TARGET_LINK_LIBRARIES(nestk
   ${Boost_LIBRARIES}
   ${QT_LIBRARIES}
   ${GSL_LIBRARIES}
+  ${G2O_LIBRARIES}
   ${OPENCL_LIBRARIES}
   ${GLEW_LIBRARIES}
   ${GLUT_glut_LIBRARY}

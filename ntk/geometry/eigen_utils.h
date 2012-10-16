@@ -17,8 +17,8 @@
  * Author: Nicolas Burrus <nicolas.burrus@uc3m.es>, (C) 2010
  */
 
-#ifndef EIGEN_UTILS_H
-#define EIGEN_UTILS_H
+#ifndef NESTK_GEOMETRY_EIGEN_UTILS_H
+#define NESTK_GEOMETRY_EIGEN_UTILS_H
 
 #include <ntk/core.h>
 #include <ntk/utils/debug.h>
@@ -31,15 +31,18 @@
 namespace ntk
 {
 
-template < typename _Scalar, int N>
-const NtkDebug& operator<<(const NtkDebug& output, const Eigen::Matrix<_Scalar,N,1>& array)
-{
-  output << "[";
+template < typename _Scalar, int N, int M>
+const NtkDebug& operator<<(const NtkDebug& output, const Eigen::Matrix<_Scalar,N,M>& array)
+{   
   for (int i = 0; i < N; ++i)
-    output << array(i) << " ";
-  output << "]";
+  {
+      output << "[";
+      for (int j = 0; j < M; ++j)
+          output << array(i,j) << " ";
+      output << "]";
+  }
   return output;
-};
+}
 
 template < typename StreamType, typename _Scalar, int N>
 StreamType& operator>>(StreamType& input, Eigen::Matrix<_Scalar,N,1>& array)
@@ -59,6 +62,15 @@ StreamType& operator<<(StreamType& output, const Eigen::Matrix<_Scalar,N,1>& arr
     output << array(i) << ntk::sep();
   return output;
 };
+
+template < typename StreamType, typename _Scalar, int N, int M>
+StreamType& operator<<(StreamType& output, const Eigen::Matrix<_Scalar,N,M>& array)
+{
+  for (int i = 0; i < N; ++i)
+      for (int j = 0; j < M; ++j)
+    output << array(i,j) << ntk::sep();
+  return output;
+}
 
 template <typename CvScalarType, typename EScalarType>
 inline void toEigen(const cv::Point3_<CvScalarType>& p, Eigen::Matrix<EScalarType,3,1>& ep)
@@ -246,4 +258,4 @@ public:
 
 } // ntk
 
-#endif // EIGEN_UTILS_H
+#endif // NESTK_GEOMETRY_EIGEN_UTILS_H

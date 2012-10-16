@@ -58,6 +58,7 @@ public:
     virtual void setTargetPose(const Pose3D& pose);
     virtual bool estimateNewPose();
 
+    void setMinMatches(int n) { m_min_matches = n; }
     int numMatches() const { return m_num_matches; }
 
 private:
