@@ -113,6 +113,9 @@ public:
     std::string featureTypeName() const;
     FeatureType featureType() const { return (FeatureType) m_feature_type; }
 
+    /*! Extraction parameters. */
+    const FeatureSetParams& extractionParams() const { return m_extraction_params; }
+
     int descriptorSize() const { return m_descriptor_size; }
 
     const std::vector<FeaturePoint>& locations() const { return m_locations; }
@@ -163,6 +166,7 @@ private:
     unsigned m_descriptor_size;
     std::vector<FeaturePoint> m_locations;
     cv::Mat1f m_descriptors;
+    FeatureSetParams m_extraction_params;
 };
 
 /*!

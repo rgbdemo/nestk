@@ -68,6 +68,8 @@ void FeatureSet :: extractFromImage(const RGBDImage& image,
 {
     ntk::TimeCount tc("FeatureSet::extractFromImage", 1);
 
+    m_extraction_params = params;
+
     if(!impl->descriptor_index.empty())
         buildDescriptorIndex();
 
