@@ -21,6 +21,7 @@
 #define NESTK_GEOMETRY_TRANSFORMATION_ESTIMATION_RGBD_H
 
 #include <ntk/core.h>
+#include <pcl/registration/registration.h>
 #include <pcl/registration/transformation_estimation.h>
 #include <pcl/cloud_iterator.h>
 
@@ -42,7 +43,9 @@ public:
 
     typedef typename pcl::registration::TransformationEstimation<PointSource, PointTarget, Scalar>::Matrix4 Matrix4;
 
-    TransformationEstimationRGBD () {}
+    TransformationEstimationRGBD (pcl::Registration<PointSource, PointTarget>* registration_base)
+        : registration_base(registration_base) {}
+
     virtual ~TransformationEstimationRGBD () {}
 
     /** \brief Estimate a rigid rotation transformation between a source and a target point cloud using SVD.
@@ -51,7 +54,7 @@ public:
           * \param[out] transformation_matrix the resultant transformation matrix
           * \param[in] weights weights for the point correspondences - not used in this class
           */
-    inline void
+    void
     estimateRigidTransformation (
             const pcl::PointCloud<PointSource> &cloud_src,
             const pcl::PointCloud<PointTarget> &cloud_tgt,
@@ -65,7 +68,7 @@ public:
           * \param[out] transformation_matrix the resultant transformation matrix
           * \param[in] weights weights for the point correspondences - not used in this class
           */
-    inline void
+    void
     estimateRigidTransformation (
             const pcl::PointCloud<PointSource> &cloud_src,
             const std::vector<int> &indices_src,
@@ -81,7 +84,7 @@ public:
           * \param[out] transformation_matrix the resultant transformation matrix
           * \param[in] weights weights for the point correspondences - not used in this class
           */
-    inline void
+    void
     estimateRigidTransformation (
             const pcl::PointCloud<PointSource> &cloud_src,
             const std::vector<int> &indices_src,
@@ -114,6 +117,9 @@ protected:
     estimateRigidTransformation (pcl::ConstCloudIterator<PointSource>& source_it,
                                  pcl::ConstCloudIterator<PointTarget>& target_it,
                                  Matrix4 &transformation_matrix) const;
+
+private:
+    pcl::Registration<PointSource, PointTarget>* registration_base;
 };
 
 } // ntk

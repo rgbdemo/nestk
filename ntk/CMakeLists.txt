@@ -310,6 +310,9 @@ IF(NESTK_USE_PCL)
          geometry/relative_pose_estimator_from_features.cpp
          geometry/relative_pose_estimator_from_image.h
          geometry/relative_pose_estimator_from_image.cpp
+         geometry/relative_pose_estimator_rgbd_icp.h
+         geometry/relative_pose_estimator_rgbd_icp.hpp
+         geometry/relative_pose_estimator_rgbd_icp.cpp
          geometry/relative_pose_estimator_tabletop.h
          geometry/relative_pose_estimator_tabletop.cpp
          geometry/transformation_estimation_rgbd.h

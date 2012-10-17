@@ -223,10 +223,11 @@ computeRegistration(Pose3D& relative_pose,
     pcl::IterativeClosestPoint<PointT, PointT> reg;
     typedef pcl::registration::TransformationEstimationPointToPlaneLLS<PointT, PointT> PointToPlane;
     boost::shared_ptr<PointToPlane> point_to_plane (new PointToPlane);
-    typedef TransformationEstimationRGBD<PointT, PointT> TransformRGBD;
-    boost::shared_ptr<TransformRGBD> transform_rgbd (new TransformRGBD);
-    // reg.setTransformationEstimation (point_to_plane);
-    reg.setTransformationEstimation (transform_rgbd);
+    reg.setTransformationEstimation (point_to_plane);
+
+    // typedef TransformationEstimationRGBD<PointT, PointT> TransformRGBD;
+    // boost::shared_ptr<TransformRGBD> transform_rgbd (new TransformRGBD);
+    // reg.setTransformationEstimation (transform_rgbd);
 
     boost::shared_ptr<pcl::registration::CorrespondenceRejectorSurfaceNormal> rejector_normal (new pcl::registration::CorrespondenceRejectorSurfaceNormal);
     rejector_normal->setThreshold(cos(M_PI/4.f));

@@ -99,6 +99,7 @@ protected:
 template <class PointT>
 class RelativePoseEstimatorICPWithNormals : public RelativePoseEstimatorICP<PointT>
 {
+protected:
     typedef RelativePoseEstimatorICP<PointT> super;
     typedef pcl::PointCloud<PointT> PointCloudType;
     typedef typename PointCloudType::ConstPtr PointCloudConstPtr;
