@@ -66,12 +66,6 @@ void sampledRgbdImageToPointCloud(pcl::PointCloud<pcl::PointXYZ>& cloud,
                                   const Pose3D& pose,
                                   int n_samples);
 
-template
-void sampledRgbdImageToPointCloud(pcl::PointCloud<pcl::PointNormal>& cloud,
-                                  const RGBDImage& image,
-                                  const Pose3D& pose,
-                                  int n_samples);
-
 void polygonMeshToMesh(ntk::Mesh& mesh, const pcl::PolygonMesh& polygon)
 {
     pcl::PointCloud<pcl::PointXYZ> cloud;
