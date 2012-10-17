@@ -24,11 +24,15 @@
 
 #include <ntk/mesh/pcl_utils.h>
 
+#include <ntk/geometry/transformation_estimation_rgbd.h>
+
 #include <pcl/registration/icp.h>
 // #include <pcl/registration/gicp.h>
 #include <pcl/registration/icp_nl.h>
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/filters/passthrough.h>
+#include <pcl/registration/correspondence_rejection_surface_normal.h>
+#include <pcl/registration/correspondence_rejection_one_to_one.h>
 #ifdef HAVE_PCL_GREATER_THAN_1_2_0
 #include <pcl/registration/transformation_estimation_point_to_plane.h>
 #include <pcl/registration/transformation_estimation_point_to_plane_lls.h>
@@ -219,7 +223,20 @@ computeRegistration(Pose3D& relative_pose,
     pcl::IterativeClosestPoint<PointT, PointT> reg;
     typedef pcl::registration::TransformationEstimationPointToPlaneLLS<PointT, PointT> PointToPlane;
     boost::shared_ptr<PointToPlane> point_to_plane (new PointToPlane);
-    reg.setTransformationEstimation (point_to_plane);
+    typedef TransformationEstimationRGBD<PointT, PointT> TransformRGBD;
+    boost::shared_ptr<TransformRGBD> transform_rgbd (new TransformRGBD);
+    // reg.setTransformationEstimation (point_to_plane);
+    reg.setTransformationEstimation (transform_rgbd);
+
+    boost::shared_ptr<pcl::registration::CorrespondenceRejectorSurfaceNormal> rejector_normal (new pcl::registration::CorrespondenceRejectorSurfaceNormal);
+    rejector_normal->setThreshold(cos(M_PI/4.f));
+    rejector_normal->initializeDataContainer<PointT, PointT>();
+    rejector_normal->setInputNormals<PointT, PointT>(source_cloud);
+    rejector_normal->setTargetNormals<PointT, PointT>(target_cloud);
+    reg.addCorrespondenceRejector(rejector_normal);
+
+    boost::shared_ptr<pcl::registration::CorrespondenceRejectorOneToOne> rejector_one_to_one (new pcl::registration::CorrespondenceRejectorOneToOne);
+    reg.addCorrespondenceRejector(rejector_one_to_one);
 
 #if 0
     ntk::Mesh target_mesh;
