@@ -52,6 +52,8 @@ computeRegistration(Pose3D& relative_pose,
     typedef pcl::registration::TransformationEstimationPointToPlaneLLS<PointT, PointT> PointToPlane;
     typedef TransformationEstimationRGBD<PointT, PointT> TransformRGBD;
     boost::shared_ptr<TransformRGBD> transform_rgbd (new TransformRGBD(&reg));
+    if (target_points_3d && source_image_points)
+        transform_rgbd->setColorFeatures(source_rgb_pose, *target_points_3d, *source_image_points);
     reg.setTransformationEstimation (transform_rgbd);
 
     boost::shared_ptr<pcl::registration::CorrespondenceRejectorSurfaceNormal> rejector_normal (new pcl::registration::CorrespondenceRejectorSurfaceNormal);

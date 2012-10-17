@@ -21,6 +21,8 @@
 #define NESTK_GEOMETRY_TRANSFORMATION_ESTIMATION_RGBD_H
 
 #include <ntk/core.h>
+#include <ntk/geometry/pose_3d.h>
+
 #include <pcl/registration/registration.h>
 #include <pcl/registration/transformation_estimation.h>
 #include <pcl/cloud_iterator.h>
@@ -47,6 +49,16 @@ public:
         : registration_base(registration_base) {}
 
     virtual ~TransformationEstimationRGBD () {}
+
+    /** \brief Set colors features. */
+    void setColorFeatures(const Pose3D& source_rgb_pose,
+                          const std::vector<cv::Point3f>& target_points_3d,
+                          const std::vector<cv::Point3f>& source_image_points)
+    {
+        this->source_rgb_pose = source_rgb_pose;
+        this->target_points_3d = &target_points_3d;
+        this->source_image_points = &source_image_points;
+    }
 
     /** \brief Estimate a rigid rotation transformation between a source and a target point cloud using SVD.
           * \param[in] cloud_src the source point cloud dataset
@@ -120,6 +132,9 @@ protected:
 
 private:
     pcl::Registration<PointSource, PointTarget>* registration_base;
+    const std::vector<cv::Point3f>* target_points_3d;
+    const std::vector<cv::Point3f>* source_image_points;
+    ntk::Pose3D source_rgb_pose;
 };
 
 } // ntk

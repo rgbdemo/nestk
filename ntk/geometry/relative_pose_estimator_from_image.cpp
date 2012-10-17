@@ -1,5 +1,8 @@
 #include "relative_pose_estimator_from_image.h"
 
+#include "relative_pose_estimator_rgbd_icp.h"
+
+#include <ntk/mesh/pcl_utils.h>
 #include <ntk/utils/time.h>
 
 using cv::Vec3f;
@@ -51,10 +54,76 @@ estimateNewPose(Pose3D& new_pose,
     ntk_dbg_print(error, 1);
     ntk_dbg_print(new_pose, 2);
 
-    if (error < err_threshold)
-        return true;
-    else
+    if (error > err_threshold)
         return false;
+
+    if (m_postprocess_with_rgbd_icp)
+        optimizeWithRGBDICP(new_pose, ref_points, img_points, valid_points);
+
+    return true;
+}
+
+void RelativePoseEstimatorFromRgbFeatures::
+optimizeWithRGBDICP(Pose3D new_pose, std::vector<Point3f>& ref_points, std::vector<Point3f>& img_points, std::vector<bool>& valid_points)
+{
+    std::vector<Point3f> clean_ref_points;
+    std::vector<Point3f> clean_img_points;
+    foreach_idx(i, valid_points)
+    {
+        if (!valid_points[i])
+            continue;
+        clean_ref_points.push_back(ref_points[i]);
+        clean_img_points.push_back(img_points[i]);
+    }
+
+    RGBDImage filtered_source_image;
+    m_source_image->copyTo(filtered_source_image);
+
+    RGBDImage filtered_target_image;
+    m_target_image->copyTo(filtered_target_image);
+
+    OpenniRGBDProcessor processor;
+    processor.bilateralFilter(filtered_source_image);
+    processor.bilateralFilter(filtered_target_image);
+    processor.computeNormals(filtered_source_image);
+    processor.computeNormals(filtered_target_image);
+
+    pcl::PointCloud<pcl::PointNormal>::Ptr sampled_source_cloud; // cloud1
+    sampled_source_cloud.reset(new pcl::PointCloud<pcl::PointNormal>());
+
+    pcl::PointCloud<pcl::PointNormal>::Ptr sampled_target_cloud; // cloud0
+    sampled_target_cloud.reset(new pcl::PointCloud<pcl::PointNormal>());
+
+    pcl::PointCloud<pcl::PointNormal>::Ptr source_cloud; // cloud1
+    source_cloud.reset(new pcl::PointCloud<pcl::PointNormal>());
+
+    pcl::PointCloud<pcl::PointNormal>::Ptr target_cloud; // cloud0
+    target_cloud.reset(new pcl::PointCloud<pcl::PointNormal>());
+
+    rgbdImageToPointCloud(*source_cloud, filtered_source_image);
+    rgbdImageToPointCloud(*target_cloud, filtered_target_image);
+
+    const int num_samples = 1000;
+    NormalCloudSampler<pcl::PointNormal> sampler;
+    sampler.subsample(*source_cloud, *sampled_source_cloud, num_samples);
+
+    RelativePoseEstimatorRGBDICP<pcl::PointNormal> estimator;
+
+    estimator.setColorFeatures(new_pose, ref_points, img_points);
+    estimator.setInitialSourcePoseEstimate(new_pose);
+    estimator.setTargetPose(m_target_pose);
+
+    estimator.setSourceCloud(sampled_source_cloud);
+    estimator.setTargetCloud(target_cloud);
+
+    bool ok = estimator.estimateNewPose();
+    if (!ok)
+    {
+        ntk_dbg(1) << "RGBD-ICP failed";
+        return;
+    }
+
+    new_pose = estimator.estimatedSourcePose();
 }
 
 bool RelativePoseEstimatorFromRgbFeatures::estimateNewPose()

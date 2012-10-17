@@ -24,6 +24,7 @@
 #include <ntk/numeric/cost_function.h>
 #include <ntk/numeric/levenberg_marquart_minimizer.h>
 #include <ntk/utils/debug.h>
+#include <ntk/geometry/eigen_utils.h>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -40,10 +41,19 @@ struct TransformRGBDCostFunction : public CostFunction
     typedef Eigen::Transform<Scalar,3,Eigen::Isometry> Isometry3;
     typedef Eigen::Matrix<Scalar,3,1> Vector3;
 
-    TransformRGBDCostFunction(pcl::ConstCloudIterator<PointSource>& source_it, pcl::ConstCloudIterator<PointTarget>& target_it)
-        : CostFunction(6, source_it.size()),
+    TransformRGBDCostFunction(pcl::ConstCloudIterator<PointSource>& source_it,
+                              pcl::ConstCloudIterator<PointTarget>& target_it,
+                              const std::vector<cv::Point3f>* target_points_3d,
+                              const std::vector<cv::Point3f>* source_image_points,
+                              const ntk::Pose3D& source_rgb_pose,
+                              const Isometry3& accumulated_transform)
+        : CostFunction(6, 3*source_it.size() + (target_points_3d ? 2*target_points_3d->size() : 0)),
           source_it(source_it),
-          target_it(target_it)
+          target_it(target_it),
+          target_points_3d(target_points_3d),
+          source_image_points(source_image_points),
+          source_rgb_pose(source_rgb_pose),
+          accumulated_transform(accumulated_transform)
     {}
 
     Isometry3 getEigenTransform(const std::vector<double>& x) const
@@ -62,24 +72,37 @@ struct TransformRGBDCostFunction : public CostFunction
 
     virtual void evaluate(const std::vector<double>& x, std::vector<double>& fx) const
     {
+        Isometry3 transform = getEigenTransform(x);
+        Isometry3 rgb_transform = (transform * accumulated_transform).inverse();
+
+        const int nb_rgb_points = (target_points_3d ? target_points_3d->size() : 0);
+        for (int i = 0; i < nb_rgb_points; ++i)
+        {
+            Vector3 p3d; toEigen((*target_points_3d)[i], p3d);
+            p3d = rgb_transform * p3d;
+            cv::Point3f proj = source_rgb_pose.projectToImage(toVec3f(p3d));
+            const cv::Point3f& target_p = (*source_image_points)[i];
+            fx[i*2] = proj.x - target_p.x;
+            fx[i*2+1] = proj.y - target_p.y;
+        }
+        const int offset = nb_rgb_points*2;
+
         source_it.reset();
         target_it.reset();
-
-        Isometry3 transform = getEigenTransform(x);
-
-        for (int i = 0; i < fx.size()/3; ++i)
+        const int nb_points_3d = source_it.size();
+        for (int i = 0; i < nb_points_3d; ++i)
         {
             Vector3 s = source_it->getVector3fMap();
             s = transform * s;
             Vector3 t = target_it->getVector3fMap();
             Vector3 n = target_it->getNormalVector3fMap();
-            // PointToPoint Vector3 diff = (s-t);
-            Scalar diff = (s-t).dot(n);
+            Vector3 diff = (s-t); // Point to point
+            // Scalar diff = (s-t).dot(n); // Point to plane
 
-            fx[i] = diff;
-            //            fx[i*3] = diff(0);
-            //            fx[i*3+1] = diff(1);
-            //            fx[i*3+2] = diff(2);
+            // fx[offset+i] = diff;
+            fx[offset + i*3] = diff(0);
+            fx[offset + i*3+1] = diff(1);
+            fx[offset + i*3+2] = diff(2);
             ++source_it;
             ++target_it;
         }
@@ -87,6 +110,10 @@ struct TransformRGBDCostFunction : public CostFunction
 
     pcl::ConstCloudIterator<PointSource>& source_it;
     pcl::ConstCloudIterator<PointTarget>& target_it;
+    const std::vector<cv::Point3f>* target_points_3d;
+    const std::vector<cv::Point3f>* source_image_points;
+    const ntk::Pose3D& source_rgb_pose;
+    Isometry3 accumulated_transform;
 };
 
 } // ntk
@@ -175,12 +202,19 @@ TransformationEstimationRGBD<PointSource, PointTarget, Scalar>::estimateRigidTra
     ConstCloudIterator<PointTarget>& target_it,
     Matrix4 &transformation_matrix) const
 {
+    typedef Eigen::Transform<Scalar,3,Eigen::Isometry> Isometry3;
     std::vector<double> fx;
     std::vector<double> initial(6);
-    TransformRGBDCostFunction<PointSource,PointTarget,Scalar> f(source_it, target_it);
+    TransformRGBDCostFunction<PointSource,PointTarget,Scalar> f(source_it,
+                                                                target_it,
+                                                                target_points_3d,
+                                                                source_image_points,
+                                                                source_rgb_pose,
+                                                                Isometry3(registration_base->getFinalTransformation()));
     LevenbergMarquartMinimizer optimizer;
     std::fill(stl_bounds(initial), 0);
-    fx.resize(source_it.size());
+    const int error_size = 3*source_it.size() + (target_points_3d ? 2*target_points_3d->size() : 0);
+    fx.resize(error_size);
     optimizer.minimize(f, initial);
     optimizer.diagnoseOutcome(1);
 

@@ -42,12 +42,15 @@ public:
         : m_target_features(new FeatureSet),
           m_feature_parameters(params),
           m_min_matches(10),
-          m_num_matches(0)
+          m_num_matches(0),
+          m_postprocess_with_rgbd_icp(false)
     {
         // Force feature extraction to return only features with depth.
         m_feature_parameters.only_features_with_depth = true;
         resetTarget();
     }
+
+    void setPostProcessWithRGBDICP(bool doit) { m_postprocess_with_rgbd_icp = doit; }
 
     virtual void setSourceImage(const RGBDImage &image);
     virtual void setSourceImage(const RGBDImage &image, ntk::Ptr<FeatureSet> features);
@@ -71,12 +74,18 @@ private:
 
     void computeTargetFeatures();
 
+    void optimizeWithRGBDICP(Pose3D new_pose,
+                             std::vector<cv::Point3f>& ref_points,
+                             std::vector<cv::Point3f>& img_points,
+                             std::vector<bool>& valid_points);
+
 private:
     ntk::Ptr<FeatureSet> m_target_features;
     ntk::Ptr<FeatureSet> m_source_features;
     FeatureSetParams m_feature_parameters;
     int m_min_matches;
     int m_num_matches;
+    bool m_postprocess_with_rgbd_icp;
 };
 
 }

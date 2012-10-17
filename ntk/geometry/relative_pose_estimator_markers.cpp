@@ -98,7 +98,7 @@ estimateNewPose()
         // FIXME: perform a full bundle adjustment.
 
         std::vector<cv::Point3f> source_marker_points_3d;
-        std::vector<cv::Point3f> target_image_points;
+        std::vector<cv::Point3f> source_image_points;
 
         foreach_idx(i, marker_pairs)
         {
@@ -118,13 +118,13 @@ estimateNewPose()
                 cv::Point3f p3d (marker_pairs[i].first[k].x, marker_pairs[i].first[k].y, d);
                 p3d = m_estimated_pose.unprojectFromImage(p3d);
                 cv::Point3f image_point (marker_pairs[i].second[k].x, marker_pairs[i].second[k].y, 0);
-                target_image_points.push_back(image_point);
+                source_image_points.push_back(image_point);
             }
         }
 
         Pose3D delta_target_pose = m_target_pose;
         delta_target_pose.toRightCamera(m_target_image->calibration()->rgb_intrinsics, m_target_image->calibration()->R, m_target_image->calibration()->T);
-        double error = rms_optimize_3d(delta_target_pose, source_marker_points_3d, target_image_points, true /* use_depth */);
+        double error = rms_optimize_3d(delta_target_pose, source_marker_points_3d, source_image_points, true /* use_depth */);
         ntk_dbg_print(error, 2);
         delta_target_pose.invert();
         delta_target_pose.applyTransformBefore(m_target_pose);
