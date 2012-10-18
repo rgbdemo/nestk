@@ -57,7 +57,7 @@ public:
         : m_distance_threshold(0.05),
           m_voxel_leaf_size(0.005),
           m_ransac_outlier_threshold(0.01),
-          m_max_iterations(20)
+          m_max_iterations(100)
     {}
 
 public:

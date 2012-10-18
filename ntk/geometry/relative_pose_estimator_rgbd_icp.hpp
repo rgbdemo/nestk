@@ -59,6 +59,8 @@ computeRegistration(Pose3D& relative_pose,
     boost::shared_ptr<pcl::registration::CorrespondenceRejectorSurfaceNormal> rejector_normal (new pcl::registration::CorrespondenceRejectorSurfaceNormal);
     rejector_normal->setThreshold(cos(M_PI/4.f));
     rejector_normal->initializeDataContainer<PointT, PointT>();
+    rejector_normal->setInputSource<PointT>(source_cloud);
+    rejector_normal->setInputTarget<PointT>(target_cloud);
     rejector_normal->setInputNormals<PointT, PointT>(source_cloud);
     rejector_normal->setTargetNormals<PointT, PointT>(target_cloud);
     reg.addCorrespondenceRejector(rejector_normal);

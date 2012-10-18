@@ -47,7 +47,7 @@ struct TransformRGBDCostFunction : public CostFunction
                               const std::vector<cv::Point3f>* source_image_points,
                               const ntk::Pose3D& source_rgb_pose,
                               const Isometry3& accumulated_transform)
-        : CostFunction(6, 3*source_it.size() + (target_points_3d ? 2*target_points_3d->size() : 0)),
+        : CostFunction(6, source_it.size() + (target_points_3d ? 2*target_points_3d->size() : 0)),
           source_it(source_it),
           target_it(target_it),
           target_points_3d(target_points_3d),
@@ -75,6 +75,9 @@ struct TransformRGBDCostFunction : public CostFunction
         Isometry3 transform = getEigenTransform(x);
         Isometry3 rgb_transform = (transform * accumulated_transform).inverse();
 
+        std::fill(stl_bounds(fx), 0.0);
+        float mean_focal = source_rgb_pose.meanFocal();
+
         const int nb_rgb_points = (target_points_3d ? target_points_3d->size() : 0);
         for (int i = 0; i < nb_rgb_points; ++i)
         {
@@ -82,8 +85,8 @@ struct TransformRGBDCostFunction : public CostFunction
             p3d = rgb_transform * p3d;
             cv::Point3f proj = source_rgb_pose.projectToImage(toVec3f(p3d));
             const cv::Point3f& target_p = (*source_image_points)[i];
-            fx[i*2] = proj.x - target_p.x;
-            fx[i*2+1] = proj.y - target_p.y;
+            fx[i*2] = (proj.x - target_p.x) / mean_focal;
+            fx[i*2+1] = (proj.y - target_p.y) / mean_focal;
         }
         const int offset = nb_rgb_points*2;
 
@@ -96,13 +99,13 @@ struct TransformRGBDCostFunction : public CostFunction
             s = transform * s;
             Vector3 t = target_it->getVector3fMap();
             Vector3 n = target_it->getNormalVector3fMap();
-            Vector3 diff = (s-t); // Point to point
-            // Scalar diff = (s-t).dot(n); // Point to plane
+            // Vector3 diff = (s-t); // Point to point
+            Scalar diff = (s-t).dot(n); // Point to plane
 
-            // fx[offset+i] = diff;
-            fx[offset + i*3] = diff(0);
-            fx[offset + i*3+1] = diff(1);
-            fx[offset + i*3+2] = diff(2);
+            fx[offset+i] = diff;
+            // fx[offset + i*3] = diff(0);
+            // fx[offset + i*3+1] = diff(1);
+            // fx[offset + i*3+2] = diff(2);
             ++source_it;
             ++target_it;
         }
@@ -213,7 +216,7 @@ TransformationEstimationRGBD<PointSource, PointTarget, Scalar>::estimateRigidTra
                                                                 Isometry3(registration_base->getFinalTransformation()));
     LevenbergMarquartMinimizer optimizer;
     std::fill(stl_bounds(initial), 0);
-    const int error_size = 3*source_it.size() + (target_points_3d ? 2*target_points_3d->size() : 0);
+    const int error_size = source_it.size() + (target_points_3d ? 2*target_points_3d->size() : 0);
     fx.resize(error_size);
     optimizer.minimize(f, initial);
     optimizer.diagnoseOutcome(1);
