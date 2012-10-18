@@ -46,7 +46,10 @@ public:
     typedef typename pcl::registration::TransformationEstimation<PointSource, PointTarget, Scalar>::Matrix4 Matrix4;
 
     TransformationEstimationRGBD (pcl::Registration<PointSource, PointTarget>* registration_base)
-        : registration_base(registration_base) {}
+        : registration_base(registration_base),
+          target_points_3d(0),
+          source_image_points(0)
+    {}
 
     virtual ~TransformationEstimationRGBD () {}
 

@@ -24,6 +24,7 @@
 #include <ntk/numeric/cost_function.h>
 #include <ntk/numeric/levenberg_marquart_minimizer.h>
 #include <ntk/utils/debug.h>
+#include <ntk/utils/opencv_utils.h>
 #include <ntk/geometry/eigen_utils.h>
 
 #include <Eigen/Core>
@@ -74,19 +75,26 @@ struct TransformRGBDCostFunction : public CostFunction
     {
         Isometry3 transform = getEigenTransform(x);
         Isometry3 rgb_transform = (transform * accumulated_transform).inverse();
+        // Isometry3 rgb_transform = transform*accumulated_transform;
+        ntk_dbg_print(source_rgb_pose, 1);
+        ntk_dbg_print(rgb_transform.matrix(), 1);
 
         std::fill(stl_bounds(fx), 0.0);
-        float mean_focal = source_rgb_pose.meanFocal();
+        float mean_focal = source_rgb_pose.isValid() ? source_rgb_pose.meanFocal() : 1000.f;
 
         const int nb_rgb_points = (target_points_3d ? target_points_3d->size() : 0);
         for (int i = 0; i < nb_rgb_points; ++i)
         {
             Vector3 p3d; toEigen((*target_points_3d)[i], p3d);
+            //ntk_dbg_print(cv::Vec3f(p3d(0),p3d(1),p3d(2)), 1);
             p3d = rgb_transform * p3d;
             cv::Point3f proj = source_rgb_pose.projectToImage(toVec3f(p3d));
             const cv::Point3f& target_p = (*source_image_points)[i];
-            fx[i*2] = (proj.x - target_p.x) / mean_focal;
-            fx[i*2+1] = (proj.y - target_p.y) / mean_focal;
+            fx[i*2] = (proj.x - target_p.x);
+            fx[i*2+1] = (proj.y - target_p.y);
+            // ntk_dbg_print(cv::Vec3f(p3d(0),p3d(1),p3d(2)), 1);
+            // ntk_dbg_print(proj, 1);
+            // ntk_dbg_print(target_p, 1);
         }
         const int offset = nb_rgb_points*2;
 
@@ -102,7 +110,7 @@ struct TransformRGBDCostFunction : public CostFunction
             // Vector3 diff = (s-t); // Point to point
             Scalar diff = (s-t).dot(n); // Point to plane
 
-            fx[offset+i] = diff;
+            fx[offset+i] = mean_focal * diff;
             // fx[offset + i*3] = diff(0);
             // fx[offset + i*3+1] = diff(1);
             // fx[offset + i*3+2] = diff(2);

@@ -74,7 +74,8 @@ private:
 
     void computeTargetFeatures();
 
-    void optimizeWithRGBDICP(Pose3D new_pose,
+    void optimizeWithRGBDICP(Pose3D& new_pose,
+                             const RGBDImage& image,
                              std::vector<cv::Point3f>& ref_points,
                              std::vector<cv::Point3f>& img_points,
                              std::vector<bool>& valid_points);

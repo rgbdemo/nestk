@@ -40,7 +40,7 @@ namespace ntk
 template <class PointT>
 class RelativePoseEstimatorICP : public RelativePoseEstimatorFromPointClouds<PointT>
 {
-private:
+protected:
     typedef RelativePoseEstimatorFromPointClouds<PointT> super;
     using super::m_target_cloud;
     using super::m_source_cloud;
