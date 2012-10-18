@@ -24,6 +24,7 @@
 #include <ntk/camera/calibration.h>
 #include <ntk/mesh/mesh.h>
 #include <ntk/utils/opencv_utils.h>
+#include <ntk/thread/event.h>
 
 namespace ntk
 {
@@ -39,6 +40,8 @@ public:
     {}
 
 public:
+    virtual void acquireLock() {}
+    virtual void releaseLock() {}
     const Mesh& currentMesh() const { return m_mesh; }
     const RGBDImage& lastImage() const { return m_last_image; }
     void setGlobalDepthOffset(float offset) { m_global_depth_offset = offset; }
@@ -66,6 +69,67 @@ protected:
     Rect3f m_bounding_box;
 };
 ntk_ptr_typedefs(RGBDModeler)
+
+class RGBDModelerInOwnThread : public RGBDModeler, public EventProcessingBlockInOwnThread
+{
+public:
+    struct FrameEventData : public ntk::EventData
+    {
+        TYPEDEF_THIS(FrameEventData)
+
+        CLONABLE_EVENT_DATA
+
+        enum EventType { NewImage = 0,
+                         ComputeMesh = 1,
+                         ComputeSurfaceMesh = 2,
+                         ComputeAccurateSurfaceColor = 3,
+                         Reset = 4};
+
+        EventType type;
+        RGBDImage image;
+        ntk::Pose3D pose;
+    };
+    ntk_ptr_typedefs(FrameEventData)
+
+    struct MeshEventSender : public ntk::EventBroadcaster
+    {};
+
+public:
+    RGBDModelerInOwnThread(RGBDModelerPtr child) : child (child)
+    {}
+
+    virtual ~RGBDModelerInOwnThread();
+
+public:
+    virtual void acquireLock() { lock.lock(); }
+    virtual void releaseLock() { lock.unlock(); }
+    const Mesh& currentMesh() const { return child->currentMesh(); }
+    const RGBDImage& lastImage() const { return child->lastImage(); }
+    void setGlobalDepthOffset(float offset) { child->setGlobalDepthOffset(offset); }
+    virtual float resolution() const { return child->resolution(); }
+    virtual void setResolution(float resolution) { return child->setResolution(resolution); }
+    virtual void setDepthMargin(float depth_margin) { return setDepthMargin(depth_margin); }
+    const ntk::Plane& supportPlane() const { return child->supportPlane(); }
+    virtual int numPoints() const { return child->numPoints(); }
+    void setSurfelRendering(bool use_surfels) { return child->setSurfelRendering(use_surfels); }
+    void setBoundingBox(const Rect3f& bbox) { return child->setBoundingBox(bbox); }
+
+public:
+    virtual bool addNewView(const RGBDImage& image, Pose3D& depth_pose);
+    virtual void computeMesh();
+    virtual void computeSurfaceMesh();
+    virtual void computeAccurateVerticeColors();
+    virtual void reset();
+
+public:
+    virtual void run();
+
+protected:
+    RGBDModelerPtr child;
+    MeshEventSender mesh_event_sender;
+    QMutex lock;
+};
+ntk_ptr_typedefs(RGBDModelerInOwnThread)
 
 } // ntk
 

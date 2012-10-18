@@ -63,6 +63,8 @@ private:
   float m_max_delta_depth;
 };
 
+float estimateErrorFromDepth(float depth, float max_depth_at_1m);
+
 } // ntk
 
 #endif // NTK_MESH_MESHGENERATOR_H

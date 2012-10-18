@@ -202,10 +202,15 @@ void showCheckerboardCorners(const cv::Mat3b& image,
 // Apply translation coeffs, see http://www.ros.org/wiki/kinect_calibration/technical
 void kinect_shift_ir_to_depth(cv::Mat3b& im);
 
+void loadImageList(const QStringList& view_dirs,
+                   ntk::RGBDProcessor* processor,
+                   ntk::RGBDCalibration* calibration,
+                   std::vector<ntk::RGBDImage>& images);
+
 void loadImageList(const QDir& image_dir,
                    const QStringList& view_list,
-                   ntk::RGBDProcessor& processor,
-                   ntk::RGBDCalibration& calibration,
+                   RGBDProcessor *processor,
+                   RGBDCalibration *calibration,
                    std::vector<ntk::RGBDImage>& images);
 
 float calibrate_kinect_scale_factor(const std::vector<ntk::RGBDImage>& images,
@@ -233,7 +238,8 @@ void calibrate_kinect_rgb(const std::vector<ntk::RGBDImage>& images,
                           float pattern_size,
                           ntk::PatternType pattern_type,
                           bool ignore_distortions,
-                          bool fix_center);
+                          bool fix_center,
+                          int default_flags = CV_CALIB_USE_INTRINSIC_GUESS | CV_CALIB_FIX_ASPECT_RATIO);
 
 } // ntk
 

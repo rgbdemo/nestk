@@ -21,7 +21,10 @@
 #define NTK_CAMERA_NITE_RGBD_GRABBER_H
 
 #include <ntk/camera/rgbd_grabber.h>
-#include <ntk/gesture/skeleton.h>
+
+#if defined(USE_NITE) || defined(NESTK_USE_NITE)
+# include <ntk/gesture/skeleton.h>
+#endif
 
 // OpenNI headers include windows.h on windows without preventing
 // preprocessor namespace pollution.
@@ -38,8 +41,11 @@
 
 #include <XnCodecIDs.h>
 #include <XnCppWrapper.h>
+
+#if defined(USE_NITE) || defined(NESTK_USE_NITE)
 #include <XnVSessionManager.h>
 #include <XnVPushDetector.h>
+#endif
 
 // Under certain odd circumstances, qhull/io.h can be incorrectly included
 // by XnPlatformWin32.h, dragging True and False as preprocessor macros,
@@ -83,7 +89,7 @@ public:
 public:
     xn::Context& niContext() { return m_ni_context; }
     int numDevices() const { return m_device_nodes.size(); }
-    const DeviceInfo& deviceInfo(int index) const { return m_device_nodes[index]; }
+    const DeviceInfo& deviceInfo(int index) const;
     void checkXnError(const XnStatus& status, const char* what) const;
 
 private:
@@ -147,8 +153,11 @@ public:
     /*! Grab IR images instead of RGB images. */
     virtual void setIRMode(bool ir);
 
-	/*! Set whether custom bayer decoding should be used. */
-	void setCustomBayerDecoding(bool enable) { m_custom_bayer_decoding = enable; }
+    /*! Set whether custom bayer decoding should be used. */
+    void setCustomBayerDecoding(bool enable) { m_custom_bayer_decoding = enable; }
+
+    /*! Set whether hardware registraition should be used */
+    void UseHardwareRegistration(bool enable) { m_hardware_registration = enable; }
 
 public:
     // Nite accessors.
@@ -203,6 +212,7 @@ private:
     bool m_high_resolution;
     bool m_mirrored;
     bool m_custom_bayer_decoding;
+    bool m_hardware_registration;
 
     /*! the default xml config file */
     static const std::string DEFAULT_XML_CONFIG_FILE;

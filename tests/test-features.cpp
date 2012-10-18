@@ -20,6 +20,7 @@
 #include <ntk/image/feature.h>
 #include <ntk/utils/arg.h>
 #include <ntk/camera/rgbd_processor.h>
+#include <ntk/camera/calibration.h>
 #include <ntk/utils/time.h>
 
 using namespace ntk;
@@ -36,7 +37,7 @@ namespace opt
 ntk::arg<const char*> calibration_file("--calibration", "Calibration file", 0);
 ntk::arg<const char*> detector("--detector", "Detector type: SURF, FAST, SIFT, GPUSIFT, SIFTPP", "SURF");
 ntk::arg<const char*> extractor("--extractor", "Extrator type: SURF64, SURF128, SIFT, BRIEF32, BRIEF64", "SURF128");
-ntk::arg<float> match_threshold("--match-threshold", "Threshold on dist ratio for matching", 0.8*0.8);
+ntk::arg<float> match_threshold("--match-threshold", "Threshold on dist ratio for matching", 0.8f*0.8f);
 ntk::arg<const char*> image1(0, "ViewXXXX image 1", 0);
 ntk::arg<const char*> image2(0, "ViewXXXX image 2", 0);
 }

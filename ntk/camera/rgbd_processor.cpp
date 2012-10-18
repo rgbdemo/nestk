@@ -22,11 +22,16 @@
 #include <ntk/utils/time.h>
 #include <ntk/geometry/pose_3d.h>
 #include <ntk/image/bilateral_filter.h>
+#include <ntk/camera/calibration.h>
 
 #ifdef NESTK_USE_PCL
 #include <ntk/mesh/pcl_utils.h>
 #include <pcl/features/integral_image_normal.h>
 #include <pcl/features/normal_3d.h>
+#endif
+
+#ifdef HAVE_OPENCV_GREATER_THAN_2_4_0
+# include "opencv2/photo/photo.hpp"
 #endif
 
 // FIXME: The KdTreeFLANN class template instantiation (from kdtree_flann.h)
@@ -41,12 +46,12 @@ namespace ntk
             m_image(0),
             //m_flags(FixGeometry | FixBias | UndistortImages | ComputeNormals),
             m_flags(RGBDProcessorFlags::UndistortImages),
-            m_min_depth(0.3),
-            m_max_depth(10.0),
+            m_min_depth(0.3f),
+            m_max_depth(10.0f),
             m_max_normal_angle(80),
-            m_max_time_depth_delta(0.1),
-            m_max_spatial_depth_delta(0.1),
-            m_mapping_resolution(1.0),
+            m_max_time_depth_delta(0.1f),
+            m_max_spatial_depth_delta(0.1f),
+            m_mapping_resolution(1.0f),
             m_min_amplitude(1000),
             m_max_amplitude(-1)
     {
@@ -124,7 +129,7 @@ namespace ntk
         for_all_rc(depth_im)
         {
             cv::Vec3f n = estimate_normal_from_depth(depth_im, depth_pose,
-                                                     r, c, 0.03,
+                                                     r, c, 0.03f,
                                                      dx.data ? &dx : 0, dy.data ? &dy : 0);
             normal_im(r,c) = n;
         }
@@ -180,14 +185,13 @@ namespace ntk
         rgbdImageToPointCloud(*cloud, image, true /* is_dense */);
         tc_normals.elapsedMsecs(" -- imageToPointCloud");
 
-
         pcl::PointCloud<pcl::Normal> normals;
-        pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> ne;
-        pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ> ());
-        ne.setSearchMethod (tree);
-        ne.setRadiusSearch (0.01);
-        ne.setInputCloud(cloud); // FIXME: Find out whether the removal of the (deep-copying) cloud.makeShared() call sped things up.
-        ne.compute(normals);
+        pcl::IntegralImageNormalEstimation<pcl::PointXYZ, pcl::Normal> normal_estimator;
+        normal_estimator.setNormalEstimationMethod (normal_estimator.COVARIANCE_MATRIX);
+        normal_estimator.setMaxDepthChangeFactor (0.05f);
+        normal_estimator.setNormalSmoothingSize (20.0f);
+        normal_estimator.setInputCloud(cloud);
+        normal_estimator.compute(normals);
         tc_normals.elapsedMsecs(" -- compute normals");
 
         const Pose3D& depth_pose = *image.calibration()->depth_pose;
@@ -223,7 +227,7 @@ namespace ntk
     {
         m_image = &image;
 
-        if (m_image->calibration())
+        if (m_image->calibration() && !m_image->depthPose().isValid())
         {
             m_image->setDepthPose(*m_image->calibration()->depth_pose);
         }
@@ -247,6 +251,9 @@ namespace ntk
             m_image->rawRgb().copyTo(m_image->rgbRef());
             m_image->rawIntensity().copyTo(m_image->intensityRef());
         }
+
+        if (!m_image->rawDepth().data)
+            return;
 
         if (!hasFilterFlag(RGBDProcessorFlags::NiteProcessed) && m_image->calibration() && hasFilterFlag(RGBDProcessorFlags::UndistortImages))
             undistortImages();
@@ -272,8 +279,8 @@ namespace ntk
 
         if (m_image->calibration())
         {
-            if (!flt_eq(m_image->calibration()->depth_multiplicative_correction_factor, 1.0, 1e-5)
-                    || !flt_eq(m_image->calibration()->depth_additive_correction_factor, 0.0, 1e-5))
+            if (!flt_eq(m_image->calibration()->depth_multiplicative_correction_factor, 1.0f, 1e-5f)
+                    || !flt_eq(m_image->calibration()->depth_additive_correction_factor, 0.0f, 1e-5f))
             {
                 float factor = m_image->calibration()->depth_multiplicative_correction_factor;
                 float offset = m_image->calibration()->depth_additive_correction_factor;
@@ -303,7 +310,12 @@ namespace ntk
             tc.elapsedMsecs("bilateralFilter");
 
             if (hasFilterFlag(RGBDProcessorFlags::ComputeNormals) || hasFilterFlag(RGBDProcessorFlags::FilterNormals))
-                computeNormals(*m_image);
+            {
+                if (hasFilterFlag(RGBDProcessorFlags::ComputeHighQualityNormals))
+                    computeHighQualityNormalsPCL(*m_image);
+                else
+                    computeNormals(*m_image);
+            }
 
             tc.elapsedMsecs("computeNormals");
 
@@ -399,10 +411,13 @@ namespace ntk
                   m_image->calibration()->depth_undistort_map2,
                   CV_INTER_LINEAR);
 
-            remap(m_image->rawIntensityRef(), m_image->intensityRef(),
-                  m_image->calibration()->depth_undistort_map1,
-                  m_image->calibration()->depth_undistort_map2,
-                  CV_INTER_LINEAR);
+            if (m_image->rawIntensityRef().data)
+            {
+                remap(m_image->rawIntensityRef(), m_image->intensityRef(),
+                      m_image->calibration()->depth_undistort_map1,
+                      m_image->calibration()->depth_undistort_map2,
+                      CV_INTER_LINEAR);
+            }
         }
     }
 
@@ -461,7 +476,7 @@ namespace ntk
     void RGBDProcessor :: bilateralFilter(RGBDImage& image)
     {
         cv::Mat1f tmp;
-        depth_bilateralFilter(image.depthRef(), tmp, 7, 20, 20, 0.01);
+        depth_bilateralFilter(image.depthRef(), tmp, 7, 20, 20, 0.01f);
         tmp.copyTo(image.depthRef());
     }
 
@@ -632,9 +647,9 @@ namespace ntk
 
     void RGBDProcessor :: computeKinectDepthTanh()
     {
-        const float k1 = 1.1863;
-        const float k2 = 2842.5;
-        const float k3 = 0.1236;
+        const float k1 = 1.1863f;
+        const float k2 = 2842.5f;
+        const float k3 = 0.1236f;
 
         cv::Mat1f& depth_im = m_image->depthRef();
         for_all_rc(depth_im)
@@ -735,7 +750,7 @@ namespace ntk
             {
                 int v = 255*6*(depth_data[c]-min_val)/(max_val-min_val);
                 if (v < 0) v = 0;
-                char r,g,b;
+                unsigned char r,g,b;
                 int lb = v & 0xff;
                 switch (v / 256) {
                 case 0:

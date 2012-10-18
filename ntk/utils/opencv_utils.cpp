@@ -391,4 +391,28 @@ cv::Point3f computeCentroid(const std::vector<cv::Point3f>& points)
     return box;
   }
 
+  ntk::Rect3f readBoundingBoxFromYamlFile(const std::string& filename)
+  {
+      QFileInfo f (filename.c_str());
+      ntk_throw_exception_if(!f.exists(), "Could not find bounding box file.");
+      cv::FileStorage cv_file (filename, CV_STORAGE_READ);
+      cv::Mat1f mat (2,3);
+      readMatrix(cv_file, "bounding_box", mat);
+      return ntk::Rect3f(mat(0,0), mat(0,1), mat(0,2),
+                         mat(1,0), mat(1,1), mat(1,2));
+  }
+
+  void writeBoundingBoxToYamlFile(const std::string& filename, const ntk::Rect3f& bbox)
+  {
+      FileStorage output_file (filename, CV_STORAGE_WRITE);
+      cv::Mat1f mat(2,3);
+      mat(0,0) = bbox.x;
+      mat(0,1) = bbox.y;
+      mat(0,2) = bbox.z;
+      mat(1,0) = bbox.width;
+      mat(1,1) = bbox.height;
+      mat(1,2) = bbox.depth;
+      writeMatrix(output_file, "bounding_box", mat);
+  }
+
 }

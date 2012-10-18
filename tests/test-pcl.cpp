@@ -19,13 +19,54 @@
 
 #include <ntk/core.h>
 #include <ntk/utils/debug.h>
+#include <ntk/mesh/mesh.h>
+#include <ntk/mesh/pcl_utils.h>
 
 #include <pcl/common/common.h>
 #include <pcl/common/distances.h>
 #include <pcl/common/eigen.h>
 #include <pcl/point_types.h>
 
+#ifdef HAVE_PCL_GREATER_THAN_1_5_1
+#include <pcl/surface/poisson.h>
+#endif
+
 using pcl::PointXYZ;
+
+void testPoisson()
+{
+#ifdef HAVE_PCL_GREATER_THAN_1_5_1
+    ntk::Mesh mesh;
+    mesh.addCube(cv::Point3f(0,0,0), cv::Point3f(1,1,1));
+
+    pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZRGBNormal>);
+    cloud->width = 10;
+    cloud->height = 1;
+    cloud->points.resize(10);
+    for (int i = 0; i < 10; ++i)
+    {
+        pcl::PointXYZRGBNormal p;
+        p.x = i;
+        p.y = i*2;
+        p.z = i;
+        p.normal_x = 1;
+        p.normal_y = 0;
+        p.normal_z = 0;
+        p.r = 0;
+        p.g = 0;
+        p.b = 0;
+        cloud->points[i] = p;
+    }
+
+    pcl::Poisson<pcl::PointXYZRGBNormal> poisson;
+    poisson.setInputCloud(cloud);
+    pcl::PolygonMesh pcl_mesh;
+    poisson.performReconstruction(pcl_mesh);
+
+    polygonMeshToMesh(mesh, pcl_mesh);
+    mesh.saveToPlyFile("poisson.ply");
+#endif
+}
 
 void test1()
 {
@@ -45,7 +86,7 @@ void test1()
 void test2()
 {
   Eigen::Matrix3f mat, vec;
-  mat << 0.000536227, -1.56178e-05, -9.47391e-05, -1.56178e-05, 0.000297322, -0.000148785, -9.47391e-05, -0.000148785, 9.7827e-05;
+  mat << 0.000536227f, -1.56178e-05f, -9.47391e-05f, -1.56178e-05f, 0.000297322f, -0.000148785f, -9.47391e-05f, -0.000148785f, 9.7827e-05f;
   Eigen::Vector3f val;
 
   pcl::eigen33 (mat, vec, val);
@@ -72,6 +113,7 @@ void test2()
 
 int main (int argc, char** argv)
 {
-  test1();
-  test2();
+  // test1();
+  // test2();
+    testPoisson();
 }

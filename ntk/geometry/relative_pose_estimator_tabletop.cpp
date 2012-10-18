@@ -40,8 +40,8 @@ estimateNewPose()
                  target_centroid[1]-source_centroid[1],
                  target_centroid[2]-source_centroid[2]);
     // FIXME: add a small perturbation to avoid local minimas.
-    t[0] += 0.01;
-    t[1] += 0.01;
+    t[0] += 0.01f;
+    t[1] += 0.01f;
 
     m_estimated_pose.applyTransformAfter(t, cv::Vec3f(0,0,0));
 

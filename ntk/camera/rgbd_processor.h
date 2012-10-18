@@ -52,7 +52,8 @@ public:
       FillSmallHoles = 0x20000,
       FlipColorImage = 0x40000, // horizontally flip the color image
       NiteProcessed = 0x80000, // raw = mapped = postprocessed
-      FilterBilateral = 0x100000
+      FilterBilateral = 0x100000,
+      ComputeHighQualityNormals = 0x200000 // compute normals (required by FilterNormals)
     };
 
     RGBDProcessorFlags(int flags) { m_flags = flags; }

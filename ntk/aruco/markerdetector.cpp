@@ -643,7 +643,7 @@ int MarkerDetector:: perimeter(vector<Point2f> &a)
 /**
  *
  */
-void MarkerDetector::glGetProjectionMatrix(CameraParameters & CP,Size orgImgSize,Size size,double proj_matrix[16],double gnear,double gfar,bool invert )throw(cv::Exception)
+void MarkerDetector::glGetProjectionMatrix(CameraParameters & CP,Size orgImgSize,Size size,double proj_matrix[16],double gnear,double gfar,bool invert )
 {
       if (CP.isValid()==false) throw cv::Exception(9100,"invalid camera parameters","MarkerDetector::glGetProjectionMatrix",__FILE__,__LINE__);
     //Deterime the rsized info
@@ -666,7 +666,7 @@ void MarkerDetector::glGetProjectionMatrix(CameraParameters & CP,Size orgImgSize
 
 }
 
-void MarkerDetector::argConvGLcpara2( double cparam[3][4], int width, int height, double gnear, double gfar, double m[16], bool invert )throw(cv::Exception)
+void MarkerDetector::argConvGLcpara2( double cparam[3][4], int width, int height, double gnear, double gfar, double m[16], bool invert )
 {
 
     double   icpara[3][4];
@@ -732,7 +732,7 @@ void MarkerDetector::argConvGLcpara2( double cparam[3][4], int width, int height
 
 }
 
-int  MarkerDetector::arParamDecompMat( double source[3][4], double cpara[3][4], double trans[3][4] )throw(cv::Exception)
+int  MarkerDetector::arParamDecompMat( double source[3][4], double cpara[3][4], double trans[3][4] )
 {
     int       r, c;
     double    Cpara[3][4];
@@ -821,7 +821,7 @@ double MarkerDetector::dot( double a1, double a2, double a3,
 }
 
 /*
- void MarkerDetector::getExtrinsicsParams(double m_modelview[16], guimage::ExtrinsicParams  &OutExt)throw(cv::Exception)
+ void MarkerDetector::getExtrinsicsParams(double m_modelview[16], guimage::ExtrinsicParams  &OutExt)
  {
   CvMat* inMatrix=cvCreateMat(3,3,CV_32FC1);
   CvMat* vectorRotation=cvCreateMat(1,3,CV_32FC1);

@@ -31,7 +31,7 @@ namespace ntk
     : m_use_color(false),
     m_mesh_type(PointCloudMesh),
     m_resolution_factor(1.0),
-    m_max_delta_depth(0.05)
+    m_max_delta_depth(0.05f)
   {
   }
 
@@ -51,8 +51,8 @@ namespace ntk
 
     const cv::Mat1f& depth_im = image.depth();
     const cv::Mat1b& mask_im = image.depthMask();
-    cv::Mat3f voxels (depth_im.size());
-    cv::Mat3f rgb_points (depth_im.size());
+    cv::Mat4f voxels (depth_im.size());
+    cv::Mat4f rgb_points (depth_im.size());
 
     cv::Mat1b subsample_mask(mask_im.size());
     subsample_mask = 0;
@@ -67,7 +67,7 @@ namespace ntk
 
     for (int r = 0; r < voxels.rows; ++r)
     {
-      Vec3f* voxels_data = voxels.ptr<Vec3f>(r);
+      Vec4f* voxels_data = voxels.ptr<Vec4f>(r);
       const uchar* mask_data = subsample_mask.ptr<uchar>(r);
       for (int c = 0; c < voxels.cols; ++c)
       {
@@ -77,7 +77,7 @@ namespace ntk
         Vec3b color (0,0,0);
         if (m_use_color)
         {
-          Point3f prgb = rgb_points(r,c);
+          cv::Point3f prgb = toPoint3f(rgb_points(r,c));
           int i_y = ntk::math::rnd(prgb.y);
           int i_x = ntk::math::rnd(prgb.x);
           if (is_yx_in_range(image.rgb(), i_y, i_x))
@@ -96,7 +96,7 @@ namespace ntk
           color = Vec3b(g,g,g);
         }
 
-        m_mesh.vertices.push_back(voxels_data[c]);
+        m_mesh.vertices.push_back(toPoint3f(voxels_data[c]));
         m_mesh.colors.push_back(color);
       }
     }
@@ -115,6 +115,13 @@ namespace ntk
     const cv::Mat1f& depth_im = image.depth();
     const cv::Mat1b& mask_im = image.depthMask();
 
+    cv::Mat1b subsample_mask(mask_im.size());
+    subsample_mask = 0;
+    for (float r = 0; r < subsample_mask.rows-1; r += 1.0/m_resolution_factor)
+      for (float c = 0; c < subsample_mask.cols-1; c += 1.0/m_resolution_factor)
+        subsample_mask(ntk::math::rnd(r),ntk::math::rnd(c)) = 1;
+    subsample_mask = mask_im & subsample_mask;
+
     for_all_rc(depth_im)
     {
       int i_r = r;
@@ -122,7 +129,7 @@ namespace ntk
       if (!is_yx_in_range(depth_im, i_r, i_c))
         continue;
 
-      if (!mask_im(r,c))
+      if (!subsample_mask(r,c))
         continue;
 
       double depth = depth_im(i_r,i_c);
@@ -191,7 +198,9 @@ namespace ntk
     const Mat1b& mask_im = image.depthMask();
     m_mesh.clear();
     if (m_use_color)
-      image.rgb().copyTo(m_mesh.texture);
+    {
+      image.rgb().copyTo(m_mesh.texture);      
+    }
     else if (image.intensity().data)
       toMat3b(normalize_toMat1b(image.intensity())).copyTo(m_mesh.texture);
     else
@@ -215,6 +224,8 @@ namespace ntk
       if (m_use_color)
       {
         p2d_rgb = rgb_pose.projectToImage(p3d);
+        if (!is_yx_in_range(image.rgb(), p2d_rgb.y, p2d_rgb.x))
+            continue;
         texcoords = Point2f(p2d_rgb.x/image.rgb().cols, p2d_rgb.y/image.rgb().rows);
       }
       else
@@ -224,7 +235,7 @@ namespace ntk
       }
       vertice_map(r,c) = m_mesh.vertices.size();
       m_mesh.vertices.push_back(p3d);
-      // m_mesh.colors.push_back(bgr_to_rgb(im.rgb()(p2d_rgb.y, p2d_rgb.x)));
+      m_mesh.colors.push_back(bgr_to_rgb(image.rgb()(p2d_rgb.y, p2d_rgb.x)));
       m_mesh.texcoords.push_back(texcoords);
     }
 
@@ -245,10 +256,12 @@ namespace ntk
         m_mesh.faces.push_back(f);
       }
 
+      float delta_depth = estimateErrorFromDepth(depth_im(r,c), m_max_delta_depth);
+
       if ((c > 0) &&  (r < vertice_map.rows - 1) &&
           (vertice_map(r+1,c)>=0) && (vertice_map(r+1,c-1) >= 0) &&
-          (std::abs(depth_im(r,c) - depth_im(r+1, c)) < m_max_delta_depth) &&
-          (std::abs(depth_im(r,c) - depth_im(r+1, c-1)) < m_max_delta_depth))
+          (std::abs(depth_im(r,c) - depth_im(r+1, c)) < delta_depth) &&
+          (std::abs(depth_im(r,c) - depth_im(r+1, c-1)) < delta_depth))
       {
         Face f;
         f.indices[2] = vertice_map(r,c);
@@ -258,6 +271,12 @@ namespace ntk
       }
     }
     m_mesh.computeNormalsFromFaces();
+  }
+
+  float estimateErrorFromDepth(float depth, float max_depth_at_1m)
+  {
+      if (depth < 1) return max_depth_at_1m;
+      return depth * max_depth_at_1m;
   }
 
 } // ntk

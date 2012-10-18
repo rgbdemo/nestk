@@ -53,6 +53,9 @@ public:
    */
   void setSaveOnlyRaw(bool v) { m_only_raw = v; }
 
+  /*! Whether the calibration file should be saved. */
+  void setSaveCalibration(bool v) { m_save_calibration = v; }
+
   /*! Whether to save a point cloud of the scene. */
   void setSavePCLPointCloud(bool saveit) { m_save_pcl_point_cloud = saveit; }
 
@@ -96,6 +99,7 @@ private:
   bool m_save_rgb_pose;
   bool m_save_pcl_point_cloud;
   bool m_save_intensity;
+  bool m_save_calibration;
   bool m_use_compressed_format;
   bool m_include_serial;
   bool m_include_timestamp;

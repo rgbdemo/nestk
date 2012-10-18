@@ -3,6 +3,8 @@
 #
 #   nicolas.burrus@ensta.fr
 
+INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
+
 SET ( ntk_sources
 
      core.h
@@ -32,6 +34,8 @@ SET ( ntk_sources
      camera/rgbd_frame_recorder.cpp
      camera/rgbd_grabber.h
      camera/rgbd_grabber.cpp
+     camera/rgbd_grabber_factory.h
+     camera/rgbd_grabber_factory.cpp
      camera/rgbd_image.h
      camera/rgbd_image.cpp
      camera/rgbd_processor.h
@@ -63,6 +67,8 @@ SET ( ntk_sources
      geometry/similarity_transform.cpp
      gui/image_widget.h
      gui/image_widget.cpp
+     gui/image_window.h
+     gui/image_window.cpp
      gui/screen_grabber.h
      gui/screen_grabber.cpp
      image/bilateral_filter.h
@@ -148,6 +154,8 @@ SET ( ntk_sources
      utils/progressive.cpp
      utils/qt_utils.h
      utils/qt_utils.cpp
+     utils/sse.h
+     utils/sse.cpp
      utils/stl.h
      utils/serializable.h
      utils/time.h
@@ -213,21 +221,7 @@ IF(NESTK_USE_KIN4WIN)
        camera/kin4win_grabber.h
        camera/kin4win_grabber.cpp
     )
-ENDIF()
-
-QT4_WRAP_CPP(moc_sources
-  gui/image_widget.h
-  mesh/mesh_viewer.h
-  utils/progressive.h
-  thread/event.h  
-)
-
-# Workaround a bug with i386 on Mac that cannot compile this particular
-# file, error is:
-# non-relocatable subtraction expression, "LC36" minus "L00000000103$pb"
-IF(APPLE AND (CMAKE_OSX_ARCHITECTURES MATCHES "i386"))
-  SET_SOURCE_FILES_PROPERTIES(numeric/levenberg_marquart_minimizer.cpp
-    PROPERTIES COMPILE_FLAGS "-O0")
+    #SET_SOURCE_FILES_PROPERTIES(camera/kin4win_grabber.cpp PROPERTIES COMPILE_FLAGS "/clr")
 ENDIF()
 
 IF (NESTK_USE_OPENNI)
@@ -235,9 +229,14 @@ IF (NESTK_USE_OPENNI)
        camera/openni_grabber.h
        camera/openni_grabber.cpp
        camera/openni_grabber_internals.hxx
+       gesture/ni_utils.h
+      )
+ENDIF()
+
+IF (NESTK_USE_OPENNI)
+  SET (ntk_sources ${ntk_sources}
        gesture/body_event.h
        gesture/body_event.cpp
-       gesture/ni_utils.h
        gesture/skeleton.h
        gesture/skeleton.cpp
       )
@@ -247,6 +246,15 @@ IF (NESTK_USE_FREENECT)
   SET (ntk_sources ${ntk_sources}
        camera/freenect_grabber.h
        camera/freenect_grabber.cpp)
+ENDIF()
+
+IF(NESTK_USE_PMDSDK)
+    SET(ntk_sources ${ntk_sources}
+       camera/pmd_grabber.h
+       camera/pmd_grabber.cpp
+       camera/pmd_rgb_grabber.h
+       camera/pmd_rgb_grabber.cpp
+    )
 ENDIF()
 
 IF(NESTK_USE_PCL)
@@ -287,14 +295,34 @@ IF (NESTK_USE_ROS)
      ros/ros_rgbd_grabber.cpp)
 ENDIF(NESTK_USE_ROS)
 
+QT4_WRAP_UI(uic_sources
+  gui/image_window.ui
+)
+
+QT4_WRAP_CPP(moc_sources
+  gui/image_widget.h
+  gui/image_window.h
+  mesh/mesh_viewer.h
+  thread/event.h
+  utils/progressive.h
+)
+
+# Workaround a bug with i386 on Mac that cannot compile this particular
+# file, error is:
+# non-relocatable subtraction expression, "LC36" minus "L00000000103$pb"
+IF(APPLE AND (CMAKE_OSX_ARCHITECTURES MATCHES "i386"))
+  SET_SOURCE_FILES_PROPERTIES(numeric/levenberg_marquart_minimizer.cpp
+    PROPERTIES COMPILE_FLAGS "-O0")
+ENDIF()
+
 IF (IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/private")
    SET(HAVE_NESTK_PRIVATE 1)
 ENDIF()
 
 IF (WIN32 OR APPLE)
-  ADD_LIBRARY(nestk STATIC ${ntk_sources} ${moc_sources})
+  ADD_LIBRARY(nestk STATIC ${ntk_sources} ${moc_sources} ${uic_sources})
 ELSE (WIN32 OR APPLE)
-  ADD_LIBRARY(nestk SHARED ${ntk_sources} ${moc_sources})
+  ADD_LIBRARY(nestk STATIC ${ntk_sources} ${moc_sources} ${uic_sources})
 ENDIF (WIN32 OR APPLE)
 
 IF (WIN32)
@@ -307,9 +335,11 @@ TARGET_LINK_LIBRARIES(nestk
   ${GSL_LIBRARIES}
   ${OPENCL_LIBRARIES}
   ${GLEW_LIBRARIES}
-  ${GLUT_LIBRARY}
+  ${GLUT_glut_LIBRARY}
   ${OPENGL_LIBRARIES}
   ${PCL_LIBRARIES}
+  ${CUDA_LIBRARIES}
+  ${OPENMP_LIBRARIES}
   ${OpenCV_LIBS}
   ${X11_LIBRARY}
   ${LIBUSB_1_LIBRARY}
@@ -320,6 +350,7 @@ TARGET_LINK_LIBRARIES(nestk
   ${WINMM_LIBRARY}
   ${PTHREAD_LIBRARY}
   ${KINECTSDK_LIBRARY}
+  ${ZLIB_LIBRARIES}
 )
 
 SET_TARGET_PROPERTIES(nestk PROPERTIES

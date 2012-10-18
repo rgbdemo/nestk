@@ -54,7 +54,7 @@ cv::Vec3f Plane :: normal() const
 
 bool Plane :: isValid() const
 {
-    const float eps = 1e-15;
+    const float eps = 1e-15f;
     return (std::abs(a) > eps) || (std::abs(b) > eps) || (std::abs(c) > eps);
 }
 

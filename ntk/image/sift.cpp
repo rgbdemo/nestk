@@ -597,7 +597,7 @@ process(const pixel_t* _im_pt, int _width, int _height)
   height = _height ;
   prepareBuffers() ;
 
-  VL::float_t sigmak = powf(2.0f, 1.0 / S) ;
+  VL::float_t sigmak = powf(2.0f, 1.0f / S) ;
   VL::float_t dsigma0 = sigma0 * sqrt (1.0f - 1.0f / (sigmak*sigmak) ) ;
 
   // -----------------------------------------------------------------
@@ -1370,7 +1370,7 @@ Sift::computeKeypointDescriptor
 
     /* Truncate at 0.2. */
     for(bin = 0; bin < NBO*NBP*NBP ; ++bin) {
-      if (descr_pt[bin] > 0.2) descr_pt[bin] = 0.2;
+      if (descr_pt[bin] > 0.2) descr_pt[bin] = 0.2f;
     }
 
     /* Normalize again. */

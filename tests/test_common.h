@@ -30,7 +30,7 @@ namespace ntk
 inline bool test_float_eq(const char* value_name, float value, float ref)
 {
   ntk_dbg(1) << "[TEST " << value_name << "] " << value << " == " << ref;
-  bool ok = (flt_eq(value, ref, 1e-3));
+  bool ok = (flt_eq(value, ref, 1e-3f));
   ntk_ensure(ok, "Test failed");
   return ok;
 }

@@ -140,10 +140,11 @@ namespace ntk
 
 	// isnan does not exist with Visual Studio
 #ifdef _MSC_VER
-	inline bool isnan(float x) { return _isnan(x); }
-	inline bool isnan(double x) { return _isnan(x); }
+	inline bool isnan(float x) { return _isnan(x) != 0; }
+	inline bool isnan(double x) { return _isnan(x) != 0; }
 #else
-	using std::isnan;
+    inline bool isnan(float x) { return std::isnan(x); }
+    inline bool isnan(double x) { return std::isnan(x); }
 #endif
 
     // rnd (rounding; 0.5 rounds up)

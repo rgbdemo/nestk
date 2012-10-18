@@ -23,6 +23,7 @@
 #include <ntk/core.h>
 #include <ntk/camera/rgbd_image.h>
 #include <ntk/geometry/pose_3d.h>
+#include <ntk/camera/calibration.h>
 
 #if defined(NESTK_USE_PCL) || defined(USE_PCL)
 #include <pcl/point_cloud.h>

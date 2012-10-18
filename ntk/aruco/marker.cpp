@@ -27,7 +27,7 @@ Marker::Marker(const Marker &M):std::vector<cv::Point2f>(M)
 /**
  *
 */
-void Marker::glGetModelViewMatrix(   double modelview_matrix[16])throw(cv::Exception)
+void Marker::glGetModelViewMatrix(   double modelview_matrix[16])
 {
     //check if paremeters are valid
     bool invalid=false;
@@ -107,7 +107,7 @@ void Marker::draw(Mat &in, Scalar color, int lineWidth ,bool writeId)
 
 /**
  */
-void Marker::calculateExtrinsics(float markerSize,const CameraParameters &CP)throw(cv::Exception)
+void Marker::calculateExtrinsics(float markerSize,const CameraParameters &CP)
 {
     if (!CP.isValid()) throw cv::Exception(9004,"!CP.isValid(): invalid camera parameters. It is not possible to calculate extrinsics","calculateExtrinsics",__FILE__,__LINE__);
     calculateExtrinsics( markerSize,CP.CameraMatrix,CP.Distorsion);
@@ -115,7 +115,7 @@ void Marker::calculateExtrinsics(float markerSize,const CameraParameters &CP)thr
 
 /**
  */
-void Marker::calculateExtrinsics(float markerSizeMeters,cv::Mat  camMatrix,cv::Mat distCoeff )throw(cv::Exception)
+void Marker::calculateExtrinsics(float markerSizeMeters,cv::Mat  camMatrix,cv::Mat distCoeff )
 {
     calculateExtrinsics(markerSizeMeters, cv::Point3f(0,0,0), camMatrix, distCoeff);
 }
@@ -123,7 +123,7 @@ void Marker::calculateExtrinsics(float markerSizeMeters,cv::Mat  camMatrix,cv::M
 void Marker::calculateExtrinsics(float markerSizeMeters,
                                  const cv::Point3f& model_center,
                                  cv::Mat camMatrix,
-                                 cv::Mat distCoeff )throw(cv::Exception)
+                                 cv::Mat distCoeff )
 {
     if (!isValid()) throw cv::Exception(9004,"!isValid(): invalid marker. It is not possible to calculate extrinsics","calculateExtrinsics",__FILE__,__LINE__);
     if (markerSizeMeters<=0)throw cv::Exception(9004,"markerSize<=0: invalid markerSize","calculateExtrinsics",__FILE__,__LINE__);
@@ -177,7 +177,7 @@ void Marker::rotateXAxis(Mat &rotation)
     Rodrigues(rotation, R);
     //create a rotation matrix for x axis
     cv::Mat RX=cv::Mat::eye(3,3,CV_32FC1);
-    float angleRad=M_PI/2;
+    float angleRad=static_cast<float>(M_PI/2);
     RX.at<float>(1,1)=cos(angleRad);
     RX.at<float>(1,2)=-sin(angleRad);
     RX.at<float>(2,1)=sin(angleRad);

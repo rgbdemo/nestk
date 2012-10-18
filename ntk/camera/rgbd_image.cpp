@@ -25,7 +25,7 @@
 
 #include <QDir>
 
-#if defined(USE_OPENNI) || defined(NESTK_USE_OPENNI)
+#if defined(USE_NITE) || defined(NESTK_USE_NITE)
 # include <ntk/gesture/skeleton.h>
 #else
 namespace ntk
@@ -54,12 +54,26 @@ namespace ntk
 
   // Load from a viewXXXX directory.
   void RGBDImage :: loadFromDir(const std::string& dir,
-                                const RGBDCalibration* calib,
+                                const RGBDCalibration* input_calib,
                                 RGBDProcessor* processor)
   {
     m_directory = dir;
     m_timestamp = 0;
     ntk_dbg_print(dir, 2);
+
+    const RGBDCalibration* calib = 0;
+    if (!input_calib && is_file(dir+"/calibration.yml"))
+    {
+        // FIXME: use smart pointer.
+        RGBDCalibration* new_calib = new RGBDCalibration;
+        new_calib->loadFromFile((dir+"/calibration.yml").c_str());
+        calib = new_calib;
+    }
+    else
+    {
+        calib = input_calib;
+    }
+    setCalibration(calib);
 
     if (!is_file(dir+"/raw/color.png") && is_file(dir+"/color.png"))
     {
@@ -122,9 +136,15 @@ namespace ntk
         rawIntensityRef() = imread(dir + "/raw/intensity.png", 0);
         ntk_ensure(rawIntensityRef().data, ("Could not read raw intensity image from " + dir).c_str());
       }
+
+      if (is_file(dir + "/rgb_pose.avs") && calib)
+      {
+        ntk::Pose3D pose;
+        pose.parseAvsFile((dir + "/rgb_pose.avs").c_str());
+        setRgbPose(pose);
+      }
     }
 
-    setCalibration(calib);
     if (processor)
       processor->processImage(*this);
   }
@@ -146,11 +166,12 @@ namespace ntk
     m_raw_amplitude.copyTo(other.m_raw_amplitude);
     m_raw_depth.copyTo(other.m_raw_depth);
     m_user_labels.copyTo(other.m_user_labels);
-    other.m_calibration = m_calibration;    
+    other.m_calibration = m_calibration;
     other.m_directory = m_directory;
     other.m_camera_serial = m_camera_serial;
     other.m_timestamp = m_timestamp;
-#if defined(NESTK_USE_OPENNI) || defined(USE_OPENNI)
+    other.m_depth_pose = m_depth_pose;
+#if defined(USE_NITE) || defined(NESTK_USE_NITE)
     if (m_skeleton)
     {
       if (!other.m_skeleton)
@@ -190,6 +211,7 @@ namespace ntk
     std::swap(m_skeleton, other.m_skeleton);
     std::swap(m_camera_serial, other.m_camera_serial);
     std::swap(m_timestamp, other.m_timestamp);
+    std::swap(m_depth_pose, other.m_depth_pose);
   }
 
   void RGBDImage :: fillRgbFromUserLabels(cv::Mat3b& img) const

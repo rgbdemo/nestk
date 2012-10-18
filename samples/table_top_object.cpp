@@ -85,7 +85,7 @@ int main(int argc, char **argv)
     rgbdImageToPointCloud(*cloud, image);
 
     TableObjectDetector<PointXYZ> detector;
-    detector.setObjectVoxelSize(0.003); // 3 mm voxels.
+    detector.setObjectVoxelSize(0.003f); // 3 mm voxels.
     bool ok = detector.detect(cloud);
     ntk_throw_exception_if(!ok, "No cluster detected on a table plane!");
 

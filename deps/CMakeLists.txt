@@ -81,7 +81,11 @@ if(WIN32)
       set(GLUT_glut_LIBRARY "${nestk_deps_SOURCE_DIR}/win32/freeglut/lib/libfreeglut.a" CACHE FILEPATH "" FORCE)
     ELSE()
       set(GLUT_INCLUDE_DIR "${nestk_deps_SOURCE_DIR}/win32/glut-msvc" CACHE FILEPATH "" FORCE)
-      set(GLUT_glut_LIBRARY "${nestk_deps_SOURCE_DIR}/win32/glut-msvc/glut32.lib" CACHE FILEPATH "" FORCE)
+      IF(CMAKE_CL_64)
+        set(GLUT_glut_LIBRARY "${nestk_deps_SOURCE_DIR}/win32/glut-msvc/glut64.lib" CACHE FILEPATH "" FORCE)
+      ELSE()
+        set(GLUT_glut_LIBRARY "${nestk_deps_SOURCE_DIR}/win32/glut-msvc/glut32.lib" CACHE FILEPATH "" FORCE)
+      ENDIF()
     ENDIF()
   ENDIF()
   INCLUDE_DIRECTORIES(${GLUT_INCLUDE_DIR})
@@ -119,6 +123,9 @@ IF (NESTK_USE_EMBEDDED_EIGEN)
   INCLUDE_DIRECTORIES(${eigen3_INCLUDE_DIRS})
   ADD_SUBDIRECTORY(eigen)
 ENDIF()
+
+## Vectorial
+ADD_SUBDIRECTORY(vectorial)
 
 ENDIF(NOT NESTK_USE_ROS)
 

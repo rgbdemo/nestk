@@ -60,7 +60,8 @@ void MeshViewer :: initializeGL()
     glEnable (GL_BLEND);
     glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     // glEnable(GL_POINT_SMOOTH);
-    glPointSize(1.0);
+    // glPointSize(1.0);
+
     updateBackgroundColor();
     resetCamera();
 }
@@ -81,9 +82,9 @@ void MeshViewer :: enableLighting()
 {
     makeCurrent();
     glEnable(GL_LIGHTING);
-    static GLfloat ambientColor[] = {0.1,0.1,0.1,1.0};
-    static GLfloat diffuseColor[] = {0.7,0.7,0.7,1.0};
-    static GLfloat specularColor[] = {1.0,1.0,1.0,1.0};
+    static GLfloat ambientColor[] = {0.1f, 0.1f, 0.1f ,1.0f};
+    static GLfloat diffuseColor[] = {0.7f, 0.7f, 0.7f, 1.0f};
+    static GLfloat specularColor[] = {1.0f, 1.0f, 1.0f, 1.0f};
 
     glLightfv(GL_LIGHT0, GL_AMBIENT, ambientColor);
     glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuseColor);
@@ -249,7 +250,7 @@ void MeshViewer :: addMeshToVertexBufferObject(const ntk::Mesh& mesh, const Pose
 #endif
 }
 
-void MeshViewer :: addMesh(const ntk::Mesh& mesh, const Pose3D& pose, MeshViewerMode mode)
+void MeshViewer :: addMesh(const ntk::Mesh& mesh, const Pose3D& pose, MeshViewerMode mode, bool influence_on_center)
 {  
     unsigned long start = ntk::Time::getMillisecondCounter();
 	
@@ -259,6 +260,7 @@ void MeshViewer :: addMesh(const ntk::Mesh& mesh, const Pose3D& pose, MeshViewer
     makeCurrent();
 
     // Compute new mesh center.
+    if (influence_on_center)
     {
         m_mesh_center = Point3f(0,0,0);
         int n_sample = 0;
@@ -276,6 +278,9 @@ void MeshViewer :: addMesh(const ntk::Mesh& mesh, const Pose3D& pose, MeshViewer
     GLuint texture;
     if (mesh.texture.data)
     {
+        if ((mesh.texture.cols % 2 != 0) || (mesh.texture.rows % 2 != 0))
+            glEnable(GL_TEXTURE_RECTANGLE_NV);
+
         glGenTextures( 1, &texture );
         m_upcoming_textures.push_back(texture);
         glBindTexture( GL_TEXTURE_2D, texture );
@@ -635,6 +640,8 @@ void MeshViewer :: paintGL()
     glLightfv(GL_LIGHT0,GL_POSITION,lightPosF);
     glPopMatrix();
 
+    glPointSize(m_point_size);
+
     if (m_show_grid)
         drawGrid();
 
@@ -666,8 +673,8 @@ void MeshViewer::drawGrid()
     const float min_z = -5, max_z = 5;
     const float step_x = 0.5, step_z = 0.5;
 
-    glLineWidth(0.7);
-    glColor3f(1.0,1.0,1.0);
+    glLineWidth(0.7f);
+    glColor3f(1.0f, 1.0f, 1.0f);
     glBegin(GL_LINES);
     for (float x = m_mesh_origin.x+min_x; x < m_mesh_origin.x + max_x + step_x*0.1; x += step_x)
     {

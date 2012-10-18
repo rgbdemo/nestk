@@ -128,8 +128,8 @@ bool FreenectGrabber :: connectToDevice()
         ntk_dbg(0) << "freenect_init() failed";
         return false;
     }
-
-    if (freenect_open_device(f_ctx, &f_dev, 0) < 0)
+    ntk_dbg(0) << "Connecting to device: " << m_device_id;
+    if (freenect_open_device(f_ctx, &f_dev, m_device_id) < 0)
     {
         ntk_dbg(0) << "freenect_open_device() failed";
         return false;

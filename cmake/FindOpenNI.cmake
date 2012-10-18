@@ -25,14 +25,14 @@ find_path(OPENNI_INCLUDE_DIR XnStatus.h
 find_library(OPENNI_LIBRARY
              NAMES OpenNI64 OpenNI
              HINTS ${NESTK_ROOT_DIRS_HINTS} ${PC_OPENNI_LIBDIR} ${PC_OPENNI_LIBRARY_DIRS} /usr/lib
-             PATHS "$ENV{PROGRAMFILES}/OpenNI/Lib${OPENNI_SUFFIX}" "$ENV{PROGRAMW6432}/OpenNI/Lib${OPENNI_SUFFIX}"
-             PATH_SUFFIXES lib
+             PATHS "$ENV{PROGRAMFILES}/OpenNI/Lib${OPENNI_SUFFIX}" "$ENV{PROGRAMW6432}/OpenNI/Lib${OPENNI_SUFFIX}" "$ENV{PROGRAMW6432}/OpenNI"
+             PATH_SUFFIXES lib lib64
 )
 find_library(NITE_LIBRARY
-             NAMES XnVNite XnVNITE_1_3_1 XnVNITE_1_4_0 XnVNite_1_4_2 XnVNite_1_5_2
+             NAMES XnVNite XnVNITE_1_3_1 XnVNITE_1_4_0 XnVNite_1_4_2 XnVNite_1_5_2 XnVNite64_1_5_2
              HINTS ${NESTK_ROOT_DIRS_HINTS} ${PC_OPENNI_LIBDIR} ${PC_OPENNI_LIBRARY_DIRS} /usr/lib
-             PATHS "$ENV{PROGRAMFILES}/PrimeSense/NITE/Lib${OPENNI_SUFFIX}" "$ENV{PROGRAMW6432}/PrimeSense/NITE/Lib${OPENNI_SUFFIX}"
-             PATH_SUFFIXES lib
+             PATHS "$ENV{PROGRAMFILES}/PrimeSense/NITE/" "$ENV{PROGRAMW6432}/PrimeSense/NITE"
+             PATH_SUFFIXES lib lib64
 )
 
 find_path(NITE_INCLUDE_DIR XnVSessionManager.h

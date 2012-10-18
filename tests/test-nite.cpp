@@ -21,6 +21,7 @@
 #include <ntk/utils/debug.h>
 #include <ntk/camera/openni_grabber.h>
 #include <ntk/gesture/body_event.h>
+#include <ntk/gesture/skeleton.h>
 
 #include <QApplication>
 #include <QDir>

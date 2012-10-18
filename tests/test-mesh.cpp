@@ -44,10 +44,11 @@ void test_renderer(Mesh& mesh)
   TimeCount tc_render("Rendering 100 times", 1);
   for (int i = 0; i < 100; ++i)
   {
-    pose.applyTransformAfter(cv::Vec3f(0.02,0,0), cv::Vec3f(0,0,0));
+    pose.applyTransformAfter(cv::Vec3f(0.02f, 0, 0), cv::Vec3f(0, 0, 0));
     TimeCount tc_render_one("Rendering", 1);
     renderer.setMesh(mesh);
-    renderer.setPose(pose, 0.3, 5);
+    float near = 0.3f, far = 5.f;
+    renderer.setPose(pose, &near, &far);
     renderer.renderToImage(color_image, 0);
     tc_render_one.stop();
   }

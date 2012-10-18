@@ -42,12 +42,13 @@ namespace ntk
 class FreenectGrabber : public RGBDGrabber
 {
 public:
-  FreenectGrabber()
+  FreenectGrabber(int device_id = 0)
     : m_depth_transmitted(0),
       m_rgb_transmitted(0),
       f_ctx(0), f_dev(0),
       m_ir_mode(0),
-      m_dual_ir_rgb(0)
+      m_dual_ir_rgb(0),
+      m_device_id(device_id)
   {}
 
   /*! Connect with the Kinect device. */
@@ -83,6 +84,7 @@ private:
   freenect_device *f_dev;
   bool m_ir_mode;
   bool m_dual_ir_rgb;
+  int m_device_id;
 };
 
 typedef FreenectGrabber KinectGrabber;

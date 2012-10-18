@@ -46,6 +46,11 @@ public:
         cv::Vec3b color;
     };
 
+public: // FIXME: Move these where they really belong.
+    static bool setImage(QImage& image, const cv::Mat1f& im, double* min_val = 0, double* max_val = 0);
+    static bool setImage(QImage& image, const cv::Mat1b& im);
+    static bool setImage(QImage& image, const cv::Mat3b& im);
+
 public:
     ImageWidget(QWidget* parent);
 
@@ -60,6 +65,7 @@ public:
     void setImage(const cv::Mat1f& im, double* min_val = 0, double* max_val = 0);
     void setImage(const cv::Mat1b& im);
     void setImage(const cv::Mat3b& im);
+
     void setPen(QPen q);
     void setRects(const std::list<cv::Rect>& rects, const cv::Vec3b& color = cv::Vec3b(0,0,0));
     void setTexts(const std::vector<TextData> texts);

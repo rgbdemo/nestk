@@ -28,12 +28,12 @@ ELSE (WIN32)
     FIND_LIBRARY( FREENECT_LIBRARIES
         NAMES freenect
         HINTS ${NESTK_ROOT_DIRS_HINTS}
-		PATHS
+	PATHS
             /usr
             /usr/local
             /sw
             /opt/local
-        PATHS_SUFFIXES lib lib64
+        PATH_SUFFIXES lib lib64
         DOC "The freenect library")
 ENDIF (WIN32)
 
