@@ -52,17 +52,8 @@ computeRegistration(Pose3D& relative_pose,
     typedef pcl::registration::TransformationEstimationPointToPlaneLLS<PointT, PointT> PointToPlane;
     typedef TransformationEstimationRGBD<PointT, PointT> TransformRGBD;
     boost::shared_ptr<TransformRGBD> transform_rgbd (new TransformRGBD(&reg));
-    std::vector<cv::Point3f> transformed_target_points_3d = *target_points_3d;
     if (target_points_3d && source_image_points)
-    {
-        // target_points_3d are in 3d space, after unproject from m_target_pose.
-        // we need to apply initial_source_pose to them, since in the ICP loop they won't have it.
-        foreach_idx(i, transformed_target_points_3d)
-        {
-            // transformed_target_points_3d[i] = this->m_initial_pose.invCameraTransform(transformed_target_points_3d[i]);
-        }
         transform_rgbd->setColorFeatures(source_rgb_pose, *target_points_3d, *source_image_points);
-    }
     reg.setTransformationEstimation (transform_rgbd);
 
     boost::shared_ptr<pcl::registration::CorrespondenceRejectorSurfaceNormal> rejector_normal (new pcl::registration::CorrespondenceRejectorSurfaceNormal);
