@@ -76,13 +76,13 @@ struct TransformRGBDCostFunction : public CostFunction
         Isometry3 transform = getEigenTransform(x);
         Isometry3 rgb_transform = (transform * accumulated_transform).inverse();
         // Isometry3 rgb_transform = transform*accumulated_transform;
-        ntk_dbg_print(source_rgb_pose, 1);
-        ntk_dbg_print(rgb_transform.matrix(), 1);
 
         std::fill(stl_bounds(fx), 0.0);
         float mean_focal = source_rgb_pose.isValid() ? source_rgb_pose.meanFocal() : 1000.f;
 
         const int nb_rgb_points = (target_points_3d ? target_points_3d->size() : 0);
+        const float rgb_weight = source_it.size() > 0 ? 0.01f * source_it.size() : 1.0f;
+        const float icp_weight = nb_rgb_points > 0 ? nb_rgb_points : 1.0f;
         for (int i = 0; i < nb_rgb_points; ++i)
         {
             Vector3 p3d; toEigen((*target_points_3d)[i], p3d);
@@ -90,8 +90,8 @@ struct TransformRGBDCostFunction : public CostFunction
             p3d = rgb_transform * p3d;
             cv::Point3f proj = source_rgb_pose.projectToImage(toVec3f(p3d));
             const cv::Point3f& target_p = (*source_image_points)[i];
-            fx[i*2] = (proj.x - target_p.x);
-            fx[i*2+1] = (proj.y - target_p.y);
+            fx[i*2] = rgb_weight * (proj.x - target_p.x);
+            fx[i*2+1] = rgb_weight * (proj.y - target_p.y);
             // ntk_dbg_print(cv::Vec3f(p3d(0),p3d(1),p3d(2)), 1);
             // ntk_dbg_print(proj, 1);
             // ntk_dbg_print(target_p, 1);
@@ -110,7 +110,7 @@ struct TransformRGBDCostFunction : public CostFunction
             // Vector3 diff = (s-t); // Point to point
             Scalar diff = (s-t).dot(n); // Point to plane
 
-            fx[offset+i] = mean_focal * diff;
+            fx[offset+i] = icp_weight * mean_focal * diff;
             // fx[offset + i*3] = diff(0);
             // fx[offset + i*3+1] = diff(1);
             // fx[offset + i*3+2] = diff(2);

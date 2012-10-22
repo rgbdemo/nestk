@@ -87,10 +87,10 @@ optimizeWithRGBDICP(Pose3D& new_pose, const RGBDImage& image, std::vector<Point3
     m_target_image->copyTo(filtered_target_image);
 
     OpenniRGBDProcessor processor;
-    // processor.bilateralFilter(filtered_source_image);
-    // processor.bilateralFilter(filtered_target_image);
-    processor.computeNormals(filtered_source_image);
-    processor.computeNormals(filtered_target_image);
+    processor.bilateralFilter(filtered_source_image);
+    processor.bilateralFilter(filtered_target_image);
+    // processor.computeNormals(filtered_source_image);
+    // processor.computeNormals(filtered_target_image);
 
     MeshGenerator generator;
     generator.setMeshType(MeshGenerator::TriangleMesh);
@@ -142,11 +142,34 @@ optimizeWithRGBDICP(Pose3D& new_pose, const RGBDImage& image, std::vector<Point3
         ntk_dbg(1) << "RGBD-ICP failed";
         return;
     }
+    else
+        ntk_dbg(1) << "RGBD-ICP success";
 
     new_pose = icp_estimator.estimatedSourcePose();
 
     new_pose.toRightCamera(image.calibration()->depth_intrinsics,
                            image.calibration()->R, image.calibration()->T);
+}
+
+struct MatchCompare
+{
+    bool operator()(const cv::DMatch& m1, const cv::DMatch& m2) const
+    {
+        return m1.distance < m2.distance;
+    }
+};
+
+static
+void trimMatches(std::vector<cv::DMatch>& matches, float outlier_percent, int min_matches)
+{
+    if (matches.size() < min_matches)
+        return;
+    std::sort(stl_bounds(matches), MatchCompare());
+    const int num_outliers = std::min(matches.size() * outlier_percent, float(matches.size() - min_matches));
+    const int num_inliers = matches.size() - num_outliers;
+    std::vector<cv::DMatch> filtered_matches (num_inliers);
+    std::copy(matches.begin(), matches.begin() + num_inliers, filtered_matches.begin());
+    matches = filtered_matches;
 }
 
 bool RelativePoseEstimatorFromRgbFeatures::estimateNewPose()
@@ -160,7 +183,17 @@ bool RelativePoseEstimatorFromRgbFeatures::estimateNewPose()
     ntk::TimeCount tc("RelativePoseEstimator", 1);
 
     if (m_target_features->locations().size() < 1)
+    {
         computeTargetFeatures();
+    }
+    else
+    {
+        // Recompute the target features pose.
+        Pose3D target_rgb_pose = m_target_pose;
+        target_rgb_pose.toRightCamera(m_target_image->calibration()->rgb_intrinsics,
+                                      m_target_image->calibration()->R, m_target_image->calibration()->T);
+        m_target_features->compute3dLocation(target_rgb_pose);
+    }
 
     if (m_source_features->locations().size() < 1)
     {
@@ -174,6 +207,8 @@ bool RelativePoseEstimatorFromRgbFeatures::estimateNewPose()
 
     std::vector<cv::DMatch> matches;
     m_target_features->matchWith(image_features, matches, 0.8f*0.8f);
+    ntk_dbg_print(matches.size(), 1);
+    trimMatches(matches, 0.15f, 100);
     tc.elapsedMsecs(" -- match features -- ");
     ntk_dbg_print(matches.size(), 1);
 
