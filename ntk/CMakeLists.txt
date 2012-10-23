@@ -190,6 +190,7 @@ QT4_WRAP_CPP(moc_sources
   gui/image_widget.h
   gui/image_window.h
   mesh/mesh_viewer.h
+  mesh/mesh.h
   thread/event.h
   utils/progressive.h
   hub/outlet.h

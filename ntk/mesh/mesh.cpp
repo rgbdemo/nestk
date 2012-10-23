@@ -32,6 +32,7 @@
 #include <cstring>
 #include <errno.h>
 #include <set>
+#include <utility>
 
 using namespace cv;
 
@@ -86,6 +87,51 @@ ply::PlyProperty available_face_properties[] = { /* list of property information
 
 namespace ntk
 {
+
+Mesh::Mesh (QObject* parent)
+: QObject(parent)
+{
+
+}
+
+Mesh::~Mesh ()
+{
+
+}
+
+Mesh::Mesh (const Mesh& copy)
+: QObject()
+, vertices(      copy.vertices)
+, colors(        copy.colors)
+, normals(       copy.normals)
+, texcoords(     copy.texcoords)
+, face_texcoords(copy.face_texcoords)
+, faces(         copy.faces)
+, texture(       copy.texture)
+{
+
+}
+
+Mesh&
+Mesh::operator = (const Mesh& rhs)
+{
+    Mesh that(rhs);
+    return this->swap(that);
+}
+
+Mesh&
+Mesh::swap (Mesh& other)
+{
+    vertices      .swap(other.vertices);
+    colors        .swap(other.colors);
+    normals       .swap(other.normals);
+    texcoords     .swap(other.texcoords);
+    face_texcoords.swap(other.face_texcoords);
+    faces         .swap(other.faces);
+    std::swap(texture,  other.texture);
+
+    return *this;
+}
 
 void Mesh::applyTransform(const Pose3D& pose)
 {
