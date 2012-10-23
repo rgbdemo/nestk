@@ -115,6 +115,8 @@ SET ( ntk_sources
      mesh/ply.cpp
      mesh/mesh.h
      mesh/mesh.cpp
+     mesh/meshfwd.h
+     mesh/meshfwd.cpp
      mesh/mesh_generator.h
      mesh/mesh_generator.cpp
      mesh/mesh_renderer.h
