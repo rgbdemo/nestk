@@ -1,5 +1,6 @@
 #include "outlet.h"
 #include "updates.h"
+#include "../mesh/mesh.h"
 #include <QMutexLocker>
 
 namespace ntk { namespace hub {
@@ -128,6 +129,34 @@ void
 Hub::clearImage (QString name)
 {
     postUpdate(new ClearImageUpdate(name));
+}
+
+//------------------------------------------------------------------------------
+
+MeshConstPtr
+Hub::getMesh (QString name) const
+{
+    QMutexLocker _(&meshesMutex);
+
+    return meshes[name];
+}
+
+void
+Hub::setMesh (QString name, MeshConstPtr mesh)
+{
+    postUpdate(new SetMeshUpdate(name, mesh));
+}
+
+void
+Hub::setMesh (QString name, const Mesh& mesh)
+{
+    postUpdate(new SetMeshUpdate(name, MeshConstPtr(new Mesh(mesh))));
+}
+
+void
+Hub::clearMesh (QString name)
+{
+    postUpdate(new ClearMeshUpdate(name));
 }
 
 } }

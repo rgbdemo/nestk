@@ -1,6 +1,7 @@
 #pragma once
 
-#include <ntk/thread/event.h>
+#include "ntk/thread/event.h"
+#include "ntk/mesh/meshfwd.h"
 #include <QImage>
 #include <QHash>
 #include <QStringList>
@@ -36,27 +37,38 @@ private:
     Progresses progresses;
     mutable QMutex progressesMutex;
 
-public:
+public: // Logs
     QStringList getLog (QString name) const;
     void        setLog (QString name, QStringList log);
     void     appendLog (QString name, QString line);
     void      clearLog (QString name);
 
-private:
+private: // Logs
     typedef QHash<QString, QStringList> Logs;
     Logs   logs;
     mutable QMutex logsMutex;
 
-public:
+public: // Images
     QImage getImage (QString name) const;
     void   setImage (QString name, QImage image);
     void   setImage (QString name, const cv::Mat& mat);
     void clearImage (QString name);
 
-private:
+private: // Images
     typedef QHash<QString, QImage> Images;
     Images images;
     mutable QMutex imagesMutex;
+
+public: // Meshes
+    MeshConstPtr getMesh (QString name) const;
+    void         setMesh (QString name, MeshConstPtr mesh);
+    void         setMesh (QString name, const Mesh& mesh);
+    void       clearMesh (QString name);
+
+private: // Meshes
+    typedef QHash<QString, MeshConstPtr> Meshes;
+    Meshes meshes;
+    mutable QMutex meshesMutex;
 
 protected:
     virtual void handleAsyncEvent (Event event);
@@ -73,6 +85,9 @@ public:
     class       SetImageUpdate;
     class SetOpenCVImageUpdate;
     class     ClearImageUpdate;
+    class           MeshUpdate;
+    class        SetMeshUpdate;
+    class      ClearMeshUpdate;
 
 private:
     void postUpdate (Update* update);

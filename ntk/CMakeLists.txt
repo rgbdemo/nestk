@@ -76,6 +76,8 @@ SET ( ntk_sources
      hub/updates/image-update.cpp
      hub/updates/log-update.h
      hub/updates/log-update.cpp
+     hub/updates/mesh-update.h
+     hub/updates/mesh-update.cpp
      hub/updates/progress-update.h
      hub/updates/progress-update.cpp
      hub/updates/status-update.h

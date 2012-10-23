@@ -79,6 +79,12 @@ QOutlet::changeImage (QString name, QImage image)
     emit imageChanged(name, image);
 }
 
+void
+QOutlet::changeMesh (QString name, const Mesh* mesh)
+{
+    emit meshChanged(name, mesh);
+}
+
 //------------------------------------------------------------------------------
 
 OutletListener::~OutletListener ()
@@ -108,6 +114,12 @@ void
 OutletListener::changeImage (QString name, QImage image)
 {
     onImageChanged(name, image);
+}
+
+void
+OutletListener::changeMesh (QString name, const Mesh* mesh)
+{
+    onMeshChanged(name, mesh);
 }
 
 } }
