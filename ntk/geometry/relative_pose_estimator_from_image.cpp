@@ -24,7 +24,7 @@ estimateNewPose(Pose3D& new_pose,
 
     std::vector<Point3f> ref_points;
     std::vector<Point3f> img_points;
-
+    std::vector<float> distances;
     foreach_idx(i, matches)
     {
         const cv::DMatch& m = matches[i];
@@ -39,6 +39,7 @@ estimateNewPose(Pose3D& new_pose,
 
         ref_points.push_back(ref_loc.p3d);
         img_points.push_back(img3d);
+        distances.push_back(m.distance);
     }
 
     ntk_dbg_print(ref_points.size(), 2);
@@ -59,25 +60,58 @@ estimateNewPose(Pose3D& new_pose,
         return false;
 
     if (m_postprocess_with_rgbd_icp)
-        optimizeWithRGBDICP(new_pose, image, ref_points, img_points, valid_points);
+        optimizeWithRGBDICP(new_pose, image, ref_points, img_points, distances, valid_points);
 
     return true;
 }
 
+
+struct PointMatchesCompare
+{
+    PointMatchesCompare(const std::vector<float>& distances)
+        : distances(distances)
+    {}
+
+    bool operator()(int i1, int i2) const
+    {
+        return distances[i1] < distances[i2];
+    }
+
+    const std::vector<float>& distances;
+};
+
 void RelativePoseEstimatorFromRgbFeatures::
-optimizeWithRGBDICP(Pose3D& new_pose, const RGBDImage& image, std::vector<Point3f>& ref_points, std::vector<Point3f>& img_points, std::vector<bool>& valid_points)
+optimizeWithRGBDICP(Pose3D& new_pose, const RGBDImage& image,
+                    std::vector<Point3f>& ref_points,
+                    std::vector<Point3f>& img_points,
+                    std::vector<float>& distances,
+                    std::vector<bool>& valid_points)
 {
     new_pose.toLeftCamera(image.calibration()->depth_intrinsics,
                           image.calibration()->R, image.calibration()->T);
 
     std::vector<Point3f> clean_ref_points;
     std::vector<Point3f> clean_img_points;
+    std::vector<float> clean_distances;
     foreach_idx(i, valid_points)
     {
         if (!valid_points[i])
             continue;
         clean_ref_points.push_back(ref_points[i]);
         clean_img_points.push_back(img_points[i]);
+        clean_distances.push_back(distances[i]);
+    }
+
+    std::vector<int> best_indices (clean_ref_points.size());
+    foreach_idx(i, best_indices) { best_indices[i] = i; }
+    std::sort(stl_bounds(best_indices), PointMatchesCompare(clean_distances));
+    best_indices.resize(10); // keep to 10 best matches to avoid complete drift.
+    std::vector<Point3f> best_ref_points (10);
+    std::vector<Point3f> best_img_points (10);
+    for (int i = 0; i < best_ref_points.size(); ++i)
+    {
+        best_ref_points[i] = clean_ref_points[best_indices[i]];
+        best_img_points[i] = clean_img_points[best_indices[i]];
     }
 
     RGBDImage filtered_source_image;
@@ -126,13 +160,14 @@ optimizeWithRGBDICP(Pose3D& new_pose, const RGBDImage& image, std::vector<Point3
     // RelativePoseEstimatorICPWithNormals<pcl::PointNormal> icp_estimator;
     icp_estimator.setVoxelSize(0.001);
     icp_estimator.setDistanceThreshold(0.05);
-    icp_estimator.setRANSACOutlierRejectionThreshold(0.05);
+    icp_estimator.setRANSACOutlierRejectionThreshold(0.02);
     icp_estimator.setMaxIterations(100);
 
     icp_estimator.setSourceCloud(sampled_source_cloud);
     icp_estimator.setTargetCloud(target_cloud);
 
-    icp_estimator.setColorFeatures(new_pose, clean_ref_points, clean_img_points);
+    // icp_estimator.setColorFeatures(new_pose, clean_ref_points, clean_img_points);
+    icp_estimator.setColorFeatures(new_pose, best_ref_points, best_img_points);
     icp_estimator.setTargetPose(m_target_pose);
     icp_estimator.setInitialSourcePoseEstimate(new_pose);
 

@@ -81,20 +81,24 @@ struct TransformRGBDCostFunction : public CostFunction
         float mean_focal = source_rgb_pose.isValid() ? source_rgb_pose.meanFocal() : 1000.f;
 
         const int nb_rgb_points = (target_points_3d ? target_points_3d->size() : 0);
-        const float rgb_weight = source_it.size() > 0 ? 0.01f * source_it.size() : 1.0f;
+        const float rgb_weight = source_it.size() > 0 ? 0.1f * source_it.size() : 1.0f;
         const float icp_weight = nb_rgb_points > 0 ? nb_rgb_points : 1.0f;
         for (int i = 0; i < nb_rgb_points; ++i)
         {
             Vector3 p3d; toEigen((*target_points_3d)[i], p3d);
-            //ntk_dbg_print(cv::Vec3f(p3d(0),p3d(1),p3d(2)), 1);
+            // ntk_dbg_print(cv::Vec3f(p3d(0),p3d(1),p3d(2)), 1);
             p3d = rgb_transform * p3d;
             cv::Point3f proj = source_rgb_pose.projectToImage(toVec3f(p3d));
             const cv::Point3f& target_p = (*source_image_points)[i];
-            fx[i*2] = rgb_weight * (proj.x - target_p.x);
-            fx[i*2+1] = rgb_weight * (proj.y - target_p.y);
+            float dx = (proj.x - target_p.x);
+            float dy = (proj.y - target_p.y);
+            // Non-linear error term. If it is within the uncertainty range, leave ICP alone drive the process.
+            fx[i*2] = std::abs(dx) > 2.f ? rgb_weight * dx : 0.f;
+            fx[i*2+1] = std::abs(dy) > 2.f ? rgb_weight * dy : 0.f;
             // ntk_dbg_print(cv::Vec3f(p3d(0),p3d(1),p3d(2)), 1);
             // ntk_dbg_print(proj, 1);
             // ntk_dbg_print(target_p, 1);
+            // ntk_dbg_print(fx[i*2], 1);
         }
         const int offset = nb_rgb_points*2;
 

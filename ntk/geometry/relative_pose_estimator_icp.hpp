@@ -33,6 +33,10 @@
 #include <pcl/filters/passthrough.h>
 #include <pcl/registration/correspondence_rejection_surface_normal.h>
 #include <pcl/registration/correspondence_rejection_one_to_one.h>
+#include <pcl/registration/correspondence_rejection_distance.h>
+#include <pcl/registration/correspondence_rejection_sample_consensus.h>
+#include <pcl/registration/correspondence_rejection_trimmed.h>
+#include <pcl/registration/correspondence_rejection_var_trimmed.h>
 #ifdef HAVE_PCL_GREATER_THAN_1_2_0
 #include <pcl/registration/transformation_estimation_point_to_plane.h>
 #include <pcl/registration/transformation_estimation_point_to_plane_lls.h>
@@ -173,8 +177,8 @@ computeRegistration(Pose3D& relative_pose,
     reg.setTransformationEpsilon (1e-10);
     reg.setRANSACOutlierRejectionThreshold(m_ransac_outlier_threshold);
     reg.setMaxCorrespondenceDistance (m_distance_threshold);
-    reg.setInputCloud (m_filtered_source);
-    reg.setInputTarget (m_filtered_target);
+    reg.setInputCloud (source_cloud);
+    reg.setInputTarget (target_cloud);
     reg.align (aligned_cloud);
 
     if (0)
@@ -229,6 +233,12 @@ computeRegistration(Pose3D& relative_pose,
     // boost::shared_ptr<TransformRGBD> transform_rgbd (new TransformRGBD);
     // reg.setTransformationEstimation (transform_rgbd);
 
+    boost::shared_ptr<pcl::registration::CorrespondenceRejectorDistance> rejector_distance (new pcl::registration::CorrespondenceRejectorDistance);
+    rejector_distance->setInputSource<PointT>(source_cloud);
+    rejector_distance->setInputTarget<PointT>(target_cloud);
+    rejector_distance->setMaximumDistance(m_distance_threshold);
+    reg.addCorrespondenceRejector(rejector_distance);
+
     boost::shared_ptr<pcl::registration::CorrespondenceRejectorSurfaceNormal> rejector_normal (new pcl::registration::CorrespondenceRejectorSurfaceNormal);
     rejector_normal->setThreshold(cos(M_PI/4.f));
     rejector_normal->initializeDataContainer<PointT, PointT>();
@@ -240,6 +250,26 @@ computeRegistration(Pose3D& relative_pose,
 
     boost::shared_ptr<pcl::registration::CorrespondenceRejectorOneToOne> rejector_one_to_one (new pcl::registration::CorrespondenceRejectorOneToOne);
     reg.addCorrespondenceRejector(rejector_one_to_one);
+
+    typedef pcl::registration::CorrespondenceRejectorSampleConsensus<PointT> RejectorConsensusT;
+    boost::shared_ptr<RejectorConsensusT> rejector_ransac (new RejectorConsensusT());
+    rejector_ransac->setInputSource(source_cloud);
+    rejector_ransac->setInputTarget(target_cloud);
+    rejector_ransac->setInlierThreshold(m_ransac_outlier_threshold);
+    rejector_ransac->setMaxIterations(100);
+    reg.addCorrespondenceRejector(rejector_ransac);
+
+    boost::shared_ptr<pcl::registration::CorrespondenceRejectorVarTrimmed> rejector_var_trimmed (new pcl::registration::CorrespondenceRejectorVarTrimmed());
+    rejector_var_trimmed->setInputSource<PointT>(source_cloud);
+    rejector_var_trimmed->setInputTarget<PointT>(target_cloud);
+    rejector_var_trimmed->setMinRatio(0.1f);
+    rejector_var_trimmed->setMaxRatio(0.75f);
+    reg.addCorrespondenceRejector(rejector_var_trimmed);
+
+    boost::shared_ptr<pcl::registration::CorrespondenceRejectorTrimmed> rejector_trimmed (new pcl::registration::CorrespondenceRejectorTrimmed());
+    rejector_trimmed->setMinCorrespondences(static_cast<int>(0.1f * source_cloud->size()));
+    rejector_trimmed->setOverlapRatio(0.5f);
+    reg.addCorrespondenceRejector(rejector_trimmed);
 
 #if 0
     ntk::Mesh target_mesh;
@@ -255,7 +285,7 @@ computeRegistration(Pose3D& relative_pose,
     reg.setTransformationEpsilon (1e-10);
     reg.setMaxCorrespondenceDistance (m_distance_threshold);
     reg.setRANSACOutlierRejectionThreshold(m_ransac_outlier_threshold);
-    reg.setInputCloud (source_cloud);
+    reg.setInputSource (source_cloud);
     reg.setInputTarget (target_cloud);
     reg.align (aligned_cloud);
 

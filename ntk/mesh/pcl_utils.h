@@ -149,14 +149,17 @@ public:
             return;
         }
 
-        output.points.resize(n_samples);
+        output.points = cloud.points;
         output.width = n_samples;
         output.height = 1;
         for (int i = 0; i < n_samples; ++i)
         {
-            int k = m_rng(cloud.points.size());
-            output.points[i] = cloud.points[k];
+            // int k = m_rng(cloud.points.size());
+            // output.points[i] = cloud.points[k];
+            int k = m_rng(output.points.size());
+            std::swap(output.points[i], output.points[k]);
         }
+        output.points.resize(n_samples);
     }
 
 private:
