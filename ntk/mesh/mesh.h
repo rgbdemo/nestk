@@ -152,11 +152,24 @@ namespace ntk
       float v[3];
   };
 
-  class Mesh : public ntk::EventData
+  class Mesh
+  : public QObject
+  , public ntk::EventData
   {
+    Q_OBJECT
+
     TYPEDEF_THIS(Mesh)
 
     CLONABLE_EVENT_DATA
+
+  public:
+    explicit Mesh (QObject* parent = 0);
+    virtual ~Mesh ();
+
+  public:
+    Mesh (const Mesh& copy);
+    Mesh& operator = (const Mesh& rhs);
+    Mesh& swap (Mesh& other);
 
   public:
     std::vector<cv::Point3f> vertices;
