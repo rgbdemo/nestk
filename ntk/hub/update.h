@@ -1,7 +1,7 @@
 #pragma once
 
 #include "hub.h"
-#include "thread/event.h"
+#include "ntk/thread/event.h"
 #include <QString>
 
 namespace ntk { namespace hub {
