@@ -31,13 +31,16 @@
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/filters/passthrough.h>
 
-#ifdef HAVE_PCL_GREATER_THAN_1_2_0
+#ifdef HAVE_PCL_GREATER_THAN_1_6_0
 #include <pcl/registration/correspondence_rejection_surface_normal.h>
+#include <pcl/registration/correspondence_rejection_var_trimmed.h>
+#endif
+
+#ifdef HAVE_PCL_GREATER_THAN_1_2_0
 #include <pcl/registration/correspondence_rejection_one_to_one.h>
 #include <pcl/registration/correspondence_rejection_distance.h>
 #include <pcl/registration/correspondence_rejection_sample_consensus.h>
 #include <pcl/registration/correspondence_rejection_trimmed.h>
-#include <pcl/registration/correspondence_rejection_var_trimmed.h>
 #include <pcl/registration/transformation_estimation_point_to_plane.h>
 #include <pcl/registration/transformation_estimation_point_to_plane_lls.h>
 #endif
@@ -52,6 +55,10 @@ computeRegistration(Pose3D& relative_pose,
                     PointCloudConstPtr target_cloud,
                     PointCloudType& aligned_cloud)
 {
+#ifndef HAVE_PCL_GREATER_THAN_1_6_0
+    ntk_dbg(0) << "Warning: cannot run RGBD-ICP because PCL version is < 1.7";
+    return super::computeRegistration(relative_pose, source_cloud, target_cloud, aligned_cloud);
+#else
     pcl::IterativeClosestPoint<PointT, PointT> reg;
     typedef pcl::registration::TransformationEstimationPointToPlaneLLS<PointT, PointT> PointToPlane;
     typedef TransformationEstimationRGBD<PointT, PointT> TransformRGBD;
@@ -123,6 +130,7 @@ computeRegistration(Pose3D& relative_pose,
 
     relative_pose.setCameraTransform(T);
     return true;
+#endif
 }
 
 } // ntk

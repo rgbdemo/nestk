@@ -25,7 +25,8 @@
 
 #include <pcl/registration/registration.h>
 #include <pcl/registration/transformation_estimation.h>
-#include <pcl/cloud_iterator.h>
+
+#ifdef HAVE_PCL_GREATER_THAN_1_6_0
 
 namespace ntk
 {
@@ -141,5 +142,7 @@ private:
 };
 
 } // ntk
+
+#endif
 
 #endif // NESTK_GEOMETRY_TRANSFORMATION_ESTIMATION_RGBD_H

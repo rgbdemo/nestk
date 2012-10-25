@@ -25,109 +25,363 @@
 #include <ntk/camera/rgbd_image.h>
 
 using namespace cv;
+using namespace DepthSense;
 
 namespace ntk
 {
 
-static void kinect_depth_db(freenect_device *dev, void *v_depth, uint32_t timestamp)
+static void onDeviceConnected_cb(Context context, Context::DeviceAddedData data, SoftKineticGrabber* that)
 {
-    SoftKineticGrabber* grabber = reinterpret_cast<SoftKineticGrabber*>(freenect_get_user(dev));
-    uint16_t *depth = reinterpret_cast<uint16_t*>(v_depth);
-    grabber->depthCallBack(depth, FREENECT_FRAME_W, FREENECT_FRAME_H);
+    that->onDeviceConnected(data);
 }
 
-static void kinect_video_db(freenect_device *dev, void *rgb, uint32_t timestamp)
+static void onDeviceDisconnected_cb(Context context, Context::DeviceRemovedData data, SoftKineticGrabber* that)
 {
-    SoftKineticGrabber* grabber = reinterpret_cast<SoftKineticGrabber*>(freenect_get_user(dev));
-    if (grabber->irModeEnabled()) { // ir mode
-		uint8_t *ir_cast = reinterpret_cast<uint8_t*>(rgb);
-		grabber->irCallBack(ir_cast, FREENECT_FRAME_W, FREENECT_FRAME_H);
-	} else { // rgb mode
-	    uint8_t *rgb_cast = reinterpret_cast<uint8_t*>(rgb);
-	    grabber->rgbCallBack(rgb_cast, FREENECT_FRAME_W, FREENECT_FRAME_H);
-	}
+    that->onDeviceDisconnected(data);
 }
 
-void SoftKineticGrabber :: irCallBack(uint8_t *buf, int width, int height)
+static void onNodeConnected_cb(Device device, Device::NodeAddedData data, SoftKineticGrabber* that)
 {
-    ntk_assert(width == m_current_image.rawIntensity().cols, "Bad width");
-    ntk_assert(height == m_current_image.rawIntensity().rows, "Bad height");
-    float* intensity_buf = m_current_image.rawIntensityRef().ptr<float>();
-    for (int i = 0; i < width*height; ++i)
-        *intensity_buf++ = *buf++;
+    that->onNodeConnected(data);
+}
+
+static void onNodeDisconnected_cb(Device device, Device::NodeRemovedData data, SoftKineticGrabber* that)
+{
+    that->onNodeDisconnected(data);
+}
+
+static void onNewColorSample_cb(ColorNode node, ColorNode::NewSampleReceivedData data, SoftKineticGrabber* that)
+{
+    that->onNewColorSample(data);
+}
+
+static void onNewDepthSample_cb(DepthNode node, DepthNode::NewSampleReceivedData data, SoftKineticGrabber* that)
+{
+    that->onNewDepthSample(data);
+}
+
+/*****************************************************************************/
+
+inline cv::Vec3b yuv_to_bgr888(int y, int u, int v)
+{
+    cv::Vec3b r;
+    int C = y - 16;
+    int D = u - 128;
+    int E = v - 128;
+    r[2] = ntk::saturate_to_range((298*C + 409*E + 128) >> 8, 0, 255);
+    r[1] = ntk::saturate_to_range((298*C - 100*D - 208*E + 128) >> 8, 0, 255);
+    r[0] = ntk::saturate_to_range((298*C + 516*D + 128) >> 8, 0, 255);
+    return r;
+}
+
+/*****************************************************************************/
+
+void SoftKineticGrabber :: estimateCalibration(DepthSense::StereoCameraParameters& parameters)
+{
+    m_calib_data = new RGBDCalibration();
+
+    double fx = parameters.depthIntrinsics.fx;
+    double fy = parameters.depthIntrinsics.fy;
+
+    double cx = parameters.depthIntrinsics.cx;
+    double cy = parameters.depthIntrinsics.cy;
+
+    int depth_width = m_current_image.rawDepth().cols;
+    int depth_height = m_current_image.rawDepth().rows;
+
+    m_calib_data->depth_intrinsics = cv::Mat1d(3,3);
+    setIdentity(m_calib_data->depth_intrinsics);
+    m_calib_data->depth_intrinsics(0,0) = fx;
+    m_calib_data->depth_intrinsics(1,1) = fy;
+    m_calib_data->depth_intrinsics(0,2) = cx;
+    m_calib_data->depth_intrinsics(1,2) = cy;
+
+    // FIXME: include distortion here.
+    m_calib_data->depth_distortion = Mat1d(1,5);
+    m_calib_data->depth_distortion = 0.;
+    m_calib_data->zero_depth_distortion = true;
+
+    int rgb_width = m_current_image.rawRgb().cols;
+    int rgb_height = m_current_image.rawRgb().rows;
+
+    m_calib_data->setRawRgbSize(cv::Size(rgb_width, rgb_height));
+    m_calib_data->setRgbSize(cv::Size(rgb_width, rgb_height));
+    m_calib_data->raw_depth_size = cv::Size(depth_width, depth_height);
+    m_calib_data->depth_size = cv::Size(depth_width, depth_height);
+
+    float rgb_fx = parameters.colorIntrinsics.fx;
+    float rgb_fy = parameters.colorIntrinsics.fy;
+    float rgb_cx = parameters.colorIntrinsics.cx;
+    float rgb_cy = parameters.colorIntrinsics.cy;
+
+    m_calib_data->rgb_intrinsics = cv::Mat1d(3,3);
+    setIdentity(m_calib_data->rgb_intrinsics);
+    m_calib_data->rgb_intrinsics(0,0) = rgb_fx;
+    m_calib_data->rgb_intrinsics(1,1) = rgb_fy;
+    m_calib_data->rgb_intrinsics(0,2) = rgb_cx;
+    m_calib_data->rgb_intrinsics(1,2) = rgb_cy;
+
+    // FIXME: include distortion here.
+    m_calib_data->rgb_distortion = Mat1d(1,5);
+    m_calib_data->rgb_distortion = 0.;
+    m_calib_data->zero_rgb_distortion = true;
+
+    // FIXME: include extrinsics here.
+    m_calib_data->R = Mat1d(3,3);
+    setIdentity(m_calib_data->R);
+#if 0
+    m_calib_data->R(0,0) = parameters.extrinsics.r11;
+    m_calib_data->R(0,1) = parameters.extrinsics.r12;
+    m_calib_data->R(0,2) = parameters.extrinsics.r13;
+
+    m_calib_data->R(1,0) = parameters.extrinsics.r21;
+    m_calib_data->R(1,1) = parameters.extrinsics.r22;
+    m_calib_data->R(1,2) = parameters.extrinsics.r23;
+
+    m_calib_data->R(2,0) = parameters.extrinsics.r31;
+    m_calib_data->R(2,1) = parameters.extrinsics.r32;
+    m_calib_data->R(2,2) = parameters.extrinsics.r33;
+
+    {
+        Pose3D pose;
+        pose.applyTransformBefore(cv::Vec3f(0,0,0), m_calib_data->R);
+        std::clog << cv::format("rotation [%f %f %f]\n", pose.cvEulerRotation()[0], pose.cvEulerRotation()[1], pose.cvEulerRotation()[2]);
+    }
+
+    // m_calib_data->R = m_calib_data->R.t();
+    cv::Mat1d to_gl_base(3,3); setIdentity(to_gl_base);
+    to_gl_base(1,1) = -1;
+    to_gl_base(2,2) = -1;
+    m_calib_data->R = to_gl_base.inv() * m_calib_data->R * to_gl_base;
+
+    {
+        Pose3D pose;
+        pose.applyTransformBefore(cv::Vec3f(0,0,0), m_calib_data->R);
+        std::clog << cv::format("rotation [%f %f %f]\n", pose.cvEulerRotation()[0], pose.cvEulerRotation()[1], pose.cvEulerRotation()[2]);
+    }
+
+#endif
+
+    m_calib_data->T = Mat1d(3,1);
+    m_calib_data->T = 0.;
+    m_calib_data->T(0,0) = -parameters.extrinsics.t1;
+    m_calib_data->T(0,1) = -parameters.extrinsics.t2;
+    m_calib_data->T(0,2) = -parameters.extrinsics.t3;
+
+    m_calib_data->depth_pose = new Pose3D();
+    m_calib_data->depth_pose->setCameraParametersFromOpencv(m_calib_data->depth_intrinsics);
+
+    m_calib_data->rgb_pose = new Pose3D();
+    m_calib_data->rgb_pose->toRightCamera(m_calib_data->rgb_intrinsics,
+                                          m_calib_data->R,
+                                          m_calib_data->T);
+
+    {
+        std::clog << cv::format("rotation [%f %f %f]\n", m_calib_data->rgb_pose->cvEulerRotation()[0], m_calib_data->rgb_pose->cvEulerRotation()[1], m_calib_data->rgb_pose->cvEulerRotation()[2]);
+        std::clog << cv::format("translation [%f %f %f]\n", m_calib_data->rgb_pose->cvTranslation()[0], m_calib_data->rgb_pose->cvTranslation()[1], m_calib_data->rgb_pose->cvTranslation()[2]);
+    }
+
+    m_calib_data->camera_type = "softkinetic";
+}
+
+void SoftKineticGrabber::onNewColorSample(ColorNode::NewSampleReceivedData data)
+{
+    if (!m_connected) // not yet in running mode.
+        return;
+
+    std::clog << cv::format("Color: %d pixels\n", data.colorMap.size());
+    cv::Vec3b* rgb_buffer = m_current_image.rawRgbRef().ptr<cv::Vec3b>(0);
+    for (int i = 0; i < data.colorMap.size(); i += 4)
+    {
+        int y1 = data.colorMap[i];
+        int u = data.colorMap[i+1];
+        int y2 = data.colorMap[i+2];
+        int v = data.colorMap[i+3];
+        *rgb_buffer++ = yuv_to_bgr888(y1, u, v);
+        *rgb_buffer++ = yuv_to_bgr888(y2, u, v);
+    }
     m_rgb_transmitted = false;
+    handleNewFrame();
 }
 
-void SoftKineticGrabber :: depthCallBack(uint16_t *buf, int width, int height)
+void SoftKineticGrabber::onNewDepthSample(DepthNode::NewSampleReceivedData data)
 {
-    ntk_assert(width == m_current_image.rawDepth().cols, "Bad width");
-    ntk_assert(height == m_current_image.rawDepth().rows, "Bad height");
-    float* depth_buf = m_current_image.rawDepthRef().ptr<float>();
-    for (int i = 0; i < width*height; ++i)
-        *depth_buf++ = *buf++;
+    if (!m_connected) // not yet in running mode.
+    {
+        std::clog << "Depth sample received, calibrating.";
+        if (!m_calib_data)
+            estimateCalibration(data.stereoCameraParameters);
+
+        // Stop sending events until the connection happens.
+        m_context.quit();
+        return;
+    }
+
+    std::clog << cv::format("Depth: %d\n", data.depthMap.size());
+    float* depth_buffer = m_current_image.rawDepthRef().ptr<float>(0);
+    const int16_t* raw_values = data.depthMap;
+    const int16_t* last_raw_value = data.depthMap + data.depthMap.size();
+    while (raw_values != last_raw_value)
+    {
+        int16_t saturated_value = *raw_values++;
+        if (saturated_value > 31999)
+            saturated_value = 0;
+        (*depth_buffer++) = saturated_value / 1000.f;
+    }
     m_depth_transmitted = false;
+    handleNewFrame();
+#if 0
+    // Project some 3D points in the Color Frame
+    if (!g_pProjHelper)
+    {
+        g_pProjHelper = new ProjectionHelper (data.stereoCameraParameters);
+        g_scp = data.stereoCameraParameters;
+    }
+    else if (g_scp != data.stereoCameraParameters)
+    {
+        g_pProjHelper->setStereoCameraParameters(data.stereoCameraParameters);
+        g_scp = data.stereoCameraParameters;
+    }
+
+    int32_t w, h;
+    FrameFormat_toResolution(data.captureConfiguration.frameFormat,&w,&h);
+    int cx = w/2;
+    int cy = h/2;
+
+    Vertex p3DPoints[4];
+
+    p3DPoints[0] = data.vertices[(cy-h/4)*w+cx-w/4];
+    p3DPoints[1] = data.vertices[(cy-h/4)*w+cx+w/4];
+    p3DPoints[2] = data.vertices[(cy+h/4)*w+cx+w/4];
+    p3DPoints[3] = data.vertices[(cy+h/4)*w+cx-w/4];
+
+    Point2D p2DPoints[4];
+    g_pProjHelper->get2DCoordinates ( p3DPoints, p2DPoints, 4, CAMERA_PLANE_COLOR);
+#endif
 }
 
-void SoftKineticGrabber :: rgbCallBack(uint8_t *buf, int width, int height)
+void SoftKineticGrabber :: onDeviceConnected(Context::DeviceAddedData data)
 {
-    ntk_assert(width == m_current_image.rawRgb().cols, "Bad width");
-    ntk_assert(height == m_current_image.rawRgb().rows, "Bad height");
-    std::copy(buf, buf+3*width*height, (uint8_t*)m_current_image.rawRgbRef().ptr());
-    cvtColor(m_current_image.rawRgb(), m_current_image.rawRgbRef(), CV_RGB2BGR);
-    m_rgb_transmitted = false;
+    std::clog << "Device connected";
+#if 0
+    if (!g_bDeviceFound)
+    {
+        data.device.nodeAddedEvent().connect(&onNodeConnected);
+        data.device.nodeRemovedEvent().connect(&onNodeDisconnected);
+        g_bDeviceFound = true;
+    }
+#endif
 }
 
-void SoftKineticGrabber :: setTiltAngle(int angle)
+void SoftKineticGrabber :: onDeviceDisconnected(Context::DeviceRemovedData data)
 {
-    if (!isConnected()) return;
-    freenect_set_tilt_degs(f_dev, angle);
+    // g_bDeviceFound = false;
+    std::clog << "Device disconnected";
 }
 
-void SoftKineticGrabber :: setDualRgbIR(bool enable)
+void SoftKineticGrabber :: configureNode(Node node)
 {
-    m_dual_ir_rgb = enable;
+    if ((node.is<DepthNode>()) && (!m_depth_node.isSet()))
+    {
+        m_depth_node = node.as<DepthNode>();
+        m_depth_node.newSampleReceivedEvent().connect(&onNewDepthSample_cb, this);
+        DepthNode::Configuration config = m_depth_node.getConfiguration();
+        config.frameFormat = FRAME_FORMAT_QQVGA;
+        config.framerate = 30;
+        config.mode = DepthNode::CAMERA_MODE_CLOSE_MODE;
+        config.saturation = true;
+        m_depth_node.setEnableDepthMap(true);
+        try
+        {
+            m_context.requestControl(m_depth_node,0);
+            m_depth_node.setConfiguration(config);
+        }
+        catch (const std::exception& e)
+        {
+            std::clog << cv::format("Exception when configuring depth node: %s\n", e.what());
+        }
+        m_context.registerNode(node);
+    }
+    else if ((node.is<ColorNode>())&&(!m_color_node.isSet()))
+    {
+        m_color_node = node.as<ColorNode>();
+        m_color_node.newSampleReceivedEvent().connect(&onNewColorSample_cb, this);
+
+        ColorNode::Configuration config = m_color_node.getConfiguration();
+        config.frameFormat = FRAME_FORMAT_VGA;
+        // config.compression = COMPRESSION_TYPE_MJPEG;
+        // config.powerLineFrequency = POWER_LINE_FREQUENCY_50HZ;
+        config.framerate = 30;
+
+        m_color_node.setEnableColorMap(true);
+        try
+        {
+            m_context.requestControl(m_color_node,0);
+            m_color_node.setConfiguration(config);
+        }
+        catch (const std::exception& e)
+        {
+            std::clog << cv::format("Color node configuration exception: %s\n", e.what());
+        }
+        m_context.registerNode(node);
+    }
 }
 
-void SoftKineticGrabber :: setIRMode(bool ir)
+void SoftKineticGrabber :: onNodeConnected(Device::NodeAddedData data)
 {
-    if (!isConnected()) return;
-
-    QWriteLocker locker(&m_lock);
-    m_ir_mode = ir;
-    freenect_stop_video(f_dev);
-    if (!m_ir_mode)
-        freenect_set_video_format(f_dev, FREENECT_VIDEO_RGB);
-    else
-        freenect_set_video_format(f_dev, FREENECT_VIDEO_IR_8BIT);
-    freenect_start_video(f_dev);
+    configureNode(data.node);
 }
 
-void SoftKineticGrabber :: startKinect()
+void SoftKineticGrabber :: onNodeDisconnected(Device::NodeRemovedData data)
 {
-    freenect_start_depth(f_dev);
-    setIRMode(m_ir_mode);
+    printf("Node disconnected\n");
+    if (data.node.is<ColorNode>() && (data.node.as<ColorNode>() == m_color_node))
+        m_color_node.unset();
+    if (data.node.is<DepthNode>() && (data.node.as<DepthNode>() == m_depth_node))
+        m_depth_node.unset();
 }
 
 bool SoftKineticGrabber :: connectToDevice()
 {
-    if (freenect_init(&f_ctx, NULL) < 0)
+    m_context = Context::create("localhost");
+    m_context.deviceAddedEvent().connect(&onDeviceConnected_cb, this);
+    m_context.deviceRemovedEvent().connect(&onDeviceDisconnected_cb, this);
+
+    // Get the list of currently connected devices
+    std::vector<Device> devices = m_context.getDevices();
+    ntk_dbg_print(devices.size(), 1);
+
+    // We are only interested in the first device
+    if (devices.size() <= m_device_id)
+        return false;
+
     {
-        ntk_dbg(0) << "freenect_init() failed";
+        devices[m_device_id].nodeAddedEvent().connect(&onNodeConnected_cb, this);
+        devices[m_device_id].nodeRemovedEvent().connect(&onNodeDisconnected_cb, this);
+
+        std::vector<Node> nodes = devices[m_device_id].getNodes();
+
+        std::clog << cv::format("Found %u nodes\n",nodes.size());
+
+        for (int n = 0; n < (int)nodes.size();n++)
+            configureNode(nodes[n]);
+    }
+
+    if (!m_color_node.isSet())
+    {
+        std::clog << "Color node could not be set.";
         return false;
     }
-    ntk_dbg(0) << "Connecting to device: " << m_device_id;
-    if (freenect_open_device(f_ctx, &f_dev, m_device_id) < 0)
+
+    if (!m_depth_node.isSet())
     {
-        ntk_dbg(0) << "freenect_open_device() failed";
+        std::clog << "Depth node could not be set.";
         return false;
     }
 
-    freenect_set_user(f_dev, this);
+    m_context.startNodes();
+    m_context.run();
 
-    freenect_set_depth_callback(f_dev, kinect_depth_db);
-    freenect_set_video_callback(f_dev, kinect_video_db);
-
-    this->setIRMode(m_ir_mode);
     m_connected = true;
     return true;
 }
@@ -135,10 +389,42 @@ bool SoftKineticGrabber :: connectToDevice()
 bool SoftKineticGrabber :: disconnectFromDevice()
 {
     // Exit requested.
+    m_context.quit();
+    m_context.stopNodes();
+    if (m_color_node.isSet()) m_context.unregisterNode(m_color_node);
+    if (m_depth_node.isSet()) m_context.unregisterNode(m_depth_node);
     m_connected = false;
-    freenect_close_device(f_dev);
-    freenect_shutdown(f_ctx);
     return true;
+}
+
+void SoftKineticGrabber :: handleNewFrame()
+{
+    if (m_depth_transmitted || m_rgb_transmitted)
+    {
+        std::clog << "NOT dirty, doing nothing";
+        return;
+    }
+
+    std::clog << "Both channels are dirty, creating a new RGBDImage";
+
+    if (threadShouldExit())
+    {
+        disconnectFromDevice();
+    }
+
+    {
+        int64 grab_time = ntk::Time::getMillisecondCounter();
+        ntk_dbg_print(grab_time - m_last_grab_time, 2);
+        m_last_grab_time = grab_time;
+        QWriteLocker locker(&m_lock);
+        // FIXME: ugly hack to handle the possible time
+        // gaps between rgb and IR frames in dual mode.
+        m_current_image.swap(m_rgbd_image);
+        m_rgb_transmitted = true;
+        m_depth_transmitted = true;
+    }
+
+    advertiseNewFrame();
 }
 
 void SoftKineticGrabber :: run()
@@ -147,51 +433,25 @@ void SoftKineticGrabber :: run()
     m_current_image.setCalibration(m_calib_data);
     m_rgbd_image.setCalibration(m_calib_data);
 
-    m_rgbd_image.rawRgbRef() = Mat3b(FREENECT_FRAME_H, FREENECT_FRAME_W);
-    m_rgbd_image.rawDepthRef() = Mat1f(FREENECT_FRAME_H, FREENECT_FRAME_W);
-    m_rgbd_image.rawIntensityRef() = Mat1f(FREENECT_FRAME_H, FREENECT_FRAME_W);
+    ntk_assert(m_color_node.getConfiguration().frameFormat == FRAME_FORMAT_VGA, "Unknown color image format.");
+    int32_t color_width = 640;
+    int32_t color_height = 480;
+    FrameFormat_toResolution (m_color_node.getConfiguration().frameFormat, &color_width, &color_height);
 
-    m_current_image.rawRgbRef() = Mat3b(FREENECT_FRAME_H, FREENECT_FRAME_W);
-    m_current_image.rawDepthRef() = Mat1f(FREENECT_FRAME_H, FREENECT_FRAME_W);
-    m_current_image.rawIntensityRef() = Mat1f(FREENECT_FRAME_H, FREENECT_FRAME_W);
+    int depth_width = -1;
+    int depth_height = -1;
+    FrameFormat_toResolution (m_depth_node.getConfiguration().frameFormat, &depth_width, &depth_height);
 
-    startKinect();
-    int64 last_grab_time = 0;
+    m_rgbd_image.rawRgbRef() = Mat3b(color_height, color_width);
+    m_rgbd_image.rawDepthRef() = Mat1f(depth_height, depth_width);
 
-    while (!threadShouldExit())
-    {
-        waitForNewEvent(-1); // Use infinite timeout in order to honor sync mode.
+    m_current_image.rawRgbRef() = Mat3b(color_height, color_width);
+    m_current_image.rawDepthRef() = Mat1f(depth_height, depth_width);
 
-        while (m_depth_transmitted || m_rgb_transmitted)
-            freenect_process_events(f_ctx);
+    m_current_image.setCalibration(m_calib_data);
+    m_rgbd_image.setCalibration(m_calib_data);
 
-        // m_current_image.rawDepth().copyTo(m_current_image.rawAmplitudeRef());
-        // m_current_image.rawDepth().copyTo(m_current_image.rawIntensityRef());
-
-        {
-            int64 grab_time = ntk::Time::getMillisecondCounter();
-            ntk_dbg_print(grab_time - last_grab_time, 2);
-            last_grab_time = grab_time;
-            QWriteLocker locker(&m_lock);
-            // FIXME: ugly hack to handle the possible time
-            // gaps between rgb and IR frames in dual mode.
-            if (m_dual_ir_rgb)
-                m_current_image.copyTo(m_rgbd_image);
-            else
-                m_current_image.swap(m_rgbd_image);
-            m_rgb_transmitted = true;
-            m_depth_transmitted = true;
-        }
-
-        if (m_dual_ir_rgb)
-            setIRMode(!m_ir_mode);
-        advertiseNewFrame();
-#ifdef _WIN32
-        // FIXME: this is to avoid GUI freezes with libfreenect on Windows.
-        // See http://groups.google.com/group/openkinect/t/b1d828d108e9e69
-        Sleep(1);
-#endif
-    }
+    m_context.run();
 }
 
 } // ntk

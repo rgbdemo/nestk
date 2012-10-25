@@ -30,6 +30,8 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
+#ifdef HAVE_PCL_GREATER_THAN_1_6_0
+
 using namespace pcl;
 
 namespace ntk
@@ -240,5 +242,7 @@ TransformationEstimationRGBD<PointSource, PointTarget, Scalar>::estimateRigidTra
 }
 
 } // ntk
+
+#endif
 
 #endif // NESTK_GEOMETRY_TRANSFORMATION_ESTIMATOR_RGBD_HPP

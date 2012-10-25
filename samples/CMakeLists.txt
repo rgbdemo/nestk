@@ -48,6 +48,11 @@ IF (NESTK_USE_PMDSDK)
    TARGET_LINK_LIBRARIES(pmd-backend nestk)
 ENDIF()
 
+IF (NESTK_USE_SOFTKINETIC)
+   ADD_EXECUTABLE(softkinetic-backend softkinetic_backend.cpp)
+   TARGET_LINK_LIBRARIES(softkinetic-backend nestk)
+ENDIF()
+
 IF (NESTK_USE_PCL)
     ADD_EXECUTABLE(pcl-compatibility pcl_compatibility.cpp)
     TARGET_LINK_LIBRARIES(pcl-compatibility nestk)
