@@ -298,6 +298,13 @@ IF(NESTK_USE_PMDSDK)
     )
 ENDIF()
 
+IF(NESTK_USE_SOFTKINETIC)
+     SET(ntk_sources ${ntk_sources}
+        camera/softkinetic_grabber.h
+        camera/softkinetic_grabber.cpp
+     )
+ENDIF()
+
 IF(NESTK_USE_PCL)
     SET (ntk_sources ${ntk_sources}
          detection/image_segmentor.h
@@ -382,6 +389,7 @@ TARGET_LINK_LIBRARIES(nestk
   ${X11_LIBRARY}
   ${LIBUSB_1_LIBRARY}
   ${PMD_LIBRARIES}
+  ${SOFTKINETIC_LIBRARY}
   ${FREENECT_LIBRARIES}
   ${OPENNI_LIBRARIES}
   ${NITE_LIBRARY}
