@@ -311,6 +311,8 @@ void BodyEventDetector :: sendEvent(const BodyEvent& event)
 
 void BodyEventDetector :: OnPrimaryPointCreate(const XnVHandPointContext* pContext, const XnPoint3D& ptSessionStarter)
 {
+    ntk_dbg(1) << "Primary point create";
+
     Point3f p3d = toPoint3f(pContext->ptPosition);
     m_prev_hand_points[0] = p3d;
     m_prev_hand_points[1] = p3d;
@@ -360,6 +362,8 @@ void BodyEventDetector :: RawPointListener :: OnPointUpdate(const XnVHandPointCo
 
 void BodyEventDetector :: OnPointUpdate(const XnVHandPointContext* pContext)
 {
+    ntk_dbg(2) << "Point update";
+
     m_tracked_user_id = pContext->nUserID;
 
     uint64 timestamp = ntk::Time::getMillisecondCounter();
