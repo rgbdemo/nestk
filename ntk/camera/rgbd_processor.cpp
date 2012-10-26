@@ -393,7 +393,7 @@ namespace ntk
                   m_image->calibration()->depth_undistort_map1,
                   m_image->calibration()->depth_undistort_map2,
                   CV_INTER_LINEAR);
-            ntk_assert(m_image->depth.data != 0, "Should be ok");
+            ntk_assert(m_image->depth().data != 0, "Should be ok");
         }
         else
         {
