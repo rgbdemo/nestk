@@ -55,6 +55,9 @@ public:
   /*! Update depth_pose and rgb_pose from read parameters. */
   void updatePoses();
 
+  /*! Update the distortion maps based on distortion intrinsics. */
+  void updateDistortionMaps();
+
   /*! Load calibration parameters from a yaml file. */
   void loadFromFile(const char* filename);
 

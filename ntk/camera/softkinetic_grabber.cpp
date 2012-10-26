@@ -86,8 +86,14 @@ void SoftKineticGrabber :: estimateCalibration(DepthSense::StereoCameraParameter
     double cx = parameters.depthIntrinsics.cx;
     double cy = parameters.depthIntrinsics.cy;
 
-    int depth_width = m_current_image.rawDepth().cols;
-    int depth_height = m_current_image.rawDepth().rows;
+    ntk_assert(m_color_node.getConfiguration().frameFormat == FRAME_FORMAT_VGA, "Unknown color image format.");
+    int32_t rgb_width = 640;
+    int32_t rgb_height = 480;
+    FrameFormat_toResolution (m_color_node.getConfiguration().frameFormat, &rgb_width, &rgb_height);
+
+    int32_t depth_width = -1;
+    int32_t depth_height = -1;
+    FrameFormat_toResolution (m_depth_node.getConfiguration().frameFormat, &depth_width, &depth_height);
 
     m_calib_data->depth_intrinsics = cv::Mat1d(3,3);
     setIdentity(m_calib_data->depth_intrinsics);
@@ -96,13 +102,13 @@ void SoftKineticGrabber :: estimateCalibration(DepthSense::StereoCameraParameter
     m_calib_data->depth_intrinsics(0,2) = cx;
     m_calib_data->depth_intrinsics(1,2) = cy;
 
-    // FIXME: include distortion here.
     m_calib_data->depth_distortion = Mat1d(1,5);
-    m_calib_data->depth_distortion = 0.;
-    m_calib_data->zero_depth_distortion = true;
-
-    int rgb_width = m_current_image.rawRgb().cols;
-    int rgb_height = m_current_image.rawRgb().rows;
+    m_calib_data->depth_distortion(0,0) = parameters.depthIntrinsics.k1;
+    m_calib_data->depth_distortion(0,1) = parameters.depthIntrinsics.k2;
+    m_calib_data->depth_distortion(0,2) = parameters.depthIntrinsics.p1;
+    m_calib_data->depth_distortion(0,3) = parameters.depthIntrinsics.p2;
+    m_calib_data->depth_distortion(0,4) = parameters.depthIntrinsics.k3;
+    m_calib_data->zero_depth_distortion = false;
 
     m_calib_data->setRawRgbSize(cv::Size(rgb_width, rgb_height));
     m_calib_data->setRgbSize(cv::Size(rgb_width, rgb_height));
@@ -121,46 +127,29 @@ void SoftKineticGrabber :: estimateCalibration(DepthSense::StereoCameraParameter
     m_calib_data->rgb_intrinsics(0,2) = rgb_cx;
     m_calib_data->rgb_intrinsics(1,2) = rgb_cy;
 
-    // FIXME: include distortion here.
     m_calib_data->rgb_distortion = Mat1d(1,5);
-    m_calib_data->rgb_distortion = 0.;
-    m_calib_data->zero_rgb_distortion = true;
+    m_calib_data->rgb_distortion(0,0) = parameters.colorIntrinsics.k1;
+    m_calib_data->rgb_distortion(0,1) = parameters.colorIntrinsics.k2;
+    m_calib_data->rgb_distortion(0,2) = parameters.colorIntrinsics.p1;
+    m_calib_data->rgb_distortion(0,3) = parameters.colorIntrinsics.p2;
+    m_calib_data->rgb_distortion(0,4) = parameters.colorIntrinsics.k3;
+    m_calib_data->zero_rgb_distortion = false;
 
-    // FIXME: include extrinsics here.
     m_calib_data->R = Mat1d(3,3);
     setIdentity(m_calib_data->R);
-#if 0
+
     m_calib_data->R(0,0) = parameters.extrinsics.r11;
     m_calib_data->R(0,1) = parameters.extrinsics.r12;
     m_calib_data->R(0,2) = parameters.extrinsics.r13;
 
-    m_calib_data->R(1,0) = parameters.extrinsics.r21;
-    m_calib_data->R(1,1) = parameters.extrinsics.r22;
-    m_calib_data->R(1,2) = parameters.extrinsics.r23;
+    // Avoid the flipping applied on y. FIXME: discuss this with softkinetic.
+    m_calib_data->R(1,0) = -parameters.extrinsics.r21;
+    m_calib_data->R(1,1) = -parameters.extrinsics.r22;
+    m_calib_data->R(1,2) = -parameters.extrinsics.r23;
 
     m_calib_data->R(2,0) = parameters.extrinsics.r31;
     m_calib_data->R(2,1) = parameters.extrinsics.r32;
     m_calib_data->R(2,2) = parameters.extrinsics.r33;
-
-    {
-        Pose3D pose;
-        pose.applyTransformBefore(cv::Vec3f(0,0,0), m_calib_data->R);
-        std::clog << cv::format("rotation [%f %f %f]\n", pose.cvEulerRotation()[0], pose.cvEulerRotation()[1], pose.cvEulerRotation()[2]);
-    }
-
-    // m_calib_data->R = m_calib_data->R.t();
-    cv::Mat1d to_gl_base(3,3); setIdentity(to_gl_base);
-    to_gl_base(1,1) = -1;
-    to_gl_base(2,2) = -1;
-    m_calib_data->R = to_gl_base.inv() * m_calib_data->R * to_gl_base;
-
-    {
-        Pose3D pose;
-        pose.applyTransformBefore(cv::Vec3f(0,0,0), m_calib_data->R);
-        std::clog << cv::format("rotation [%f %f %f]\n", pose.cvEulerRotation()[0], pose.cvEulerRotation()[1], pose.cvEulerRotation()[2]);
-    }
-
-#endif
 
     m_calib_data->T = Mat1d(3,1);
     m_calib_data->T = 0.;
@@ -176,11 +165,7 @@ void SoftKineticGrabber :: estimateCalibration(DepthSense::StereoCameraParameter
                                           m_calib_data->R,
                                           m_calib_data->T);
 
-    {
-        std::clog << cv::format("rotation [%f %f %f]\n", m_calib_data->rgb_pose->cvEulerRotation()[0], m_calib_data->rgb_pose->cvEulerRotation()[1], m_calib_data->rgb_pose->cvEulerRotation()[2]);
-        std::clog << cv::format("translation [%f %f %f]\n", m_calib_data->rgb_pose->cvTranslation()[0], m_calib_data->rgb_pose->cvTranslation()[1], m_calib_data->rgb_pose->cvTranslation()[2]);
-    }
-
+    m_calib_data->updateDistortionMaps();
     m_calib_data->camera_type = "softkinetic";
 }
 
@@ -189,7 +174,7 @@ void SoftKineticGrabber::onNewColorSample(ColorNode::NewSampleReceivedData data)
     if (!m_connected) // not yet in running mode.
         return;
 
-    std::clog << cv::format("Color: %d pixels\n", data.colorMap.size());
+    // std::clog << cv::format("Color: %d pixels\n", data.colorMap.size());
     cv::Vec3b* rgb_buffer = m_current_image.rawRgbRef().ptr<cv::Vec3b>(0);
     for (int i = 0; i < data.colorMap.size(); i += 4)
     {
@@ -217,7 +202,7 @@ void SoftKineticGrabber::onNewDepthSample(DepthNode::NewSampleReceivedData data)
         return;
     }
 
-    std::clog << cv::format("Depth: %d\n", data.depthMap.size());
+    // std::clog << cv::format("Depth: %d\n", data.depthMap.size());
     float* depth_buffer = m_current_image.rawDepthRef().ptr<float>(0);
     const int16_t* raw_values = data.depthMap;
     const int16_t* last_raw_value = data.depthMap + data.depthMap.size();
@@ -294,6 +279,7 @@ void SoftKineticGrabber :: configureNode(Node node)
         try
         {
             m_context.requestControl(m_depth_node,0);
+            m_depth_node.setConfidenceThreshold(200);
             m_depth_node.setConfiguration(config);
         }
         catch (const std::exception& e)
@@ -343,6 +329,9 @@ void SoftKineticGrabber :: onNodeDisconnected(Device::NodeRemovedData data)
 
 bool SoftKineticGrabber :: connectToDevice()
 {
+    if (m_connected)
+        return true;
+
     m_context = Context::create("localhost");
     m_context.deviceAddedEvent().connect(&onDeviceConnected_cb, this);
     m_context.deviceRemovedEvent().connect(&onDeviceDisconnected_cb, this);
@@ -382,12 +371,17 @@ bool SoftKineticGrabber :: connectToDevice()
     m_context.startNodes();
     m_context.run();
 
+    m_camera_serial = m_depth_node.getSerialNumber();
+
     m_connected = true;
     return true;
 }
 
 bool SoftKineticGrabber :: disconnectFromDevice()
 {
+    if (!m_connected)
+        return true;
+
     // Exit requested.
     m_context.quit();
     m_context.stopNodes();
@@ -401,11 +395,11 @@ void SoftKineticGrabber :: handleNewFrame()
 {
     if (m_depth_transmitted || m_rgb_transmitted)
     {
-        std::clog << "NOT dirty, doing nothing";
+        // std::clog << "NOT dirty, doing nothing\n";
         return;
     }
 
-    std::clog << "Both channels are dirty, creating a new RGBDImage";
+    // std::clog << "Both channels are dirty, creating a new RGBDImage\n";
 
     if (threadShouldExit())
     {
@@ -432,6 +426,9 @@ void SoftKineticGrabber :: run()
     setThreadShouldExit(false);
     m_current_image.setCalibration(m_calib_data);
     m_rgbd_image.setCalibration(m_calib_data);
+
+    m_current_image.setCameraSerial(m_camera_serial);
+    m_rgbd_image.setCameraSerial(m_camera_serial);
 
     ntk_assert(m_color_node.getConfiguration().frameFormat == FRAME_FORMAT_VGA, "Unknown color image format.");
     int32_t color_width = 640;

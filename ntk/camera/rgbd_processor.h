@@ -207,6 +207,17 @@ protected:
 // For backward compatiblity.
 typedef OpenniRGBDProcessor NiteProcessor;
 
+/*! RGBDProcessor with default parameters for SoftKinetic cameras. */
+class SoftKineticRGBDProcessor : public RGBDProcessor
+{
+public:
+  SoftKineticRGBDProcessor()
+    : RGBDProcessor()
+  {
+      setFilterFlags(RGBDProcessorFlags::FilterMedian | RGBDProcessorFlags::FilterEdges);
+  }
+};
+
 class RGBDProcessorFactory
 {
 public:
