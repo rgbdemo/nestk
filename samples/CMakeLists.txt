@@ -60,6 +60,9 @@ IF (NESTK_USE_PCL)
     ADD_EXECUTABLE(icp-pcl icp_pcl.cpp)
     TARGET_LINK_LIBRARIES(icp-pcl nestk)
 
+    ADD_EXECUTABLE(align align.cpp)
+    TARGET_LINK_LIBRARIES(align nestk)
+
     ADD_EXECUTABLE(table-top-object table_top_object.cpp)
     TARGET_LINK_LIBRARIES(table-top-object nestk)
 
