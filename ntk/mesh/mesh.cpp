@@ -981,6 +981,67 @@ void Mesh::removeDuplicatedFaces()
     face_texcoords = new_face_texcoords;
 }
 
+void Mesh::removeNanVertices()
+{
+    std::vector<int> new_indices (vertices.size());
+    int cur_index = 0;
+    foreach_idx(i, vertices)
+    {
+        if (isnan(vertices[i]))
+        {
+            new_indices[i] = -1;
+        }
+        else
+        {
+            new_indices[i] = cur_index;
+            ++cur_index;
+        }
+    }
+
+    ntk::Mesh new_mesh;
+    new_mesh.vertices.resize(cur_index);
+
+    if (hasColors())
+        new_mesh.colors.resize(cur_index);
+    if (hasNormals())
+        new_mesh.normals.resize(cur_index);
+    if (hasTexcoords())
+        new_mesh.texcoords.resize(cur_index);
+
+    foreach_idx(i, vertices)
+    {
+        if (new_indices[i] < 0) continue;
+        new_mesh.vertices[new_indices[i]] = vertices[i];
+        if (hasColors())
+            new_mesh.colors[new_indices[i]] = colors[i];
+        if (hasNormals())
+            new_mesh.normals[new_indices[i]] = normals[i];
+        if (hasTexcoords())
+            new_mesh.texcoords[new_indices[i]] = texcoords[i];
+    }
+
+    new_mesh.faces.reserve(faces.size());
+    foreach_idx(face_i, faces)
+    {
+        bool ok = true;
+        foreach_idx(v_i, faces[face_i])
+        {
+            int old_index = faces[face_i].indices[v_i];
+            if (old_index < 0)
+                ok = false;
+            faces[face_i].indices[v_i] = new_indices[old_index];
+        }
+        if (ok)
+            new_mesh.faces.push_back(faces[face_i]);
+    }
+
+    vertices = new_mesh.vertices;
+    colors = new_mesh.colors;
+    normals = new_mesh.normals;
+    texcoords = new_mesh.texcoords;
+    faces = new_mesh.faces;
+}
+
 struct FaceComparatorByArea
 {
     FaceComparatorByArea(const Mesh& mesh) : mesh(mesh) {}

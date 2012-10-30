@@ -208,6 +208,7 @@ namespace ntk
     void removeIsolatedVertices();
     void removeDegeneratedFaces();
     void removeDuplicatedFaces();
+    void removeNanVertices();
 
     /*!
      * Make sure no edge has more than 2 adjacent faces.
