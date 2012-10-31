@@ -220,7 +220,11 @@ void RGBDCalibration :: loadFromFile(const char* filename)
     depth_pose = new Pose3D();
     rgb_pose = new Pose3D();
     updatePoses();
+    updateDistortionMaps();
+}
 
+void RGBDCalibration :: updateDistortionMaps()
+{
     initUndistortRectifyMap(rgb_intrinsics, rgb_distortion,
                             Mat(), rgb_intrinsics, rgb_size, CV_16SC2,
                             rgb_undistort_map1, rgb_undistort_map2);
@@ -238,8 +242,10 @@ void RGBDCalibration :: saveToFile(const char* filename) const
     writeMatrix(output_file, "rgb_distortion", rgb_distortion);
     writeMatrix(output_file, "depth_intrinsics", depth_intrinsics);
     writeMatrix(output_file, "depth_distortion", depth_distortion);
-    writeMatrix(output_file, "infrared_intrinsics", infrared_intrinsics);
-    writeMatrix(output_file, "infrared_distortion", infrared_distortion);
+    if (infrared_intrinsics.data)
+        writeMatrix(output_file, "infrared_intrinsics", infrared_intrinsics);
+    if (infrared_distortion.data)
+        writeMatrix(output_file, "infrared_distortion", infrared_distortion);
     writeMatrix(output_file, "R", R);
     writeMatrix(output_file, "T", T);
     writeMatrix(output_file, "R_extrinsics", R_extrinsics);

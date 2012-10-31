@@ -27,6 +27,8 @@
 #include<Eigen/StdVector>
 EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(Eigen::Vector2f)
 
+#include <set>
+
 namespace ntk
 {
 
@@ -208,6 +210,94 @@ Eigen::Affine3f toPclInvCameraTransform(const Pose3D& pose)
         for (int c = 0; c < 4; ++c)
             mat(r,c) = T(r,c);
     return mat;
+}
+
+void removeExtrapoledBoundaries(ntk::Mesh& surface,
+                                const ntk::Mesh& ground_cloud,
+                                float radius,
+                                float max_dist_from_boundary)
+{
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr pcl_cloud (new pcl::PointCloud<pcl::PointXYZRGB>());
+    meshToPointCloud(*pcl_cloud, ground_cloud);
+    pcl::octree::OctreePointCloudSearch<pcl::PointXYZRGB> octree (radius / 10.0f);
+    octree.setInputCloud (pcl_cloud);
+    octree.addPointsFromInputCloud ();
+
+    std::vector< Edge > edges;
+    std::vector< std::vector<int> > edges_per_vertex;
+    std::vector< std::vector<int> > faces_per_vertex;
+    surface.computeVertexFaceMap(faces_per_vertex);
+    surface.computeEdges(edges, edges_per_vertex, faces_per_vertex);
+
+    std::map<int,int> vertices_processed; // second entry is original boundary point index.
+    std::set<int> vertices_to_remove;
+    std::queue<int> vertices_to_process;
+#if 0
+    foreach_idx(i, faces_per_vertex)
+    {
+        // boundary, other have at least 2 adjacent faces
+        if (faces_per_vertex[i].size() == 1)
+        {
+            vertices_to_process.push(i);
+            vertices_processed[i] = i;
+        }
+    }
+#endif
+    foreach_idx(i, edges)
+    {
+        const Edge& edge = edges[i];
+        if (edge.f1 < 0 || edge.f2 < 0) // only one adjacent face
+        {
+            vertices_to_process.push(edge.v1);
+            vertices_processed[edge.v1] = edge.v1;
+
+            vertices_to_process.push(edge.v2);
+            vertices_processed[edge.v2] = edge.v2;
+        }
+    }
+
+    while (!vertices_to_process.empty())
+    {
+        int vertex = vertices_to_process.front();
+        vertices_to_process.pop();
+
+        std::vector<int> pointIdxRadiusSearch;
+        std::vector<float> pointRadiusSquaredDistance;
+        int nb_neighb = octree.radiusSearch (toPcl(surface.vertices[vertex], surface.hasColors() ? surface.colors[vertex] : cv::Vec3b(255,255,255)),
+                                             radius, pointIdxRadiusSearch, pointRadiusSquaredDistance);
+        if (nb_neighb < 1) // no close enough neighbor in the ground cloud, remove it.
+        {
+            vertices_to_remove.insert(vertex);
+            const int orig_boundary_vertex = vertices_processed[vertex];
+            const cv::Point3f& orig_boundary_point = surface.vertices[orig_boundary_vertex];
+            // add neighbors to the list, since now they are boundary.
+            const std::vector<int>& adjacent_edges = edges_per_vertex[vertex];
+            foreach_idx(k, adjacent_edges)
+            {
+                const Edge& edge = edges[adjacent_edges[k]];
+                const int edge_vertices[] = { edge.v1, edge.v2 };
+                for (int e_i = 0; e_i < 2; ++e_i)
+                {
+                    int edge_vertex = edge_vertices[e_i];
+                    if (edge_vertex != vertex && vertices_processed.find(edge_vertex) == vertices_processed.end())
+                    {
+                        const cv::Point3f& point = surface.vertices[edge_vertex];
+                        float dist_from_boundary = cv::norm(orig_boundary_point - point);
+                        ntk_dbg_print(dist_from_boundary, 1);
+                        if (dist_from_boundary < max_dist_from_boundary)
+                        {
+                            vertices_to_process.push(edge_vertex);
+                            vertices_processed[edge_vertex] = orig_boundary_vertex;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    foreach_const_it(it, vertices_to_remove, std::set<int>)
+            surface.vertices[*it] = infinite_point();
+    surface.removeNanVertices();
 }
 
 void removeExtrapoledTriangles(ntk::Mesh& surface, const ntk::Mesh& ground_cloud, float radius)

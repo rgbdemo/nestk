@@ -301,6 +301,9 @@ namespace ntk
             if (hasFilterFlag(RGBDProcessorFlags::FixBias))
                 fixDepthBias();
 
+            if (hasFilterFlag(RGBDProcessorFlags::RemoveSmallStructures))
+                removeSmallStructures();
+
             if (hasFilterFlag(RGBDProcessorFlags::FilterMedian))
                 medianFilter();
 
@@ -343,8 +346,6 @@ namespace ntk
 
             tc.elapsedMsecs("computeMappings");
 
-            if (hasFilterFlag(RGBDProcessorFlags::RemoveSmallStructures))
-                removeSmallStructures();
             if (hasFilterFlag(RGBDProcessorFlags::FillSmallHoles))
                 fillSmallHoles();
         }
@@ -392,6 +393,7 @@ namespace ntk
                   m_image->calibration()->depth_undistort_map1,
                   m_image->calibration()->depth_undistort_map2,
                   CV_INTER_LINEAR);
+            ntk_assert(m_image->depth().data != 0, "Should be ok");
         }
         else
         {
@@ -406,10 +408,13 @@ namespace ntk
         }
         else
         {
-            remap(m_image->rawAmplitudeRef(), m_image->amplitudeRef(),
-                  m_image->calibration()->depth_undistort_map1,
-                  m_image->calibration()->depth_undistort_map2,
-                  CV_INTER_LINEAR);
+            if (m_image->rawAmplitudeRef().data)
+            {
+                remap(m_image->rawAmplitudeRef(), m_image->amplitudeRef(),
+                      m_image->calibration()->depth_undistort_map1,
+                      m_image->calibration()->depth_undistort_map2,
+                      CV_INTER_LINEAR);
+            }
 
             if (m_image->rawIntensityRef().data)
             {
@@ -951,6 +956,10 @@ namespace ntk
         else if (params.camera_type == "kinect-freenect")
         {
             processor = new FreenectRGBDProcessor();
+        }
+        else if (params.camera_type == "softkinetic")
+        {
+            processor = new SoftKineticRGBDProcessor();
         }
         else
         {

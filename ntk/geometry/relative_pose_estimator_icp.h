@@ -40,7 +40,7 @@ namespace ntk
 template <class PointT>
 class RelativePoseEstimatorICP : public RelativePoseEstimatorFromPointClouds<PointT>
 {
-private:
+protected:
     typedef RelativePoseEstimatorFromPointClouds<PointT> super;
     using super::m_target_cloud;
     using super::m_source_cloud;
@@ -57,7 +57,7 @@ public:
         : m_distance_threshold(0.05),
           m_voxel_leaf_size(0.005),
           m_ransac_outlier_threshold(0.01),
-          m_max_iterations(20)
+          m_max_iterations(100)
     {}
 
 public:
@@ -99,6 +99,7 @@ protected:
 template <class PointT>
 class RelativePoseEstimatorICPWithNormals : public RelativePoseEstimatorICP<PointT>
 {
+protected:
     typedef RelativePoseEstimatorICP<PointT> super;
     typedef pcl::PointCloud<PointT> PointCloudType;
     typedef typename PointCloudType::ConstPtr PointCloudConstPtr;

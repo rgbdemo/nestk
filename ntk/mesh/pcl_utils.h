@@ -49,6 +49,7 @@ class RGBDImage;
 class Pose3D;
 
 void removeExtrapoledTriangles(ntk::Mesh& surface, const ntk::Mesh& ground_cloud, float radius);
+void removeExtrapoledBoundaries(ntk::Mesh& surface, const ntk::Mesh& ground_cloud, float radius, float max_dist_from_boundary);
 
 inline pcl::PointXYZ toPcl(const cv::Point3f& p)
 { return pcl::PointXYZ(p.x, p.y, p.z); }
@@ -149,14 +150,17 @@ public:
             return;
         }
 
-        output.points.resize(n_samples);
+        output.points = cloud.points;
         output.width = n_samples;
         output.height = 1;
         for (int i = 0; i < n_samples; ++i)
         {
-            int k = m_rng(cloud.points.size());
-            output.points[i] = cloud.points[k];
+            // int k = m_rng(cloud.points.size());
+            // output.points[i] = cloud.points[k];
+            int k = m_rng(output.points.size());
+            std::swap(output.points[i], output.points[k]);
         }
+        output.points.resize(n_samples);
     }
 
 private:

@@ -298,6 +298,13 @@ IF(NESTK_USE_PMDSDK)
     )
 ENDIF()
 
+IF(NESTK_USE_SOFTKINETIC)
+     SET(ntk_sources ${ntk_sources}
+        camera/softkinetic_grabber.h
+        camera/softkinetic_grabber.cpp
+     )
+ENDIF()
+
 IF(NESTK_USE_PCL)
     SET (ntk_sources ${ntk_sources}
          detection/image_segmentor.h
@@ -315,8 +322,14 @@ IF(NESTK_USE_PCL)
          geometry/relative_pose_estimator_from_features.cpp
          geometry/relative_pose_estimator_from_image.h
          geometry/relative_pose_estimator_from_image.cpp
+         geometry/relative_pose_estimator_rgbd_icp.h
+         geometry/relative_pose_estimator_rgbd_icp.hpp
+         geometry/relative_pose_estimator_rgbd_icp.cpp
          geometry/relative_pose_estimator_tabletop.h
          geometry/relative_pose_estimator_tabletop.cpp
+         geometry/transformation_estimation_rgbd.h
+         geometry/transformation_estimation_rgbd.hpp
+         geometry/transformation_estimation_rgbd.cpp
          mesh/table_object_rgbd_modeler.h
          mesh/table_object_rgbd_modeler.cpp
          mesh/pcl_utils.h
@@ -376,6 +389,7 @@ TARGET_LINK_LIBRARIES(nestk
   ${X11_LIBRARY}
   ${LIBUSB_1_LIBRARY}
   ${PMD_LIBRARIES}
+  ${SOFTKINETIC_LIBRARY}
   ${FREENECT_LIBRARIES}
   ${OPENNI_LIBRARIES}
   ${NITE_LIBRARY}
