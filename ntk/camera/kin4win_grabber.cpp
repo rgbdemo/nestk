@@ -857,25 +857,16 @@ ntk::Kin4WinDriver::Kin4WinDriver()
 {
     ntk_dbg(1) << "Initializing Kin4Win driver";
 
-    INuiSensor* sensor = 0;
-    // WinRet ret = NuiCreateSensorByIndex(0, &sensor);
-    // if (SUCCEEDED(ret))
+    int kin4win_sensors_count;
+    WinRet ret = NuiGetSensorCount(&kin4win_sensors_count);
+    ntk_dbg_print(kin4win_sensors_count, 1);
+    if (kin4win_sensors_count > 0)
     {
         DeviceInfo device;
         device.serial = "unknown";
         device.camera_type = "kin4win";
         device.vendor = "Microsoft";
         devices_info.push_back(device);
-    }
-
-    if (ntk::ntk_debug_level >= 1)
-    {
-
-    }
-
-    if (ntk::ntk_debug_level >= 2)
-    {
-
     }
 
     // ntk_throw_exception(format("enumerating devices failed. Reason: %s", xnGetStatusString(status)));
