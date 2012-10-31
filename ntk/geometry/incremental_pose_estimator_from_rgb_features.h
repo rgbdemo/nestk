@@ -45,7 +45,8 @@ public:
     }
 
     IncrementalPoseEstimatorFromRgbFeatures(const IncrementalPoseEstimatorFromRgbFeatures& rhs)
-        : m_feature_parameters(rhs.m_feature_parameters),
+        : IncrementalPoseEstimatorFromImage(rhs),
+          m_feature_parameters(rhs.m_feature_parameters),
           m_use_icp(rhs.m_use_icp),
           m_incremental_model(rhs.m_incremental_model)
     {
