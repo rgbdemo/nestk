@@ -92,6 +92,9 @@ public:
     const DeviceInfo& deviceInfo(int index) const;
     void checkXnError(const XnStatus& status, const char* what) const;
 
+public:
+    static bool hasDll ();
+
 private:
     void findSerialNumbers();
 

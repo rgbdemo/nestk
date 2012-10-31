@@ -962,6 +962,25 @@ void ntk::OpenniDriver :: checkXnError(const XnStatus& status, const char* what)
     }
 }
 
+bool OpenniDriver::hasDll()
+{
+#ifdef _MSC_VER
+    // Trigger Kinect SDK DLL loading by calling one of its functions.
+    __try
+    {
+        XnStatus status = XN_STATUS_OK;
+        xnGetStatusString(status);
+        return true;
+    }
+    __except(EXCEPTION_EXECUTE_HANDLER)
+    {
+        return false;
+    }
+#else
+    return true;
+#endif
+}
+
 #ifndef WIN32
 void ntk::OpenniDriver::findSerialNumbers()
 {
