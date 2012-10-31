@@ -837,6 +837,22 @@ void Kin4WinGrabber :: run()
 
 } // ntk
 
+bool
+ntk::Kin4WinDriver::hasDll ()
+{
+    // Trigger Kinect SDK DLL loading by calling one of its functions.
+    __try
+    {
+        int count;
+        WinRet ret = NuiGetSensorCount(&count);
+        return true;
+    }
+    __except(EXCEPTION_EXECUTE_HANDLER)
+    {
+        return false;
+    }
+}
+
 ntk::Kin4WinDriver::Kin4WinDriver()
 {
     ntk_dbg(1) << "Initializing Kin4Win driver";

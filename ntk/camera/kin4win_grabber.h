@@ -24,6 +24,9 @@ public:
     };
 
 public:
+    static bool hasDll ();
+
+public:
     Kin4WinDriver();
     ~Kin4WinDriver();
 
