@@ -1027,9 +1027,10 @@ void Mesh::removeNanVertices()
         foreach_idx(v_i, faces[face_i])
         {
             int old_index = faces[face_i].indices[v_i];
-            if (old_index < 0)
+            int new_index = new_indices[old_index];
+            if (new_index < 0)
                 ok = false;
-            faces[face_i].indices[v_i] = new_indices[old_index];
+            faces[face_i].indices[v_i] = new_index;
         }
         if (ok)
             new_mesh.faces.push_back(faces[face_i]);

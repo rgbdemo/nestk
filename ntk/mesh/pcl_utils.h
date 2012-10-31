@@ -49,7 +49,7 @@ class RGBDImage;
 class Pose3D;
 
 void removeExtrapoledTriangles(ntk::Mesh& surface, const ntk::Mesh& ground_cloud, float radius);
-void removeExtrapoledBoundaries(ntk::Mesh& surface, const ntk::Mesh& ground_cloud, float radius);
+void removeExtrapoledBoundaries(ntk::Mesh& surface, const ntk::Mesh& ground_cloud, float radius, float max_dist_from_boundary);
 
 inline pcl::PointXYZ toPcl(const cv::Point3f& p)
 { return pcl::PointXYZ(p.x, p.y, p.z); }
