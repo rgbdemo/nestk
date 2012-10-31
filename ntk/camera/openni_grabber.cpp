@@ -406,10 +406,10 @@ bool OpenniGrabber :: disconnectFromDevice()
 void OpenniGrabber :: waitAndUpdateActiveGenerators()
 {
     // If there is only one device, call this global function.
-    if (0 && m_driver.numDevices() == 1) // FIXME: does this result into unsynchronized frames?
+    if (!m_get_infrared && m_driver.numDevices() == 1) // FIXME: is there an issue with this on Linux?
     {
         m_driver.niContext().WaitOneUpdateAll(m_ni_depth_generator);
-        // m_driver.niContext().WaitAndUpdateAll();
+        // m_driver.niContext().WaitAndUpdateAll(); // does not work with Asus Xtion on Windows (at least).
         return;
     }
 
