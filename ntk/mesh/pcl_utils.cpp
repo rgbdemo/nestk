@@ -232,17 +232,7 @@ void removeExtrapoledBoundaries(ntk::Mesh& surface,
     std::map<int,int> vertices_processed; // second entry is original boundary point index.
     std::set<int> vertices_to_remove;
     std::queue<int> vertices_to_process;
-#if 0
-    foreach_idx(i, faces_per_vertex)
-    {
-        // boundary, other have at least 2 adjacent faces
-        if (faces_per_vertex[i].size() == 1)
-        {
-            vertices_to_process.push(i);
-            vertices_processed[i] = i;
-        }
-    }
-#endif
+
     foreach_idx(i, edges)
     {
         const Edge& edge = edges[i];
