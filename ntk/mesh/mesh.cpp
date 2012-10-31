@@ -1066,8 +1066,10 @@ void Mesh::removeNonManifoldFaces()
         if (!face.isValid())
             continue;
 
-        for (int i = 0; i < 2; ++i)
-        for (int j = i+1; j < 3; ++j)
+        bool face_is_dead = false;
+
+        for (int i = 0; !face_is_dead && i < 2; ++i)
+        for (int j = i+1; !face_is_dead && j < 3; ++j)
         {
             int v1 = face.indices[i];
             int v2 = face.indices[j];
@@ -1105,6 +1107,8 @@ void Mesh::removeNonManifoldFaces()
             std::sort(stl_bounds(adjacent_faces), FaceComparatorByArea(*this));
             for (int k = 0; k < adjacent_faces.size() - 2; ++k)
             {
+                if (adjacent_faces[k] == face_i)
+                    face_is_dead = true;
                 faces[adjacent_faces[k]].kill();
             }
         }

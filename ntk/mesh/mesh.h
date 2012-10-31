@@ -56,7 +56,7 @@ namespace ntk
 
     Face() {}
 
-    bool isValid() const { return indices[0] >= 0; }
+    bool isValid() const { return indices[0] >= 0 && indices[1] >= 0 && indices[2] >= 0; }
     void kill() { indices[0] = -1; }
 
     bool operator==(const Face& rhs) const
