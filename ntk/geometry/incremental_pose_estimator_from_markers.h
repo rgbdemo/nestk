@@ -81,7 +81,7 @@ private:
     MarkerSetup m_marker_setup;
     std::vector<aruco::Marker> m_detected_markers;
 };
-ntk_ptr_typedefs(AbsolutePoseEstimatorMarkers);
+ntk_ptr_typedefs(AbsolutePoseEstimatorMarkers)
 
 class IncrementalPoseEstimatorFromMarkers : public IncrementalPoseEstimatorFromImage
 {

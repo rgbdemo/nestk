@@ -31,6 +31,7 @@ namespace ntk
   class RGBDProcessor;
   class RGBDCalibration;
   class Skeleton;
+  class FeatureSet;
 
 /*!
  * Stores RGB+Depth data.
@@ -222,6 +223,11 @@ public:
   /*! Whether the image does not have any depth pixel. */
   bool hasEmptyRawDepthImage() const;
 
+  /*! Associate a feature set to the image. */
+  ntk::Ptr<FeatureSet> getFeatures() const { return m_features; }
+  bool                 hasFeatures() const { return static_cast<bool>(m_features); }
+  void                 setFeatures(ntk::Ptr<FeatureSet> new_features) { m_features = new_features; }
+
 private:
   cv::Mat3b m_rgb;
   cv::Mat1b m_rgb_as_gray;
@@ -244,6 +250,7 @@ private:
   ntk::Pose3D m_depth_pose;
   std::string m_camera_serial;
   float m_timestamp;
+  ntk::Ptr<FeatureSet> m_features;
 };
 ntk_ptr_typedefs(RGBDImage)
 
