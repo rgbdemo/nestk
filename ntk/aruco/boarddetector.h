@@ -44,6 +44,6 @@ private:
     void rotateXAxis(Mat &rotation);
 };
 
-};
+}
 #endif
 

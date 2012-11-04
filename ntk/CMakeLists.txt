@@ -53,6 +53,8 @@ SET ( ntk_sources
      geometry/polygon.cpp
      geometry/pose_3d.h
      geometry/pose_3d.cpp
+     geometry/pose_3d.hpp
+     geometry/pose_3d_eigen.h
      geometry/pose_graph_optimizer.h
      geometry/relative_pose_estimator.h
      geometry/relative_pose_estimator.cpp

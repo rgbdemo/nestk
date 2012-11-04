@@ -49,15 +49,16 @@ class CV_EXPORTS RGBDImage : public ntk::EventData
     CLONABLE_EVENT_DATA
 
 public:
-  RGBDImage() : m_calibration(0), m_skeleton(0), m_camera_serial("unknown"), m_timestamp(0) {}
+  RGBDImage();
 
-  RGBDImage(const RGBDImage& rhs) : EventData(rhs), m_calibration(0), m_skeleton(0) { rhs.copyTo(*this); }
+  RGBDImage(const RGBDImage& rhs);
 
   /*! Initialize from an viewXXXX directory. */
   RGBDImage(const std::string& dir,
             const RGBDCalibration* calib = 0,
-            RGBDProcessor* processor = 0) :  m_skeleton(0)
-  { loadFromDir(dir, calib, processor); }
+            RGBDProcessor* processor = 0);
+
+  RGBDImage& operator=(const RGBDImage& rhs);
 
   virtual ~RGBDImage();
 
@@ -224,9 +225,9 @@ public:
   bool hasEmptyRawDepthImage() const;
 
   /*! Associate a feature set to the image. */
-  ntk::Ptr<FeatureSet> getFeatures() const { return m_features; }
-  bool                 hasFeatures() const { return static_cast<bool>(m_features); }
-  void                 setFeatures(ntk::Ptr<FeatureSet> new_features) { m_features = new_features; }
+  const ntk::Ptr<FeatureSet>& getFeatures() const { return m_features; }
+  bool                        hasFeatures() const { return static_cast<bool>(m_features); }
+  void                        setFeatures(const ntk::Ptr<FeatureSet>& new_features);
 
 private:
   cv::Mat3b m_rgb;

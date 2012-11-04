@@ -33,7 +33,9 @@ T* allocate_sse_buffer(int buf_size)
     size_t num = buf_size * sizeof(T);
     num += num % 128; // make sure there is enough data.
 #ifndef WIN32
-    posix_memalign((void**)&data, 16, num);
+    int failed = posix_memalign((void**)&data, 16, num);
+    if (failed)
+        return 0;
 #else
     abort(); // FIXME: implement on Windows.
 #endif

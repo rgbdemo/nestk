@@ -23,6 +23,8 @@
 #include <ntk/camera/rgbd_processor.h>
 #include <ntk/camera/calibration.h>
 
+#include <ntk/image/feature.h>
+
 #include <QDir>
 
 #if defined(USE_NITE) || defined(NESTK_USE_NITE)
@@ -40,23 +42,53 @@ using namespace cv;
 namespace ntk
 {
 
-  RGBDImage :: ~RGBDImage()
-  {
+RGBDImage::RGBDImage()
+    : m_calibration(0),
+      m_skeleton(0),
+      m_camera_serial("unknown"),
+      m_timestamp(0)
+{
+}
+
+RGBDImage::RGBDImage(const RGBDImage& rhs)
+    : EventData(rhs),
+      m_calibration(0),
+      m_skeleton(0)
+{
+    rhs.copyTo(*this);
+}
+
+RGBDImage::RGBDImage(const std::string& dir,
+                     const RGBDCalibration* calib,
+                     RGBDProcessor* processor)
+    :  m_skeleton(0)
+{
+    loadFromDir(dir, calib, processor);
+}
+
+RGBDImage& RGBDImage::operator =(const RGBDImage &rhs)
+{
+    rhs.copyTo(*this);
+    return *this;
+}
+
+RGBDImage :: ~RGBDImage()
+{
     if (m_skeleton)
-      delete m_skeleton;
-  }
+        delete m_skeleton;
+}
 
-  void RGBDImage :: loadFromFile(const std::string& dir,
-                                 const RGBDCalibration* calib)
-  {
+void RGBDImage :: loadFromFile(const std::string& dir,
+                               const RGBDCalibration* calib)
+{
     ntk_assert(0, "not implemented.");
-  }
+}
 
-  // Load from a viewXXXX directory.
-  void RGBDImage :: loadFromDir(const std::string& dir,
-                                const RGBDCalibration* input_calib,
-                                RGBDProcessor* processor)
-  {
+// Load from a viewXXXX directory.
+void RGBDImage :: loadFromDir(const std::string& dir,
+                              const RGBDCalibration* input_calib,
+                              RGBDProcessor* processor)
+{
     m_directory = dir;
     m_timestamp = 0;
     ntk_dbg_print(dir, 2);
@@ -77,80 +109,80 @@ namespace ntk
 
     if (!is_file(dir+"/raw/color.png") && is_file(dir+"/color.png"))
     {
-      rawRgbRef() = imread(dir + "/color.png", 1);
-      rawRgb().copyTo(rgbRef());
-      ntk_ensure(rgbRef().data, ("Could not read color image from " + dir).c_str());
+        rawRgbRef() = imread(dir + "/color.png", 1);
+        rawRgb().copyTo(rgbRef());
+        ntk_ensure(rgbRef().data, ("Could not read color image from " + dir).c_str());
     }
     else
     {
-      if (is_file(dir + "/raw/color.png"))
-      {
-        rawRgbRef() = imread(dir + "/raw/color.png", 1);
-        ntk_ensure(rawRgbRef().data, ("Could not read raw color image from " + dir).c_str());
-      }
-      else if (is_file(dir + "/raw/color.bmp"))
-      {
-        rawRgbRef() = imread(dir + "/raw/color.bmp", 1);
-        ntk_ensure(rawRgbRef().data, ("Could not read raw color image from " + dir).c_str());
-      }
+        if (is_file(dir + "/raw/color.png"))
+        {
+            rawRgbRef() = imread(dir + "/raw/color.png", 1);
+            ntk_ensure(rawRgbRef().data, ("Could not read raw color image from " + dir).c_str());
+        }
+        else if (is_file(dir + "/raw/color.bmp"))
+        {
+            rawRgbRef() = imread(dir + "/raw/color.bmp", 1);
+            ntk_ensure(rawRgbRef().data, ("Could not read raw color image from " + dir).c_str());
+        }
 
-      if (is_file(dir + "/raw/depth.raw"))
-      {
-        rawDepthRef() = imread_Mat1f_raw(dir + "/raw/depth.raw");
-        ntk_ensure(rawDepthRef().data, ("Could not read raw depth image from " + dir).c_str());
-      }
-      else if (is_file(dir + "/raw/depth.yml"))
-      {
-        rawDepthRef() = imread_yml(dir + "/raw/depth.yml");
-        ntk_ensure(rawDepthRef().data, ("Could not read raw depth image from " + dir).c_str());
-      }
+        if (is_file(dir + "/raw/depth.raw"))
+        {
+            rawDepthRef() = imread_Mat1f_raw(dir + "/raw/depth.raw");
+            ntk_ensure(rawDepthRef().data, ("Could not read raw depth image from " + dir).c_str());
+        }
+        else if (is_file(dir + "/raw/depth.yml"))
+        {
+            rawDepthRef() = imread_yml(dir + "/raw/depth.yml");
+            ntk_ensure(rawDepthRef().data, ("Could not read raw depth image from " + dir).c_str());
+        }
 
-      if (is_file(dir + "/raw/amplitude.raw"))
-      {
-        rawAmplitudeRef() = imread_Mat1f_raw(dir + "/raw/amplitude.raw");
-        ntk_ensure(rawAmplitudeRef().data, ("Could not read raw amplitude image from " + dir).c_str());
-      }
-      if (is_file(dir + "/raw/amplitude.yml"))
-      {
-        rawAmplitudeRef() = imread_yml(dir + "/raw/amplitude.yml");
-        ntk_ensure(rawAmplitudeRef().data, ("Could not read raw amplitude image from " + dir).c_str());
-      }
-      else if (is_file(dir + "/raw/amplitude.png"))
-      {
-        rawAmplitudeRef() = imread(dir + "/raw/amplitude.png", 0);
-        ntk_ensure(rawAmplitudeRef().data, ("Could not read raw amplitude image from " + dir).c_str());
-      }
+        if (is_file(dir + "/raw/amplitude.raw"))
+        {
+            rawAmplitudeRef() = imread_Mat1f_raw(dir + "/raw/amplitude.raw");
+            ntk_ensure(rawAmplitudeRef().data, ("Could not read raw amplitude image from " + dir).c_str());
+        }
+        if (is_file(dir + "/raw/amplitude.yml"))
+        {
+            rawAmplitudeRef() = imread_yml(dir + "/raw/amplitude.yml");
+            ntk_ensure(rawAmplitudeRef().data, ("Could not read raw amplitude image from " + dir).c_str());
+        }
+        else if (is_file(dir + "/raw/amplitude.png"))
+        {
+            rawAmplitudeRef() = imread(dir + "/raw/amplitude.png", 0);
+            ntk_ensure(rawAmplitudeRef().data, ("Could not read raw amplitude image from " + dir).c_str());
+        }
 
-      if (is_file(dir + "/raw/intensity.raw"))
-      {
-        rawIntensityRef() = imread_Mat1f_raw(dir + "/raw/intensity.raw");
-        ntk_ensure(rawIntensityRef().data, ("Could not read raw intensity image from " + dir).c_str());
-      }
-      else if (is_file(dir + "/raw/intensity.yml"))
-      {
-        rawIntensityRef() = imread_yml(dir + "/raw/intensity.yml");
-        ntk_ensure(rawIntensityRef().data, ("Could not read raw intensity image from " + dir).c_str());
-      }
-      else if (is_file(dir + "/raw/intensity.png"))
-      {
-        rawIntensityRef() = imread(dir + "/raw/intensity.png", 0);
-        ntk_ensure(rawIntensityRef().data, ("Could not read raw intensity image from " + dir).c_str());
-      }
+        if (is_file(dir + "/raw/intensity.raw"))
+        {
+            rawIntensityRef() = imread_Mat1f_raw(dir + "/raw/intensity.raw");
+            ntk_ensure(rawIntensityRef().data, ("Could not read raw intensity image from " + dir).c_str());
+        }
+        else if (is_file(dir + "/raw/intensity.yml"))
+        {
+            rawIntensityRef() = imread_yml(dir + "/raw/intensity.yml");
+            ntk_ensure(rawIntensityRef().data, ("Could not read raw intensity image from " + dir).c_str());
+        }
+        else if (is_file(dir + "/raw/intensity.png"))
+        {
+            rawIntensityRef() = imread(dir + "/raw/intensity.png", 0);
+            ntk_ensure(rawIntensityRef().data, ("Could not read raw intensity image from " + dir).c_str());
+        }
 
-      if (is_file(dir + "/rgb_pose.avs") && calib)
-      {
-        ntk::Pose3D pose;
-        pose.parseAvsFile((dir + "/rgb_pose.avs").c_str());
-        setRgbPose(pose);
-      }
+        if (is_file(dir + "/rgb_pose.avs") && calib)
+        {
+            ntk::Pose3D pose;
+            pose.parseAvsFile((dir + "/rgb_pose.avs").c_str());
+            setRgbPose(pose);
+        }
     }
 
     if (processor)
-      processor->processImage(*this);
-  }
+        processor->processImage(*this);
+}
 
-  void RGBDImage :: copyTo(RGBDImage& other) const
-  {
+void RGBDImage :: copyTo(RGBDImage& other) const
+{
     m_rgb.copyTo(other.m_rgb);
     m_rgb_as_gray.copyTo(other.m_rgb_as_gray);
     m_mapped_rgb.copyTo(other.m_mapped_rgb);
@@ -174,23 +206,23 @@ namespace ntk
 #if defined(USE_NITE) || defined(NESTK_USE_NITE)
     if (m_skeleton)
     {
-      if (!other.m_skeleton)
-        other.m_skeleton = new Skeleton();
-      m_skeleton->copyTo(*(other.m_skeleton));
+        if (!other.m_skeleton)
+            other.m_skeleton = new Skeleton();
+        m_skeleton->copyTo(*(other.m_skeleton));
     }
     else
     {
-      if (other.m_skeleton)
-      {
-        delete other.m_skeleton;
-        other.m_skeleton = 0;
-      }
+        if (other.m_skeleton)
+        {
+            delete other.m_skeleton;
+            other.m_skeleton = 0;
+        }
     }
 #endif
-  }
+}
 
-  void RGBDImage :: swap(RGBDImage& other)
-  {
+void RGBDImage :: swap(RGBDImage& other)
+{
     cv::swap(m_rgb, other.m_rgb);
     cv::swap(m_rgb_as_gray, other.m_rgb_as_gray);
     cv::swap(m_mapped_rgb, other.m_mapped_rgb);
@@ -212,58 +244,63 @@ namespace ntk
     std::swap(m_camera_serial, other.m_camera_serial);
     std::swap(m_timestamp, other.m_timestamp);
     std::swap(m_depth_pose, other.m_depth_pose);
-  }
+}
 
-  void RGBDImage :: fillRgbFromUserLabels(cv::Mat3b& img) const
-  {
+void RGBDImage :: fillRgbFromUserLabels(cv::Mat3b& img) const
+{
     if (!m_user_labels.data)
-      return;
+        return;
 
     const Vec3b colors[] = {
-      Vec3b(255,0,0),
-      Vec3b(255,255,0),
-      Vec3b(255,0,255),
-      Vec3b(255,255,255),
-      Vec3b(0,255,0),
-      Vec3b(0,255,255),
-      Vec3b(0,0,255),
+        Vec3b(255,0,0),
+        Vec3b(255,255,0),
+        Vec3b(255,0,255),
+        Vec3b(255,255,255),
+        Vec3b(0,255,0),
+        Vec3b(0,255,255),
+        Vec3b(0,0,255),
     };
     int nb_colors = sizeof(colors) / sizeof(Vec3b);
 
     img.create(m_user_labels.size());
     for_all_rc(m_user_labels)
     {
-      int label = m_user_labels(r,c);
-      if (label == 0)
-        img(r,c) = Vec3b(0,0,0);
-      else
-        img(r,c) = colors[label%nb_colors];
+        int label = m_user_labels(r,c);
+        if (label == 0)
+            img(r,c) = Vec3b(0,0,0);
+        else
+            img(r,c) = colors[label%nb_colors];
     }
-  }
+}
 
-  Pose3D RGBDImage :: rgbPose() const
-  {
-      ntk_assert(m_calibration, "Calibration must be available!");
-      Pose3D pose = m_depth_pose;
-      pose.toRightCamera(m_calibration->rgb_intrinsics, m_calibration->R, m_calibration->T);
-      return pose;
-  }
+Pose3D RGBDImage :: rgbPose() const
+{
+    ntk_assert(m_calibration, "Calibration must be available!");
+    Pose3D pose = m_depth_pose;
+    pose.toRightCamera(m_calibration->rgb_intrinsics, m_calibration->R, m_calibration->T);
+    return pose;
+}
 
-  void RGBDImage :: setRgbPose(const Pose3D& pose)
-  {
-      ntk_assert(m_calibration, "Calibration must be available!");
-      m_depth_pose = pose;
-      m_depth_pose.toLeftCamera(m_calibration->depth_intrinsics, m_calibration->R, m_calibration->T);
-  }
+void RGBDImage :: setRgbPose(const Pose3D& pose)
+{
+    ntk_assert(m_calibration, "Calibration must be available!");
+    m_depth_pose = pose;
+    m_depth_pose.toLeftCamera(m_calibration->depth_intrinsics, m_calibration->R, m_calibration->T);
+}
 
-  bool RGBDImage::hasEmptyRawDepthImage() const
-  {
-      for_all_rc(rawDepth())
-      {
-          if (rawDepth()(r,c) > 1e-5)
-              return false;
-      }
-      return true;
-  }
+bool RGBDImage::hasEmptyRawDepthImage() const
+{
+    for_all_rc(rawDepth())
+    {
+        if (rawDepth()(r,c) > 1e-5)
+            return false;
+    }
+    return true;
+}
+
+void RGBDImage::setFeatures(const ntk::Ptr<FeatureSet>& new_features)
+{
+    m_features = new_features;
+}
 
 } // ntk

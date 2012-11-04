@@ -10,7 +10,8 @@ SET(NESTK_VERSION 0.7)
 ### extra flags
 ################################################################################
 IF(CMAKE_COMPILER_IS_GNUCXX)
-  SET(DEFAULT_NESTK_EXTRA_CMAKE_CXX_FLAGS "-Wall -W -Wno-unused -Wno-sign-compare -Wno-unknown-pragmas -Wno-invalid-offsetof")
+  SET(DEFAULT_NESTK_EXTRA_CMAKE_CXX_FLAGS
+      "-Wall -W -Wno-unused -Wno-sign-compare -Wno-unknown-pragmas -Wno-effc++")
 ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 
 SET(NESTK_EXTRA_CMAKE_CXX_FLAGS  ${DEFAULT_NESTK_EXTRA_CMAKE_CXX_FLAGS}

@@ -23,6 +23,10 @@
 # include <ntk/core.h>
 # include <exception>
 
+#  if defined __GNUC__
+#    define GNUC_VERSION (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
+#  endif
+
 #define ntk_ptr_typedefs(Class) \
 typedef ntk::Ptr<Class> Class##Ptr; \
 typedef ntk::Ptr<const Class> Class##ConstPtr;
@@ -52,6 +56,8 @@ namespace cv {
 
 namespace ntk
 {
+  template<class T> inline void checked_delete(T * x);
+
   // Implementation taken from OpenCV
   template<typename _Tp> class CV_EXPORTS Ptr
   {
@@ -111,7 +117,9 @@ namespace ntk
 
   template<typename _Tp> inline void Ptr<_Tp>::delete_obj()
   {
-      if( obj ) delete obj;
+      if( obj )
+          checked_delete<_Tp>(obj);
+          // delete obj;
   }
 
   template<typename _Tp> inline Ptr<_Tp>::~Ptr() { release(); }
@@ -198,6 +206,14 @@ namespace ntk
 
   template <class T>
   inline void delete_and_zero(T*& ptr) { delete ptr; ptr = 0; }
+
+  template<class T> inline void checked_delete(T * x)
+  {
+      // intentionally complex - simplification causes regressions
+      typedef char type_must_be_complete[ sizeof(T)? 1: -1 ];
+      (void) sizeof(type_must_be_complete);
+      delete x;
+  }
 }
 
 #define stl_bounds(s) s.begin(), s.end()

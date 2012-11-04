@@ -33,6 +33,9 @@
 #   define NOMINMAX
 #   define VC_EXTRALEAN
 #endif
+# if defined(GNUC_VERSION) && GNUC_VERSION >= 40300
+#  pragma GCC diagnostic ignored "-Wstrict-aliasing"
+# endif
 #include <XnOpenNI.h>
 #ifdef _WIN32
 #   undef VC_EXTRALEAN

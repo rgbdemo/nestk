@@ -232,5 +232,5 @@ private:
 
 
 
-};
+}
 #endif

@@ -224,6 +224,7 @@ RGBDGrabberFactory::createGrabbers(const ntk::RGBDGrabberFactory::Params &params
     {
         switch (params.type)
         {
+        case DEFAULT:
         case OPENNI:
         {
             data = createOpenNIGrabber(params);
@@ -247,7 +248,7 @@ RGBDGrabberFactory::createGrabbers(const ntk::RGBDGrabberFactory::Params &params
             data = createPmdGrabber(params);
             break;
         }
-        };
+        }
     }
 
     if (data.grabber)

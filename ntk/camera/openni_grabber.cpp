@@ -101,11 +101,11 @@ OpenniGrabber :: OpenniGrabber(OpenniDriver& driver, int camera_id) :
     m_high_resolution(false),
     m_mirrored(false),
     m_custom_bayer_decoding(false),
+    m_hardware_registration(true),
     m_xml_config_file(DEFAULT_XML_CONFIG_FILE),
     m_track_users(true),
     m_get_infrared(false),
-    m_has_rgb(true),
-    m_hardware_registration(true)
+    m_has_rgb(true)
 {
     setDefaultBayerMode();
 }
@@ -121,11 +121,11 @@ OpenniGrabber :: OpenniGrabber(OpenniDriver& driver, const std::string& camera_s
     m_high_resolution(false),
     m_mirrored(false),
     m_custom_bayer_decoding(false),
+    m_hardware_registration(true),
     m_xml_config_file(DEFAULT_XML_CONFIG_FILE),
     m_track_users(true),
     m_get_infrared(false),
-    m_has_rgb(true),
-    m_hardware_registration(true)
+    m_has_rgb(true)
 {
     for (size_t i = 0; i < driver.numDevices(); ++i)
     {

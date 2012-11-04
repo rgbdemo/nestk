@@ -32,7 +32,7 @@ namespace aruco
     static void draw3dCube(cv::Mat &Image,Board &m,CameraParameters &CP);
 
   };
-};
+}
 
 #endif
 
