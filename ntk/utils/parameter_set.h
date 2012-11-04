@@ -66,7 +66,7 @@ public:
     ParameterSetManager(ParameterSet* parameter_set = 0)
         : parameter_set(parameter_set ? parameter_set : new ParameterSet)
     {
-        parameter_set->addWatcher(this);
+        this->parameter_set->addWatcher(this);
     }
 
     virtual ~ParameterSetManager()
