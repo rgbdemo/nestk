@@ -63,8 +63,8 @@ protected:
 class ParameterSetManager : public ParameterSetWatcher
 {
 public:
-    ParameterSetManager(ParameterSet* Parameter_set)
-        : parameter_set(Parameter_set)
+    ParameterSetManager(ParameterSet* parameter_set = 0)
+        : parameter_set(parameter_set ? parameter_set : new ParameterSet)
     {
         parameter_set->addWatcher(this);
     }
