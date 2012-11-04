@@ -372,6 +372,16 @@ inline cv::Mat3b rotate90(const cv::Mat3b& im)
 float triangleArea(const cv::Point2f& p1, const cv::Point2f& p2, const cv::Point2f& p3);
 float triangleArea(const cv::Point3f& p1, const cv::Point3f& p2, const cv::Point3f& p3);
 
+inline float normalAngles(const cv::Vec3f& n1, const cv::Vec3f& n2)
+{
+    return acos(n1.dot(n2));
+}
+
+inline bool normalsAreCompatible(float normal_angle, float max_degrees)
+{
+    return (normal_angle < (max_degrees*M_PI/180.0));
+}
+
 }
 
 namespace cv     // FIXME: has to be put in its
