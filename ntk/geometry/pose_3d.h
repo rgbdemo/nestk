@@ -25,11 +25,12 @@
 # include <ntk/numeric/utils.h>
 # include <QString>
 
-# include <Eigen/Core>
-# include <Eigen/Geometry>
-
 namespace ntk
 {
+
+// Use Eigen holder to avoid exposing Eigen API here and slow down
+// compilation times.
+class EigenIsometry3dHolder;
 
 /*!
  * Represent transformations within a Pin-Hole or orthographic camera model.
@@ -164,7 +165,7 @@ public:
   const cv::Mat1d cvCameraTransformd() const;
 
   /*! Returns the camera transform as an Eigen double 4x4 matrix. */
-  const Eigen::Isometry3d& eigenCameraTransform() const;
+  void getEigenCameraTransform(EigenIsometry3dHolder* holder) const;
 
   /*!
    * Returns the camera transform as an OpenCV 3x3 rotation matrix
@@ -256,6 +257,9 @@ public:
    * between the two quaternions.
    */
   cv::Vec2f distanceWith(const Pose3D& rhs) const;
+
+public:
+  friend class Pose3DEigenAccessor;
 
 private:
   double m_focal_x;

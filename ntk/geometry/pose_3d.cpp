@@ -18,6 +18,8 @@
  */
 
 #include "pose_3d.h"
+#include "pose_3d.hpp"
+
 #include <ntk/utils/opencv_utils.h>
 #include <ntk/geometry/eigen_utils.h>
 
@@ -748,9 +750,9 @@ const cv::Mat1d Pose3D :: cvCameraTransformd() const
     return m;
 }
 
-const Eigen::Isometry3d &Pose3D::eigenCameraTransform() const
+void Pose3D::getEigenCameraTransform(EigenIsometry3dHolder* holder) const
 {
-    return impl->camera_transform;
+    holder->camera_transform = &(impl->camera_transform);
 }
 
 void Pose3D::cvRotationMatrixTranslation(cv::Mat1d& translation, cv::Mat1d& rotation) const
