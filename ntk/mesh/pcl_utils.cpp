@@ -273,7 +273,6 @@ void removeExtrapoledBoundaries(ntk::Mesh& surface,
                     {
                         const cv::Point3f& point = surface.vertices[edge_vertex];
                         float dist_from_boundary = cv::norm(orig_boundary_point - point);
-                        ntk_dbg_print(dist_from_boundary, 1);
                         if (dist_from_boundary < max_dist_from_boundary)
                         {
                             vertices_to_process.push(edge_vertex);

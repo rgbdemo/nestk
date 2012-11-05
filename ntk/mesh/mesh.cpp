@@ -1115,6 +1115,25 @@ void Mesh::removeNonManifoldFaces()
     }
 }
 
+void Mesh::removeFacesWithoutVisibility()
+{
+    if (faces_visibility.size() != faces.size())
+    {
+        ntk_dbg(1) << "WARNING: no visibility info to remove faces.";
+        return;
+    }
+
+    std::vector<Face> new_faces;
+    new_faces.reserve(faces.size());
+    for (int i = 0; i < faces.size(); ++i)
+    {
+        if (!faces_visibility[i])
+            continue;
+        new_faces.push_back(faces[i]);
+    }
+    faces = new_faces;
+}
+
 float Mesh::faceArea(int face_id) const
 {
     const Face& face = faces[face_id];

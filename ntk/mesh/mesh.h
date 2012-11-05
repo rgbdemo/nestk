@@ -178,6 +178,7 @@ namespace ntk
     std::vector<cv::Point2f> texcoords;
     std::vector<FaceTexcoord> face_texcoords;
     std::vector<Face> faces;
+    std::vector<bool> faces_visibility;
     cv::Mat3b texture;
 
   public:
@@ -216,12 +217,15 @@ namespace ntk
      */
     void removeNonManifoldFaces();
 
+    void removeFacesWithoutVisibility();
+
   public:
     bool hasColors() const { return colors.size() == vertices.size(); }
     bool hasNormals() const { return normals.size() == vertices.size(); }
     bool hasTexcoords() const { return texcoords.size() > 0; }
     bool hasFaceTexcoords() const { return face_texcoords.size() > 0; }
     bool hasFaces() const { return faces.size() > 0; }
+    bool hasFacesVisibilityInfo() const { return faces_visibility.size() > 0 && faces_visibility.size() == faces.size(); }
 
   public:
     float faceArea(int face_id) const;
