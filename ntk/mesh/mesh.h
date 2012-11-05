@@ -26,10 +26,23 @@
 #include <ntk/geometry/pose_3d.h>
 #include <ntk/utils/opencv_utils.h>
 #include <ntk/thread/event.h>
+
 #include <vector>
+#include <set>
 
 namespace ntk
 {
+
+  struct Patch
+  {
+      int label;
+      std::vector<int> inner_faces; // inside faces
+      std::vector<int> border_faces; // inside faces with a border
+      std::vector<int> outer_faces; // outside faces with a border
+      std::set<int> inner_vertices; // vertices inside the patch
+      std::set<int> border_vertices; // vertices inside the patch but on the frontier
+      std::set<int> outer_vertices; // vertices outside but on the frontier
+  };
 
   struct Surfel
   {
@@ -178,7 +191,7 @@ namespace ntk
     std::vector<cv::Point2f> texcoords;
     std::vector<FaceTexcoord> face_texcoords;
     std::vector<Face> faces;
-    std::vector<bool> faces_visibility;
+    std::vector<int> face_labels;
     cv::Mat3b texture;
 
   public:
@@ -200,6 +213,8 @@ namespace ntk
     void computeEdges(std::vector< Edge >& edges,
                       std::vector< std::vector<int> >& edges_per_vertex,
                       const std::vector< std::vector<int> >& faces_per_vertex) const;
+    void extractConnectedComponents(std::vector<Patch>& components,
+                                    const std::vector< std::vector<int> >& faces_neighbors) const;
 
     float computeLength(const Edge& edge) const;
 
@@ -225,7 +240,7 @@ namespace ntk
     bool hasTexcoords() const { return texcoords.size() > 0; }
     bool hasFaceTexcoords() const { return face_texcoords.size() > 0; }
     bool hasFaces() const { return faces.size() > 0; }
-    bool hasFacesVisibilityInfo() const { return faces_visibility.size() > 0 && faces_visibility.size() == faces.size(); }
+    bool hasFaceLabels() const { return face_labels.size() > 0 && face_labels.size() == faces.size(); }
 
   public:
     float faceArea(int face_id) const;

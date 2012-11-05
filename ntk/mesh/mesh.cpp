@@ -32,6 +32,7 @@
 #include <cstring>
 #include <errno.h>
 #include <set>
+#include <queue>
 #include <utility>
 
 using namespace cv;
@@ -108,6 +109,7 @@ Mesh::Mesh (const Mesh& copy)
 , face_texcoords(copy.face_texcoords)
 , faces(         copy.faces)
 , texture(       copy.texture)
+, face_labels(   copy.face_labels)
 {
 
 }
@@ -128,6 +130,7 @@ Mesh::swap (Mesh& other)
     texcoords     .swap(other.texcoords);
     face_texcoords.swap(other.face_texcoords);
     faces         .swap(other.faces);
+    face_labels   .swap(other.face_labels);
     std::swap(texture,  other.texture);
 
     return *this;
@@ -817,6 +820,106 @@ void Mesh::computeEdges(std::vector< Edge >& edges,
     }
 }
 
+void Mesh::extractConnectedComponents(std::vector<Patch>& patches,
+                                      const std::vector< std::vector<int> >& faces_neighbors) const
+{
+    if (!hasFaceLabels())
+    {
+        ntk_dbg(1) << "No face labels to extract connected components.";
+        return;
+    }
+
+    std::set<int> processed_inner_faces;
+    foreach_idx(face_i, face_labels)
+    {
+        if (processed_inner_faces.find(face_i) != processed_inner_faces.end())
+            continue;
+
+        int patch_label = face_labels[face_i];
+
+        Patch patch;
+        patch.label = patch_label;
+
+        std::set<int> processed_border_faces;
+        std::queue<int> to_explore;
+        to_explore.push(face_i);
+        processed_inner_faces.insert(face_i);
+        // Looking for a new patch.
+        while (!to_explore.empty())
+        {
+            int patch_face_i = to_explore.front();
+            to_explore.pop();
+
+            int label = face_labels[patch_face_i];
+
+            if (label == patch_label)
+            {
+                patch.inner_faces.push_back(patch_face_i);
+
+                foreach_idx(neighb_i, faces_neighbors[patch_face_i])
+                {
+                    int neighb = faces_neighbors[patch_face_i][neighb_i];
+
+                    if (face_labels[neighb] != patch_label)
+                    {
+                        if (std::find(stl_bounds(patch.border_faces), patch_face_i) == patch.border_faces.end())
+                            patch.border_faces.push_back(patch_face_i);
+
+                        if (std::find(stl_bounds(patch.outer_faces), neighb) == patch.outer_faces.end())
+                            patch.outer_faces.push_back(neighb);
+                    }
+                    else
+                    {
+                        if (processed_inner_faces.find(neighb) != processed_inner_faces.end())
+                            continue;
+                        to_explore.push(neighb);
+                        processed_inner_faces.insert(neighb);
+                    }
+                }
+            }
+        }
+
+        if (patch.inner_faces.size() > 0)
+            patches.push_back(patch);
+    } // patch
+
+    ntk_dbg_print(patches.size(), 1);
+
+    // Compute inner and frontier vertices.
+    foreach_idx(patch_i, patches)
+    {
+        Patch& patch = patches[patch_i];
+
+        foreach_idx(inner_face_i, patch.inner_faces)
+        {
+            int face_i = patch.inner_faces[inner_face_i];
+            const Face& face = faces[face_i];
+
+            foreach_idx(v_i, face)
+            {
+                int vertex = face.indices[v_i];
+                patch.inner_vertices.insert(vertex);
+            }
+        }
+
+        foreach_idx(outer_face_i, patch.outer_faces)
+        {
+            int face_i = patch.outer_faces[outer_face_i];
+            const Face& face = faces[face_i];
+
+            foreach_idx(v_i, face)
+            {
+                int vertex = face.indices[v_i];
+                patch.outer_vertices.insert(vertex);
+            }
+        }
+
+        std::set_intersection(stl_bounds(patch.inner_vertices),
+                              stl_bounds(patch.outer_vertices),
+                              std::inserter(patch.border_vertices, patch.border_vertices.begin()));
+    } // patch
+}
+
 float Mesh::computeLength(const Edge &edge) const
 {
     return cv::norm(vertices[edge.v1] - vertices[edge.v2]);
@@ -1117,7 +1220,7 @@ void Mesh::removeNonManifoldFaces()
 
 void Mesh::removeFacesWithoutVisibility()
 {
-    if (faces_visibility.size() != faces.size())
+    if (face_labels.size() != faces.size())
     {
         ntk_dbg(1) << "WARNING: no visibility info to remove faces.";
         return;
@@ -1127,7 +1230,7 @@ void Mesh::removeFacesWithoutVisibility()
     new_faces.reserve(faces.size());
     for (int i = 0; i < faces.size(); ++i)
     {
-        if (!faces_visibility[i])
+        if (!face_labels[i])
             continue;
         new_faces.push_back(faces[i]);
     }
