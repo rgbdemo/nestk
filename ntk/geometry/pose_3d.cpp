@@ -36,23 +36,42 @@ namespace ntk
 class Pose3D::PrivatePose3D
 {
 public:
-    PrivatePose3D(Pose3D* iface) : iface(iface) {}
+    PrivatePose3D(Pose3D* iface)
+        : iface(iface)
+    {}
+
     PrivatePose3D& operator=(const PrivatePose3D& rhs)
     {
-        camera_transform = rhs.camera_transform;
-        inv_camera_transform = rhs.inv_camera_transform;
-        intrinsics_transform = rhs.intrinsics_transform;
-        project_transform = rhs.project_transform;
+        // Keep iface unmolested.
+
+             camera_transform = rhs.     camera_transform;
+         inv_camera_transform = rhs. inv_camera_transform;
+         intrinsics_transform = rhs. intrinsics_transform;
+            project_transform = rhs.    project_transform;
         inv_project_transform = rhs.inv_project_transform;
+
+        return *this;
+    }
+
+    PrivatePose3D& swap (PrivatePose3D& other)
+    {
+        // Keep iface unmolested.
+
+             camera_transform.matrix().swap(other.     camera_transform.matrix());
+         inv_camera_transform.matrix().swap(other. inv_camera_transform.matrix());
+         intrinsics_transform.matrix().swap(other. intrinsics_transform.matrix());
+            project_transform.matrix().swap(other.    project_transform.matrix());
+        inv_project_transform.matrix().swap(other.inv_project_transform.matrix());
+
         return *this;
     }
 
     Pose3D* iface;
 
-    Eigen::Isometry3d camera_transform;
-    Eigen::Isometry3d inv_camera_transform;
-    Eigen::Isometry3d intrinsics_transform;
-    Eigen::Projective3d project_transform;
+    Eigen::  Isometry3d      camera_transform;
+    Eigen::  Isometry3d  inv_camera_transform;
+    Eigen::  Isometry3d  intrinsics_transform;
+    Eigen::Projective3d     project_transform;
     Eigen::Projective3d inv_project_transform;
 
     Eigen::Isometry3d intrinsicsTransform() const
@@ -208,6 +227,17 @@ Pose3D& Pose3D :: operator=(const Pose3D& rhs)
     return *this;
 }
 
+Pose3D& Pose3D :: swap(Pose3D& other)
+{
+    std::swap(m_focal_x, other.m_focal_x);
+    std::swap(m_focal_y, other.m_focal_y);
+    std::swap(m_image_center_x, other.m_image_center_x);
+    std::swap(m_image_center_y, other.m_image_center_y);
+    std::swap(m_has_camera_params, other.m_has_camera_params);
+    std::swap(m_orthographic, other.m_orthographic);
+    impl->swap(*other.impl);
+    return *this;
+}
 
 void Pose3D :: setOrthographic(bool ortho)
 {

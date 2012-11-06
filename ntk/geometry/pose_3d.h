@@ -55,6 +55,7 @@ public:
 
   Pose3D(const Pose3D& rhs);
   Pose3D& operator=(const Pose3D& rhs);
+  Pose3D& swap(Pose3D& other);
 
 public:
   virtual void fillXmlElement(XMLNode& element) const;
