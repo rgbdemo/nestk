@@ -448,6 +448,10 @@ void FeatureSet :: matchWith(const FeatureSet& rhs,
     if (!impl->descriptor_index)
         buildDescriptorIndex();
 
+    // Still no index? There was no features in the image.
+    if (!impl->descriptor_index)
+        return;
+
     const cv::Mat1f& rhs_descriptors = rhs.descriptors();
     for (int i = 0; i < rhs_descriptors.rows; ++i)
     {
