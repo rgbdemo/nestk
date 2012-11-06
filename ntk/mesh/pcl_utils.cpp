@@ -121,6 +121,28 @@ void meshToPolygonMeshWithNormals(pcl::PolygonMesh& polygon, const ntk::Mesh& me
     }
 }
 
+void setupPclTexMaterial(pcl::TexMaterial& mesh_material, const std::string& name)
+{
+    mesh_material.tex_Ka.r = 0.5f;
+    mesh_material.tex_Ka.g = 0.5f;
+    mesh_material.tex_Ka.b = 0.5f;
+
+    mesh_material.tex_Kd.r = 0.8f;
+    mesh_material.tex_Kd.g = 0.8f;
+    mesh_material.tex_Kd.b = 0.8f;
+
+    mesh_material.tex_Ks.r = 1.0f;
+    mesh_material.tex_Ks.g = 1.0f;
+    mesh_material.tex_Ks.b = 1.0f;
+    mesh_material.tex_d = 1.0f;
+    mesh_material.tex_Ns = 0.0f;
+    mesh_material.tex_illum = 2;
+
+    mesh_material.tex_name = name;
+    std::string tex_filename = mesh_material.tex_name + ".jpg";
+    mesh_material.tex_file = tex_filename;
+}
+
 void meshToTextureMesh(pcl::TextureMesh& texture_mesh, const ntk::Mesh& mesh)
 {
     pcl::PolygonMesh triangles;

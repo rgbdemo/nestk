@@ -128,6 +128,8 @@ void meshToPolygonMesh(pcl::PolygonMesh& polygon, const ntk::Mesh& mesh);
 void meshToPolygonMeshWithNormals(pcl::PolygonMesh& polygon, const ntk::Mesh& mesh);
 void meshToTextureMesh(pcl::TextureMesh& texture_mesh, const ntk::Mesh& mesh);
 
+void setupPclTexMaterial(pcl::TexMaterial& mesh_material, const std::string& name);
+
 template <class PointT>
 void sampledRgbdImageToPointCloud(pcl::PointCloud<PointT>& cloud,
                                   const RGBDImage& image,
