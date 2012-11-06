@@ -50,7 +50,7 @@ Hub::SetImageUpdate::updateHubImage (QImage& hubImage)
 
 //------------------------------------------------------------------------------
 
-Hub::SetOpenCVImageUpdate::SetOpenCVImageUpdate (QString name, cv::Mat mat)
+Hub::SetImageMatrixUpdate::SetImageMatrixUpdate (QString name, cv::Mat mat)
 : Hub::ImageUpdate(name)
 , mat(mat)
 {
@@ -58,7 +58,7 @@ Hub::SetOpenCVImageUpdate::SetOpenCVImageUpdate (QString name, cv::Mat mat)
 }
 
 void
-Hub::SetOpenCVImageUpdate::updateHubImage (QImage& hubImage)
+Hub::SetImageMatrixUpdate::updateHubImage (QImage& hubImage)
 {
     // FIXME: Depend on opencv_utils functions instead of the clumsy ImageWidget static methods.
 

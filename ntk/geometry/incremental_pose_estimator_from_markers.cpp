@@ -141,7 +141,7 @@ estimateNewPose()
             markers[i].draw(debug_im, Scalar(0,0,255), 2);
         }
         // ntk::ImagePublisher::getInstance()->publishImage("markers", debug_im);
-        ntk::hub::Hub::getInstance()->setImage("markers", debug_im);
+        hub::setImage("markers", debug_im);
         // imwrite("/tmp/debug_markers.png", debug_im);
     }
     m_detected_markers = markers;

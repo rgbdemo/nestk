@@ -38,10 +38,10 @@ private:
 
 //------------------------------------------------------------------------------
 
-class Hub::SetOpenCVImageUpdate : public Hub::ImageUpdate
+class Hub::SetImageMatrixUpdate : public Hub::ImageUpdate
 {
 public:
-    SetOpenCVImageUpdate (QString name, cv::Mat mat);
+    SetImageMatrixUpdate (QString name, cv::Mat mat);
 
 private:
     virtual void updateHubImage (QImage& hubImage);

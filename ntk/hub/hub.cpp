@@ -40,7 +40,7 @@ Hub::postUpdate (Update* update)
 //------------------------------------------------------------------------------
 
 QString
-Hub::getStatus (QString name) const
+Hub::getStatus (const Name& name) const
 {
     QMutexLocker _(&statusesMutex);
 
@@ -48,13 +48,13 @@ Hub::getStatus (QString name) const
 }
 
 void
-Hub::setStatus (QString name, QString status)
+Hub::setStatus (const Name& name, const Line& status)
 {
     postUpdate(new StatusUpdate(name, status));
 }
 
 void
-Hub::clearStatus (QString name)
+Hub::clearStatus (const Name& name)
 {
     postUpdate(new StatusUpdate(name, QString()));
 }
@@ -62,7 +62,7 @@ Hub::clearStatus (QString name)
 //------------------------------------------------------------------------------
 
 qreal
-Hub::getProgress (QString name) const
+Hub::getProgress (const Name& name) const
 {
     QMutexLocker _(&progressesMutex);
 
@@ -70,15 +70,21 @@ Hub::getProgress (QString name) const
 }
 
 void
-Hub::setProgress (QString name, qreal progress)
+Hub::setProgress (const Name& name, qreal progress)
 {
     postUpdate(new ProgressUpdate(name, progress));
 }
 
+void
+Hub::clearProgress (const Name &name)
+{
+    postUpdate(new ProgressUpdate(name, 0.));
+}
+
 //------------------------------------------------------------------------------
 
-QStringList
-Hub::getLog (QString name) const
+Lines
+Hub::getLog (const Name& name) const
 {
     QMutexLocker _(&logsMutex);
 
@@ -86,19 +92,19 @@ Hub::getLog (QString name) const
 }
 
 void
-Hub::setLog (QString name, QStringList log)
+Hub::setLog (const Name& name, const Lines& log)
 {
     postUpdate(new SetLogUpdate(name, log));
 }
 
 void
-Hub::appendLog (QString name, QString line)
+Hub::appendLog (const Name& name, const Line& line)
 {
     postUpdate(new AppendLogUpdate(name, line));
 }
 
 void
-Hub::clearLog (QString name)
+Hub::clearLog (const Name& name)
 {
     postUpdate(new ClearLogUpdate(name));
 }
@@ -106,7 +112,7 @@ Hub::clearLog (QString name)
 //------------------------------------------------------------------------------
 
 QImage
-Hub::getImage (QString name) const
+Hub::getImage (const Name& name) const
 {
     QMutexLocker _(&imagesMutex);
 
@@ -114,19 +120,19 @@ Hub::getImage (QString name) const
 }
 
 void
-Hub::setImage (QString name, QImage image)
+Hub::setImage (const Name& name, const Image& image)
 {
     postUpdate(new SetImageUpdate(name, image));
 }
 
 void
-Hub::setImage (QString name, const cv::Mat& mat)
+Hub::setImage (const Name& name, const Matrix& matrix)
 {
-    postUpdate(new SetOpenCVImageUpdate(name, mat));
+    postUpdate(new SetImageMatrixUpdate(name, matrix));
 }
 
 void
-Hub::clearImage (QString name)
+Hub::clearImage (const Name& name)
 {
     postUpdate(new ClearImageUpdate(name));
 }
@@ -134,7 +140,7 @@ Hub::clearImage (QString name)
 //------------------------------------------------------------------------------
 
 MeshConstPtr
-Hub::getMesh (QString name) const
+Hub::getMesh (const Name& name) const
 {
     QMutexLocker _(&meshesMutex);
 
@@ -142,19 +148,19 @@ Hub::getMesh (QString name) const
 }
 
 void
-Hub::setMesh (QString name, MeshConstPtr mesh)
+Hub::setMesh (const Name& name, MeshConstPtr mesh)
 {
     postUpdate(new SetMeshUpdate(name, mesh));
 }
 
 void
-Hub::setMesh (QString name, const Mesh& mesh)
+Hub::setMesh (const Name& name, const Mesh& mesh)
 {
     postUpdate(new SetMeshUpdate(name, MeshConstPtr(new Mesh(mesh))));
 }
 
 void
-Hub::clearMesh (QString name)
+Hub::clearMesh (const Name& name)
 {
     postUpdate(new ClearMeshUpdate(name));
 }
