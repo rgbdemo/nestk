@@ -2,6 +2,7 @@
 
 #include "ntk/thread/event.h"
 #include "ntk/mesh/meshfwd.h"
+#include "types.h"
 #include <QImage>
 #include <QHash>
 #include <QStringList>
@@ -10,15 +11,6 @@
 #include <QtGlobal>
 
 namespace ntk { namespace hub {
-
-typedef     QString Name;
-typedef     QString Line;
-typedef QStringList Lines;
-typedef       qreal Percentage;
-typedef      QImage Image;
-typedef     cv::Mat Matrix;
-
-//------------------------------------------------------------------------------
 
 class Hub
 : public ntk::AsyncEventListener
@@ -105,40 +97,5 @@ private:
 private:
     static Hub instance;
 };
-
-} }
-
-//------------------------------------------------------------------------------
-
-namespace ntk { namespace hub {
-
-inline void      setStatus (const Name& name, Line status         ) { Hub::getInstance()->  setStatus(name, status); }
-inline void    clearStatus (const Name& name)                       { Hub::getInstance()->clearStatus(name        ); }
-
-inline void    setProgress (const Name& name, Percentage progress ) { Hub::getInstance()->  setProgress(name, progress); }
-inline void  clearProgress (const Name& name)                       { Hub::getInstance()->clearProgress(name          ); }
-
-inline void         setLog (const Name& name, Lines log           ) { Hub::getInstance()->     setLog(name, log ); }
-inline void      appendLog (const Name& name, Line line           ) { Hub::getInstance()->  appendLog(name, line); }
-inline void       clearLog (const Name& name                      ) { Hub::getInstance()->   clearLog(name      ); }
-
-inline void       setImage (const Name& name, const Image& image  ) { Hub::getInstance()->   setImage(name, image ); }
-inline void       setImage (const Name& name, const Matrix& matrix) { Hub::getInstance()->   setImage(name, matrix); }
-inline void     clearImage (const Name& name                      ) { Hub::getInstance()-> clearImage(name        ); }
-
-inline void        setMesh (const Name& name, const Mesh& mesh    ) { Hub::getInstance()->    setMesh(name, mesh); }
-inline void      clearMesh (const Name& name                      ) { Hub::getInstance()->  clearMesh(name      ); }
-
-inline void report (const Name& name, const Line& status, Percentage progress)
-{
-    setStatus(  name, status);
-    setProgress(name, progress);
-}
-
-inline void finish (const Name& name)
-{
-    clearStatus(  name);
-    clearProgress(name);
-}
 
 } }

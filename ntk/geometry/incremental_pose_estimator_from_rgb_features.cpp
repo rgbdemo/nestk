@@ -26,7 +26,7 @@
 #include <ntk/numeric/levenberg_marquart_minimizer.h>
 #include <ntk/utils/opencv_utils.h>
 #include <ntk/mesh/mesh.h>
-#include <ntk/hub/hub.h>
+#include <ntk/hub.h>
 
 // FIXME: disable until PCL and OpenCV conflict get solved.
 #undef NESTK_USE_PCL

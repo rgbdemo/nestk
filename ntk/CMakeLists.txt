@@ -68,6 +68,8 @@ SET ( ntk_sources
      gui/image_window.cpp
      gui/screen_grabber.h
      gui/screen_grabber.cpp
+     hub.h
+     hub.cpp
      hub/hub.h
      hub/hub.cpp
      hub/update.h
@@ -86,6 +88,8 @@ SET ( ntk_sources
      hub/updates/status-update.cpp
      hub/outlet.h
      hub/outlet.cpp
+     hub/types.h
+     hub/types.cpp
      image/bilateral_filter.h
      image/bilateral_filter.cpp
      image/color_model.h

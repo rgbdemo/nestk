@@ -22,7 +22,7 @@
 #include <ntk/aruco/aruco.h>
 #include <ntk/utils/opencv_utils.h>
 #include <ntk/gui/image_window.h>
-#include <ntk/hub/hub.h>
+#include <ntk/hub.h>
 
 bool ntk::IncrementalPoseEstimatorFromMarkers::
 estimateCurrentPose()
