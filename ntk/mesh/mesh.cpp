@@ -1123,27 +1123,27 @@ void Mesh::removeNanVertices()
             new_mesh.texcoords[new_indices[i]] = texcoords[i];
     }
 
-    new_mesh.faces.reserve(faces.size());
     foreach_idx(face_i, faces)
     {
-        bool ok = true;
         foreach_idx(v_i, faces[face_i])
         {
             int old_index = faces[face_i].indices[v_i];
             int new_index = new_indices[old_index];
             if (new_index < 0)
-                ok = false;
+            {
+                faces[face_i].kill();
+                break;
+            }
+
             faces[face_i].indices[v_i] = new_index;
         }
-        if (ok)
-            new_mesh.faces.push_back(faces[face_i]);
     }
 
     vertices = new_mesh.vertices;
     colors = new_mesh.colors;
     normals = new_mesh.normals;
-    texcoords = new_mesh.texcoords;
-    faces = new_mesh.faces;
+
+    removeDeadFaces();
 }
 
 struct FaceComparatorByArea
@@ -1220,21 +1220,19 @@ void Mesh::removeNonManifoldFaces()
 
 void Mesh::removeFacesWithoutVisibility()
 {
-    if (face_labels.size() != faces.size())
+    if (!hasFaceLabels())
     {
         ntk_dbg(1) << "WARNING: no visibility info to remove faces.";
         return;
     }
 
-    std::vector<Face> new_faces;
-    new_faces.reserve(faces.size());
     for (int i = 0; i < faces.size(); ++i)
     {
-        if (!face_labels[i])
-            continue;
-        new_faces.push_back(faces[i]);
+        if (face_labels[i] < 0)
+            faces[i].kill();
     }
-    faces = new_faces;
+
+    removeDeadFaces();
 }
 
 float Mesh::faceArea(int face_id) const
@@ -1243,13 +1241,16 @@ float Mesh::faceArea(int face_id) const
     return triangleArea(vertices[face.indices[0]], vertices[face.indices[1]], vertices[face.indices[2]]);
 }
 
-void Mesh::removeDegeneratedFaces()
+void Mesh::removeDeadFaces()
 {
     std::vector<Face> new_faces;
     new_faces.reserve(faces.size());
 
     std::vector<FaceTexcoord> new_face_texcoords;
     new_face_texcoords.reserve(face_texcoords.size());
+
+    std::vector<int> new_face_labels;
+    new_face_labels.reserve(face_labels.size());
 
     foreach_idx(face_i, faces)
     {
@@ -1260,12 +1261,17 @@ void Mesh::removeDegeneratedFaces()
                 || face.indices[1] == face.indices[2])
             continue;
         new_faces.push_back(face);
+
         if (hasFaceTexcoords())
             new_face_texcoords.push_back(face_texcoords[face_i]);
+
+        if (hasFaceLabels())
+            new_face_labels.push_back(face_labels[face_i]);
     }
 
     faces = new_faces;
     face_texcoords = new_face_texcoords;
+    face_labels = new_face_labels;
 }
 
 cv::Point3f barycentricCoordinates(const cv::Point3f ref_points[3], const cv::Point3f& p)

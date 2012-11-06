@@ -222,7 +222,7 @@ namespace ntk
   public:
     void removeDuplicatedVertices(float max_dist = 1e-10);
     void removeIsolatedVertices();
-    void removeDegeneratedFaces();
+    void removeDeadFaces();
     void removeDuplicatedFaces();
     void removeNanVertices();
 
