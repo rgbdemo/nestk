@@ -1214,6 +1214,8 @@ void Mesh::removeNonManifoldFaces()
             }
         }
     }
+
+    removeDeadFaces();
 }
 
 void Mesh::removeFacesWithoutVisibility()
