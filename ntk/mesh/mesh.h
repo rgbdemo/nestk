@@ -165,18 +165,14 @@ namespace ntk
       float v[3];
   };
 
-  class Mesh
-  : public QObject
-  , public ntk::EventData
+  class Mesh : public ntk::EventData
   {
-    Q_OBJECT
-
     TYPEDEF_THIS(Mesh)
 
     CLONABLE_EVENT_DATA
 
   public:
-    explicit Mesh (QObject* parent = 0);
+    explicit Mesh ();
     virtual ~Mesh ();
 
   public:

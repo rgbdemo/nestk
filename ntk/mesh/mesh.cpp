@@ -89,8 +89,7 @@ ply::PlyProperty available_face_properties[] = { /* list of property information
 namespace ntk
 {
 
-Mesh::Mesh (QObject* parent)
-: QObject(parent)
+Mesh::Mesh ()
 {
 
 }
@@ -101,8 +100,7 @@ Mesh::~Mesh ()
 }
 
 Mesh::Mesh (const Mesh& copy)
-: QObject()
-, vertices(      copy.vertices)
+: vertices(      copy.vertices)
 , colors(        copy.colors)
 , normals(       copy.normals)
 , texcoords(     copy.texcoords)
