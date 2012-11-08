@@ -47,8 +47,9 @@ void test_renderer(Mesh& mesh)
     pose.applyTransformAfter(cv::Vec3f(0.02f, 0, 0), cv::Vec3f(0, 0, 0));
     TimeCount tc_render_one("Rendering", 1);
     renderer.setMesh(mesh);
-    float near = 0.3f, far = 5.f;
-    renderer.setPose(pose, &near, &far);
+    float near_plane = 0.3f;
+    float far_plane = 5.f;
+    renderer.setPose(pose, &near_plane, &far_plane);
     renderer.renderToImage(color_image, 0);
     tc_render_one.stop();
   }
