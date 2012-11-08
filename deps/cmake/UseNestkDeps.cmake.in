@@ -52,6 +52,17 @@ ENDIF()
 # Kinect For Windows SDK
 SET(NESTK_USE_KIN4WIN @NESTK_USE_KIN4WIN@)
 
+if(WIN32)
+    if(NESTK_USE_KIN4WIN)
+        include_directories("${KINECTSDK_DIR}/inc")
+        if(ARCHITECTURE_IS_X86_64)
+            set(KINECTSDK_LIBRARY "${KINECTSDK_DIR}/lib/amd64/Kinect10.lib")
+        else()
+            set(KINECTSDK_LIBRARY "${KINECTSDK_DIR}/lib/x86/Kinect10.lib")
+        endif()
+    endif()
+endif()
+
 IF (NESTK_USE_KIN4WIN)
     ADD_DEFINITIONS(-DNESTK_USE_KIN4WIN)
 ENDIF()
