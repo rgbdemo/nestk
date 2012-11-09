@@ -83,6 +83,22 @@ bool RGBDModelerInOwnThread::addNewView(const RGBDImage &image, Pose3D &depth_po
     return true;
 }
 
+const Mesh& RGBDModelerInOwnThread::currentMesh() const
+{
+    // The lock has been acquired from outside.
+    // acquireLock();
+
+    // FIXME: this check is a bit hacky. The mesh could have changed
+    // without changing the number of vertices. But for now it works
+    // well enough to avoid copying the mesh on every access.
+    if (m_mesh.vertices.size() != new_mesh.vertices.size())
+        *(const_cast<Mesh*>(&m_mesh)) = new_mesh;
+
+    // Lock released.
+    // releaseLock();
+    return m_mesh;
+}
+
 void RGBDModelerInOwnThread::computeMesh()
 {
     FrameEventDataPtr data (new FrameEventData);
@@ -136,7 +152,7 @@ void RGBDModelerInOwnThread::run()
         {
             child->computeMesh();
             acquireLock();
-            m_mesh = child->currentMesh();
+            new_mesh = child->currentMesh();
             releaseLock();
             break;
         }
@@ -145,7 +161,7 @@ void RGBDModelerInOwnThread::run()
         {
             child->computeSurfaceMesh();
             acquireLock();
-            m_mesh = child->currentMesh();
+            new_mesh = child->currentMesh();
             releaseLock();
             break;
         }
@@ -154,7 +170,7 @@ void RGBDModelerInOwnThread::run()
         {
             child->computeAccurateVerticeColors();
             acquireLock();
-            m_mesh = child->currentMesh();
+            new_mesh = child->currentMesh();
             releaseLock();
             break;
         }
@@ -163,7 +179,7 @@ void RGBDModelerInOwnThread::run()
         {
             child->reset();
             acquireLock();
-            m_mesh = child->currentMesh();
+            new_mesh = child->currentMesh();
             releaseLock();
             break;
         }

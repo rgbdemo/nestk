@@ -40,9 +40,9 @@ public:
     {}
 
 public:
-    virtual void acquireLock() {}
-    virtual void releaseLock() {}
-    const Mesh& currentMesh() const { return m_mesh; }
+    virtual void acquireLock() const {}
+    virtual void releaseLock() const {}
+    virtual const Mesh& currentMesh() const { return m_mesh; }
     const RGBDImage& lastImage() const { return m_last_image; }
     void setGlobalDepthOffset(float offset) { m_global_depth_offset = offset; }
     virtual float resolution() const { return 0; }
@@ -103,9 +103,9 @@ public:
     virtual ~RGBDModelerInOwnThread();
 
 public:
-    virtual void acquireLock() { lock.lock(); }
-    virtual void releaseLock() { lock.unlock(); }
-    const Mesh& currentMesh() const { return child->currentMesh(); }
+    virtual void acquireLock() const { lock.lock(); }
+    virtual void releaseLock() const { lock.unlock(); }
+    virtual const Mesh& currentMesh() const; //  { return child->currentMesh(); }
     const RGBDImage& lastImage() const { return child->lastImage(); }
     void setGlobalDepthOffset(float offset) { child->setGlobalDepthOffset(offset); }
     virtual float resolution() const { return child->resolution(); }
@@ -128,8 +128,9 @@ public:
 
 protected:
     RGBDModelerPtr child;
+    Mesh new_mesh;
     MeshEventSender mesh_event_sender;
-    QMutex lock;
+    mutable QMutex lock;
 };
 ntk_ptr_typedefs(RGBDModelerInOwnThread)
 
