@@ -147,7 +147,7 @@ namespace ntk
 
   struct FaceTexcoord
   {
-      FaceTexcoord() { std::fill(reinterpret_cast<float*>(this), reinterpret_cast<float*>(this)+6, 0.0f); }
+      FaceTexcoord() { std::fill(&u[0], &u[0] + 6, 0.0f); }
 
       FaceTexcoord(const FaceTexcoord& rhs) { *this = rhs; }
 
