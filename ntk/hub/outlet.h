@@ -14,11 +14,11 @@ public:
     ~Outlet ();
 
 public:
-    virtual void onStatusChanged   (Name name, const Line& status) = 0;
-    virtual void onProgressChanged (Name name, Percentage progress) = 0;
-    virtual void onLogChanged      (Name name, const Lines& log) = 0;
-    virtual void onImageChanged    (Name name, const Image& image) = 0;
-    virtual void onMeshChanged     (Name name, const Mesh& mesh) = 0;
+    virtual void onRealChanged    (String name,       Real     real   ) = 0;
+    virtual void onStringChanged  (String name, const String&  string ) = 0;
+    virtual void onStringsChanged (String name, const Strings& strings) = 0;
+    virtual void onImageChanged   (String name, const Image&   image  ) = 0;
+    virtual void onMeshChanged    (String name, const Mesh&    mesh   ) = 0;
 
 private:
     struct Impl;
@@ -38,18 +38,18 @@ public:
     virtual ~QOutlet ();
 
 public: // Outlet
-    virtual void onStatusChanged   (Name name, const Line& status);
-    virtual void onProgressChanged (Name name, Percentage progress);
-    virtual void onLogChanged      (Name name, const Lines& log);
-    virtual void onImageChanged    (Name name, const Image& image);
-    virtual void onMeshChanged     (Name name, const Mesh& mesh);
+    virtual void onRealChanged     (String name,       Real     real  );
+    virtual void onStringChanged   (String name, const String&  string);
+    virtual void onStringsChanged  (String name, const Strings& strings);
+    virtual void onImageChanged    (String name, const Image&   image  );
+    virtual void onMeshChanged     (String name, const Mesh&    mesh   );
 
 signals:
-    void   statusChanged (Name name, const Line& status);
-    void progressChanged (Name name, Percentage progress);
-    void      logChanged (Name name, const Lines& log);
-    void    imageChanged (Name name, const Image& image);
-    void     meshChanged (Name name, const Mesh& mesh);
+    void    realChanged (String name,       Real     real   );
+    void  stringChanged (String name, const String&  string );
+    void stringsChanged (String name, const Strings& strings);
+    void   imageChanged (String name, const Image&   image  );
+    void    meshChanged (String name, const Mesh&    mesh   );
 };
 
 } }

@@ -8,7 +8,7 @@ namespace ntk { namespace hub {
 class Hub::MeshUpdate : public Hub::Update
 {
 public:
-    MeshUpdate (Name name);
+    MeshUpdate (String name);
 
 public:
     virtual void updateHub    (Hub& hub);
@@ -26,7 +26,7 @@ private:
 class Hub::SetMeshUpdate : public Hub::MeshUpdate
 {
 public:
-    SetMeshUpdate (Name name, MeshConstPtr newMesh);
+    SetMeshUpdate (String name, MeshConstPtr newMesh);
 
 private:
     virtual void updateMesh (MeshConstPtr& mesh);
@@ -40,7 +40,7 @@ private:
 class Hub::ClearMeshUpdate : public Hub::MeshUpdate
 {
 public:
-    ClearMeshUpdate (Name name);
+    ClearMeshUpdate (String name);
 
 private:
     virtual void updateMesh (MeshConstPtr& mesh);

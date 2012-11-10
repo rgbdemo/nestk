@@ -8,7 +8,7 @@ namespace ntk { namespace hub {
 class Hub::ImageUpdate : public Hub::Update
 {
 public:
-    ImageUpdate (Name name);
+    ImageUpdate (String name);
 
 public:
     virtual void updateHub    (Hub& hub);
@@ -26,7 +26,7 @@ private:
 class Hub::SetImageUpdate : public Hub::ImageUpdate
 {
 public:
-    SetImageUpdate (Name name, const Image& newImage);
+    SetImageUpdate (String name, const Image& newImage);
 
 private:
     virtual void updateImage (Image& image);
@@ -37,10 +37,10 @@ private:
 
 //------------------------------------------------------------------------------
 
-class Hub::SetImageMatrixUpdate : public Hub::ImageUpdate
+class Hub::SetMatrixImageUpdate : public Hub::ImageUpdate
 {
 public:
-    SetImageMatrixUpdate (QString name, const Matrix& matrix);
+    SetMatrixImageUpdate (QString name, const Matrix& matrix);
 
 private:
     virtual void updateImage (Image& image);
@@ -54,7 +54,7 @@ private:
 class Hub::ClearImageUpdate : public Hub::ImageUpdate
 {
 public:
-    ClearImageUpdate (Name name);
+    ClearImageUpdate (String name);
 
 private:
     virtual void updateImage (Image& image);

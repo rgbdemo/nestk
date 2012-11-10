@@ -18,48 +18,33 @@ public:
      Hub ();
     ~Hub ();
 
-public:
-    Line    getStatus (const Name& name) const;
-    void    setStatus (const Name& name, const Line& status);
-    void  clearStatus (const Name& name);
+#define HUB_TYPE(Type, type, Arg, Ret, Val)                      \
+public:                                                          \
+     Ret       get##Type (HUB_TYPE_ARG(String) name) const;      \
+     void      set##Type (HUB_TYPE_ARG(String) name, Arg arg);   \
+     void    reset##Type (HUB_TYPE_ARG(String) name);
+        HUB_TYPES()
+#undef  HUB_TYPE
 
 public:
-    qreal  getProgress (const Name& name) const;
-    void   setProgress (const Name& name, Percentage progress);
-    void clearProgress (const Name &name);
-
-public: // Logs
-    Lines   getLog (const Name& name) const;
-    void    setLog (const Name& name, const Lines& log);
-    void appendLog (const Name& name, const Line& line);
-    void  clearLog (const Name& name);
-
-public: // Images
-    Image  getImage (const Name& name) const;
-    void   setImage (const Name& name, const Image& image);
-    void   setImage (const Name& name, const Matrix& matrix);
-    void clearImage (const Name& name);
-
-public: // Meshes
-    MeshConstPtr getMesh (const Name& name) const;
-    void         setMesh (const Name& name, MeshConstPtr mesh);
-    void         setMesh (const Name& name, const Mesh& mesh);
-    void       clearMesh (const Name& name);
+    void appendToStrings (const String& name, const String& string);
+    void  setImageMatrix (const String& name, const Matrix& matrix);
+    void  setMesh        (const String& name, const Mesh&     mesh);
 
 protected:
     virtual void handleAsyncEvent (Event event);
 
 public:
     class               Update;
-    class       ProgressUpdate;
-    class         StatusUpdate;
-    class            LogUpdate;
-    class         SetLogUpdate;
-    class      AppendLogUpdate;
-    class       ClearLogUpdate;
+    class        SetRealUpdate;
+    class      SetStringUpdate;
+    class        StringsUpdate;
+    class     SetStringsUpdate;
+    class  AppendStringsUpdate;
+    class   ClearStringsUpdate;
     class          ImageUpdate;
     class       SetImageUpdate;
-    class SetImageMatrixUpdate;
+    class SetMatrixImageUpdate;
     class     ClearImageUpdate;
     class           MeshUpdate;
     class        SetMeshUpdate;

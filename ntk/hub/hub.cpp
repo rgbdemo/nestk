@@ -2,7 +2,7 @@
 #include "hub-impl.h"
 #include "outlet.h"
 #include "updates.h"
-#include "../mesh/mesh.h"
+#include "mesh/mesh.h"
 #include <QHash>
 #include <QMutex>
 #include <QMutexLocker>
@@ -58,130 +58,52 @@ Hub::postUpdate (Update* update)
 
 //------------------------------------------------------------------------------
 
-QString
-Hub::getStatus (const Name& name) const
-{
-    QMutexLocker _(&impl->statusesMutex);
-
-    return impl->statuses[name];
+#define HUB_TYPE(Type, type, Arg, Ret, Val)          \
+Ret                                                  \
+Hub::get##Type (HUB_TYPE_ARG(String) name) const     \
+{                                                    \
+    QMutexLocker _(&impl->type##ValuesMutex);        \
+                                                     \
+    return impl->type##Values[name];                 \
+}                                                    \
+                                                     \
+void                                                 \
+Hub::set##Type (HUB_TYPE_ARG(String) name, Arg arg)  \
+{                                                    \
+    postUpdate(new Set##Type##Update(name, arg));    \
+}                                                    \
+                                                     \
+void                                                 \
+Hub::reset##Type (HUB_TYPE_ARG(String) name)         \
+{                                                    \
+    postUpdate(new Set##Type##Update(name, Val()));  \
 }
 
-void
-Hub::setStatus (const Name& name, const Line& status)
-{
-    postUpdate(new StatusUpdate(name, status));
-}
+HUB_TYPES()
 
-void
-Hub::clearStatus (const Name& name)
+#undef HUB_TYPE
+
+//------------------------------------------------------------------------------
+
+void Hub::appendToStrings (const String& name, const String& string)
 {
-    postUpdate(new StatusUpdate(name, QString()));
+    postUpdate(new AppendStringsUpdate(name, string));
 }
 
 //------------------------------------------------------------------------------
 
-qreal
-Hub::getProgress (const Name& name) const
-{
-    QMutexLocker _(&impl->progressesMutex);
-
-    return impl->progresses[name];
-}
-
 void
-Hub::setProgress (const Name& name, qreal progress)
+Hub::setImageMatrix (const String& name, const Matrix& matrix)
 {
-    postUpdate(new ProgressUpdate(name, progress));
-}
-
-void
-Hub::clearProgress (const Name &name)
-{
-    postUpdate(new ProgressUpdate(name, 0.));
+    postUpdate(new SetMatrixImageUpdate(name, matrix));
 }
 
 //------------------------------------------------------------------------------
 
-Lines
-Hub::getLog (const Name& name) const
-{
-    QMutexLocker _(&impl->logsMutex);
-
-    return impl->logs[name];
-}
-
 void
-Hub::setLog (const Name& name, const Lines& log)
-{
-    postUpdate(new SetLogUpdate(name, log));
-}
-
-void
-Hub::appendLog (const Name& name, const Line& line)
-{
-    postUpdate(new AppendLogUpdate(name, line));
-}
-
-void
-Hub::clearLog (const Name& name)
-{
-    postUpdate(new ClearLogUpdate(name));
-}
-
-//------------------------------------------------------------------------------
-
-QImage
-Hub::getImage (const Name& name) const
-{
-    QMutexLocker _(&impl->imagesMutex);
-
-    return impl->images[name];
-}
-
-void
-Hub::setImage (const Name& name, const Image& image)
-{
-    postUpdate(new SetImageUpdate(name, image));
-}
-
-void
-Hub::setImage (const Name& name, const Matrix& matrix)
-{
-    postUpdate(new SetImageMatrixUpdate(name, matrix));
-}
-
-void
-Hub::clearImage (const Name& name)
-{
-    postUpdate(new ClearImageUpdate(name));
-}
-
-//------------------------------------------------------------------------------
-
-MeshConstPtr
-Hub::getMesh (const Name& name) const
-{
-    QMutexLocker _(&impl->meshesMutex);
-
-    return impl->meshes[name];
-}
-
-void
-Hub::setMesh (const Name& name, MeshConstPtr mesh)
-{
-    postUpdate(new SetMeshUpdate(name, mesh));
-}
-
-void
-Hub::setMesh (const Name& name, const Mesh& mesh)
+Hub::setMesh (const String& name, const Mesh& mesh)
 {
     postUpdate(new SetMeshUpdate(name, MeshConstPtr(new Mesh(mesh))));
-}
-
-void
-Hub::clearMesh (const Name& name)
-{
-    postUpdate(new ClearMeshUpdate(name));
 }
 
 } }

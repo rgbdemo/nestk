@@ -59,31 +59,31 @@ QOutlet::~QOutlet ()
 }
 
 void
-QOutlet::onStatusChanged (Name name, const Line& status)
+QOutlet::onStringChanged (String name, const String& string)
 {
-    emit statusChanged(name, status);
+    emit stringChanged(name, string);
 }
 
 void
-QOutlet::onProgressChanged (Name name, Percentage progress)
+QOutlet::onRealChanged (String name, Real real)
 {
-    emit progressChanged(name, progress);
+    emit realChanged(name, real);
 }
 
 void
-QOutlet::onLogChanged (Name name, const Lines& log)
+QOutlet::onStringsChanged (String name, const Strings& strings)
 {
-    emit logChanged(name, log);
+    emit stringsChanged(name, strings);
 }
 
 void
-QOutlet::onImageChanged (Name name, const Image& image)
+QOutlet::onImageChanged (String name, const Image& image)
 {
     emit imageChanged(name, image);
 }
 
 void
-QOutlet::onMeshChanged (Name name, const Mesh& mesh)
+QOutlet::onMeshChanged (String name, const Mesh& mesh)
 {
     emit meshChanged(name, mesh);
 }

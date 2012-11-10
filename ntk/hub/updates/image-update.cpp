@@ -7,7 +7,7 @@
 
 namespace ntk { namespace hub {
 
-Hub::ImageUpdate::ImageUpdate (Name name)
+Hub::ImageUpdate::ImageUpdate (String name)
 : Hub::Update(name)
 {
 
@@ -16,9 +16,9 @@ Hub::ImageUpdate::ImageUpdate (Name name)
 void
 Hub::ImageUpdate::updateHub (Hub& hub)
 {
-    QMutexLocker _(&hub.impl->imagesMutex);
+    QMutexLocker _(&hub.impl->imageValuesMutex);
 
-    image = hub.impl->images[name];
+    image = hub.impl->imageValues[name];
 
     _.unlock();
 
@@ -26,7 +26,7 @@ Hub::ImageUpdate::updateHub (Hub& hub)
 
     _.relock();
 
-    hub.impl->images[name] = image;
+    hub.impl->imageValues[name] = image;
 }
 
 void
@@ -37,7 +37,7 @@ Hub::ImageUpdate::updateOutlet (Outlet& outlet)
 
 //------------------------------------------------------------------------------
 
-Hub::SetImageUpdate::SetImageUpdate (Name name, const Image& newImage)
+Hub::SetImageUpdate::SetImageUpdate (String name, const Image& newImage)
 : ImageUpdate(name)
 , newImage(newImage)
 {
@@ -52,7 +52,7 @@ Hub::SetImageUpdate::updateImage (Image& image)
 
 //------------------------------------------------------------------------------
 
-Hub::SetImageMatrixUpdate::SetImageMatrixUpdate (Name name, const Matrix& matrix)
+Hub::SetMatrixImageUpdate::SetMatrixImageUpdate (String name, const Matrix& matrix)
 : Hub::ImageUpdate(name)
 , matrix(matrix)
 {
@@ -60,7 +60,7 @@ Hub::SetImageMatrixUpdate::SetImageMatrixUpdate (Name name, const Matrix& matrix
 }
 
 void
-Hub::SetImageMatrixUpdate::updateImage (Image& image)
+Hub::SetMatrixImageUpdate::updateImage (Image& image)
 {
     // FIXME: Depend on opencv_utils functions instead of the clumsy ImageWidget static methods.
 
@@ -85,7 +85,7 @@ Hub::SetImageMatrixUpdate::updateImage (Image& image)
 
 //------------------------------------------------------------------------------
 
-Hub::ClearImageUpdate::ClearImageUpdate (Name name)
+Hub::ClearImageUpdate::ClearImageUpdate (String name)
 : Hub::ImageUpdate(name)
 {
 

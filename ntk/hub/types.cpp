@@ -9,14 +9,20 @@
 
 namespace ntk { namespace hub {
 
+#define HUB_TYPE(Type, type, Arg, Ret, Val)  \
+const char* TypeTraits<Type>::Name = #Type;  \
+const char* TypeTraits<Type>::name = #type;
+        HUB_TYPES()
+#undef  HUB_TYPE
+
+//------------------------------------------------------------------------------
+
 void registerTypes ()
 {
-    qRegisterMetaType<ntk::hub::Name >("Name");
-    qRegisterMetaType<ntk::hub::Line >("Line");
-    qRegisterMetaType<ntk::hub::Lines>("Lines");
-    qRegisterMetaType<ntk::hub::Image>("Percentage");
-    qRegisterMetaType<ntk::hub::Image>("Image");
-    qRegisterMetaType<ntk::hub::Mesh >("Mesh");
+#define HUB_TYPE(Type, type, Arg, Ret, Val) \
+    qRegisterMetaType<Type>(#Type);
+        HUB_TYPES()
+#undef  HUB_TYPE
 }
 
 } }

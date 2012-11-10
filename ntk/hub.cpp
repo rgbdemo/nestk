@@ -1,43 +1,75 @@
 #include "hub.h"
 #include "hub/hub.h"
+#include "mesh/mesh.h"
+
+namespace {
+
+inline QString prefixed (const char* prefix, const QString& name)
+{
+    return QString(prefix) + "." + name;
+}
+
+}
+
+//------------------------------------------------------------------------------
 
 namespace ntk { namespace hub {
 
-#define HUB_FWD_0(Fun)             \
-void Fun (const Name& name)        \
-{                                  \
-    Hub::getInstance()->Fun(name); \
-}
-
-#define HUB_FWD_1(Fun, Arg0)              \
-void Fun (const Name& name, Arg0 arg0)    \
-{                                         \
-    Hub::getInstance()->Fun(name, arg0);  \
-}
-
-HUB_FWD_1(   setStatus,   const Line&)
-HUB_FWD_0( clearStatus)
-HUB_FWD_1(   setProgress, Percentage)
-HUB_FWD_0( clearProgress)
-HUB_FWD_1(   setLog,      const Lines&)
-HUB_FWD_1(appendLog,      const Line&)
-HUB_FWD_0( clearLog)
-HUB_FWD_1(   setImage,    const Image&)
-HUB_FWD_1(   setImage,    const Matrix&)
-HUB_FWD_0( clearImage)
-HUB_FWD_1(   setMesh,     const Mesh&)
-HUB_FWD_0( clearMesh)
-
-void report (const Name& name, const Line& status, Percentage progress)
+void report (const String& name, const String& status, Real progress)
 {
     setStatus(  name, status);
     setProgress(name, progress);
 }
 
-void finish (const Name& name)
+void finish (const String& name)
 {
-    clearStatus(  name);
-    clearProgress(name);
+    resetStatus(  name);
+    resetProgress(name);
 }
+
+//------------------------------------------------------------------------------
+
+#define HUB_SET(Function, Type, Prefix)                          \
+void                                                             \
+Function (const String& name, HUB_TYPE_ARG(Type) arg)            \
+{                                                                \
+    Hub::getInstance()->set##Type(prefixed(#Prefix, name), arg); \
+}
+
+#define HUB_RESET(Function, Type, Prefix)                          \
+void Function (const String& name)                                 \
+{                                                                  \
+    Hub::getInstance()->reset##Type(prefixed(#Prefix, name));      \
+}
+
+#define HUB_CLASS(Name, Type, Prefix) \
+HUB_SET(     set##Name, Type, Prefix) \
+HUB_RESET( reset##Name, Type, Prefix)
+
+HUB_CLASS(Status  , String , statuses  )
+HUB_CLASS(Progress, Real   , progresses)
+HUB_CLASS(Log     , Strings, logs      )
+HUB_CLASS(Image   , Image  , images    )
+HUB_CLASS(Mesh    , Mesh   , meshes    )
+
+//------------------------------------------------------------------------------
+
+#define HUB_FWD_0(Function, Method, Prefix)                \
+    void                                                   \
+Function (const String& name)                              \
+{                                                          \
+    Hub::getInstance()->Function(prefixed(#Prefix, name)); \
+}
+
+#define HUB_FWD_1(Function, Method, Prefix, Arg0)              \
+void                                                           \
+Function (const String& name, Arg0 arg0)                       \
+{                                                              \
+    Hub::getInstance()->Method(prefixed(#Prefix, name), arg0); \
+}
+
+HUB_FWD_1(appendLog , appendToStrings, logs  , const String&);
+HUB_FWD_1(setImage  , setImageMatrix , images, const Matrix&);
+HUB_FWD_1(setMesh   , setMesh        , meshes, const Mesh&);
 
 } }

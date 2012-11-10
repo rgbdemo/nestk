@@ -4,24 +4,31 @@
 
 namespace ntk { namespace hub {
 
-void     setStatus (const Name& name, const Line& status);
-void   clearStatus (const Name& name);
+// statuses.*
+void     setStatus (const String& name, const String& status);
+void   resetStatus (const String& name);
 
-void   setProgress (const Name& name, Percentage progress);
-void clearProgress (const Name& name);
+// progresses.*
+void   setProgress (const String& name, Real progress);
+void resetProgress (const String& name);
 
-void        setLog (const Name& name, const Lines& log);
-void     appendLog (const Name& name, const Line& line);
-void      clearLog (const Name& name);
+// {statuses,progresses}.*
+void report (const String& name, const String& status, Real progress);
+void finish (const String& name);
 
-void      setImage (const Name& name, const Image& image);
-void      setImage (const Name& name, const Matrix& matrix);
-void    clearImage (const Name& name);
+// logs.*
+void        setLog (const String& name, const Strings& log);
+void     appendLog (const String& name, const String& line);
+void      resetLog (const String& name);
 
-void       setMesh (const Name& name, const Mesh& mesh);
-void     clearMesh (const Name& name);
+// images.*
+void      setImage (const String& name, const Image& image);
+void      setImage (const String& name, const Matrix& matrix);
+void    resetImage (const String& name);
 
-void report (const Name& name, const Line& status, Percentage progress);
-void finish (const Name& name);
+// meshes.*
+void       setMesh (const String& name, MeshConstPtr mesh);
+void       setMesh (const String& name, const Mesh&  mesh);
+void     resetMesh (const String& name);
 
 } }

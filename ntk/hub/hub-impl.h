@@ -12,30 +12,35 @@ namespace ntk { namespace hub {
 
 struct Hub::Impl
 {
-    // Statuses
-    typedef QHash<Name, Line> Statuses;
-    Statuses statuses;
-    mutable QMutex statusesMutex;
+    // Real Values
+    typedef QHash<String, Real> RealValues;
+    RealValues     realValues;
+    mutable QMutex realValuesMutex;
 
-    // Progresses
-    typedef QHash<Name, Percentage> Progresses;
-    Progresses progresses;
-    mutable QMutex progressesMutex;
+    // String Values
+    typedef QHash<String, String> StringValues;
+    StringValues   stringValues;
+    mutable QMutex stringValuesMutex;
 
-    // Logs
-    typedef QHash<Name, Lines> Logs;
-    Logs logs;
-    mutable QMutex logsMutex;
+    // Strings Values
+    typedef QHash<String, Strings> StringsValues;
+    StringsValues  stringsValues;
+    mutable QMutex stringsValuesMutex;
+
+    // Matrix Values
+//    typedef QHash<String, Matrix> MatrixValues;
+//    MatrixValues   matrixValues;
+//    mutable QMutex matrixValuesMutex;
 
     // Images
-    typedef QHash<Name, Image> Images;
-    Images images;
-    mutable QMutex imagesMutex;
+    typedef QHash<String, Image> ImageValues;
+    ImageValues    imageValues;
+    mutable QMutex imageValuesMutex;
 
     // Meshes
-    typedef QHash<Name, MeshConstPtr> Meshes;
-    Meshes meshes;
-    mutable QMutex meshesMutex;
+    typedef QHash<String, MeshConstPtr> MeshValues;
+    MeshValues     meshValues;
+    mutable QMutex meshValuesMutex;
 };
 
 } }

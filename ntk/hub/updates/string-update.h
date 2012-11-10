@@ -5,17 +5,17 @@
 
 namespace ntk { namespace hub {
 
-class Hub::StatusUpdate : public Hub::Update
+class Hub::SetStringUpdate : public Hub::Update
 {
 public:
-    StatusUpdate (Name name, Line status);
+    SetStringUpdate (String name, String newValue);
 
 public:
     virtual void updateHub (Hub& hub);
     virtual void updateOutlet (Outlet& outlet);
 
 public:
-    QString status;
+    QString newValue;
 };
 
 } }

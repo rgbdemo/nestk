@@ -80,14 +80,14 @@ SET ( ntk_sources
      hub/updates.cpp
      hub/updates/image-update.h
      hub/updates/image-update.cpp
-     hub/updates/log-update.h
-     hub/updates/log-update.cpp
      hub/updates/mesh-update.h
      hub/updates/mesh-update.cpp
-     hub/updates/progress-update.h
-     hub/updates/progress-update.cpp
-     hub/updates/status-update.h
-     hub/updates/status-update.cpp
+     hub/updates/real-update.h
+     hub/updates/real-update.cpp
+     hub/updates/string-update.h
+     hub/updates/string-update.cpp
+     hub/updates/strings-update.h
+     hub/updates/strings-update.cpp
      hub/outlet.h
      hub/outlet.cpp
      hub/types.h

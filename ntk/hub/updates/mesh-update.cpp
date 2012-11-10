@@ -7,7 +7,7 @@
 
 namespace ntk { namespace hub {
 
-Hub::MeshUpdate::MeshUpdate (Name name)
+Hub::MeshUpdate::MeshUpdate (String name)
 : Hub::Update(name)
 {
 
@@ -16,9 +16,9 @@ Hub::MeshUpdate::MeshUpdate (Name name)
 void
 Hub::MeshUpdate::updateHub (Hub& hub)
 {
-    QMutexLocker _(&hub.impl->meshesMutex);
+    QMutexLocker _(&hub.impl->meshValuesMutex);
 
-    mesh = hub.impl->meshes[name];
+    mesh = hub.impl->meshValues[name];
 
     _.unlock();
 
@@ -26,7 +26,7 @@ Hub::MeshUpdate::updateHub (Hub& hub)
 
     _.relock();
 
-    hub.impl->meshes[name] = mesh;
+    hub.impl->meshValues[name] = mesh;
 }
 
 void
@@ -37,7 +37,7 @@ Hub::MeshUpdate::updateOutlet (Outlet& outlet)
 
 //------------------------------------------------------------------------------
 
-Hub::SetMeshUpdate::SetMeshUpdate (Name name, MeshConstPtr newMesh)
+Hub::SetMeshUpdate::SetMeshUpdate (String name, MeshConstPtr newMesh)
 : MeshUpdate(name)
 , newMesh(newMesh)
 {
@@ -52,7 +52,7 @@ Hub::SetMeshUpdate::updateMesh (MeshConstPtr& mesh)
 
 //------------------------------------------------------------------------------
 
-Hub::ClearMeshUpdate::ClearMeshUpdate (Name name)
+Hub::ClearMeshUpdate::ClearMeshUpdate (String name)
 : Hub::MeshUpdate(name)
 {
 
