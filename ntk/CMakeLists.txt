@@ -198,7 +198,6 @@ QT4_WRAP_CPP(moc_sources
   gui/image_widget.h
   gui/image_window.h
   mesh/mesh_viewer.h
-  mesh/mesh.h
   thread/event.h
   utils/progressive.h
   hub/outlet.h
@@ -289,7 +288,7 @@ IF (NESTK_USE_NITE)
       )
 ENDIF()
 
-IF (NESTK_USE_FREENECT OR USE_FREENECT)
+IF (NESTK_USE_FREENECT)
   SET (ntk_sources ${ntk_sources}
        camera/freenect_grabber.h
        camera/freenect_grabber.cpp)
@@ -346,7 +345,7 @@ IF(NESTK_USE_PCL)
     )
 ENDIF()
 
-IF (NESTK_USE_OPENCL OR USE_OPENCL)
+IF (NESTK_USE_OPENCL)
   SET (ntk_sources ${ntk_sources}
        gpu/opencl.cpp
        gpu/opencl.h

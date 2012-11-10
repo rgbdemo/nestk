@@ -78,7 +78,7 @@ public:
     return m_pmd_grabber.frameRate();
   }
 
-  virtual void setShouldExit()
+  virtual void setThreadShouldExit()
   {
     RGBDGrabber::setThreadShouldExit();
     m_rgb_grabber.setThreadShouldExit();

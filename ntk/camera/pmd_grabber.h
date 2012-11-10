@@ -24,7 +24,7 @@
 #include <ntk/camera/rgbd_grabber.h>
 #include <map>
 
-#if NESTK_USE_PMD
+#ifdef NESTK_USE_PMDSDK
 
 #include "pmdsdk2.h"
 

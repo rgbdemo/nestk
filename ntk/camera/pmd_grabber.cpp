@@ -26,7 +26,7 @@
 #include <iostream>
 #include <sstream>
 
-#if NESTK_USE_PMD
+#ifdef NESTK_USE_PMDSDK
 
 using namespace std;
 

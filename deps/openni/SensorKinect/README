@@ -1,0 +1,192 @@
+PrimeSense Sensor Module for OpenNI (Version 5.0.3.3 Stable version - Jul 5th 2011)
+-----------------------------------------------------------------------------------
+
+Kinect Mod:
+-----------
+
+***** Important notice: *****
+You must use this kinect mod version with the unstable OpenNI release which is available at:
+http://www.openni.org/downloadfiles/opennimodules/openni-binaries/20-latest-unstable
+
+Changes:
+v0.6:
+	1) Updated codebase to the latest OpenNI / Sensor version (1.3.2.1 / 5.0.3.33)
+
+v0.5:
+	1) Updated codebase to the latest OpenNI / Sensor version (1.1.0.39 / 5.0.1.32)
+	2) Changed to install directory from Sensor to SensorKinect to co-exist with the orignal PrimeSense Sensor module.
+
+v0.4:
+	1) Merged code with the new unstable sensor driver from PrimeSense that adds MacOSX and multiple sensor support.
+	2) Added precompiled binaries for Linux & MacOSX.
+
+v0.3:
+	1) Added support for high-res 1280x1024 IR and Image (at ~10 FPS)
+	   Checkout the file OPENNI\Data\SamplesConfig.xml for usage example.
+	   (Copy it to your OpenNI\Data dir and use NiViewer to test the different resolutions)
+
+v0.2:
+	1) VS2010 redist will now be installed automatically.
+	2) The driver will now also be installed automatically on both x86 and x64 machines.
+	3) Turned off the IR projector anti-cover thingy. It is off on the Xbox360 so it must be safe and it was very annoying...
+
+v0.1:
+	1) Added the kinect USB VID/PID to the PSDrv3 driver and to the code.
+	2) Changed the packet sequence field from 16-bit to 8-bit (don't know why it's different...)
+	3) Changed the image format from YUV to 8-bit uncompressed bayer in the GlobalDefaults.ini file.
+	4) Fixed the software depth-to-RGB registration. (Thanks ROS.org for that!)
+
+Install notes:
+	1) Install unstable OpenNI (http://www.openni.org/downloadfiles/opennimodules/openni-binaries/20-latest-unstable)
+	   On Linux/Mac please do: ./sudo install.sh
+	2) Install Sensor (this version...)
+	   On Linux/Mac please do: ./sudo install.sh
+	3) Install unstable NITE (http://www.openni.org/downloadfiles/opennimodules/openni-compliant-middleware-binaries/33-latest-unstable)
+	   On Linux/Mac please do: ./sudo install.sh
+	   Use this license when asked during the installation: 0KOIk2JeIBYClPWVnMoRKn5cdY4=
+	4) Test #1: Run the NiViewer sample to make sure depth & image streams are working.
+	5) Test #2: Run the OpenNI/NiUserTracker sample play with the skeleton. Don't forget to start with the calibration pose! (Explained in the PDFs)
+	6) Test #3: Try the NITE/Sample-PointViewer sample for the hand tracking demo.
+
+	For Mac/Linux, you will need to install the latest LibUSB.
+	Linux:
+		1) Run: sudo apt-get install libusb-1.0-0-dev
+		2) Run: sudo apt-get install freeglut3-dev
+	MaxOSX:
+		1) Intall MacPorts from: http://distfiles.macports.org/MacPorts/MacPorts-1.9.2-10.6-SnowLeopard.dmg
+		2) Run: sudo port install libtool
+		3) Run: sudo port install libusb-devel +universal
+		   Note: Do not forget the +universal, it's very important!!
+		   If you're previously already installed libusb-devel then use "sudo port uninstall libusb-devel" and reinstall it again with the +universal flag.
+TIPs:
+	1) If the driver is installed correctly you should see "Kinect Camera" and "Kinect Motor" under the "PrimeSensor" category in the device manager.
+	   If not, try to install the driver manually by running the dp-inst files from the Driver directory.
+	
+Todo:
+	1) Add motor & led control.
+	2) Add audio.
+
+The source code for this version is available at:
+https://github.com/avin2/SensorKinect	
+	
+-------------------------- ORIGINAL README BELOW --------------------------
+
+Website: www.primesense.com
+Forum: http://groups.google.com/group/openni-dev
+Wiki: Coming soon!
+
+Binaries are available at:
+http://www.openni.org/downloadfiles/opennimodules/openni-compliant-hardware-binaries/32-stable
+
+Please use this with the OpenNI unstable branch located at:
+Source:
+https://github.com/OpenNI/OpenNI
+Binaries:
+http://www.openni.org/downloadfiles/opennimodules/openni-binaries/21-stable
+
+Release Notes:
+--------------
+* At the moment, the default is to compile the code with SSE3 support (this is also true for the supplied binaries). 
+  If you have a CPU without such support, please remove the sse compiler flags from the make files.
+  (A good hint for this error is that you encounter an "illegal instructions" messages)
+* By default, the linux kernel mounts unknown USB devices with write permissions to root only, and read-only permissions to other users.
+  When not running as root, this prevents communicating with the device. To fix this issue:
+  - Navigate to Platform/Linux-x86/Build
+  - run 'make install-usb-rules'
+  - if the device was connected, unplug and reconnect it.
+  This part is done automatically by the install script, but you will need to do it manually if you choose not to use the automated install.
+* The device driver contains a thread for reading from the USB device. This thread should have high priority in order to function correctly. Each process using the device driver should have the CAP_SYS_NICE capability in order to raise thread priority. Failing to have that capability, will cause a failure in setting priority, consequently causing loss of data.
+* MacOSX: Only OSX 10.6 (Snow Leopard) with a 64-bit Intel based CPU is currently supported.
+  Client/Server is not supported yet so do not attempt to access the sensor with more then one application.
+  
+  
+Build Notes:
+------------
+Windows:
+	Requirements:
+		1) Microsoft Visual Studio 2008/2010
+		   From: http://msdn.microsoft.com/en-us/vstudio/bb984878.aspx
+		2) Python 2.6+/3.x
+		   From: http://www.python.org/download/
+		3) PyWin32
+		   From: http://sourceforge.net/projects/pywin32/files/pywin32/
+		   Please make sure you download the version that matches your exact python version.
+		4) WIX 3.5
+		   From: http://wix.codeplex.com/releases/view/60102
+		5) OpenNI v1.1.x.x
+		   From: http://www.openni.org/downloadfiles	
+
+	Optional Requirements (To build the documentation):
+		1) Doxygen
+		   From: http://www.stack.nl/~dimitri/doxygen/download.html#latestsrc
+		2) GraphViz
+		   From: http://www.graphviz.org/Download_windows.php
+		   
+	Building Sensor:
+		1) Go to the directory: "Platform\Win32\CreateRedist".
+		   Run the script: "Redist.py".
+		   This will compile and prepare the redist exe files that includes everything.
+		2) Install the exe you've just made which is located in Platform\Win32\CreateRedist\Final\Output\Sensor-Win32-5.x.x.x.exe
+		   The installer will also automatically register all the modules into OpenNI via the NiReg utility.
+		   
+		The visual studio solution is located in: Platform\Win32\Build\EngineWin32.sln.
+		
+		Important: Please note that even though the directory is called Win32, you can also use it to compile it for 64-bit targets (AMD64/x64).
+   
+Linux:
+	Requirements:
+		1) GCC 4.x
+		   From: http://gcc.gnu.org/releases.html
+		   Or via apt:
+		   sudo apt-get install g++
+		2) Python 2.6+/3.x
+		   From: http://www.python.org/download/
+		   Or via apt:
+		   sudo apt-get install python
+		3) OpenNI v1.1.x.x
+		   From: http://www.openni.org/downloadfiles
+		   
+	Building Sensor:
+		1) Go into the directory: "Platform/Linux-x86/CreateRedist".
+		   Run the script: "./RedistMaker".
+		   This will compile everything and create a redist package in the "Platform/Linux-x86/Redist" directory.
+		   It will also create a distribution in the "Platform/Linux-x86/CreateRedist/Final" directory.
+		2) Go into the directory: "Platform/Linux-x86/Redist".
+		   Run the script: "sudo ./install.sh" (needs to run as root)
+
+  		   The install script copies key files to the following location:
+		       Libs into: /usr/lib
+		       Bins into: /usr/bin
+		       Config files into: /usr/etc/primesense
+		       USB rules into: /etc/udev/rules.d 
+		       Logs will be created in: /var/log/primesense
+			
+		To build the package manually, you can run "make" in the "Platform\Linux-x86\Build" directory.
+		
+		Important: Please note that even though the directory is called Linux-x86, you can also use it to compile it for 64-bit targets and pretty much any other linux based environment.	
+
+MacOSX:
+	Requirements:
+		1) Xcode 3.2.6
+		   From: http://developer.apple.com/devcenter/mac/index.action
+		   http://developer.apple.com/devcenter/download.action?path=/Developer_Tools/xcode_3.2.6_and_ios_sdk_4.3__final/xcode_3.2.6_and_ios_sdk_4.3.dmg
+		   Please note that you need to register as a mac developer (It's free!).		   
+		2) OpenNI v1.1.x.x
+		   From: http://www.openni.org/downloadfiles	
+		   	   
+	Building Sensor:
+		1) Go into the directory: "Platform/Linux-x86/CreateRedist".
+		   Run the script: "./RedistMaker".
+		   This will compile everything and create a redist package in the "Platform/Linux-x86/Redist" directory.
+		   It will also create a distribution in the "Platform/Linux-x86/CreateRedist/Final" directory.
+		2) Go into the directory: "Platform/Linux-x86/Redist".
+		   Run the script: "sudo ./install.sh" (needs to run as root)
+
+  		   The install script copies key files to the following location:
+		       Libs into: /usr/lib
+		       Bins into: /usr/bin
+		       Config files into: /usr/etc/primesense
+		       USB rules into: /etc/udev/rules.d 
+		       Logs will be created in: /var/log/primesense
+			
+		To build the package manually, you can run "make" in the "Platform\Linux-x86\Build" directory.
