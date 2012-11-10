@@ -24,6 +24,7 @@
 #include <ntk/camera/calibration.h>
 #include <ntk/mesh/mesh.h>
 #include <ntk/utils/opencv_utils.h>
+#include <ntk/thread/utils.h>
 #include <ntk/thread/event.h>
 
 namespace ntk
@@ -130,7 +131,7 @@ protected:
     RGBDModelerPtr child;
     Mesh new_mesh;
     MeshEventSender mesh_event_sender;
-    mutable QMutex lock;
+    mutable RecursiveQMutex lock;
 };
 ntk_ptr_typedefs(RGBDModelerInOwnThread)
 

@@ -86,7 +86,7 @@ bool RGBDModelerInOwnThread::addNewView(const RGBDImage &image, Pose3D &depth_po
 const Mesh& RGBDModelerInOwnThread::currentMesh() const
 {
     // The lock has been acquired from outside.
-    // acquireLock();
+    acquireLock();
 
     // FIXME: this check is a bit hacky. The mesh could have changed
     // without changing the number of vertices. But for now it works
@@ -95,7 +95,7 @@ const Mesh& RGBDModelerInOwnThread::currentMesh() const
         *(const_cast<Mesh*>(&m_mesh)) = new_mesh;
 
     // Lock released.
-    // releaseLock();
+    releaseLock();
     return m_mesh;
 }
 
