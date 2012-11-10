@@ -24,6 +24,7 @@ public:
         int camera_id;
         std::string directory;
         std::string image;
+        std::string calibration_dir; // where calibration files can be found: path/calibration-SERIAL.yml
         std::string calibration_file;
         bool synchronous;
         bool track_users;
@@ -51,7 +52,7 @@ protected:
     GrabberData createKin4winGrabber(const Params& params);
     GrabberData createPmdGrabber(const Params& params);
     RGBDProcessor* createProcessor(const Params& params);
-    RGBDCalibration* tryLoadCalibration(const Params& params);
+    RGBDCalibration* tryLoadCalibration(const Params& params, const std::string &camera_serial);
 
 protected:
     OpenniDriver* ni_driver;
