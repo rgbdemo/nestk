@@ -8,14 +8,14 @@ namespace ntk { namespace hub {
 class Hub::ProgressUpdate : public Hub::Update
 {
 public:
-    ProgressUpdate (QString name, qreal progress);
+    ProgressUpdate (Name name, Percentage progress);
 
 public:
     virtual void updateHub (Hub& hub);
     virtual void updateOutlet (Outlet& outlet);
 
 public:
-    qreal progress;
+    Percentage progress;
 };
 
 } }

@@ -8,17 +8,18 @@ namespace ntk { namespace hub {
 class Hub::LogUpdate : public Hub::Update
 {
 public:
-    LogUpdate (QString name);
+    LogUpdate (Name name);
 
 public:
     virtual void updateHub (Hub& hub);
     virtual void updateOutlet (Outlet& outlet);
 
-private:
-    virtual void updateHubLog (QStringList& hubLog) = 0;
+protected:
+    typedef Lines Log;
+    virtual void updateLog (Log& log) = 0;
 
 private:
-    QStringList hubLog;
+    Lines log;
 };
 
 //------------------------------------------------------------------------------
@@ -26,13 +27,13 @@ private:
 class Hub::SetLogUpdate : public Hub::LogUpdate
 {
 public:
-    SetLogUpdate (QString name, QStringList log);
+    SetLogUpdate (Name name, const Log& log);
 
 private:
-    virtual void updateHubLog (QStringList& hubLog);
+    virtual void updateLog (Log& log);
 
 private:
-    QStringList log;
+    Lines newLog;
 };
 
 //------------------------------------------------------------------------------
@@ -40,13 +41,13 @@ private:
 class Hub::AppendLogUpdate : public Hub::LogUpdate
 {
 public:
-    AppendLogUpdate (QString name, QString line);
+    AppendLogUpdate (Name name, Line line);
 
 private:
-    virtual void updateHubLog (QStringList& hubLog);
+    virtual void updateLog (Log& log);
 
 private:
-    const QString line;
+    const Line line;
 };
 
 //------------------------------------------------------------------------------
@@ -54,10 +55,10 @@ private:
 class Hub::ClearLogUpdate : public Hub::LogUpdate
 {
 public:
-    ClearLogUpdate (QString name);
+    ClearLogUpdate (Name name);
 
 private:
-    virtual void updateHubLog (QStringList& hubLog);
+    virtual void updateLog (Log& log);
 };
 
 } }

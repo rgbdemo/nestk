@@ -1,11 +1,12 @@
 #include "progress-update.h"
 #include "hub/outlet.h"
 #include "hub/hub.h"
+#include "hub/hub-impl.h"
 #include <QMutexLocker>
 
 namespace ntk { namespace hub {
 
-Hub::ProgressUpdate::ProgressUpdate (QString name, qreal progress)
+Hub::ProgressUpdate::ProgressUpdate (Name name, Percentage progress)
 : Hub::Update(name)
 , progress(progress)
 {
@@ -15,15 +16,15 @@ Hub::ProgressUpdate::ProgressUpdate (QString name, qreal progress)
 void
 Hub::ProgressUpdate::updateHub (Hub& hub)
 {
-    QMutexLocker _(&hub.progressesMutex);
+    QMutexLocker _(&hub.impl->progressesMutex);
 
-    hub.progresses[name] = progress;
+    hub.impl->progresses[name] = progress;
 }
 
 void
 Hub::ProgressUpdate::updateOutlet (Outlet& outlet)
 {
-    outlet.changeProgress(name, progress);
+    outlet.onProgressChanged(name, progress);
 }
 
 } }

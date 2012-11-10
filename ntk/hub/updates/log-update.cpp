@@ -1,11 +1,12 @@
 #include "log-update.h"
 #include "hub/outlet.h"
 #include "hub/hub.h"
+#include "hub/hub-impl.h"
 #include <QMutexLocker>
 
 namespace ntk { namespace hub {
 
-Hub::LogUpdate::LogUpdate (QString name)
+Hub::LogUpdate::LogUpdate (Name name)
 : Hub::Update(name)
 {
 
@@ -14,43 +15,43 @@ Hub::LogUpdate::LogUpdate (QString name)
 void
 Hub::LogUpdate::updateHub (Hub& hub)
 {
-    QMutexLocker _(&hub.logsMutex);
+    QMutexLocker _(&hub.impl->logsMutex);
 
-    hubLog = hub.logs[name];
+    log = hub.impl->logs[name];
 
     _.unlock();
 
-    updateHubLog(hubLog);
+    updateLog(log);
 
     _.relock();
 
-    hub.logs[name] = hubLog;
+    hub.impl->logs[name] = log;
 }
 
 void
 Hub::LogUpdate::updateOutlet (Outlet& outlet)
 {
-    outlet.changeLog(name, hubLog);
+    outlet.onLogChanged(name, log);
 }
 
 //------------------------------------------------------------------------------
 
-Hub::SetLogUpdate::SetLogUpdate (QString name, QStringList log)
+Hub::SetLogUpdate::SetLogUpdate (Name name, const QStringList& newLog)
 : Hub::LogUpdate(name)
-, log(log)
+, newLog(newLog)
 {
 
 }
 
 void
-Hub::SetLogUpdate::updateHubLog (QStringList& hubLog)
+Hub::SetLogUpdate::updateLog (QStringList& log)
 {
-    hubLog = log;
+    log = newLog;
 }
 
 //------------------------------------------------------------------------------
 
-Hub::AppendLogUpdate::AppendLogUpdate (QString name, QString line)
+Hub::AppendLogUpdate::AppendLogUpdate (Name name, QString line)
 : Hub::LogUpdate(name)
 , line(line)
 {
@@ -58,23 +59,23 @@ Hub::AppendLogUpdate::AppendLogUpdate (QString name, QString line)
 }
 
 void
-Hub::AppendLogUpdate::updateHubLog(QStringList& hubLog)
+Hub::AppendLogUpdate::updateLog(QStringList& log)
 {
-    hubLog << line;
+    log << line;
 }
 
 //------------------------------------------------------------------------------
 
-Hub::ClearLogUpdate::ClearLogUpdate (QString name)
+Hub::ClearLogUpdate::ClearLogUpdate (Name name)
 : Hub::LogUpdate(name)
 {
 
 }
 
 void
-Hub::ClearLogUpdate::updateHubLog (QStringList& hubLog)
+Hub::ClearLogUpdate::updateLog (QStringList& log)
 {
-    hubLog = QStringList();
+    log = QStringList();
 }
 
 

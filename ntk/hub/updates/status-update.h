@@ -8,7 +8,7 @@ namespace ntk { namespace hub {
 class Hub::StatusUpdate : public Hub::Update
 {
 public:
-    StatusUpdate (QString name, QString status);
+    StatusUpdate (Name name, Line status);
 
 public:
     virtual void updateHub (Hub& hub);

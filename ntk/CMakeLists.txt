@@ -72,6 +72,8 @@ SET ( ntk_sources
      hub.cpp
      hub/hub.h
      hub/hub.cpp
+     hub/hub-impl.h
+     hub/hub-impl.cpp
      hub/update.h
      hub/update.cpp
      hub/updates.h
@@ -197,6 +199,7 @@ QT4_WRAP_UI(uic_sources
 QT4_WRAP_CPP(moc_sources
   gui/image_widget.h
   gui/image_window.h
+  hub/hub.h
   mesh/mesh_viewer.h
   thread/event.h
   utils/progressive.h

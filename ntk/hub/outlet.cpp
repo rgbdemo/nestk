@@ -2,6 +2,9 @@
 #include "hub.h"
 #include "update.h"
 #include "thread/event.h"
+#include <QStringList>
+#include <QImage>
+#include <cassert>
 
 namespace ntk { namespace hub {
 
@@ -45,7 +48,7 @@ Outlet::~Outlet ()
 //------------------------------------------------------------------------------
 
 QOutlet::QOutlet (QObject* parent)
-: QObject(parent)
+    : QObject(parent)
 {
 
 }
@@ -56,70 +59,33 @@ QOutlet::~QOutlet ()
 }
 
 void
-QOutlet::changeStatus (QString name, QString status)
+QOutlet::onStatusChanged (Name name, const Line& status)
 {
     emit statusChanged(name, status);
 }
 
 void
-QOutlet::changeProgress (QString name, qreal progress)
+QOutlet::onProgressChanged (Name name, Percentage progress)
 {
     emit progressChanged(name, progress);
 }
 
 void
-QOutlet::changeLog (QString name, QStringList log)
+QOutlet::onLogChanged (Name name, const Lines& log)
 {
     emit logChanged(name, log);
 }
 
 void
-QOutlet::changeImage (QString name, QImage image)
+QOutlet::onImageChanged (Name name, const Image& image)
 {
     emit imageChanged(name, image);
 }
 
 void
-QOutlet::changeMesh (QString name, const Mesh* mesh)
+QOutlet::onMeshChanged (Name name, const Mesh& mesh)
 {
     emit meshChanged(name, mesh);
-}
-
-//------------------------------------------------------------------------------
-
-OutletListener::~OutletListener ()
-{
-
-}
-
-void
-OutletListener::changeStatus (QString name, QString status)
-{
-    onStatusChanged(name, status);
-}
-
-void
-OutletListener::changeProgress (QString name, qreal progress)
-{
-    onProgressChanged(name, progress);
-}
-
-void
-OutletListener::changeLog (QString name, QStringList log)
-{
-    onLogchanged(name, log);
-}
-
-void
-OutletListener::changeImage (QString name, QImage image)
-{
-    onImageChanged(name, image);
-}
-
-void
-OutletListener::changeMesh (QString name, const Mesh* mesh)
-{
-    onMeshChanged(name, mesh);
 }
 
 } }

@@ -1,11 +1,13 @@
 #include "image-update.h"
 #include "hub/outlet.h"
 #include "hub/hub.h"
+#include "hub/hub-impl.h"
+#include "gui/image_widget.h"
 #include <QMutexLocker>
 
 namespace ntk { namespace hub {
 
-Hub::ImageUpdate::ImageUpdate (QString name)
+Hub::ImageUpdate::ImageUpdate (Name name)
 : Hub::Update(name)
 {
 
@@ -14,66 +16,66 @@ Hub::ImageUpdate::ImageUpdate (QString name)
 void
 Hub::ImageUpdate::updateHub (Hub& hub)
 {
-    QMutexLocker _(&hub.imagesMutex);
+    QMutexLocker _(&hub.impl->imagesMutex);
 
-    hubImage = hub.images[name];
+    image = hub.impl->images[name];
 
     _.unlock();
 
-    updateHubImage(hubImage);
+    updateImage(image);
 
     _.relock();
 
-    hub.images[name] = hubImage;
+    hub.impl->images[name] = image;
 }
 
 void
 Hub::ImageUpdate::updateOutlet (Outlet& outlet)
 {
-    outlet.changeImage(name, hubImage);
+    outlet.onImageChanged(name, image);
 }
 
 //------------------------------------------------------------------------------
 
-Hub::SetImageUpdate::SetImageUpdate (QString name, QImage image)
+Hub::SetImageUpdate::SetImageUpdate (Name name, const Image& newImage)
 : ImageUpdate(name)
-, image(image)
+, newImage(newImage)
 {
 
 }
 
 void
-Hub::SetImageUpdate::updateHubImage (QImage& hubImage)
+Hub::SetImageUpdate::updateImage (Image& image)
 {
-    hubImage = image;
+    image = newImage;
 }
 
 //------------------------------------------------------------------------------
 
-Hub::SetImageMatrixUpdate::SetImageMatrixUpdate (QString name, cv::Mat mat)
+Hub::SetImageMatrixUpdate::SetImageMatrixUpdate (Name name, const Matrix& matrix)
 : Hub::ImageUpdate(name)
-, mat(mat)
+, matrix(matrix)
 {
 
 }
 
 void
-Hub::SetImageMatrixUpdate::updateHubImage (QImage& hubImage)
+Hub::SetImageMatrixUpdate::updateImage (Image& image)
 {
     // FIXME: Depend on opencv_utils functions instead of the clumsy ImageWidget static methods.
 
-    switch (mat.type())
+    switch (matrix.type())
     {
     case CV_MAT_TYPE(CV_8UC3):
-        ImageWidget::setImage(hubImage, cv::Mat3b(mat));
+        ImageWidget::setImage(image, cv::Mat3b(matrix));
         break;
 
     case CV_MAT_TYPE(CV_8UC1):
-        ImageWidget::setImage(hubImage, cv::Mat1b(mat));
+        ImageWidget::setImage(image, cv::Mat1b(matrix));
         break;
 
     case CV_MAT_TYPE(CV_32FC1):
-        ImageWidget::setImage(hubImage, cv::Mat1f(mat));
+        ImageWidget::setImage(image, cv::Mat1f(matrix));
         break;
 
     default:
@@ -83,16 +85,16 @@ Hub::SetImageMatrixUpdate::updateHubImage (QImage& hubImage)
 
 //------------------------------------------------------------------------------
 
-Hub::ClearImageUpdate::ClearImageUpdate (QString name)
+Hub::ClearImageUpdate::ClearImageUpdate (Name name)
 : Hub::ImageUpdate(name)
 {
 
 }
 
 void
-Hub::ClearImageUpdate::updateHubImage (QImage& hubImage)
+Hub::ClearImageUpdate::updateImage (Image& image)
 {
-    hubImage = QImage();
+    image = Image();
 }
 
 } }

@@ -1,25 +1,24 @@
 #pragma once
 
-#include "ntk/mesh/meshfwd.h"
-#include <QImage>
-#include <QStringList>
-#include <QString>
+#include "types.h"
 #include <QObject>
+#include <QString>
+#include <QMetaType>
 
 namespace ntk { namespace hub {
 
 class Outlet
-{
+{    
 public:
      Outlet ();
     ~Outlet ();
 
 public:
-    virtual void changeStatus   (QString name, QString    status) = 0;
-    virtual void changeProgress (QString name, qreal    progress) = 0;
-    virtual void changeLog      (QString name, QStringList   log) = 0;
-    virtual void changeImage    (QString name, QImage      image) = 0;
-    virtual void changeMesh     (QString name, const Mesh*  mesh) = 0;
+    virtual void onStatusChanged   (Name name, const Line& status) = 0;
+    virtual void onProgressChanged (Name name, Percentage progress) = 0;
+    virtual void onLogChanged      (Name name, const Lines& log) = 0;
+    virtual void onImageChanged    (Name name, const Image& image) = 0;
+    virtual void onMeshChanged     (Name name, const Mesh& mesh) = 0;
 
 private:
     struct Impl;
@@ -29,8 +28,8 @@ private:
 //------------------------------------------------------------------------------
 
 class QOutlet
-: public QObject
-, public Outlet
+    : public QObject
+    , public Outlet
 {
     Q_OBJECT
 
@@ -39,40 +38,18 @@ public:
     virtual ~QOutlet ();
 
 public: // Outlet
-    virtual void changeStatus   (QString name, QString   status);
-    virtual void changeProgress (QString name, qreal   progress);
-    virtual void changeLog      (QString name, QStringList  log);
-    virtual void changeImage    (QString name, QImage     image);
-    virtual void changeMesh     (QString name, const Mesh* mesh);
+    virtual void onStatusChanged   (Name name, const Line& status);
+    virtual void onProgressChanged (Name name, Percentage progress);
+    virtual void onLogChanged      (Name name, const Lines& log);
+    virtual void onImageChanged    (Name name, const Image& image);
+    virtual void onMeshChanged     (Name name, const Mesh& mesh);
 
 signals:
-    void   statusChanged (QString name, QString   status);
-    void progressChanged (QString name, qreal   progress);
-    void      logChanged (QString name, QStringList  log);
-    void    imageChanged (QString name, QImage     image);
-    void     meshChanged (QString name, const Mesh* mesh);
-};
-
-//------------------------------------------------------------------------------
-
-class OutletListener : public Outlet
-{
-public:
-    virtual ~OutletListener ();
-
-public: // Outlet
-    virtual void changeStatus   (QString name, QString   status);
-    virtual void changeProgress (QString name, qreal   progress);
-    virtual void changeLog      (QString name, QStringList  log);
-    virtual void changeImage    (QString name, QImage     image);
-    virtual void changeMesh     (QString name, const Mesh* mesh);
-
-protected:
-    virtual void   onStatusChanged (QString name, QString   status) {}
-    virtual void onProgressChanged (QString name, qreal   progress) {}
-    virtual void      onLogchanged (QString name, QStringList  log) {}
-    virtual void    onImageChanged (QString name, QImage     image) {}
-    virtual void     onMeshChanged (QString name, const Mesh* mesh) {}
+    void   statusChanged (Name name, const Line& status);
+    void progressChanged (Name name, Percentage progress);
+    void      logChanged (Name name, const Lines& log);
+    void    imageChanged (Name name, const Image& image);
+    void     meshChanged (Name name, const Mesh& mesh);
 };
 
 } }

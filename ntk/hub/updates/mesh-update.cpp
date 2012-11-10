@@ -2,11 +2,12 @@
 #include "hub/outlet.h"
 #include "hub/hub.h"
 #include "mesh/mesh.h"
+#include "hub/hub-impl.h"
 #include <QMutexLocker>
 
 namespace ntk { namespace hub {
 
-Hub::MeshUpdate::MeshUpdate (QString name)
+Hub::MeshUpdate::MeshUpdate (Name name)
 : Hub::Update(name)
 {
 
@@ -15,52 +16,52 @@ Hub::MeshUpdate::MeshUpdate (QString name)
 void
 Hub::MeshUpdate::updateHub (Hub& hub)
 {
-    QMutexLocker _(&hub.meshesMutex);
+    QMutexLocker _(&hub.impl->meshesMutex);
 
-    hubMesh = hub.meshes[name];
+    mesh = hub.impl->meshes[name];
 
     _.unlock();
 
-    updateHubMesh(hubMesh);
+    updateMesh(mesh);
 
     _.relock();
 
-    hub.meshes[name] = hubMesh;
+    hub.impl->meshes[name] = mesh;
 }
 
 void
 Hub::MeshUpdate::updateOutlet (Outlet& outlet)
 {
-    outlet.changeMesh(name, hubMesh);
+    outlet.onMeshChanged(name, *mesh);
 }
 
 //------------------------------------------------------------------------------
 
-Hub::SetMeshUpdate::SetMeshUpdate (QString name, MeshConstPtr mesh)
+Hub::SetMeshUpdate::SetMeshUpdate (Name name, MeshConstPtr newMesh)
 : MeshUpdate(name)
-, mesh(mesh)
+, newMesh(newMesh)
 {
 
 }
 
 void
-Hub::SetMeshUpdate::updateHubMesh (MeshConstPtr& hubMesh)
+Hub::SetMeshUpdate::updateMesh (MeshConstPtr& mesh)
 {
-    hubMesh = mesh;
+    mesh = newMesh;
 }
 
 //------------------------------------------------------------------------------
 
-Hub::ClearMeshUpdate::ClearMeshUpdate (QString name)
+Hub::ClearMeshUpdate::ClearMeshUpdate (Name name)
 : Hub::MeshUpdate(name)
 {
 
 }
 
 void
-Hub::ClearMeshUpdate::updateHubMesh (MeshConstPtr& hubMesh)
+Hub::ClearMeshUpdate::updateMesh (MeshConstPtr& mesh)
 {
-    hubMesh = MeshConstPtr();
+    mesh = MeshConstPtr();
 }
 
 } }

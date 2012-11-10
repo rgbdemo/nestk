@@ -4,6 +4,8 @@
 #include "ntk/thread/event.h"
 #include <QString>
 
+Q_DECLARE_METATYPE(ntk::hub::Name)
+
 namespace ntk { namespace hub {
 
 class Hub;

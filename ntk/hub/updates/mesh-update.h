@@ -8,17 +8,17 @@ namespace ntk { namespace hub {
 class Hub::MeshUpdate : public Hub::Update
 {
 public:
-    MeshUpdate (QString name);
+    MeshUpdate (Name name);
 
 public:
     virtual void updateHub    (Hub& hub);
     virtual void updateOutlet (Outlet& outlet);
 
 private:
-    virtual void updateHubMesh (MeshConstPtr& hubMesh) = 0;
+    virtual void updateMesh (MeshConstPtr& mesh) = 0;
 
 private:
-    MeshConstPtr hubMesh;
+    MeshConstPtr mesh;
 };
 
 //------------------------------------------------------------------------------
@@ -26,13 +26,13 @@ private:
 class Hub::SetMeshUpdate : public Hub::MeshUpdate
 {
 public:
-    SetMeshUpdate (QString name, MeshConstPtr mesh);
+    SetMeshUpdate (Name name, MeshConstPtr newMesh);
 
 private:
-    virtual void updateHubMesh (MeshConstPtr& hubMesh);
+    virtual void updateMesh (MeshConstPtr& mesh);
 
 private:
-    const MeshConstPtr mesh;
+    const MeshConstPtr newMesh;
 };
 
 //------------------------------------------------------------------------------
@@ -40,10 +40,10 @@ private:
 class Hub::ClearMeshUpdate : public Hub::MeshUpdate
 {
 public:
-    ClearMeshUpdate (QString name);
+    ClearMeshUpdate (Name name);
 
 private:
-    virtual void updateHubMesh (MeshConstPtr& hubMesh);
+    virtual void updateMesh (MeshConstPtr& mesh);
 };
 
 } }

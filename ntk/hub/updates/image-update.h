@@ -1,7 +1,6 @@
 #pragma once
 
 #include "hub/update.h"
-#include "gui/image_widget.h"
 #include <QImage>
 
 namespace ntk { namespace hub {
@@ -9,17 +8,17 @@ namespace ntk { namespace hub {
 class Hub::ImageUpdate : public Hub::Update
 {
 public:
-    ImageUpdate (QString name);
+    ImageUpdate (Name name);
 
 public:
     virtual void updateHub    (Hub& hub);
     virtual void updateOutlet (Outlet& outlet);
 
 private:
-    virtual void updateHubImage (QImage& hubImage) = 0;
+    virtual void updateImage (Image& image) = 0;
 
 private:
-    QImage hubImage;
+    Image image;
 };
 
 //------------------------------------------------------------------------------
@@ -27,13 +26,13 @@ private:
 class Hub::SetImageUpdate : public Hub::ImageUpdate
 {
 public:
-    SetImageUpdate (QString name, QImage image);
+    SetImageUpdate (Name name, const Image& newImage);
 
 private:
-    virtual void updateHubImage (QImage& hubImage);
+    virtual void updateImage (Image& image);
 
 private:
-    const QImage image;
+    const Image newImage;
 };
 
 //------------------------------------------------------------------------------
@@ -41,13 +40,13 @@ private:
 class Hub::SetImageMatrixUpdate : public Hub::ImageUpdate
 {
 public:
-    SetImageMatrixUpdate (QString name, cv::Mat mat);
+    SetImageMatrixUpdate (QString name, const Matrix& matrix);
 
 private:
-    virtual void updateHubImage (QImage& hubImage);
+    virtual void updateImage (Image& image);
 
 private:
-    const cv::Mat mat;
+    const Matrix matrix;
 };
 
 //------------------------------------------------------------------------------
@@ -55,10 +54,10 @@ private:
 class Hub::ClearImageUpdate : public Hub::ImageUpdate
 {
 public:
-    ClearImageUpdate (QString name);
+    ClearImageUpdate (Name name);
 
 private:
-    virtual void updateHubImage (QImage& hubImage);
+    virtual void updateImage (Image& image);
 };
 
 } }
