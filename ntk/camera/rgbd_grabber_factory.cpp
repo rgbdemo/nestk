@@ -164,7 +164,7 @@ RGBDGrabberFactory::GrabberData RGBDGrabberFactory::createKin4winGrabber(const P
     bool ok = k_grabber->connectToDevice();
     if (!ok)
     {
-        data.message = "Cannot connect to any freenect device.";
+        data.message = "Cannot connect to any kinect for windows device.";
         delete k_grabber;
         return data;
     }
@@ -198,13 +198,21 @@ RGBDGrabberFactory::GrabberData RGBDGrabberFactory::createPmdGrabber(const Param
     return data;
 }
 
-RGBDCalibration* RGBDGrabberFactory::tryLoadCalibration(const Params& params)
+RGBDCalibration* RGBDGrabberFactory::tryLoadCalibration(const Params& params, const std::string& camera_serial)
 {
     ntk::RGBDCalibration* calib_data = 0;
     if (!params.calibration_file.empty())
     {
         calib_data = new RGBDCalibration();
         calib_data->loadFromFile(params.calibration_file.c_str());
+    }
+
+    if (!params.calibration_dir.empty())
+    {
+        calib_data = new RGBDCalibration();
+        calib_data->loadFromFile(cv::format("%s/calibration-%s.yml",
+                                            params.calibration_dir.c_str(),
+                                            camera_serial.c_str()).c_str());
     }
     return calib_data;
 }
@@ -255,7 +263,7 @@ RGBDGrabberFactory::createGrabbers(const ntk::RGBDGrabberFactory::Params &params
     {
         if (params.synchronous)
             data.grabber->setSynchronous(true);
-        RGBDCalibration* calibration = tryLoadCalibration(params);
+        RGBDCalibration* calibration = tryLoadCalibration(params, data.grabber->cameraSerial());
         if (calibration)
             data.grabber->setCalibrationData(*calibration);
         grabbers.push_back(data);
