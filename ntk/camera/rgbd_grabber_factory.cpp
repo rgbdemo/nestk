@@ -196,6 +196,9 @@ bool RGBDGrabberFactory :: createKin4winGrabbers(const ntk::RGBDGrabberFactory::
     {
         Kin4WinGrabber* k_grabber = new Kin4WinGrabber(*kin_driver, i);
 
+        if (params.high_resolution)
+            k_grabber->setHighRgbResolution(true);
+
         GrabberData new_data;
         new_data.grabber = k_grabber;
         new_data.type = KIN4WIN;

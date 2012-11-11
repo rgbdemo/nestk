@@ -150,7 +150,7 @@ public:
 
         if (0 == sensor)
         {
-            WinRet ret = NuiCreateSensorByIndex(0, &sensor);
+            WinRet ret = NuiCreateSensorByIndex(that->m_camera_id, &sensor);
 
             if (FAILED(ret))
                 return ret;
@@ -423,14 +423,14 @@ public:
     {
         switch (nuiRes)
         {
-            case NUI_IMAGE_RESOLUTION_INVALID : return -1 ;
+        case NUI_IMAGE_RESOLUTION_INVALID : return -1 ;
 
-            case NUI_IMAGE_RESOLUTION_80x60   : return 80 ;
-            case NUI_IMAGE_RESOLUTION_320x240 : return 320;
-            case NUI_IMAGE_RESOLUTION_640x480 : return 640;
-            case NUI_IMAGE_RESOLUTION_1280x960: return 1280;
+        case NUI_IMAGE_RESOLUTION_80x60   : return 80 ;
+        case NUI_IMAGE_RESOLUTION_320x240 : return 320;
+        case NUI_IMAGE_RESOLUTION_640x480 : return 640;
+        case NUI_IMAGE_RESOLUTION_1280x960: return 1280;
 
-            default: return 0;
+        default: return 0;
         }
     }
 
@@ -438,14 +438,14 @@ public:
     {
         switch (nuiRes)
         {
-            case NUI_IMAGE_RESOLUTION_INVALID : return -1 ;
+        case NUI_IMAGE_RESOLUTION_INVALID : return -1 ;
 
-            case NUI_IMAGE_RESOLUTION_80x60   : return 60 ;
-            case NUI_IMAGE_RESOLUTION_320x240 : return 240;
-            case NUI_IMAGE_RESOLUTION_640x480 : return 480;
-            case NUI_IMAGE_RESOLUTION_1280x960: return 960;
+        case NUI_IMAGE_RESOLUTION_80x60   : return 60 ;
+        case NUI_IMAGE_RESOLUTION_320x240 : return 240;
+        case NUI_IMAGE_RESOLUTION_640x480 : return 480;
+        case NUI_IMAGE_RESOLUTION_1280x960: return 960;
 
-            default: return 0;
+        default: return 0;
         }
     }
 
@@ -456,7 +456,7 @@ public:
 
     int getColorHeight () const
     {
-        return getResolutionHeight(colorResolution);            
+        return getResolutionHeight(colorResolution);
     }
 
     int getDepthWidth () const
@@ -466,7 +466,19 @@ public:
 
     int getDepthHeight () const
     {
-        return getResolutionHeight(depthResolution);            
+        return getResolutionHeight(depthResolution);
+    }
+
+    bool getAccelerometer(cv::Point3f& xyz) const
+    {
+        Vector4 v;
+        WinRet ret = sensor->NuiAccelerometerGetCurrentReading(&v);
+        if (FAILED(ret))
+            return false;
+        xyz.x = v.x;
+        xyz.y = v.y;
+        xyz.z = v.z;
+        return true;
     }
 
     // FIXME: Untested.
@@ -476,11 +488,11 @@ public:
         const int h = getDepthHeight();
 
         Vector4 v = NuiTransformDepthImageToSkeleton(
-            LONG(double(w - p.x - 1) / double(w)),
-            LONG(double(p.y) / double(h)),
-            USHORT(p.z * 1000) << 3,
-            depthResolution
-        );
+                    LONG(double(w - p.x - 1) / double(w)),
+                    LONG(double(p.y) / double(h)),
+                    USHORT(p.z * 1000) << 3,
+                    depthResolution
+                    );
 
         return cv::Point3f(v.x, v.y, v.z);
     }
@@ -537,6 +549,7 @@ public:
     {
         const size_t depth_width = getDepthWidth();
         const size_t depth_height = getDepthHeight();
+        const size_t rgb_width = getColorWidth();
 
         sensor->NuiImageGetColorPixelCoordinateFrameFromDepthPixelFrameAtResolution(
                     colorResolution,
@@ -549,10 +562,15 @@ public:
 
         std::fill(depth_values, depth_values+depth_width*depth_height, 0.f);
 
+        // FIXME: this is tricky. In our convention, we want a mapped depth image,
+        // but keeping its original resolution. Kinect for Windows logically returns
+        // a mapped depth image in high resolution if color is in high resolution.
+        const float ratio = static_cast<float>(depth_width) / rgb_width;
+
         for (int i = 0; i < depth_width*depth_height; ++i)
         {
-            int c = colorCoordinates[i*2];
-            int r = colorCoordinates[i*2+1];
+            int c = colorCoordinates[i*2] * ratio;
+            int r = colorCoordinates[i*2+1] * ratio;
 
             uint16_t d = *depth_d16++;
             if (d == NUI_IMAGE_DEPTH_MINIMUM || d == NUI_IMAGE_DEPTH_MAXIMUM || d == NUI_IMAGE_DEPTH_NO_VALUE)
@@ -604,7 +622,8 @@ Kin4WinGrabber :: Kin4WinGrabber(Kin4WinDriver& driver, int camera_id) :
     m_driver(driver),
     m_camera_id(camera_id),
     m_near_mode(true),
-    m_near_mode_changed(true)
+    m_near_mode_changed(true),
+    m_high_resolution(false)
 {
 
 }
@@ -613,7 +632,8 @@ Kin4WinGrabber :: Kin4WinGrabber(Kin4WinDriver& driver, const std::string& camer
     nui(new Nui(this)),
     m_driver(driver),
     m_camera_id(-1),
-    m_camera_serial(camera_serial)
+    m_camera_serial(camera_serial),
+    m_high_resolution(false)
 {
     //for (size_t i = 0; i < driver.numDevices(); ++i)
     //{
@@ -646,12 +666,15 @@ bool Kin4WinGrabber :: connectToDevice()
 
     ntk_dbg(1) << format("[Kinect %x] connecting", this);
 
-    m_rgbd_image.rawRgbRef()   = Mat3b(Nui::defaultFrameHeight, Nui::defaultFrameWidth);
-    m_rgbd_image.rawDepthRef() = Mat1f(Nui::defaultFrameHeight, Nui::defaultFrameWidth);
+    if (m_high_resolution)
+        nui->colorResolution = NUI_IMAGE_RESOLUTION_1280x960;
+
+    m_rgbd_image.rawRgbRef()   = Mat3b(nui->getColorHeight(), nui->getColorWidth());
+    m_rgbd_image.rawDepthRef() = Mat1f(nui->getDepthHeight(), nui->getDepthWidth ());
     //m_rgbd_image.rawIntensityRef() = Mat1f(defaultFrameHeight, defaultFrameWidth);
 
-    m_current_image.rawRgbRef()   = Mat3b(Nui::defaultFrameHeight, Nui::defaultFrameWidth);
-    m_current_image.rawDepthRef() = Mat1f(Nui::defaultFrameHeight, Nui::defaultFrameWidth);
+    m_current_image.rawRgbRef()   = Mat3b(nui->getColorHeight(), nui->getColorWidth());
+    m_current_image.rawDepthRef() = Mat1f(nui->getDepthHeight(), nui->getDepthWidth ());
     //m_current_image.rawIntensityRef() = Mat1f(defaultFrameHeight, defaultFrameWidth);
 
     // FIXME: This should be done at connectToDevice time.
@@ -670,6 +693,23 @@ bool Kin4WinGrabber :: connectToDevice()
         m_connected = true;
     }
 
+    std::string serial = cv::format("0000000000000000-%d", m_camera_id);
+    setCameraSerial(serial);
+
+    m_rgbd_image.setCameraSerial(serial);
+    m_current_image.setCameraSerial(serial);
+
+    if (false) // sample code using the accelerometer to identify each sensor.
+    {
+        cv::Point3f xyz;
+        getAccelerometerXYZ(xyz);
+
+        if (xyz.y < 0)
+            setCameraSerial("0000000000000000");
+        else
+            setCameraSerial("0000000000000001");
+    }
+
     return true;
 }
 
@@ -682,6 +722,12 @@ bool Kin4WinGrabber :: disconnectFromDevice()
     nui->unInit();
 
     return false;
+}
+
+bool Kin4WinGrabber :: getAccelerometerXYZ(cv::Point3f& xyz) const
+{
+    bool ok = nui->getAccelerometer(xyz);
+    return ok;
 }
 
 void Kin4WinGrabber::setNearMode(bool enable)
@@ -707,8 +753,8 @@ void Kin4WinGrabber :: estimateCalibration()
     // These factors were estimated using chessboard calibration.
     // They seem to accurately correct the bias in object sizes output by
     // the default parameters.
-    const double f_correction_factor = 528.0/570.34;
-    // const double f_correction_factor = 1.0; // FIXME: what should it be for Kinect for Windows?
+    // const double f_correction_factor = 528.0/570.34;
+    const double f_correction_factor = 1.0; // FIXME: what should it be for Kinect for Windows?
     fx *= f_correction_factor;
     fy *= f_correction_factor;
 
@@ -860,10 +906,11 @@ ntk::Kin4WinDriver::Kin4WinDriver()
     int kin4win_sensors_count;
     WinRet ret = NuiGetSensorCount(&kin4win_sensors_count);
     ntk_dbg_print(kin4win_sensors_count, 1);
-    if (kin4win_sensors_count > 0)
+
+    for (int i = 0; i < kin4win_sensors_count; ++i)
     {
         DeviceInfo device;
-        device.serial = "unknown";
+        device.serial = cv::format("0000000000000000-%d", i);
         device.camera_type = "kin4win";
         device.vendor = "Microsoft";
         devices_info.push_back(device);

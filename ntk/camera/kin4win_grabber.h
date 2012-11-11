@@ -52,6 +52,11 @@ public:
     virtual bool disconnectFromDevice();
     virtual void setNearMode(bool enable);
 
+    /*! Set whether color images should be in high resolution 1280x1024. */
+    void setHighRgbResolution(bool hr) { m_high_resolution = hr; }
+    bool getHighRgbResolution() const { return  m_high_resolution; }
+    bool getAccelerometerXYZ(cv::Point3f& xyz) const;
+
 protected:
     virtual void run();
 
@@ -67,6 +72,7 @@ private:
     static QMutex m_ni_mutex;
     bool m_near_mode;
     bool m_near_mode_changed;
+    bool m_high_resolution;
 };
 
 }
