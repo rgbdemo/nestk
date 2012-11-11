@@ -218,7 +218,7 @@ bool IncrementalPoseEstimatorFromRgbFeatures::estimateCurrentPose()
         cv::Mat3b debug_img;
         // m_features[closest_view_index]->drawMatches(m_image_data[closest_view_index].color, image.rgb(), *image_features, best_matches, debug_img);
         m_features[closest_view_index]->draw(m_image_data[closest_view_index].image.rgb(), debug_img);
-        hub::setImage("features_output", debug_img);
+        hub::setImage("features", debug_img);
 
 #ifdef HEAVY_DEBUG
         imwrite("/tmp/debug_matches.png", debug_img);
