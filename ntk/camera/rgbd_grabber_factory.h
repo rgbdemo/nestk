@@ -12,15 +12,15 @@ class Kin4WinDriver;
 class RGBDGrabberFactory
 {
 public:
-    enum grabber_type { DEFAULT = 0, OPENNI = 1, FREENECT = 2, KIN4WIN = 3, PMD = 4 };
+    enum enum_grabber_type { DEFAULT = 0, OPENNI = 1, FREENECT = 2, KIN4WIN = 3, PMD = 4, SOFTKINETIC = 5 };
 
-    static grabber_type getDefaultGrabberType();
+    static enum_grabber_type getDefaultGrabberType();
 
     struct Params
     {
         Params();
 
-        grabber_type type;
+        enum_grabber_type default_type;
         int camera_id;
         std::string directory;
         std::string image;
@@ -29,12 +29,13 @@ public:
         bool synchronous;
         bool track_users;
         bool high_resolution;
+        bool hardware_registration;
     };
 
     struct GrabberData
     {
         GrabberData() : type(DEFAULT), grabber(0), processor(0) {}
-        grabber_type type;
+        enum_grabber_type type;
         RGBDGrabber* grabber;
         RGBDProcessor* processor;
         std::string message;
@@ -46,13 +47,15 @@ public:
     std::vector<GrabberData> createGrabbers(const Params& params);
 
 protected:
-    GrabberData createFileGrabber(const Params& params);
-    GrabberData createOpenNIGrabber(const Params& params);
-    GrabberData createFreenectGrabber(const Params& params);
-    GrabberData createKin4winGrabber(const Params& params);
-    GrabberData createPmdGrabber(const Params& params);
-    RGBDProcessor* createProcessor(const Params& params);
-    RGBDCalibration* tryLoadCalibration(const Params& params, const std::string &camera_serial);
+    bool createFileGrabbers(const ntk::RGBDGrabberFactory::Params &params, std::vector<GrabberData>& grabbers);
+    bool createOpenniGrabbers(const ntk::RGBDGrabberFactory::Params &params, std::vector<GrabberData>& grabbers);
+    bool createFreenectGrabbers(const ntk::RGBDGrabberFactory::Params &params, std::vector<GrabberData>& grabbers);
+    bool createKin4winGrabbers(const ntk::RGBDGrabberFactory::Params &params, std::vector<GrabberData>& grabbers);
+    bool createPmdGrabbers(const ntk::RGBDGrabberFactory::Params &params, std::vector<GrabberData>& grabbers);
+    bool createSoftKineticGrabbers(const ntk::RGBDGrabberFactory::Params &params, std::vector<GrabberData>& grabbers);
+
+    RGBDProcessor* createProcessor(const enum_grabber_type& grabber_type);
+    RGBDCalibration* tryLoadCalibration(const Params &params, const std::string &camera_serial);
 
 protected:
     OpenniDriver* ni_driver;

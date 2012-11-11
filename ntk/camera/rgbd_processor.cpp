@@ -903,7 +903,6 @@ namespace ntk
         cv::Size rgb_size = m_image->calibration()->rawRgbSize();
 
         bool mapping_required = depth_size != rgb_size;
-
         if (!mapping_required)
         {
             m_image->mappedDepthRef() = m_image->depth();
