@@ -50,6 +50,11 @@ Hub::postUpdate (Update* update)
 {
     assert(0 != update);
 
+    if (impl->maybeAddName(update->name))
+    {
+        // FIXME: Newborn value.
+    }
+
     // FIXME: Trick the event system into believing we have one sender per update.
     // FIXME: This only takes into account the update target :-/
     EventBroadcaster* sender = reinterpret_cast<EventBroadcaster*>(qHash(update->name.toAscii()));
@@ -71,12 +76,18 @@ Hub::get##Type (HUB_TYPE_ARG(String) name) const     \
 void                                                 \
 Hub::set##Type (HUB_TYPE_ARG(String) name, Arg arg)  \
 {                                                    \
+    if (!impl->isActive(name))                       \
+        return;                                      \
+                                                     \
     postUpdate(new Set##Type##Update(name, arg));    \
 }                                                    \
                                                      \
 void                                                 \
 Hub::reset##Type (HUB_TYPE_ARG(String) name)         \
 {                                                    \
+    if (!impl->isActive(name))                       \
+        return;                                      \
+                                                     \
     postUpdate(new Set##Type##Update(name, Val()));  \
 }
 
@@ -89,22 +100,34 @@ HUB_TYPES()
 void
 Hub::appendToStrings (const String& name, const String& string)
 {
+    if (!impl->isActive(name))
+        return;
+
     postUpdate(new AppendStringsUpdate(name, string));
 }
 
 void
 Hub::setImageMatrix (const String& name, const Matrix& matrix)
 {
+    if (!impl->isActive(name))
+        return;
+
     postUpdate(new SetMatrixImageUpdate(name, matrix));
 }
 
 void
 Hub::setMesh (const String& name, const Mesh& mesh)
 {
+    if (!impl->isActive(name))
+        return;
+
     postUpdate(new SetMeshUpdate(name, MeshConstPtr(new Mesh(mesh))));
 }
 
 //------------------------------------------------------------------------------
+
+FWD_IMPL_0(void, Hub, enable )
+FWD_IMPL_0(void, Hub, disable)
 
 FWD_IMPL_1(void, Hub,      attachOutlet, Outlet*)
 FWD_IMPL_1(void, Hub,      detachOutlet, Outlet*)

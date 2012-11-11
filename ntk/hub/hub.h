@@ -22,6 +22,10 @@ public:
      Hub ();
     ~Hub ();
 
+public:
+     void enable  ();
+     void disable ();
+
 #define HUB_TYPE(Type, type, Arg, Ret, Val)                      \
 public:                                                          \
      Ret       get##Type (HUB_TYPE_ARG(String) name) const;      \

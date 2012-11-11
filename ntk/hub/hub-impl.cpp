@@ -7,6 +7,7 @@ namespace ntk { namespace hub {
 
 Hub::Impl::Impl (Hub* that)
     : that(that)
+    , enabled(true)
 {
     assert(0 != that);
 }
