@@ -838,8 +838,6 @@ void Kin4WinGrabber :: estimateCalibration()
 
 void Kin4WinGrabber :: run()
 {
-    QMutexLocker ni_locker(&m_ni_mutex);
-
     setThreadShouldExit(false);
 
     // setTargetFrameRate(20.f);
@@ -862,6 +860,9 @@ void Kin4WinGrabber :: run()
             int64 grab_time = ntk::Time::getMillisecondCounter();
             ntk_dbg_print(grab_time - last_grab_time, 2);
             last_grab_time = grab_time;
+
+            // FIXME: is this mutex really required?
+            QMutexLocker ni_locker(&m_ni_mutex);
 
             m_current_image.setTimestamp(getCurrentTimestamp());
             {
