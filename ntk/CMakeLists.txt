@@ -70,10 +70,12 @@ SET ( ntk_sources
      gui/screen_grabber.cpp
      hub.h
      hub.cpp
+     hub/fwd.h
      hub/hub.h
      hub/hub.cpp
      hub/hub-impl.h
      hub/hub-impl.cpp
+     hub/impl.h
      hub/update.h
      hub/update.cpp
      hub/updates.h
@@ -90,6 +92,8 @@ SET ( ntk_sources
      hub/updates/strings-update.cpp
      hub/outlet.h
      hub/outlet.cpp
+     hub/outlet-impl.h
+     hub/outlet-impl.cpp
      hub/types.h
      hub/types.cpp
      image/bilateral_filter.h

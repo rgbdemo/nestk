@@ -54,14 +54,13 @@ struct TypeTraits
  * #undef  HUB_TYPE
  */
 
-#define HUB_TYPES()                                                             \
-        HUB_TYPE(Real   , real   , Real          , Real         , Real)         \
-        HUB_TYPE(String , string , const String& , String       , String)       \
-        HUB_TYPE(Strings, strings, const Strings&, Strings      , Strings)      \
-        HUB_TYPE(Image  , image  , const Image&  , Image        , Image)        \
-        HUB_TYPE(Mesh   , mesh   , MeshConstPtr  , MeshConstPtr , MeshConstPtr)
-
-// HUB_TYPE(Matrix , matrix , const Matrix& , Matrix  , Matrix)   \
+#define HUB_TYPES()                                                                  \
+        HUB_TYPE(Real   , real   , Real               , Real         , Real)         \
+        HUB_TYPE(String , string , const String&      , String       , String)       \
+        HUB_TYPE(Strings, strings, const Strings&     , Strings      , Strings)      \
+        HUB_TYPE(Image  , image  , const Image&       , Image        , Image)        \
+        HUB_TYPE(Mesh   , mesh   , const MeshConstPtr&, MeshConstPtr , MeshConstPtr)
+//      HUB_TYPE(Matrix , matrix , const Matrix&      , Matrix       , Matrix)
 
 //------------------------------------------------------------------------------
 

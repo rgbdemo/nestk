@@ -32,7 +32,7 @@ Hub::MeshUpdate::updateHub (Hub& hub)
 void
 Hub::MeshUpdate::updateOutlet (Outlet& outlet)
 {
-    outlet.onMeshChanged(name, *mesh);
+    outlet.onMeshChanged(name, mesh);
 }
 
 //------------------------------------------------------------------------------

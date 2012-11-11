@@ -8,19 +8,27 @@
 namespace ntk { namespace hub {
 
 class Outlet
-{    
+{
 public:
      Outlet ();
     ~Outlet ();
 
 public:
-    virtual void onRealChanged    (String name,       Real     real   ) = 0;
-    virtual void onStringChanged  (String name, const String&  string ) = 0;
-    virtual void onStringsChanged (String name, const Strings& strings) = 0;
-    virtual void onImageChanged   (String name, const Image&   image  ) = 0;
-    virtual void onMeshChanged    (String name, const Mesh&    mesh   ) = 0;
+    void start ();
+    void stop  ();
+
+public:
+    void subscribe   (String name);
+    void unsubscribe (String name);
+
+public:
+#define HUB_TYPE(Type, type, Arg, Ret, Val)                     \
+    virtual void on##Type##Changed (String name, Arg type) = 0;
+        HUB_TYPES()
+#undef  HUB_TYPE
 
 private:
+    friend class Hub;
     struct Impl;
     Impl* impl;
 };
@@ -38,18 +46,19 @@ public:
     virtual ~QOutlet ();
 
 public: // Outlet
-    virtual void onRealChanged     (String name,       Real     real  );
-    virtual void onStringChanged   (String name, const String&  string);
-    virtual void onStringsChanged  (String name, const Strings& strings);
-    virtual void onImageChanged    (String name, const Image&   image  );
-    virtual void onMeshChanged     (String name, const Mesh&    mesh   );
+#define HUB_TYPE(Type, type, Arg, Ret, Val)                 \
+    virtual void on##Type##Changed (String name, Arg type);
+        HUB_TYPES()
+#undef  HUB_TYPE
+
+// FIXME: Qt's signal declarations cannot be preprocessor-expanded.
 
 signals:
-    void    realChanged (String name,       Real     real   );
-    void  stringChanged (String name, const String&  string );
-    void stringsChanged (String name, const Strings& strings);
-    void   imageChanged (String name, const Image&   image  );
-    void    meshChanged (String name, const Mesh&    mesh   );
+    void    realChanged (String name,       Real          real   );
+    void  stringChanged (String name, const String&       string );
+    void stringsChanged (String name, const Strings&      strings);
+    void   imageChanged (String name, const Image&        image  );
+    void    meshChanged (String name, const MeshConstPtr& mesh   );
 };
 
 } }

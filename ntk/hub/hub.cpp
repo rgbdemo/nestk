@@ -3,6 +3,7 @@
 #include "outlet.h"
 #include "updates.h"
 #include "mesh/mesh.h"
+#include "impl.h"
 #include <QHash>
 #include <QMutex>
 #include <QMutexLocker>
@@ -20,7 +21,7 @@ Hub::getInstance()
 //------------------------------------------------------------------------------
 
 Hub::Hub ()
-    : impl(new Impl)
+    : impl(new Impl(this))
 {
 
 }
@@ -85,12 +86,11 @@ HUB_TYPES()
 
 //------------------------------------------------------------------------------
 
-void Hub::appendToStrings (const String& name, const String& string)
+void
+Hub::appendToStrings (const String& name, const String& string)
 {
     postUpdate(new AppendStringsUpdate(name, string));
 }
-
-//------------------------------------------------------------------------------
 
 void
 Hub::setImageMatrix (const String& name, const Matrix& matrix)
@@ -98,12 +98,19 @@ Hub::setImageMatrix (const String& name, const Matrix& matrix)
     postUpdate(new SetMatrixImageUpdate(name, matrix));
 }
 
-//------------------------------------------------------------------------------
-
 void
 Hub::setMesh (const String& name, const Mesh& mesh)
 {
     postUpdate(new SetMeshUpdate(name, MeshConstPtr(new Mesh(mesh))));
 }
+
+//------------------------------------------------------------------------------
+
+FWD_IMPL_1(void, Hub,      attachOutlet, Outlet*)
+FWD_IMPL_1(void, Hub,      detachOutlet, Outlet*)
+FWD_IMPL_2(void, Hub,   subscribeOutlet, Outlet*, String)
+FWD_IMPL_2(void, Hub, unsubscribeOutlet, Outlet*, String)
+FWD_IMPL_1(void, Hub,       startOutlet, Outlet*)
+FWD_IMPL_1(void, Hub,        stopOutlet, Outlet*)
 
 } }

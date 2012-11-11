@@ -5,6 +5,10 @@
 
 namespace ntk { namespace hub {
 
+struct Outlet;
+
+//------------------------------------------------------------------------------
+
 class Hub
 : public ntk::AsyncEventListener
 , public ntk::EventBroadcaster
@@ -49,6 +53,14 @@ public:
     class           MeshUpdate;
     class        SetMeshUpdate;
     class      ClearMeshUpdate;
+
+public:
+    void      attachOutlet (Outlet* outlet);
+    void      detachOutlet (Outlet* outlet);
+    void   subscribeOutlet (Outlet* outlet, String name);
+    void unsubscribeOutlet (Outlet* outlet, String name);
+    void       startOutlet (Outlet* outlet);
+    void        stopOutlet (Outlet* outlet);
 
 private:
     void postUpdate (Update* update);
