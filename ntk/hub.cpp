@@ -15,16 +15,36 @@ inline QString prefixed (const char* prefix, const QString& name)
 
 namespace ntk { namespace hub {
 
-void report (const String& name, const String& status, Real progress)
+void setStatus (const String& status)
 {
-    setStatus(  name, status);
-    setProgress(name, progress);
+    Hub::getInstance()->setString("status", status);
 }
 
-void finish (const String& name)
+void   resetStatus ()
 {
-    resetStatus(  name);
-    resetProgress(name);
+    Hub::getInstance()->resetString("status");
+}
+
+void   setProgress (Real progress)
+{
+    Hub::getInstance()->setReal("progress", progress);
+}
+
+void resetProgress ()
+{
+    Hub::getInstance()->resetReal("progress");
+}
+
+void report (const String& status, Real progress)
+{
+    setStatus(status);
+    setProgress(progress);
+}
+
+void finish ()
+{
+    resetStatus();
+    resetProgress();
 }
 
 //------------------------------------------------------------------------------
@@ -46,11 +66,11 @@ void Function (const String& name)                                 \
 HUB_SET(     set##Name, Type, Prefix) \
 HUB_RESET( reset##Name, Type, Prefix)
 
-HUB_CLASS(Status  , String , statuses  )
-HUB_CLASS(Progress, Real   , progresses)
-HUB_CLASS(Log     , Strings, logs      )
-HUB_CLASS(Image   , Image  , images    )
-HUB_CLASS(Mesh    , Mesh   , meshes    )
+HUB_CLASS(Real    , Real   , reals      )
+HUB_CLASS(Status  , String , strings    )
+HUB_CLASS(Log     , Strings, stringlists)
+HUB_CLASS(Image   , Image  , images     )
+HUB_CLASS(Mesh    , Mesh   , meshes     )
 
 //------------------------------------------------------------------------------
 
@@ -68,8 +88,8 @@ Function (const String& name, Arg0 arg0)                       \
     Hub::getInstance()->Method(prefixed(#Prefix, name), arg0); \
 }
 
-HUB_FWD_1(appendLog , appendToStrings, logs  , const String&);
-HUB_FWD_1(setImage  , setImageMatrix , images, const Matrix&);
-HUB_FWD_1(setMesh   , setMesh        , meshes, const Mesh&);
+HUB_FWD_1(appendLog , appendToStrings, stringlists , const String&);
+HUB_FWD_1(setImage  , setImageMatrix , images      , const Matrix&);
+HUB_FWD_1(setMesh   , setMesh        , meshes      , const Mesh&  );
 
 } }
