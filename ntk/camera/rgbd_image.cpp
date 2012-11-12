@@ -81,7 +81,7 @@ RGBDImage :: ~RGBDImage()
 std::string RGBDImage::getUniqueId() const
 {
     // FIXME: cache this.
-    return cv::format("%s-%f", cameraSerial(), timestamp());
+    return cv::format("%s-%.4f", cameraSerial().c_str(), timestamp());
 }
 
 void RGBDImage :: loadFromFile(const std::string& dir,
