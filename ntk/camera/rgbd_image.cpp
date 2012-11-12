@@ -78,6 +78,12 @@ RGBDImage :: ~RGBDImage()
         delete m_skeleton;
 }
 
+std::string RGBDImage::getUniqueId() const
+{
+    // FIXME: cache this.
+    return cv::format("%s-%f", cameraSerial(), timestamp());
+}
+
 void RGBDImage :: loadFromFile(const std::string& dir,
                                const RGBDCalibration* calib)
 {

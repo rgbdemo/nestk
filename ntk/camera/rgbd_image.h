@@ -67,6 +67,9 @@ public:
   bool hasRgb() const { return rawRgb().data != 0; }
   bool hasDepth() const { return rawDepth().data != 0; }
 
+  /*! Get unique id from timestamp and camera serial. */
+  std::string getUniqueId() const;
+
   /*! Directory path if loaded from disk. */
   const std::string& directory() const { return m_directory; }
 
