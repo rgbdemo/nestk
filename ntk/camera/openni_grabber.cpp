@@ -201,6 +201,9 @@ void OpenniGrabber :: set_xml_config_file(const std::string & xml_filename)
 
 bool OpenniGrabber :: connectToDevice()
 {
+    if (m_connected)
+        return true;
+
     QMutexLocker ni_locker(&m_ni_mutex);
     ntk_dbg(1) << format("[Kinect %x] connecting", this);
 
