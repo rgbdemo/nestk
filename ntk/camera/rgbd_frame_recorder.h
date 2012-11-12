@@ -88,7 +88,7 @@ public:
   /*! Whether the timestamp should be included as a suffix. */
   void setIncludeTimestamp(bool use_it) { m_include_timestamp = use_it; }
 
-private:
+public:
   void writeFrame(const RGBDImage& image, const std::string& dir);
 
 private:
