@@ -49,43 +49,43 @@ void finish ()
 
 //------------------------------------------------------------------------------
 
-#define HUB_SET(Function, Type, Prefix)                          \
-void                                                             \
-Function (const String& name, HUB_TYPE_ARG(Type) arg)            \
-{                                                                \
-    Hub::getInstance()->set##Type(prefixed(#Prefix, name), arg); \
+#define HUB_SET(Function, Type)                        \
+void                                                   \
+Function (const String& name, HUB_TYPE_ARG(Type) arg)  \
+{                                                      \
+    Hub::getInstance()->set##Type(name, arg);          \
 }
 
-#define HUB_RESET(Function, Type, Prefix)                          \
-void Function (const String& name)                                 \
-{                                                                  \
-    Hub::getInstance()->reset##Type(prefixed(#Prefix, name));      \
+#define HUB_RESET(Function, Type)          \
+void Function (const String& name)         \
+{                                          \
+    Hub::getInstance()->reset##Type(name); \
 }
 
-#define HUB_CLASS(Name, Type, Prefix) \
-HUB_SET(     set##Name, Type, Prefix) \
-HUB_RESET( reset##Name, Type, Prefix)
+#define HUB_CLASS(Name, Type) \
+HUB_SET(     set##Name, Type) \
+HUB_RESET( reset##Name, Type)
 
-HUB_CLASS(Real    , Real   , reals      )
-HUB_CLASS(Status  , String , strings    )
-HUB_CLASS(Log     , Strings, stringlists)
-HUB_CLASS(Image   , Image  , images     )
-HUB_CLASS(Mesh    , Mesh   , meshes     )
+HUB_CLASS(Real    , Real   )
+HUB_CLASS(Status  , String )
+HUB_CLASS(Log     , Strings)
+HUB_CLASS(Image   , Image  )
+HUB_CLASS(Mesh    , Mesh   )
 
 //------------------------------------------------------------------------------
 
-#define HUB_FWD_0(Function, Method, Prefix)                \
-    void                                                   \
-Function (const String& name)                              \
-{                                                          \
-    Hub::getInstance()->Function(prefixed(#Prefix, name)); \
+#define HUB_FWD_0(Function, Method, Prefix)  \
+    void                                     \
+Function (const String& name)                \
+{                                            \
+    Hub::getInstance()->Function(name);      \
 }
 
-#define HUB_FWD_1(Function, Method, Prefix, Arg0)              \
-void                                                           \
-Function (const String& name, Arg0 arg0)                       \
-{                                                              \
-    Hub::getInstance()->Method(prefixed(#Prefix, name), arg0); \
+#define HUB_FWD_1(Function, Method, Prefix, Arg0) \
+void                                              \
+Function (const String& name, Arg0 arg0)          \
+{                                                 \
+    Hub::getInstance()->Method(name, arg0);       \
 }
 
 HUB_FWD_1(appendLog , appendToStrings, stringlists , const String&);
