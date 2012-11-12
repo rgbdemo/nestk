@@ -20,7 +20,7 @@ set(OPENNI_DEFINITIONS ${PC_OPENNI_CFLAGS_OTHER})
 find_path(OPENNI_INCLUDE_DIR XnStatus.h
           HINTS ${NESTK_ROOT_DIRS_HINTS} ${PC_OPENNI_INCLUDEDIR} ${PC_OPENNI_INCLUDE_DIRS} /usr/include/openni /usr/include/ni
           PATHS "$ENV{PROGRAMFILES}/OpenNI/Include" "$ENV{PROGRAMW6432}/OpenNI/Include"
-          PATH_SUFFIXES openni)
+          PATH_SUFFIXES openni ni)
 #add a hint so that it can find it without the pkg-config
 find_library(OPENNI_LIBRARY
              NAMES OpenNI64 OpenNI
@@ -38,7 +38,7 @@ find_library(NITE_LIBRARY
 find_path(NITE_INCLUDE_DIR XnVSessionManager.h
           HINTS ${NESTK_ROOT_DIRS_HINTS} ${PC_OPENNI_INCLUDEDIR} ${PC_OPENNI_INCLUDE_DIRS} /usr/include/openni /usr/include/nite
           PATHS "$ENV{PROGRAMFILES}/PrimeSense/NITE/Include" "$ENV{PROGRAMW6432}/PrimeSense/NITE/Include"
-          PATH_SUFFIXES openni)
+          PATH_SUFFIXES openni nite)
 
 set(OPENNI_INCLUDE_DIRS ${OPENNI_INCLUDE_DIR} ${NITE_INCLUDE_DIR})
 if(APPLE)
