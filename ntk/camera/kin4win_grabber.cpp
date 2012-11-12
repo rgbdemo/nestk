@@ -46,10 +46,11 @@ namespace Messages
     static WinStr Var = Txt;
 
     MSG(initError         , L"Failed to initialize sensor.")
-    MSG(depthStreamError  , L"Could not open depth stream.")
+    MSG(depthStreamError  , L"Could not open depth stream.")    
     MSG(colorStreamError  , L"Could not open color stream.")
     MSG(creationError     , L"Failed to acquire sensor."   )
     MSG(inUseError        , L"Sensor already in use."      )
+    MSG(nearModeError     , L"Could not set near mode.")
 
 #undef MSG
 }
@@ -185,11 +186,17 @@ public:
 
         ret = sensor->NuiImageStreamOpen(NUI_IMAGE_TYPE_DEPTH, depthResolution, 0, 2, nextDepthFrameEvent, &depthStreamHandle);
 
-        NuiImageStreamSetImageFrameFlags(depthStreamHandle, NUI_IMAGE_STREAM_FLAG_ENABLE_NEAR_MODE);
-
         if (FAILED(ret))
         {
             alert(Messages::depthStreamError);
+            return ret;
+        }
+
+        ret = sensor->NuiImageStreamSetImageFrameFlags(depthStreamHandle, NUI_IMAGE_STREAM_FLAG_ENABLE_NEAR_MODE);
+
+        if (FAILED(ret))
+        {
+            alert(Messages::nearModeError);
             return ret;
         }
 
@@ -237,9 +244,9 @@ public:
                 ntk_dbg_print(that->m_near_mode_changed, 0);
                 ntk_dbg_print(that->m_near_mode, 0);
                 if (that->m_near_mode)
-                    NuiImageStreamSetImageFrameFlags(depthStreamHandle, NUI_IMAGE_STREAM_FLAG_ENABLE_NEAR_MODE);
+                    sensor->NuiImageStreamSetImageFrameFlags(depthStreamHandle, NUI_IMAGE_STREAM_FLAG_ENABLE_NEAR_MODE);
                 else
-                    NuiImageStreamSetImageFrameFlags(depthStreamHandle, 0);
+                    sensor->NuiImageStreamSetImageFrameFlags(depthStreamHandle, 0);
                 that->m_near_mode_changed = false;
             }
         }
