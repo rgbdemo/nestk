@@ -227,11 +227,6 @@ namespace ntk
     {
         m_image = &image;
 
-        if (m_image->calibration() && !m_image->depthPose().isValid())
-        {
-            m_image->setDepthPose(*m_image->calibration()->depth_pose);
-        }
-
         TimeCount tc("processImage", 2);
 
         if (m_image->hasRgb() && hasFilterFlag(RGBDProcessorFlags::FlipColorImage))

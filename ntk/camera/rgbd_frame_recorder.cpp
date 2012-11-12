@@ -107,10 +107,10 @@ namespace ntk
 
       std::string filename;
 
-      if (m_save_rgb_pose && image.calibration())
+      if (m_save_rgb_pose && image.estimatedWorldRgbPose().isValid())
       {
         filename = cv::format("%s/rgb_pose.avs", frame_dir.c_str());
-        image.rgbPose().saveToAvsFile(filename.c_str());
+        image.estimatedWorldRgbPose().saveToAvsFile(filename.c_str());
       }
 
       if (m_save_calibration && image.calibration())

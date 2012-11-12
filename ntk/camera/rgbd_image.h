@@ -67,6 +67,9 @@ public:
   bool hasRgb() const { return rawRgb().data != 0; }
   bool hasDepth() const { return rawDepth().data != 0; }
 
+  /*! Get unique id from timestamp and camera serial. */
+  std::string getUniqueId() const;
+
   /*! Directory path if loaded from disk. */
   const std::string& directory() const { return m_directory; }
 
@@ -213,13 +216,19 @@ public:
   Skeleton* skeletonRef() { return m_skeleton; }
   void setSkeletonData(Skeleton* skeleton) { m_skeleton = skeleton; }
 
-  /*! Associate a pose with the image. */
-  const Pose3D& depthPose() const { return m_depth_pose; }
-  void setDepthPose(const Pose3D& pose) { m_depth_pose = pose; }
+  /*! Pose in sensor coordinate frame, according to calibration. */
+  Pose3D sensorDepthPose() const;
 
-  /*! Return the rgb pose associated to the depth pose. */
-  Pose3D rgbPose() const;
-  void setRgbPose(const Pose3D& pose);
+  /*! Return the sensor rgb pose associated to the depth pose. */
+  Pose3D sensorRgbPose() const;
+
+  /*! Pose of the image in world coordinates. */
+  const Pose3D estimatedWorldDepthPose() const { return m_estimated_world_depth_pose; }
+  void setEstimatedWorldDepthPose(const Pose3D& pose) { m_estimated_world_depth_pose = pose; }
+
+  /*! Return the world rgb pose associated to the depth pose. */
+  Pose3D estimatedWorldRgbPose() const;
+  void setEstimatedWorldRgbPose(const Pose3D& pose);
 
   /*! Whether the image does not have any depth pixel. */
   bool hasEmptyRawDepthImage() const;
@@ -248,7 +257,7 @@ private:
   const RGBDCalibration* m_calibration;
   std::string m_directory;
   Skeleton* m_skeleton;
-  ntk::Pose3D m_depth_pose;
+  ntk::Pose3D m_estimated_world_depth_pose;
   std::string m_camera_serial;
   float m_timestamp;
   ntk::Ptr<FeatureSet> m_features;

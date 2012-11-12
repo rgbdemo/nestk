@@ -4,31 +4,36 @@
 
 namespace ntk { namespace hub {
 
-// statuses.*
-void     setStatus (const String& name, const String& status);
-void   resetStatus (const String& name);
+// hub.status
+void     setStatus (const String& status);
+void   resetStatus ();
 
-// progresses.*
-void   setProgress (const String& name, Real progress);
-void resetProgress (const String& name);
+// hub.progress
+void   setProgress (Real progress);
+void resetProgress ();
 
-// {statuses,progresses}.*
-void report (const String& name, const String& status, Real progress);
-void finish (const String& name);
+// hub.{status,progress}
+void report (const String& status, Real progress);
+void finish ();
 
-// logs.*
-void        setLog (const String& name, const Strings& log);
-void     appendLog (const String& name, const String& line);
-void      resetLog (const String& name);
+// hub.log
+void    setLog (const Strings& log);
+void appendLog (const String& line);
+void  resetLog ();
 
-// images.*
-void      setImage (const String& name, const Image& image);
-void      setImage (const String& name, const Matrix& matrix);
-void    resetImage (const String& name);
+// hub.reals.*
+// hub.strings.*
+// hub.meshes.*
+// hub.images.*
+// hub.meshes.*
 
-// meshes.*
-void       setMesh (const String& name, MeshConstPtr mesh);
-void       setMesh (const String& name, const Mesh&  mesh);
-void     resetMesh (const String& name);
+#define HUB_TYPE(Type, type, Arg, Ret, Val)        \
+void      set##Type (const String& name, Arg arg); \
+void    reset##Type (const String& name);
+        HUB_TYPES()
+#undef  HUB_TYPE
+
+void setImage (const String& name, const Matrix& matrix);
+void setMesh  (const String& name, const Mesh&  mesh);
 
 } }

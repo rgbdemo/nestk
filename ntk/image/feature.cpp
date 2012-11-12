@@ -186,8 +186,8 @@ void FeatureSet :: extractFromImage(const RGBDImage& image,
     // Remove keypoints without depth if the option is set.
     if (params.only_features_with_depth)
     {
-        const Pose3D depth_pose = image.depthPose();
-        const Pose3D rgb_pose = image.rgbPose();
+        const Pose3D depth_pose = image.sensorDepthPose();
+        const Pose3D rgb_pose = image.sensorRgbPose();
         foreach_idx(i, keypoints)
         {
             float y = keypoints[i].pt.y;
