@@ -2,6 +2,23 @@
 #include "hub/hub.h"
 #include "mesh/mesh.h"
 
+/*
+    FIXME:
+
+Thread 0 Crashed:  Dispatch queue: com.apple.main-thread
+0   QtGui                         	0x000000011c2d9689 QImagePixmapCleanupHooks::executeImageHooks(long long) + 57
+1   QtGui                         	0x000000011c2a9ef4 QImageData::~QImageData() + 196
+2   QtGui                         	0x000000011c2aa041 QImage::~QImage() + 65
+3   skanpad                       	0x00000001001d5b8c QHash<QString, QImage>::deleteNode2(QHashData::Node*) + 28
+4   QtCore                        	0x000000011d730cba QHashData::free_helper(void (*)(QHashData::Node*)) + 138
+5   skanpad                       	0x00000001001d543e ntk::hub::Hub::Impl::~Impl() + 254
+6   skanpad                       	0x00000001001d45d6 ntk::hub::Hub::~Hub() + 86
+7   libSystem.B.dylib             	0x00007fff87800374 __cxa_finalize + 203
+8   libSystem.B.dylib             	0x00007fff8780028c exit + 18
+9   skanpad                       	0x000000010001b99b start + 59
+
+*/
+
 namespace {
 
 inline QString prefixed (const char* prefix, const QString& name)
