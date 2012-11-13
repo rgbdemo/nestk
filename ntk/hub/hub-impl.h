@@ -9,13 +9,7 @@
 #include <QHash>
 #include <QSet>
 #include <QMutex>
-
-namespace ntk { namespace hub {
-
-struct Hub::Impl
-{
-public:
-    Impl (Hub* that);
+#include <QObject>
 
 #define HUB_IMPL_MEMBER(name, ...) \
     mutable QMutex      name##Mutex;     \
@@ -28,12 +22,23 @@ public:
 #define HUB_IMPL_VALUES(Type, type, Val)                            \
     HUB_IMPL_MEMBER_TYPEDEF(Type##Values, type##Values, QHash<String, Val>)
 
+#define HUB_IMPL_LOCKED(name) QMutexLocker _(&name##Mutex);
+
 #define HUB_TYPE(Type, type, Arg, Ret, Val) \
     HUB_IMPL_VALUES(Type, type, Val)
-        HUB_TYPES()
-#undef  HUB_TYPE
 
-#define HUB_IMPL_LOCKED(name) QMutexLocker _(&name##Mutex);
+namespace ntk { namespace hub {
+
+struct Hub::Impl : QObject
+{
+    Q_OBJECT
+
+public:
+     Impl (Hub* that);
+    ~Impl ();
+
+public slots:
+     void quit ();
 
 public: // Names
     bool maybeAddName (const QString& name)
@@ -85,6 +90,9 @@ public: // Names
         return *i;
     }
 
+public:
+    HUB_TYPES()
+
 public: // Names
     static const QString emptyName;
     struct Dictionary
@@ -104,9 +112,9 @@ public: // Outlets
 
 public: // Activity
     void setEnabled (bool enabled);
-    void    enable ();
-    void   disable ();
-    bool isActive (const QString& name);
+    void     enable ();
+    void    disable ();
+    bool   isActive (const QString& name);
 
 private:
     HUB_IMPL_MEMBER(enabled, bool)
@@ -132,3 +140,5 @@ private:
 };
 
 } }
+
+#undef HUB_TYPE

@@ -203,7 +203,7 @@ QT4_WRAP_UI(uic_sources
 QT4_WRAP_CPP(moc_sources
   gui/image_widget.h
   gui/image_window.h
-  hub/hub.h
+  hub/hub-impl.h
   mesh/mesh_viewer.h
   thread/event.h
   utils/progressive.h

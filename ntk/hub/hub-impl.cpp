@@ -12,6 +12,17 @@ Hub::Impl::Impl (Hub* that)
     assert(0 != that);
 }
 
+Hub::Impl::~Impl ()
+{
+
+}
+
+void
+Hub::Impl::quit ()
+{
+    that->quit();
+}
+
 void
 Hub::Impl::attachOutlet (Outlet* outlet)
 {

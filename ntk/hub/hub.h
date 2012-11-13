@@ -66,6 +66,7 @@ public:
 
 private:
     void postUpdate (Update* update);
+    void quit ();
 
 private:
     struct Impl;
