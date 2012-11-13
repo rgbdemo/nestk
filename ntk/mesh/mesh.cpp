@@ -106,8 +106,8 @@ Mesh::Mesh (const Mesh& copy)
 , texcoords(     copy.texcoords)
 , face_texcoords(copy.face_texcoords)
 , faces(         copy.faces)
-, texture(       copy.texture)
 , face_labels(   copy.face_labels)
+, texture(       copy.texture)
 {
 
 }
