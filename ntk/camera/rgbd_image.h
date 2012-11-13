@@ -90,8 +90,8 @@ public:
   const std::string& cameraSerial() const { return m_camera_serial; }
 
   /*! Return the grabbing timestamp in seconds. */
-  void setTimestamp(float t) { m_timestamp = t; }
-  float timestamp() const { return m_timestamp; }
+  void setTimestamp(int t) { m_timestamp = t; }
+  int timestamp() const { return m_timestamp; }
 
   /*! Associated optional calibration data. */
   const RGBDCalibration* calibration() const { return m_calibration; }
@@ -259,7 +259,7 @@ private:
   Skeleton* m_skeleton;
   ntk::Pose3D m_estimated_world_depth_pose;
   std::string m_camera_serial;
-  float m_timestamp;
+  int m_timestamp;
   ntk::Ptr<FeatureSet> m_features;
 };
 ntk_ptr_typedefs(RGBDImage)

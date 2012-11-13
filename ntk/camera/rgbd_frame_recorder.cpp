@@ -32,6 +32,8 @@
 #include <pcl/io/pcd_io.h>
 #endif
 
+#include <fstream>
+
 using namespace cv;
 
 namespace ntk
@@ -75,9 +77,9 @@ namespace ntk
       std::string path = m_dir.absolutePath().toStdString();
       if (m_include_serial)
           path += "/" + image.cameraSerial();
-      path += format("/view%04d", m_frame_index);
+      path += format("/view", m_frame_index);
       if (m_include_timestamp)
-          path += format("-%f", image.timestamp());
+          path += format("-%08d", image.timestamp());
       return path;
   }
 
@@ -106,6 +108,21 @@ namespace ntk
       dir.mkpath("raw");
 
       std::string filename;
+
+      if (!image.cameraSerial().empty())
+      {
+          filename = cv::format("%s/serial", frame_dir.c_str());
+          std::ofstream f (filename.c_str());
+          f << image.cameraSerial ();
+          f.close ();
+      }
+
+      {
+          filename = cv::format("%s/timestamp", frame_dir.c_str());
+          std::ofstream f (filename.c_str());
+          f << image.timestamp ();
+          f.close ();
+      }
 
       if (m_save_rgb_pose && image.estimatedWorldRgbPose().isValid())
       {

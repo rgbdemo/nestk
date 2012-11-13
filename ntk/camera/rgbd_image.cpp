@@ -25,6 +25,8 @@
 
 #include <ntk/image/feature.h>
 
+#include <fstream>
+
 #include <QDir>
 
 #if defined(USE_NITE) || defined(NESTK_USE_NITE)
@@ -81,7 +83,7 @@ RGBDImage :: ~RGBDImage()
 std::string RGBDImage::getUniqueId() const
 {
     // FIXME: cache this.
-    return cv::format("%s-%.4f", cameraSerial().c_str(), timestamp());
+    return cv::format("%s-%08d", cameraSerial().c_str(), timestamp());
 }
 
 void RGBDImage :: loadFromFile(const std::string& dir,
@@ -112,6 +114,20 @@ void RGBDImage :: loadFromDir(const std::string& dir,
         calib = input_calib;
     }
     setCalibration(calib);
+
+    if (is_file(dir+"/serial"))
+    {
+        std::ifstream f ((dir+"/serial").c_str());
+        f >> m_camera_serial;
+        f.close ();
+    }
+
+    if (is_file(dir+"/timestamp"))
+    {
+        std::ifstream f ((dir+"/timestamp").c_str());
+        f >> m_timestamp;
+        f.close ();
+    }
 
     if (!is_file(dir+"/raw/color.png") && is_file(dir+"/color.png"))
     {
@@ -299,6 +315,8 @@ Pose3D RGBDImage :: estimatedWorldRgbPose() const
 {
     ntk_assert(m_calibration, "Calibration must be available!");
     Pose3D pose = m_estimated_world_depth_pose;
+    if (!pose.isValid())
+        return pose;
     pose.toRightCamera(m_calibration->rgb_intrinsics, m_calibration->R, m_calibration->T);
     return pose;
 }
