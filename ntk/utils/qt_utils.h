@@ -166,7 +166,8 @@ const NtkDebug& operator<<(const NtkDebug& os, const QPointF& p)
 namespace ntk
 {
 
-void remove_path_recursively(const std::string& dirpath);
+void remove_path_recursively (const std::string& dirpath);
+void remove_content_recursively (const std::string& dirpath);
 
 QRectF fitInRect(const QRectF& rect, const QSizeF& size);
 

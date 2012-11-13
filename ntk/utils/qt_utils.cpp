@@ -87,6 +87,32 @@ void remove_path_recursively(const std::string& dirpath)
 	}
 }
 
+/*! Only removes the content of dirpath */
+void remove_content_recursively(const std::string& dirpath)
+{
+    QDir dir (dirpath.c_str());
+    QFileInfoList list = dir.entryInfoList(QDir::NoDotAndDotDot);
+    for (int iList=0;iList<list.count();iList++)
+    {
+        QFileInfo info = list[iList];
+
+        QString sFilePath = info.filePath();
+        if (info.isDir())
+        {
+            // recursive
+            if (info.fileName()!=".." && info.fileName()!=".")
+            {
+                remove_path_recursively(sFilePath.toStdString());
+            }
+            dir.rmpath(info.fileName());
+        }
+        else
+        {
+            dir.remove(info.fileName());
+        }
+    }
+}
+
 void filesWithExts(QStringList& l, const QDir& dir,
                    const char* ext1, const char* ext2,
                    const char* ext3, const char* ext4)
