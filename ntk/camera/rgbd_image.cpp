@@ -80,6 +80,8 @@ RGBDImage :: ~RGBDImage()
 
 std::string RGBDImage::getUniqueId() const
 {
+    assert(false); // FIXME: Non-POD types cannot be passed trough the ellipsis.
+
     // FIXME: cache this.
     return cv::format("%s-%.4f", cameraSerial().c_str(), timestamp());
 }
