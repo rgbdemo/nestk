@@ -31,6 +31,38 @@
 # include <QString>
 # include <QTextStream>
 # include <QDataStream>
+# include <QFileInfo>
+
+namespace ntk
+{
+
+template <class T>
+class Serializer
+{
+    typedef T* PtrT;
+
+    virtual PtrT read (const QDataStream& stream) { return PtrT(); }
+    virtual PtrT read (const  QByteArray&  array) { return PtrT(); }
+    virtual PtrT read (const   QFileInfo&   file) { return PtrT(); }
+    virtual PtrT read (const        QDir&    dir) { return PtrT(); }
+
+    virtual bool canReadFromDataStream () const { return false; }
+    virtual bool     canReadFromString () const { return false; }
+    virtual bool       canReadFromFile () const { return false; }
+    virtual bool        canReadFromDir () const { return false; }
+
+    virtual void write (QDataStream& stream, const PtrT value) { abort (); }
+    virtual void write ( QByteArray&  array, const PtrT value) { abort (); }
+    virtual void write (  QFileInfo&   file, const PtrT value) { abort (); }
+    virtual void write (       QDir&    dir, const PtrT value) { abort (); }
+
+    virtual bool canWriteToDataStream () const { return false; }
+    virtual bool     canWriteToString () const { return false; }
+    virtual bool       canWriteToFile () const { return false; }
+    virtual bool        canWriteToDir () const { return false; }
+};
+
+} // ntk
 
 namespace ntk
 {
