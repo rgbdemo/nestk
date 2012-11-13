@@ -131,8 +131,8 @@ FWD_IMPL_0(void, Hub, disable)
 
 FWD_IMPL_1(void, Hub,      attachOutlet, Outlet*)
 FWD_IMPL_1(void, Hub,      detachOutlet, Outlet*)
-FWD_IMPL_2(void, Hub,   subscribeOutlet, Outlet*, String)
-FWD_IMPL_2(void, Hub, unsubscribeOutlet, Outlet*, String)
+FWD_IMPL_2(void, Hub,   subscribeOutlet, Outlet*, const String&)
+FWD_IMPL_2(void, Hub, unsubscribeOutlet, Outlet*, const String&)
 FWD_IMPL_1(void, Hub,       startOutlet, Outlet*)
 FWD_IMPL_1(void, Hub,        stopOutlet, Outlet*)
 

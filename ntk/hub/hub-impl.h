@@ -97,41 +97,16 @@ public: // Names
 public: // Outlets
     void      attachOutlet (Outlet* outlet);
     void      detachOutlet (Outlet* outlet);
-    void   subscribeOutlet (Outlet* outlet, String name);
-    void unsubscribeOutlet (Outlet* outlet, String name);
+    void   subscribeOutlet (Outlet* outlet, const String& name);
+    void unsubscribeOutlet (Outlet* outlet, const String& name);
     void       startOutlet (Outlet* outlet);
     void        stopOutlet (Outlet* outlet);
 
 public: // Activity
-    void setEnabled (bool enabled_)
-    {
-        HUB_IMPL_LOCKED(enabled)
-
-        enabled = enabled_;
-    }
-    void  enable () { setEnabled(true);  }
-    void disable () { setEnabled(false); }
-
-    bool isActive (const QString& name)
-    {
-        {
-            HUB_IMPL_LOCKED(enabled)
-
-            if (!enabled)
-                return false;
-        }
-
-        {
-            HUB_IMPL_LOCKED(activeSubscriptions);
-
-            const ActiveSubscriptions::ConstIterator i = activeSubscriptions.find(name);
-
-            if (i == activeSubscriptions.end())
-                return false;
-
-            return 0 < i.value();
-        }
-    }
+    void setEnabled (bool enabled);
+    void    enable ();
+    void   disable ();
+    bool isActive (const QString& name);
 
 private:
     HUB_IMPL_MEMBER(enabled, bool)
