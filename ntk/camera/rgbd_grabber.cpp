@@ -73,7 +73,7 @@ void RGBDGrabber :: stop()
 
 }
 
-float ntk::RGBDGrabber::getCurrentTimestamp()
+int ntk::RGBDGrabber::getCurrentTimestamp()
 {
     if (m_initial_timestamp == 0)
     {
@@ -82,7 +82,7 @@ float ntk::RGBDGrabber::getCurrentTimestamp()
     }
     else
     {
-        return (ntk::Time::getMillisecondCounter() - m_initial_timestamp) / 1000.f;
+        return (ntk::Time::getMillisecondCounter() - m_initial_timestamp);
     }
 }
 

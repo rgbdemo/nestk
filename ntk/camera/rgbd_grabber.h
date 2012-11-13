@@ -159,7 +159,7 @@ public:
 protected:
   bool threadShouldExit () const;
   void advertiseNewFrame();
-  float getCurrentTimestamp();
+  int getCurrentTimestamp();
 
 protected:
   mutable RecursiveQReadWriteLock m_lock;
