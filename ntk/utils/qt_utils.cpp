@@ -91,7 +91,7 @@ void remove_path_recursively(const std::string& dirpath)
 void remove_content_recursively(const std::string& dirpath)
 {
     QDir dir (dirpath.c_str());
-    QFileInfoList list = dir.entryInfoList(QDir::NoDotAndDotDot);
+    QFileInfoList list = dir.entryInfoList(QDir::AllEntries|QDir::NoDotAndDotDot);
     for (int iList=0;iList<list.count();iList++)
     {
         QFileInfo info = list[iList];
