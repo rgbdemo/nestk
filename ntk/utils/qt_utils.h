@@ -33,6 +33,7 @@
 # include <QPolygonF>
 # include <QMatrix>
 # include <QLocalSocket>
+# include <QFileInfoList>
 
 class QDir;
 class QStringList;
@@ -166,6 +167,7 @@ const NtkDebug& operator<<(const NtkDebug& os, const QPointF& p)
 namespace ntk
 {
 
+void get_recursive_filelist (const QDir& dir, QFileInfoList& files);
 void remove_path_recursively (const std::string& dirpath);
 void remove_content_recursively (const std::string& dirpath);
 

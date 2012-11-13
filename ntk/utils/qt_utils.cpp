@@ -62,6 +62,24 @@ QTextStream& operator<<(QTextStream& output, const unsigned char c)
 namespace ntk
 {
 
+void get_recursive_filelist (const QDir& dir, QFileInfoList& files)
+{
+    QFileInfoList list = dir.entryInfoList(QDir::AllEntries|QDir::NoDotAndDotDot);
+    for (int iList=0; iList < list.count(); iList++)
+    {
+        QFileInfo info = list[iList];
+
+        if (info.isDir())
+        {
+            get_recursive_filelist (info.absoluteFilePath(), files);
+        }
+        else
+        {
+            files << info;
+        }
+    }
+}
+
 void remove_path_recursively(const std::string& dirpath)
 {
 	QDir dir (dirpath.c_str());
