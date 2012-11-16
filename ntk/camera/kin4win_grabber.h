@@ -48,6 +48,8 @@ public:
     virtual ~Kin4WinGrabber();
 
 public:
+    virtual std::string grabberType () const { return "kin4win"; }
+
     virtual bool connectToDevice();
     virtual bool disconnectFromDevice();
     virtual void setNearMode(bool enable);

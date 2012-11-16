@@ -124,6 +124,14 @@ namespace ntk
           f.close ();
       }
 
+      if (!image.grabberType().empty())
+      {
+          filename = cv::format("%s/grabber-type", frame_dir.c_str());
+          std::ofstream f (filename.c_str());
+          f << image.grabberType ();
+          f.close ();
+      }
+
       if (m_save_rgb_pose && image.estimatedWorldRgbPose().isValid())
       {
         filename = cv::format("%s/rgb_pose.avs", frame_dir.c_str());

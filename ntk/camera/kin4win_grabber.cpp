@@ -706,6 +706,9 @@ bool Kin4WinGrabber :: connectToDevice()
     m_rgbd_image.setCameraSerial(serial);
     m_current_image.setCameraSerial(serial);
 
+    m_rgbd_image.setGrabberType(grabberType());
+    m_current_image.setGrabberType(grabberType());
+
     if (false) // sample code using the accelerometer to identify each sensor.
     {
         cv::Point3f xyz;
@@ -839,8 +842,6 @@ void Kin4WinGrabber :: estimateCalibration()
     m_calib_data->rgb_pose->toRightCamera(m_calib_data->rgb_intrinsics,
                                           m_calib_data->R,
                                           m_calib_data->T);
-
-    m_calib_data->camera_type = "kin4win";
 }
 
 void Kin4WinGrabber :: run()

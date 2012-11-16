@@ -84,6 +84,9 @@ public:
   virtual void setCameraSerial(const std::string& serial) { m_camera_serial = serial; }
   const std::string& cameraSerial() const { return m_camera_serial; }
 
+  /*! Return an identifier of the camera type. */
+  virtual std::string grabberType () const = 0;
+
   /*! Set the tilt angle for motorized grabbers such as Kinect. */
   virtual void setTiltAngle(int angle) {}
 

@@ -51,6 +51,17 @@ void ntk::MultipleGrabber::addGrabber(RGBDGrabber* grabber)
     m_grabbed_images.resize(m_grabbers.size());
 }
 
+std::string ntk::MultipleGrabber::grabberType() const
+{
+    if (m_grabbers.size() < 1)
+        return "unknown";
+
+    if (m_grabbers.size() == 1)
+        return m_grabbers[0]->grabberType ();
+
+    return "multiple";
+}
+
 bool ntk::MultipleGrabber::connectToDevice()
 {
     bool ok = true;

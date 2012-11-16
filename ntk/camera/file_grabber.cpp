@@ -20,6 +20,9 @@
 #include "file_grabber.h"
 
 #include <ntk/utils/time.h>
+#include <ntk/utils/stl.h>
+
+#include <fstream>
 
 namespace ntk
 {
@@ -28,17 +31,26 @@ FileGrabber::FileGrabber(const std::string& path, bool is_directory)
     : RGBDGrabber(),
       m_path(path.c_str()),
       m_current_image_index(0),
-      m_is_directory(is_directory)
+      m_is_directory(is_directory),
+      m_grabber_type("unknown")
 {
     if (!is_directory)
     {
         m_rgbd_image.loadFromDir(path);
         m_rgbd_image.setDirectory(path);
+        m_grabber_type = m_rgbd_image.grabberType();
     }
     else
     {
         m_image_list = m_path.entryList(QStringList("view????*"), QDir::Dirs, QDir::Name);
         ntk_ensure(!m_image_list.empty(), "No view???? images in given directory.");
+        std::string grabber_file = m_path.absoluteFilePath(m_image_list[0] + "/grabber-type").toStdString();
+        if (ntk::is_file(grabber_file))
+        {
+            std::ifstream f (grabber_file);
+            f >> m_grabber_type;
+            f.close();
+        }
     }
 
     setCameraSerial(QDir(path.c_str()).dirName().toStdString());

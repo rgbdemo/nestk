@@ -54,8 +54,7 @@ RGBDCalibration::RGBDCalibration() :
     raw_rgb_size(640,480),
     rgb_size(480,480),
     raw_depth_size(204,204),
-    depth_size(204,204),
-    camera_type("kinect-ni")
+    depth_size(204,204)
 {
     R_extrinsics = Mat1d(3,3);
     setIdentity(R_extrinsics);
@@ -112,8 +111,6 @@ void RGBDCalibration::copyTo(RGBDCalibration &rhs) const
     rhs.depth_size = depth_size;
 
     rhs.infrared_size = infrared_size;
-
-    rhs.camera_type = camera_type;
 }
 
 void RGBDCalibration :: updatePoses()

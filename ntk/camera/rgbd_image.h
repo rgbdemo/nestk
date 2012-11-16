@@ -89,6 +89,10 @@ public:
   void setCameraSerial(const std::string& serial) { m_camera_serial = serial; }
   const std::string& cameraSerial() const { return m_camera_serial; }
 
+  /*! Return the grabber type that generated this image. */
+  void setGrabberType(const std::string& grabber) { m_grabber_type = grabber; }
+  const std::string& grabberType() const { return m_grabber_type; }
+
   /*! Return the grabbing timestamp in seconds. */
   void setTimestamp(int t) { m_timestamp = t; }
   int timestamp() const { return m_timestamp; }
@@ -261,6 +265,7 @@ private:
   std::string m_camera_serial;
   int m_timestamp;
   ntk::Ptr<FeatureSet> m_features;
+  std::string m_grabber_type;
 };
 ntk_ptr_typedefs(RGBDImage)
 

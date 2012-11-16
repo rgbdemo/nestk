@@ -52,6 +52,8 @@ public:
   /*! Disconnect from the Kinect device. */
   virtual bool disconnectFromDevice();
 
+  virtual std::string grabberType () const { return "softkinetic"; }
+
 public:
   void depthCallBack(uint16_t *buf, int width, int height);
   void rgbCallBack(uint8_t *buf, int width, int height);

@@ -48,7 +48,8 @@ RGBDImage::RGBDImage()
     : m_calibration(0),
       m_skeleton(0),
       m_camera_serial("unknown"),
-      m_timestamp(0)
+      m_timestamp(0),
+      m_grabber_type("unknown")
 {
 }
 
@@ -119,6 +120,13 @@ void RGBDImage :: loadFromDir(const std::string& dir,
     {
         std::ifstream f ((dir+"/serial").c_str());
         f >> m_camera_serial;
+        f.close ();
+    }
+
+    if (is_file(dir+"/grabber-type"))
+    {
+        std::ifstream f ((dir+"/grabber-type").c_str());
+        f >> m_grabber_type;
         f.close ();
     }
 
@@ -224,6 +232,7 @@ void RGBDImage :: copyTo(RGBDImage& other) const
     other.m_directory = m_directory;
     other.m_camera_serial = m_camera_serial;
     other.m_timestamp = m_timestamp;
+    other.m_grabber_type = m_grabber_type;
     other.m_estimated_world_depth_pose = m_estimated_world_depth_pose;
 #if defined(USE_NITE) || defined(NESTK_USE_NITE)
     if (m_skeleton)
@@ -265,6 +274,7 @@ void RGBDImage :: swap(RGBDImage& other)
     std::swap(m_skeleton, other.m_skeleton);
     std::swap(m_camera_serial, other.m_camera_serial);
     std::swap(m_timestamp, other.m_timestamp);
+    std::swap(m_grabber_type, other.m_grabber_type);
     std::swap(m_estimated_world_depth_pose, other.m_estimated_world_depth_pose);
 }
 

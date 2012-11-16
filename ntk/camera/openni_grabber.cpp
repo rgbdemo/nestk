@@ -194,7 +194,7 @@ void OpenniGrabber :: setSubsamplingFactor(int factor)
 
 const std::string OpenniGrabber :: DEFAULT_XML_CONFIG_FILE =  "config/NestkConfig.xml";
 
-void OpenniGrabber :: set_xml_config_file(const std::string & xml_filename)
+void OpenniGrabber :: setXmlConfigFile(const std::string & xml_filename)
 {
     m_xml_config_file = xml_filename;
 }
@@ -541,7 +541,6 @@ void OpenniGrabber :: estimateCalibration()
                                           m_calib_data->R,
                                           m_calib_data->T);
 
-    m_calib_data->camera_type = "kinect-ni";
     m_calib_data->computeInfraredIntrinsicsFromDepth();
 }
 
@@ -619,6 +618,9 @@ void OpenniGrabber :: run()
 
     m_rgbd_image.setCameraSerial(cameraSerial());
     m_current_image.setCameraSerial(cameraSerial());
+
+    m_rgbd_image.setGrabberType(grabberType());
+    m_current_image.setGrabberType(grabberType());
 
     xn::SceneMetaData sceneMD;
     xn::DepthMetaData depthMD;

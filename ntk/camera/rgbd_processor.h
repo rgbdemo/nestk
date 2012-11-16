@@ -223,15 +223,15 @@ class RGBDProcessorFactory
 public:
     struct Params
     {
-        Params() : camera_type("kinect-ni"), do_mapping(true)
+        Params() : grabber_type("openni"), do_mapping(true)
         {}
 
-        std::string camera_type;
+        std::string grabber_type;
         bool do_mapping;
     };
 
 public:
-    RGBDProcessor* createProcessor(const RGBDProcessorFactory::Params& params);
+    static RGBDProcessor* createProcessor(const RGBDProcessorFactory::Params& params);
 };
 
 /*!

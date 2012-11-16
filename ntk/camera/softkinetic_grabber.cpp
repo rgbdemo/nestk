@@ -138,6 +138,9 @@ void SoftKineticGrabber :: estimateCalibration(DepthSense::StereoCameraParameter
     m_calib_data->R = Mat1d(3,3);
     setIdentity(m_calib_data->R);
 
+    // FIXME: these rotation parameters are not correctly interpreted.
+    // They degrade the mapping..
+#if 0
     m_calib_data->R(0,0) = parameters.extrinsics.r11;
     m_calib_data->R(0,1) = parameters.extrinsics.r12;
     m_calib_data->R(0,2) = parameters.extrinsics.r13;
@@ -150,9 +153,11 @@ void SoftKineticGrabber :: estimateCalibration(DepthSense::StereoCameraParameter
     m_calib_data->R(2,0) = parameters.extrinsics.r31;
     m_calib_data->R(2,1) = parameters.extrinsics.r32;
     m_calib_data->R(2,2) = parameters.extrinsics.r33;
+#endif
 
     m_calib_data->T = Mat1d(3,1);
     m_calib_data->T = 0.;
+
     m_calib_data->T(0,0) = -parameters.extrinsics.t1;
     m_calib_data->T(0,1) = -parameters.extrinsics.t2;
     m_calib_data->T(0,2) = -parameters.extrinsics.t3;
@@ -166,7 +171,6 @@ void SoftKineticGrabber :: estimateCalibration(DepthSense::StereoCameraParameter
                                           m_calib_data->T);
 
     m_calib_data->updateDistortionMaps();
-    m_calib_data->camera_type = "softkinetic";
 }
 
 void SoftKineticGrabber::onNewColorSample(ColorNode::NewSampleReceivedData data)
@@ -274,12 +278,13 @@ void SoftKineticGrabber :: configureNode(Node node)
         config.frameFormat = FRAME_FORMAT_QQVGA;
         config.framerate = 30;
         config.mode = DepthNode::CAMERA_MODE_CLOSE_MODE;
+        // config.mode = DepthNode::CAMERA_MODE_LONG_RANGE;
         config.saturation = true;
         m_depth_node.setEnableDepthMap(true);
         try
         {
             m_context.requestControl(m_depth_node,0);
-            m_depth_node.setConfidenceThreshold(200);
+            m_depth_node.setConfidenceThreshold(100);
             m_depth_node.setConfiguration(config);
         }
         catch (const std::exception& e)
@@ -429,6 +434,9 @@ void SoftKineticGrabber :: run()
 
     m_current_image.setCameraSerial(m_camera_serial);
     m_rgbd_image.setCameraSerial(m_camera_serial);
+
+    m_rgbd_image.setGrabberType(grabberType());
+    m_current_image.setGrabberType(grabberType());
 
     ntk_assert(m_color_node.getConfiguration().frameFormat == FRAME_FORMAT_VGA, "Unknown color image format.");
     int32_t color_width = 640;

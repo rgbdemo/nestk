@@ -24,6 +24,10 @@
 #include <ntk/image/bilateral_filter.h>
 #include <ntk/camera/calibration.h>
 
+#ifdef NESTK_USE_PMDSDK
+#include <ntk/camera/pmd_grabber.h>
+#endif
+
 #ifdef NESTK_USE_PCL
 #include <ntk/mesh/pcl_utils.h>
 #include <pcl/features/integral_image_normal.h>
@@ -440,6 +444,7 @@ namespace ntk
 
         cv::Mat3b& mapped_color = m_image->mappedRgbRef();
         mapped_color = cv::Mat3b(m_image->depth().size());
+        mapped_color = cv::Vec3b(0,0,0);
 
         float delta = 1.0 / m_mapping_resolution;
         for (float r = 0; r < depth_im.rows; r += delta )
@@ -943,21 +948,30 @@ namespace ntk
     RGBDProcessor* RGBDProcessorFactory :: createProcessor(const RGBDProcessorFactory::Params& params)
     {
         RGBDProcessor* processor = 0;
-        if (params.camera_type == "kinect-ni")
+        if (params.grabber_type == "openni" || params.grabber_type == "kin4win")
         {
             processor = new OpenniRGBDProcessor();
         }
-        else if (params.camera_type == "kinect-freenect")
+        else if (params.grabber_type == "freenect")
         {
             processor = new FreenectRGBDProcessor();
         }
-        else if (params.camera_type == "softkinetic")
+        else if (params.grabber_type == "softkinetic")
         {
+            ntk_dbg(1) << "Creating a softkinetic processor";
             processor = new SoftKineticRGBDProcessor();
         }
+#ifdef NESTK_USE_PMDSDK
+        else if (params.grabber_type == "pmd")
+        {
+            processor = new PmdRGBDProcessor();
+        }
+#endif
         else
         {
-            processor = new RGBDProcessor();
+            // By default
+            ntk_dbg(0) << "Warning: don't know which rgbd processor to create, creating OpenNI.";
+            processor = new OpenniRGBDProcessor();
         }
 
         if (params.do_mapping)

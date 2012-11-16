@@ -21,6 +21,10 @@
 # include <ntk/camera/pmd_grabber.h>
 #endif
 
+#ifdef NESTK_USE_SOFTKINETIC
+# include <ntk/camera/softkinetic_grabber.h>
+#endif
+
 #include <QApplication>
 
 namespace ntk
@@ -72,6 +76,9 @@ RGBDProcessor* RGBDGrabberFactory::createProcessor(const enum_grabber_type& grab
     case OPENNI:
     case KIN4WIN:
         return new OpenniRGBDProcessor;
+
+    case SOFTKINETIC:
+        return new SoftKineticRGBDProcessor;
 
     case FREENECT:
         return new FreenectRGBDProcessor;
@@ -153,6 +160,8 @@ bool RGBDGrabberFactory :: createPmdGrabbers(const ntk::RGBDGrabberFactory::Para
 bool RGBDGrabberFactory :: createSoftKineticGrabbers(const ntk::RGBDGrabberFactory::Params &params, std::vector<GrabberData>& grabbers)
 {
 #ifdef NESTK_USE_SOFTKINETIC
+    ntk_dbg(1) << "Trying softkinetic backend";
+
     std::vector<std::string> calibration_files;
 
     // Config dir is supposed to be next to the binaries.
@@ -172,6 +181,7 @@ bool RGBDGrabberFactory :: createSoftKineticGrabbers(const ntk::RGBDGrabberFacto
     grabbers.push_back(new_data);
     return true;
 #else
+    ntk_dbg(1) << "No support for softkinetic, skipping.";
     return false;
 #endif
 }

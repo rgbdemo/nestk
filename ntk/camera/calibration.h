@@ -160,13 +160,6 @@ public:
 
   cv::Size infrared_size;
 
-  /**
-    * Name of the camera. This can be used to create an appropriate processor.
-    * Common types are pmd, kinect-freenect and kinect-ni.
-    */
-
-  std::string camera_type;
-
 private:  
   RGBDCalibration(const RGBDCalibration& rhs);
 };
