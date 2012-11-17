@@ -47,7 +47,7 @@ FileGrabber::FileGrabber(const std::string& path, bool is_directory)
         std::string grabber_file = m_path.absoluteFilePath(m_image_list[0] + "/grabber-type").toStdString();
         if (ntk::is_file(grabber_file))
         {
-            std::ifstream f (grabber_file);
+            std::ifstream f (grabber_file.c_str());
             f >> m_grabber_type;
             f.close();
         }
