@@ -22,7 +22,7 @@
 #include <ntk/utils/time.h>
 #include <ntk/geometry/pose_3d.h>
 #include <ntk/image/bilateral_filter.h>
-#include <ntk/camera/calibration.h>
+#include <ntk/camera/rgbd_calibration.h>
 
 #ifdef NESTK_USE_PMDSDK
 #include <ntk/camera/pmd_grabber.h>

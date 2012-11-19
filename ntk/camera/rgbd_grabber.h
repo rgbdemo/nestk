@@ -22,7 +22,7 @@
 
 #include <ntk/core.h>
 #include <ntk/thread/utils.h>
-#include <ntk/camera/calibration.h>
+#include <ntk/camera/rgbd_image.h>
 #include <ntk/thread/event.h>
 
 #include <QThread>

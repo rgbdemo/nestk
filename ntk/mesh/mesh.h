@@ -21,9 +21,7 @@
 # define NTK_MESH_MESH_H
 
 #include <ntk/core.h>
-#include <ntk/camera/calibration.h>
-#include <ntk/geometry/plane.h>
-#include <ntk/geometry/pose_3d.h>
+
 #include <ntk/utils/opencv_utils.h>
 #include <ntk/thread/event.h>
 
@@ -32,6 +30,9 @@
 
 namespace ntk
 {
+
+  class Pose3D;
+  class Plane;
 
   struct Patch
   {

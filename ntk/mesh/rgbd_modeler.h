@@ -21,8 +21,9 @@
 #define NTK_MESH_RGBD_MODELER_H
 
 #include <ntk/core.h>
-#include <ntk/camera/calibration.h>
+#include <ntk/camera/rgbd_image.h>
 #include <ntk/mesh/mesh.h>
+#include <ntk/geometry/plane.h>
 #include <ntk/utils/opencv_utils.h>
 #include <ntk/thread/utils.h>
 #include <ntk/thread/event.h>

@@ -21,7 +21,7 @@
 #define NTK_MESH_MESHGENERATOR_H
 
 #include <ntk/core.h>
-#include <ntk/camera/calibration.h>
+#include <ntk/camera/rgbd_image.h>
 #include <ntk/mesh/mesh.h>
 
 namespace ntk

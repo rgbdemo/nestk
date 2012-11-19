@@ -30,6 +30,8 @@ SET ( ntk_sources
      camera/multiple_grabber.cpp
      camera/opencv_grabber.h
      camera/opencv_grabber.cpp
+     camera/rgbd_calibration.h
+     camera/rgbd_calibration.cpp
      camera/rgbd_frame_recorder.h
      camera/rgbd_frame_recorder.cpp
      camera/rgbd_grabber.h

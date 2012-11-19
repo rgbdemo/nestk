@@ -22,6 +22,7 @@
 
 #include <ntk/geometry/pose_3d.h>
 #include <ntk/thread/event.h>
+#include <ntk/camera/rgbd_calibration.h>
 
 #include <QObject>
 
@@ -29,9 +30,26 @@ namespace ntk
 {
 
   class RGBDProcessor;
-  class RGBDCalibration;
   class Skeleton;
   class FeatureSet;
+
+  struct RGBDImageHeader
+  {
+      RGBDImageHeader ();
+
+      /*! Get unique id from timestamp and camera serial. */
+      std::string getUniqueId() const;
+
+      // FIXME: integrate this.
+      // RGBDCalibration calibration;
+
+      // FIXME: move calibration to header, too.
+      std::string directory;
+      ntk::Pose3D estimated_world_depth_pose;
+      std::string camera_serial;
+      int timestamp;
+      std::string grabber_type;
+  };
 
 /*!
  * Stores RGB+Depth data.
@@ -67,14 +85,17 @@ public:
   bool hasRgb() const { return rawRgb().data != 0; }
   bool hasDepth() const { return rawDepth().data != 0; }
 
+  const RGBDImageHeader& header () const { return m_header; }
+  void setHeader (const RGBDImageHeader& header) { m_header = header; }
+
   /*! Get unique id from timestamp and camera serial. */
   std::string getUniqueId() const;
 
   /*! Directory path if loaded from disk. */
-  const std::string& directory() const { return m_directory; }
+  const std::string& directory() const { return m_header.directory; }
 
   /*! Whether the image was loaded from disk. */
-  bool hasDirectory() const { return !m_directory.empty(); }
+  bool hasDirectory() const { return !m_header.directory.empty(); }
 
   /*! Load from a viewXXXX directory. */
   void loadFromDir(const std::string& dir,
@@ -86,16 +107,16 @@ public:
                     const RGBDCalibration* calib = 0);
 
   /*! Return the serial number or unique id of the source camera. */
-  void setCameraSerial(const std::string& serial) { m_camera_serial = serial; }
-  const std::string& cameraSerial() const { return m_camera_serial; }
+  void setCameraSerial(const std::string& serial) { m_header.camera_serial = serial; }
+  const std::string& cameraSerial() const { return m_header.camera_serial; }
 
   /*! Return the grabber type that generated this image. */
-  void setGrabberType(const std::string& grabber) { m_grabber_type = grabber; }
-  const std::string& grabberType() const { return m_grabber_type; }
+  void setGrabberType(const std::string& grabber) { m_header.grabber_type = grabber; }
+  const std::string& grabberType() const { return m_header.grabber_type; }
 
   /*! Return the grabbing timestamp in seconds. */
-  void setTimestamp(int t) { m_timestamp = t; }
-  int timestamp() const { return m_timestamp; }
+  void setTimestamp(int t) { m_header.timestamp = t; }
+  int timestamp() const { return m_header.timestamp; }
 
   /*! Associated optional calibration data. */
   const RGBDCalibration* calibration() const { return m_calibration; }
@@ -104,7 +125,7 @@ public:
   void setCalibration(const RGBDCalibration* calibration) { m_calibration = calibration; }
 
   /*! Set an associated viewXXXX directory. */
-  void setDirectory(const std::string& dir) { m_directory = dir; }
+  void setDirectory(const std::string& dir) { m_header.directory = dir; }
 
   /*! Swap content with another image. */
   void swap(RGBDImage& other);
@@ -227,8 +248,8 @@ public:
   Pose3D sensorRgbPose() const;
 
   /*! Pose of the image in world coordinates. */
-  const Pose3D estimatedWorldDepthPose() const { return m_estimated_world_depth_pose; }
-  void setEstimatedWorldDepthPose(const Pose3D& pose) { m_estimated_world_depth_pose = pose; }
+  const Pose3D estimatedWorldDepthPose() const { return m_header.estimated_world_depth_pose; }
+  void setEstimatedWorldDepthPose(const Pose3D& pose) { m_header.estimated_world_depth_pose = pose; }
 
   /*! Return the world rgb pose associated to the depth pose. */
   Pose3D estimatedWorldRgbPose() const;
@@ -258,12 +279,9 @@ private:
   cv::Mat1f m_raw_amplitude;
   cv::Mat1f m_raw_depth;
   cv::Mat1b m_user_labels;
-  const RGBDCalibration* m_calibration;
-  std::string m_directory;
   Skeleton* m_skeleton;
-  ntk::Pose3D m_estimated_world_depth_pose;
-  std::string m_camera_serial;
-  int m_timestamp;
+  RGBDImageHeader m_header;
+  const RGBDCalibration* m_calibration;
   ntk::Ptr<FeatureSet> m_features;
   std::string m_grabber_type;
 };

@@ -20,6 +20,8 @@
 #include "mesh.h"
 #include "ply.h"
 
+#include <ntk/geometry/pose_3d.h>
+#include <ntk/geometry/plane.h>
 #include <ntk/utils/debug.h>
 #include <ntk/utils/opencv_utils.h>
 #include <ntk/numeric/utils.h>

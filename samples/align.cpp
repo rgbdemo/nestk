@@ -1,5 +1,6 @@
 #include <ntk/utils/arg.h>
 #include <ntk/utils/debug.h>
+#include <ntk/camera/rgbd_processor.h>
 #include <ntk/mesh/mesh.h>
 #include <ntk/mesh/pcl_utils.h>
 #include <ntk/mesh/mesh_generator.h>
