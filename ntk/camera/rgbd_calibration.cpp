@@ -212,7 +212,6 @@ void RGBDCalibration :: loadFromFile(const char* filename)
     depth_pose = new Pose3D();
     rgb_pose = new Pose3D();
     updatePoses();
-    updateDistortionMaps();
 }
 
 void RGBDCalibration :: updateDistortionMaps()
