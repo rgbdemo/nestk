@@ -177,6 +177,17 @@ void RGBDImage :: loadFromDir(const std::string& dir,
             ntk_ensure(rawDepthRef().data, ("Could not read raw depth image from " + dir).c_str());
         }
 
+        if (is_file(dir + "/raw/depth16bits.raw"))
+        {
+            rawDepth16bitsRef() = imread_Mat1w_raw(dir + "/raw/depth16bits.raw");
+            ntk_ensure(rawDepth16bitsRef().data, ("Could not read raw depth image from " + dir).c_str());
+        }
+        else if (is_file(dir + "/raw/depth16bits.yml"))
+        {
+            rawDepth16bitsRef() = imread_yml(dir + "/raw/depth16bits.yml");
+            ntk_ensure(rawDepth16bitsRef().data, ("Could not read raw depth image from " + dir).c_str());
+        }
+
         if (is_file(dir + "/raw/amplitude.raw"))
         {
             rawAmplitudeRef() = imread_Mat1f_raw(dir + "/raw/amplitude.raw");
@@ -237,6 +248,7 @@ void RGBDImage :: copyTo(RGBDImage& other) const
     m_raw_intensity.copyTo(other.m_raw_intensity);
     m_raw_amplitude.copyTo(other.m_raw_amplitude);
     m_raw_depth.copyTo(other.m_raw_depth);
+    m_raw_depth_16bits.copyTo(other.m_raw_depth_16bits);
     m_user_labels.copyTo(other.m_user_labels);
     other.m_header = m_header;
     other.m_calibration = m_calibration;
@@ -274,6 +286,7 @@ void RGBDImage :: swap(RGBDImage& other)
     cv::swap(m_raw_intensity, other.m_raw_intensity);
     cv::swap(m_raw_amplitude, other.m_raw_amplitude);
     cv::swap(m_raw_depth, other.m_raw_depth);
+    cv::swap(m_raw_depth_16bits, other.m_raw_depth_16bits);
     cv::swap(m_user_labels, other.m_user_labels);
     std::swap(m_calibration, other.m_calibration);
     std::swap(m_header, other.m_header);

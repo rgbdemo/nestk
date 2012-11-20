@@ -170,6 +170,13 @@ void OpenniGrabber :: setIRMode(bool ir)
     m_get_infrared = ir;
     if (m_get_infrared)
     {
+        m_rgbd_image.rawIntensityRef() = Mat1f(m_calib_data->rawRgbSize());
+        m_rgbd_image.rawIntensityRef() = 0.f;
+        m_rgbd_image.intensityRef() = m_rgbd_image.rawIntensityRef();
+        m_current_image.rawIntensityRef() = Mat1f(m_calib_data->rawRgbSize());
+        m_current_image.rawIntensityRef() = 0.f;
+        m_current_image.intensityRef() = m_current_image.rawIntensityRef();
+
         m_ni_rgb_generator.StopGenerating();
         // m_ni_depth_generator.GetAlternativeViewPointCap().ResetViewPoint();
         // m_ni_depth_generator.SetMapOutputMode(dmomQVGA);
@@ -177,6 +184,9 @@ void OpenniGrabber :: setIRMode(bool ir)
     }
     else
     {
+        m_rgbd_image.rawIntensityRef() = Mat1f();
+        m_rgbd_image.intensityRef() = Mat1f();
+
         m_ni_ir_generator.StopGenerating();
         // m_ni_depth_generator.GetAlternativeViewPointCap().SetViewPoint(m_ni_rgb_generator);
         m_ni_rgb_generator.StartGenerating();
@@ -551,12 +561,11 @@ void OpenniGrabber :: run()
     m_rgbd_image.setCalibration(m_calib_data);
 
     // Depth
-    m_rgbd_image.rawDepthRef() = Mat1f(m_calib_data->raw_depth_size);
-    m_rgbd_image.rawDepthRef() = 0.f;
-    m_rgbd_image.depthRef() = m_rgbd_image.rawDepthRef();
-    m_current_image.rawDepthRef() = Mat1f(m_calib_data->raw_depth_size);
-    m_current_image.rawDepthRef() = 0.f;
-    m_current_image.depthRef() = m_current_image.rawDepthRef();
+    m_rgbd_image.rawDepth16bitsRef() = Mat1w(m_calib_data->raw_depth_size);
+    m_rgbd_image.rawDepth16bitsRef() = 0;
+
+    m_current_image.rawDepth16bitsRef() = Mat1w(m_calib_data->raw_depth_size);
+    m_current_image.rawDepth16bitsRef() = 0;
 
     // Color
     if (m_has_rgb)
@@ -567,13 +576,6 @@ void OpenniGrabber :: run()
         m_current_image.rawRgbRef() = Mat3b(m_calib_data->rawRgbSize());
         m_current_image.rawRgbRef() = Vec3b(0,0,0);
         m_current_image.rgbRef() = m_current_image.rawRgbRef();
-
-        m_rgbd_image.rawIntensityRef() = Mat1f(m_calib_data->rawRgbSize());
-        m_rgbd_image.rawIntensityRef() = 0.f;
-        m_rgbd_image.intensityRef() = m_rgbd_image.rawIntensityRef();
-        m_current_image.rawIntensityRef() = Mat1f(m_calib_data->rawRgbSize());
-        m_current_image.rawIntensityRef() = 0.f;
-        m_current_image.intensityRef() = m_current_image.rawIntensityRef();
     }
 
     // User tracking
@@ -593,29 +595,6 @@ void OpenniGrabber :: run()
         m_current_image.setSkeletonData(new Skeleton());
 #endif
 
-    if (m_has_rgb)
-    {
-        bool mapping_required = m_calib_data->rawRgbSize() != m_calib_data->raw_depth_size;
-        if (!mapping_required)
-        {
-            m_rgbd_image.mappedRgbRef() = m_rgbd_image.rawRgbRef();
-            m_rgbd_image.mappedDepthRef() = m_rgbd_image.rawDepthRef();
-            m_current_image.mappedRgbRef() = m_current_image.rawRgbRef();
-            m_current_image.mappedDepthRef() = m_current_image.rawDepthRef();
-        }
-        else
-        {
-            m_rgbd_image.mappedRgbRef() = Mat3b(m_calib_data->raw_depth_size);
-            m_rgbd_image.mappedRgbRef() = Vec3b(0,0,0);
-            m_rgbd_image.mappedDepthRef() = Mat1f(m_calib_data->rawRgbSize());
-            m_rgbd_image.mappedDepthRef() = 0.f;
-            m_current_image.mappedRgbRef() = Mat3b(m_calib_data->rawDepthSize());
-            m_current_image.mappedRgbRef() = Vec3b(0,0,0);
-            m_current_image.mappedDepthRef() = Mat1f(m_calib_data->rawRgbSize());
-            m_current_image.mappedDepthRef() = 0.f;
-        }
-    }
-
     m_rgbd_image.setCameraSerial(cameraSerial());
     m_current_image.setCameraSerial(cameraSerial());
 
@@ -632,7 +611,7 @@ void OpenniGrabber :: run()
     RGBDImage oversampled_image;
     if (m_subsampling_factor != 1)
     {
-        oversampled_image.rawDepthRef().create(m_calib_data->rawDepthSize()*m_subsampling_factor);
+        oversampled_image.rawDepth16bitsRef().create(m_calib_data->rawDepthSize()*m_subsampling_factor);
         oversampled_image.userLabelsRef().create(oversampled_image.rawDepth().size());
     }
 
@@ -675,10 +654,8 @@ void OpenniGrabber :: run()
                    "Invalid image size.");
 
         // Convert to meters.
-        const float depth_correction_factor = 1.0;
-        float* raw_depth_ptr = temp_image.rawDepthRef().ptr<float>();
-        for (int i = 0; i < depthMD.XRes()*depthMD.YRes(); ++i)
-            raw_depth_ptr[i] = depth_correction_factor * pDepth[i]/1000.f;
+        uint16_t* raw_depth_ptr = temp_image.rawDepth16bitsRef().ptr<uint16_t>();
+        std::copy (pDepth, pDepth + depthMD.XRes()*depthMD.YRes(), raw_depth_ptr);
 
         if (m_has_rgb)
         {
@@ -748,9 +725,9 @@ void OpenniGrabber :: run()
         {
             // Cannot use interpolation here, since this would
             // spread the invalid depth values.
-            cv::resize(oversampled_image.rawDepth(),
-                       m_current_image.rawDepthRef(),
-                       m_current_image.rawDepth().size(),
+            cv::resize(oversampled_image.rawDepth16bits(),
+                       m_current_image.rawDepth16bitsRef(),
+                       m_current_image.rawDepth16bits().size(),
                        0, 0, INTER_NEAREST);
             // we have to repeat this, since resize can change the pointer.
             // m_current_image.depthRef() = m_current_image.rawDepthRef();
@@ -767,6 +744,9 @@ void OpenniGrabber :: run()
             m_current_image.swap(m_rgbd_image);
         }
 
+        static int i = 0;
+        if (i++ % 30 == 0)
+            ntk_dbg_print (frameRate(), 1);
         advertiseNewFrame();
     }
     ntk_dbg(1) << format("[%x] finishing", this);

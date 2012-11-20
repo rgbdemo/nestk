@@ -207,6 +207,20 @@ namespace ntk
         }
       }
 
+      if (!image.rawDepth16bits().empty())
+      {
+        if (m_use_binary_raw)
+        {
+          filename = cv::format("%s/raw/depth16bits.raw", frame_dir.c_str());
+          imwrite_Mat1w_raw(filename.c_str(), image.rawDepth16bits());
+        }
+        else
+        {
+          filename = cv::format("%s/raw/depth16bits.yml", frame_dir.c_str());
+          imwrite_yml(filename.c_str(), image.rawDepth16bits());
+        }
+      }
+
       if (m_save_intensity && image.rawIntensity().data)
       {
         if (m_use_binary_raw)

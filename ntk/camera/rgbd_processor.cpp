@@ -43,6 +43,20 @@
 // namespace is pulled at the top-level one. Fully-qualify cv symbols, for now.
 // using namespace cv;
 
+namespace ntk {
+
+static void copy16bitsToFloat (const cv::Mat1w& src_im, cv::Mat1f& dest_im)
+{
+    dest_im = cv::Mat1f (src_im.size ());
+    const uint16_t* src = src_im.ptr<uint16_t>();
+    const uint16_t* end = src + src_im.cols * src_im.rows;
+    float* output = dest_im.ptr<float>();
+    while (end != src)
+        *output++ = (*src++) / 1000.f;
+}
+
+} // ntk
+
 namespace ntk
 {
 
@@ -246,12 +260,19 @@ namespace ntk
         if (hasFilterFlag(RGBDProcessorFlags::NiteProcessed) || (!m_image->calibration() || !hasFilterFlag(RGBDProcessorFlags::UndistortImages) || hasFilterFlag(RGBDProcessorFlags::Pause)))
         {
             m_image->rawAmplitude().copyTo(m_image->amplitudeRef());
-            m_image->rawDepth().copyTo(m_image->depthRef());
+            if (!m_image->rawDepth().empty())
+            {
+                m_image->rawDepth().copyTo(m_image->depthRef());
+            }
+            else
+            {
+                copy16bitsToFloat (m_image->rawDepth16bits(), m_image->depthRef());
+            }
             m_image->rawRgb().copyTo(m_image->rgbRef());
             m_image->rawIntensity().copyTo(m_image->intensityRef());
         }
 
-        if (!m_image->rawDepth().data)
+        if (m_image->rawDepth().empty() && m_image->rawDepth16bits().empty())
             return;
 
         if (!hasFilterFlag(RGBDProcessorFlags::NiteProcessed) && m_image->calibration() && hasFilterFlag(RGBDProcessorFlags::UndistortImages))
@@ -266,7 +287,7 @@ namespace ntk
             computeKinectDepthBaseline();
         tc.elapsedMsecs("computeDepth");
 
-        m_image->depthMaskRef() = cv::Mat1b(m_image->rawDepth().size());
+        m_image->depthMaskRef() = cv::Mat1b(m_image->depth().size());
         for_all_rc(m_image->depthMaskRef())
         {
             float d = m_image->depth()(r,c);
@@ -379,6 +400,8 @@ namespace ntk
 
         if (!m_image->calibration()->zero_rgb_distortion)
         {
+            if (m_image->calibration()->rgb_undistort_map1.empty())
+                const_cast<RGBDCalibration*>(m_image->calibration())->updateDistortionMaps();
             remap(rgb_im, tmp3b,
                   m_image->calibration()->rgb_undistort_map1,
                   m_image->calibration()->rgb_undistort_map2,
@@ -388,6 +411,8 @@ namespace ntk
 
         if (!m_image->calibration()->zero_depth_distortion)
         {
+            if (m_image->calibration()->depth_undistort_map1.empty())
+                const_cast<RGBDCalibration*>(m_image->calibration())->updateDistortionMaps();
             remap(m_image->rawDepthRef(), m_image->depthRef(),
                   m_image->calibration()->depth_undistort_map1,
                   m_image->calibration()->depth_undistort_map2,
@@ -396,7 +421,10 @@ namespace ntk
         }
         else
         {
-            m_image->rawDepthRef().copyTo(m_image->depthRef());
+            if (!m_image->rawDepthRef().empty())
+                m_image->rawDepthRef().copyTo(m_image->depthRef());
+            else
+                copy16bitsToFloat (m_image->rawDepth16bits(), m_image->rawDepthRef());
         }
 
         if (m_image->calibration()->zero_depth_distortion ||

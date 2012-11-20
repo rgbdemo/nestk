@@ -157,6 +157,10 @@ public:
   cv::Mat1f& rawDepthRef() { return m_raw_depth; }
   const cv::Mat1f& rawDepth() const { return m_raw_depth; }
 
+  /*! Accessors to the raw depth encoded with 16 bits integer (mm). */
+  cv::Mat1w& rawDepth16bitsRef() { return m_raw_depth_16bits; }
+  const cv::Mat1w& rawDepth16bits() const { return m_raw_depth_16bits; }
+
   /*! Accessors to the raw intensity channel (ignored with Kinect). */
   cv::Mat1f& rawIntensityRef() { return m_raw_intensity; }
   const cv::Mat1f& rawIntensity() const { return m_raw_intensity; }
@@ -278,6 +282,7 @@ private:
   cv::Mat1f m_raw_intensity;
   cv::Mat1f m_raw_amplitude;
   cv::Mat1f m_raw_depth;
+  cv::Mat1w m_raw_depth_16bits;
   cv::Mat1b m_user_labels;
   Skeleton* m_skeleton;
   RGBDImageHeader m_header;
