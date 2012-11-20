@@ -350,16 +350,10 @@ cv::Point3f computeCentroid(const std::vector<cv::Point3f>& points)
     qint32 rows = -1, cols = -1;
     file_stream >> rows >> cols;
 
-    ntk_dbg_print (rows, 1);
-    ntk_dbg_print (cols, 1);
-
     unsigned int total_bytes = rows*cols*sizeof(uint16_t);
     QByteArray lzf_data (f.size(), 0);
-    ntk_dbg_print (total_bytes, 1);
     int nread_bytes = file_stream.readRawData(lzf_data.data(), f.size());
     lzf_data.truncate(nread_bytes);
-    ntk_dbg_print (lzf_data.size (), 1);
-    ntk_dbg_print (f.size (), 1);
 
     cv::Mat1w m (rows, cols);
     unsigned int nbytes = pcl::lzfDecompress (lzf_data.constData(), lzf_data.size(), m.ptr<char*>(), total_bytes);
@@ -405,7 +399,6 @@ cv::Point3f computeCentroid(const std::vector<cv::Point3f>& points)
       unsigned int nbytes = pcl::lzfCompress(m.ptr<char*>(), total_bytes, lzf_data.data(), total_bytes * 2);
       ntk_throw_exception_if (nbytes == 0, "Could not compress stream.");
       lzf_data.truncate (nbytes);
-      ntk_dbg_print (nbytes, 1);
 
       QFile f (filename.c_str());
       f.open (QIODevice::WriteOnly);

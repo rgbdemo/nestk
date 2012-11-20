@@ -744,9 +744,6 @@ void OpenniGrabber :: run()
             m_current_image.swap(m_rgbd_image);
         }
 
-        static int i = 0;
-        if (i++ % 30 == 0)
-            ntk_dbg_print (frameRate(), 1);
         advertiseNewFrame();
     }
     ntk_dbg(1) << format("[%x] finishing", this);
