@@ -357,7 +357,6 @@ cv::Point3f computeCentroid(const std::vector<cv::Point3f>& points)
 
     cv::Mat1w m (rows, cols);
     unsigned int nbytes = pcl::lzfDecompress (lzf_data.constData(), lzf_data.size(), m.ptr<char*>(), total_bytes);
-    ntk_dbg_print (nbytes, 1);
     ntk_throw_exception_if (nbytes != total_bytes, "Could not decode the image");
     return m;
   }
