@@ -649,8 +649,8 @@ void OpenniGrabber :: run()
                 m_subsampling_factor == 1 ? m_current_image : oversampled_image;
 
         const XnDepthPixel* pDepth = depthMD.Data();
-        ntk_assert((depthMD.XRes() == temp_image.rawDepth().cols)
-                   && (depthMD.YRes() == temp_image.rawDepth().rows),
+        ntk_assert((depthMD.XRes() == temp_image.rawDepth16bits().cols)
+                   && (depthMD.YRes() == temp_image.rawDepth16bits().rows),
                    "Invalid image size.");
 
         // Convert to meters.
