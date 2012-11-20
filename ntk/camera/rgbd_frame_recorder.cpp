@@ -161,7 +161,7 @@ namespace ntk
       }
 
       if (m_use_compressed_format)
-          filename = cv::format("%s/raw/color.png", frame_dir.c_str());
+          filename = cv::format("%s/raw/color.jpg", frame_dir.c_str());
       else
           filename = cv::format("%s/raw/color.bmp", frame_dir.c_str());
       imwrite(filename, image.rawRgb());
@@ -211,8 +211,16 @@ namespace ntk
       {
         if (m_use_binary_raw)
         {
-          filename = cv::format("%s/raw/depth16bits.raw", frame_dir.c_str());
-          imwrite_Mat1w_raw(filename.c_str(), image.rawDepth16bits());
+            if (m_use_compressed_format)
+            {
+                filename = cv::format("%s/raw/depth16bits.lzf", frame_dir.c_str());
+                imwrite_Mat1w_lzf(filename.c_str(), image.rawDepth16bits());
+            }
+            else
+            {
+                filename = cv::format("%s/raw/depth16bits.raw", frame_dir.c_str());
+                imwrite_Mat1w_raw(filename.c_str(), image.rawDepth16bits());
+            }
         }
         else
         {

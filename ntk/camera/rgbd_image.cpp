@@ -165,6 +165,11 @@ void RGBDImage :: loadFromDir(const std::string& dir,
             rawRgbRef() = imread(dir + "/raw/color.bmp", 1);
             ntk_ensure(rawRgbRef().data, ("Could not read raw color image from " + dir).c_str());
         }
+        else if (is_file(dir + "/raw/color.jpg"))
+        {
+            rawRgbRef() = imread(dir + "/raw/color.jpg", 1);
+            ntk_ensure(rawRgbRef().data, ("Could not read raw color image from " + dir).c_str());
+        }
 
         if (is_file(dir + "/raw/depth.raw"))
         {
@@ -186,6 +191,11 @@ void RGBDImage :: loadFromDir(const std::string& dir,
         {
             rawDepth16bitsRef() = imread_yml(dir + "/raw/depth16bits.yml");
             ntk_ensure(rawDepth16bitsRef().data, ("Could not read raw depth image from " + dir).c_str());
+        }
+        else if (is_file(dir + "/raw/depth16bits.lzf"))
+        {
+            rawDepth16bitsRef() = imread_Mat1w_lzf(dir + "/raw/depth16bits.lzf");
+            ntk_ensure(rawDepth16bitsRef().data, ("Could not read lzf depth image from " + dir).c_str());
         }
 
         if (is_file(dir + "/raw/amplitude.raw"))

@@ -21,11 +21,15 @@
 #include <opencv/highgui.h>
 // #include <opencv/cv.h>
 
+#include <pcl/io/lzf.h>
+
 #include <fstream>
 
 #include <QImage>
 #include <QTemporaryFile>
 #include <QDir>
+#include <QByteArray>
+#include <QFile>
 
 using namespace cv;
 
@@ -336,6 +340,34 @@ cv::Point3f computeCentroid(const std::vector<cv::Point3f>& points)
     return m;
   }
 
+  cv::Mat1w imread_Mat1w_lzf(const std::string& filename)
+  {
+    ntk_throw_exception_if(QSysInfo::ByteOrder != QSysInfo::LittleEndian, "Cannot use raw with big endian");
+    QFile f (filename.c_str());
+    f.open (QIODevice::ReadOnly);
+    QDataStream file_stream (&f);
+
+    qint32 rows = -1, cols = -1;
+    file_stream >> rows >> cols;
+
+    ntk_dbg_print (rows, 1);
+    ntk_dbg_print (cols, 1);
+
+    unsigned int total_bytes = rows*cols*sizeof(uint16_t);
+    QByteArray lzf_data (f.size(), 0);
+    ntk_dbg_print (total_bytes, 1);
+    int nread_bytes = file_stream.readRawData(lzf_data.data(), f.size());
+    lzf_data.truncate(nread_bytes);
+    ntk_dbg_print (lzf_data.size (), 1);
+    ntk_dbg_print (f.size (), 1);
+
+    cv::Mat1w m (rows, cols);
+    unsigned int nbytes = pcl::lzfDecompress (lzf_data.constData(), lzf_data.size(), m.ptr<char*>(), total_bytes);
+    ntk_dbg_print (nbytes, 1);
+    ntk_throw_exception_if (nbytes != total_bytes, "Could not decode the image");
+    return m;
+  }
+
   void imwrite_Mat1f_raw(const std::string& filename, const cv::Mat1f& m)
   {
     ntk_throw_exception_if(sizeof(float) != 4, "Cannot use raw with sizeof(float) != 4");
@@ -359,6 +391,29 @@ cv::Point3f computeCentroid(const std::vector<cv::Point3f>& points)
     f.write((char*)&cols, sizeof(qint32));
     f.write((char*)m.data, m.rows*m.cols*sizeof(uint16_t));
     ntk_throw_exception_if(f.bad(), "Failure writing " + filename);
+  }
+
+  void imwrite_Mat1w_lzf(const std::string& filename, const cv::Mat1w& m)
+  {
+      ntk_throw_exception_if(QSysInfo::ByteOrder != QSysInfo::LittleEndian, "Cannot use raw with big endian");
+
+      qint32 rows = m.rows, cols = m.cols;
+
+      /* compressed data could be bigger, factor 2 to make sure it's safe. */
+      int total_bytes = m.rows * m.cols * sizeof(uint16_t);
+      QByteArray lzf_data (total_bytes * 2, 0u);
+      unsigned int nbytes = pcl::lzfCompress(m.ptr<char*>(), total_bytes, lzf_data.data(), total_bytes * 2);
+      ntk_throw_exception_if (nbytes == 0, "Could not compress stream.");
+      lzf_data.truncate (nbytes);
+      ntk_dbg_print (nbytes, 1);
+
+      QFile f (filename.c_str());
+      f.open (QIODevice::WriteOnly);
+      QDataStream file_stream (&f);
+      file_stream << rows << cols;
+      file_stream.writeRawData(lzf_data.constData(), lzf_data.size());
+      ntk_throw_exception_if (file_stream.status() != QDataStream::Ok, "Could not write to file.");
+      f.close ();
   }
 
   cv::Mat imread_yml(const std::string& filename)
