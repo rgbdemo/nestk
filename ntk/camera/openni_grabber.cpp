@@ -37,6 +37,7 @@
 #include <QDateTime>
 #include <string>
 #include <fstream>
+#include <cstdint>
 
 using namespace cv;
 using namespace ntk;
