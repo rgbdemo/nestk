@@ -26,33 +26,11 @@ public:
     void removeWatcher(ParameterSetWatcher* watcher) { watchers.remove(watcher); }
     int numWatchers() const { return watchers.size(); }
 
-    void setParameter(const QString& name, const QVariant& value)
-    {
-        {
-            QMutexLocker _(&mutex);
-            properties[name] = value;
-        }
+    void     setParameter(const QString& name, const QVariant& value);
+    QVariant getParameter(const QString& name, QVariant default_value = QVariant()) const;
+    bool     hasParameter(const QString& name) const;
 
-        foreach(ParameterSetWatcher* watcher, watchers)
-            watcher->onParameterUpdated(name, value);
-    }
-
-    QVariant getParameter(const QString& name, QVariant default_value = QVariant()) const
-    {
-        QVariant value;
-        QMutexLocker _(&mutex);
-        if (properties.contains(name)) // FIXME: use find.
-            value = properties[name];
-        else
-            value = default_value;
-        return value;
-    }
-
-    bool hasParameter(const QString& name) const
-    {
-        QMutexLocker _(&mutex);
-        return properties.contains(name);
-    }
+    void setParameters(const ParameterSet& rhs);
 
 protected:
     mutable QMutex mutex;
@@ -83,6 +61,11 @@ public:
     virtual void setParameter(const QString& name, QVariant value)
     {
         parameter_set->setParameter(name, value);
+    }
+
+    virtual void setParameters(const ParameterSet& set)
+    {
+        parameter_set->setParameters(set);
     }
 
     virtual QVariant getParameter(const QString& name, QVariant default_value = QVariant()) const
