@@ -114,8 +114,7 @@ bool RGBDGrabberFactory :: createOpenniGrabbers(const ntk::RGBDGrabberFactory::P
             k_grabber->setHighRgbResolution(true);
 
         k_grabber->setCustomBayerDecoding(false);
-        if (params.hardware_registration)
-            k_grabber->setUseHardwareRegistration(false);
+        k_grabber->setUseHardwareRegistration(params.hardware_registration);
 
         GrabberData new_data;
         new_data.grabber = k_grabber;
