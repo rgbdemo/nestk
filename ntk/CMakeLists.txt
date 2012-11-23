@@ -319,6 +319,13 @@ IF(NESTK_USE_SOFTKINETIC)
      )
 ENDIF()
 
+IF(NESTK_USE_SOFTKINETIC_IISU)
+     SET(ntk_sources ${ntk_sources}
+        camera/softkinetic_iisu_grabber.h
+        camera/softkinetic_iisu_grabber.cpp
+     )
+ENDIF()
+
 IF(NESTK_USE_PCL)
     SET (ntk_sources ${ntk_sources}
          detection/image_segmentor.h
@@ -404,6 +411,7 @@ TARGET_LINK_LIBRARIES(nestk
   ${LIBUSB_1_LIBRARY}
   ${PMD_LIBRARIES}
   ${SOFTKINETIC_LIBRARY}
+  ${SOFTKINETIC_IISU_LIBRARY}
   ${FREENECT_LIBRARIES}
   ${OPENNI_LIBRARIES}
   ${NITE_LIBRARY}

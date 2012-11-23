@@ -25,6 +25,10 @@
 # include <ntk/camera/softkinetic_grabber.h>
 #endif
 
+#ifdef NESTK_USE_SOFTKINETIC_IISU
+# include <ntk/camera/softkinetic_iisu_grabber.h>
+#endif
+
 #include <QApplication>
 
 namespace ntk
@@ -185,6 +189,34 @@ bool RGBDGrabberFactory :: createSoftKineticGrabbers(const ntk::RGBDGrabberFacto
 #endif
 }
 
+bool RGBDGrabberFactory :: createSoftKineticIisuGrabbers(const ntk::RGBDGrabberFactory::Params &params, std::vector<GrabberData>& grabbers)
+{
+#ifdef NESTK_USE_SOFTKINETIC_IISU
+    ntk_dbg(1) << "Trying softkinetic iisu backend";
+
+    std::vector<std::string> calibration_files;
+
+    // Config dir is supposed to be next to the binaries.
+    QDir prev = QDir::current();
+    QDir::setCurrent(QApplication::applicationDirPath());
+
+    SoftKineticIisuGrabber* k_grabber = new SoftKineticIisuGrabber();
+    if (!k_grabber->connectToDevice())
+    {
+        delete k_grabber;
+        return false;
+    }
+
+    GrabberData new_data;
+    new_data.grabber = k_grabber;
+    new_data.type = SOFTKINETIC_IISU;
+    grabbers.push_back(new_data);
+    return true;
+#else
+    ntk_dbg(1) << "No support for softkinetic iisu, skipping.";
+    return false;
+#endif
+}
 
 bool RGBDGrabberFactory :: createKin4winGrabbers(const ntk::RGBDGrabberFactory::Params &params, std::vector<GrabberData>& grabbers)
 {
@@ -310,9 +342,10 @@ RGBDGrabberFactory::createGrabbers(const ntk::RGBDGrabberFactory::Params& orig_p
     else
     {
         createKin4winGrabbers(params, grabbers);
-        createOpenniGrabbers(params, grabbers);
+        // createOpenniGrabbers(params, grabbers);
         createPmdGrabbers(params, grabbers);
         createSoftKineticGrabbers(params, grabbers);
+        createSoftKineticIisuGrabbers(params, grabbers);
     }
 
     foreach_idx(i, grabbers)

@@ -12,7 +12,7 @@ class Kin4WinDriver;
 class RGBDGrabberFactory
 {
 public:
-    enum enum_grabber_type { DEFAULT = 0, OPENNI = 1, FREENECT = 2, KIN4WIN = 3, PMD = 4, SOFTKINETIC = 5 };
+    enum enum_grabber_type { DEFAULT = 0, OPENNI = 1, FREENECT = 2, KIN4WIN = 3, PMD = 4, SOFTKINETIC = 5, SOFTKINETIC_IISU = 6 };
 
     static enum_grabber_type getDefaultGrabberType();
 
@@ -53,6 +53,7 @@ protected:
     bool createKin4winGrabbers(const ntk::RGBDGrabberFactory::Params &params, std::vector<GrabberData>& grabbers);
     bool createPmdGrabbers(const ntk::RGBDGrabberFactory::Params &params, std::vector<GrabberData>& grabbers);
     bool createSoftKineticGrabbers(const ntk::RGBDGrabberFactory::Params &params, std::vector<GrabberData>& grabbers);
+    bool createSoftKineticIisuGrabbers(const ntk::RGBDGrabberFactory::Params &params, std::vector<GrabberData>& grabbers);
 
     RGBDProcessor* createProcessor(const enum_grabber_type& grabber_type);
     RGBDCalibration* tryLoadCalibration(const Params &params, const std::string &camera_serial);
