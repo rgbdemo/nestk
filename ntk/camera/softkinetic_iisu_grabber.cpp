@@ -70,10 +70,25 @@ void SoftKineticIisuGrabber :: onDataFrame(const SK::DataFrameEvent& event)
     {
         SK::Image rgb_image = m_rgb_image.get();
         SK::ImageInfos rgb_infos = rgb_image.getImageInfos ();
+        ntk_dbg_print (rgb_infos.bytesPerPixel(), 2);
+        ntk_dbg_print (rgb_infos.channelsNb, 2);
+        ntk_dbg_print (rgb_infos.pixels(), 2);
         ntk_dbg_print (rgb_infos.width, 2);
         ntk_dbg_print (rgb_infos.height, 2);
         ntk_dbg_print (rgb_infos.pixelTypeToString(), 2);
         ntk_dbg_print (rgb_infos.imageTypeString(), 2);
+        ntk_dbg_print (m_confidence_filter_parameter.get(), 1);
+        ntk_dbg_print (m_confidence_filter_min_threshold.get(), 1);
+        ntk_dbg_print (m_edge_filter_parameter.get(), 1);
+        ntk_dbg_print (m_smooth_filter_parameter.get(), 1);
+        Vec4b* raw_values = reinterpret_cast<Vec4b*> (rgb_image.getRAW());
+        const Vec4b* last_raw_value = raw_values + rgb_infos.width*rgb_infos.height;
+        Vec3b* rgb_buffer = m_current_image.rawRgbRef().ptr<Vec3b>(0);
+        while (raw_values != last_raw_value)
+        {
+            Vec4b rgba = (*raw_values++);
+            (*rgb_buffer++) = Vec3b(rgba[0], rgba[1], rgba[2]);
+        }
         m_rgb_transmitted = false;
     }
 
@@ -245,6 +260,12 @@ bool SoftKineticIisuGrabber :: registerParameters()
     m_depth_hfov = m_device->registerParameterHandle<float>("SOURCE.CAMERA.DEPTH.HFOV");
     m_depth_vfov = m_device->registerParameterHandle<float>("SOURCE.CAMERA.DEPTH.VFOV");
 
+    m_confidence_filter_parameter = m_device->registerParameterHandle<bool>("SOURCE.FILTER.CONFIDENCE.Enabled");
+    m_confidence_filter_min_threshold = m_device->registerParameterHandle<int>("SOURCE.FILTER.CONFIDENCE.MinThreshold");
+
+    m_smooth_filter_parameter = m_device->registerParameterHandle<bool>("SOURCE.FILTER.SMOOTHING.Enabled");
+    m_edge_filter_parameter = m_device->registerParameterHandle<bool>("SOURCE.FILTER.RECONSTRUCTION.Enabled");
+
     return true;
 }
 
@@ -318,6 +339,8 @@ bool SoftKineticIisuGrabber :: connectToDevice()
     ntk_dbg(1) << "Camera Model : " << m_cameraModel.get().ptr();
     ntk_dbg(1) << "Depth width : " << m_depth_width_parameter.get();
     ntk_dbg(1) << "Depth height : " << m_depth_height_parameter.get();
+
+    m_confidence_filter_min_threshold.set(200);
 
     estimateCalibration ();
     m_calib_data->saveToFile("debug_calib.yml");

@@ -88,6 +88,10 @@ private:
   SK::ParameterHandle<float> m_rgb_vfov;
   SK::ParameterHandle<float> m_depth_hfov;
   SK::ParameterHandle<float> m_depth_vfov;
+  SK::ParameterHandle<bool> m_confidence_filter_parameter;
+  SK::ParameterHandle<int> m_confidence_filter_min_threshold;
+  SK::ParameterHandle<bool> m_edge_filter_parameter;
+  SK::ParameterHandle<bool> m_smooth_filter_parameter;
   SK::DataHandle<SK::Image> m_depth_image;
   SK::DataHandle<SK::Image> m_rgb_image;
 };
