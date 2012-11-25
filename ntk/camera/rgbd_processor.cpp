@@ -55,6 +55,12 @@ static void copy16bitsToFloat (const cv::Mat1w& src_im, cv::Mat1f& dest_im)
         *output++ = (*src++) / 1000.f;
 }
 
+SoftKineticRGBDProcessor::SoftKineticRGBDProcessor()
+    : RGBDProcessor()
+{
+    setFilterFlags(RGBDProcessorFlags::FilterMedian | RGBDProcessorFlags::FilterEdges);
+}
+
 } // ntk
 
 namespace ntk
@@ -368,6 +374,9 @@ namespace ntk
 
             if (hasFilterFlag(RGBDProcessorFlags::FillSmallHoles))
                 fillSmallHoles();
+
+            if (hasFilterFlag(RGBDProcessorFlags::ErodeDepthBorders))
+                erodeDepthBorders();
         }
 
         if (m_image->rgb().data)
@@ -655,6 +664,12 @@ namespace ntk
         }
     }
 
+    void RGBDProcessor::erodeDepthBorders()
+    {
+        cv::Mat1b& depth_mask_im = m_image->depthMaskRef();
+        cv::erode(depth_mask_im, depth_mask_im, cv::Mat(), cv::Point(-1,-1), 3);
+    }
+
     void RGBDProcessor :: removeEdgeOutliers()
     {
         ntk_ensure(m_image->calibration(), "Calibration required.");
@@ -923,6 +938,15 @@ namespace ntk
                 depth_color_data[c] = cv::Vec3b(b,g,r);
             }
         }
+    }
+
+    OpenniRGBDProcessor::OpenniRGBDProcessor()
+        : RGBDProcessor()
+    {
+        // Everything is done by the grabber.
+        setFilterFlags(RGBDProcessorFlags::NiteProcessed
+                       | RGBDProcessorFlags::ComputeMapping
+                       | RGBDProcessorFlags::ErodeDepthBorders);
     }
 
     void OpenniRGBDProcessor :: computeMappings()

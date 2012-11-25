@@ -53,7 +53,8 @@ public:
       FlipColorImage = 0x40000, // horizontally flip the color image
       NiteProcessed = 0x80000, // raw = mapped = postprocessed
       FilterBilateral = 0x100000,
-      ComputeHighQualityNormals = 0x200000 // compute normals (required by FilterNormals)
+      ComputeHighQualityNormals = 0x200000, // compute normals (required by FilterNormals)
+      ErodeDepthBorders = 0x400000 // erode depth image borders.
     };
 
     RGBDProcessorFlags(int flags) { m_flags = flags; }
@@ -158,6 +159,7 @@ protected:
   virtual void computeKinectDepthBaseline();
   virtual void removeSmallStructures();
   virtual void fillSmallHoles();
+  virtual void erodeDepthBorders();
 
 protected:
   RGBDImage* m_image;
@@ -193,12 +195,7 @@ typedef FreenectRGBDProcessor KinectProcessor;
 class OpenniRGBDProcessor : public RGBDProcessor
 {
 public:
-  OpenniRGBDProcessor()
-    : RGBDProcessor()
-  {
-    // Everything is done by the grabber.
-    setFilterFlags(RGBDProcessorFlags::NiteProcessed | RGBDProcessorFlags::ComputeMapping);
-  }
+  OpenniRGBDProcessor();
 
 protected:
   virtual void computeMappings();
@@ -211,11 +208,7 @@ typedef OpenniRGBDProcessor NiteProcessor;
 class SoftKineticRGBDProcessor : public RGBDProcessor
 {
 public:
-  SoftKineticRGBDProcessor()
-    : RGBDProcessor()
-  {
-      setFilterFlags(RGBDProcessorFlags::FilterMedian | RGBDProcessorFlags::FilterEdges);
-  }
+  SoftKineticRGBDProcessor();
 };
 
 class RGBDProcessorFactory
