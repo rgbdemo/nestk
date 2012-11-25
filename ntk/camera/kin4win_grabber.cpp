@@ -144,7 +144,7 @@ public:
     WinRet init ()
     {
         colorCoordinates = new long[getDepthHeight()*getDepthWidth()*2];
-        mappedDepthTmp = new float[getDepthHeight()*getDepthWidth()];
+        mappedDepthTmp = new uint16_t[getDepthHeight()*getDepthWidth()];
 
         WinRet ret;
         bool result;
@@ -322,12 +322,12 @@ public:
 
             uint16_t* buf = reinterpret_cast<uint16_t*>(lockedRect.pBits);
 
-            ntk_assert(width  == that->m_current_image.rawDepth().cols, "Bad width");
-            ntk_assert(height == that->m_current_image.rawDepth().rows, "Bad height");
+            ntk_assert(width  == that->m_current_image.rawDepth16bits().cols, "Bad width");
+            ntk_assert(height == that->m_current_image.rawDepth16bits().rows, "Bad height");
 
             {
                 QWriteLocker locker(&that->m_lock);
-                float* depth_buf = that->m_current_image.rawDepthRef().ptr<float>();
+                uint16_t* depth_buf = that->m_current_image.rawDepth16bitsRef().ptr<uint16_t>();
                 mapDepthFrameToRgbFrame(buf, depth_buf);
             }
 
@@ -497,7 +497,7 @@ public:
         Vector4 v = NuiTransformDepthImageToSkeleton(
                     LONG(double(w - p.x - 1) / double(w)),
                     LONG(double(p.y) / double(h)),
-                    USHORT(p.z * 1000) << 3,
+                    USHORT(p.z*1000.f) << 3,
                     depthResolution
                     );
 
@@ -516,10 +516,10 @@ public:
 
         d >>= 3;
 
-        return cv::Point3f(x, y, float(d) / 1000.f);
+        return cv::Point3f(x, y, (float) d / 1000.f);
     }
 
-    void postprocessDepthData (float* depth_values)
+    void postprocessDepthData (uint16_t* depth_values)
     {
         static const int neighbors[6][2] = { {-1, 0}, {1, 0}, {0, -1}, {0, 1}, {-1, -1}, {1, 1} };
         const size_t depth_width = getDepthWidth();
@@ -531,8 +531,8 @@ public:
         for (int ref_r = 0; ref_r < depth_height; ++ref_r)
         for (int ref_c = 0; ref_c < depth_width; ++ref_c)
         {
-            float& d = depth_values[ref_r*depth_width+ref_c];
-            if (d > 1e-5) continue;
+            uint16_t& d = depth_values[ref_r*depth_width+ref_c];
+            if (d > 0) continue;
 
             for (int neighb = 0; neighb < 6; ++neighb)
             {
@@ -541,8 +541,8 @@ public:
 
                 if (c >= 0 && c < depth_width && r >= 0 && r < depth_height)
                 {
-                    float neighb_d = mappedDepthTmp[r*depth_width+c];
-                    if (neighb_d > 1e-5)
+                    uint16_t neighb_d = mappedDepthTmp[r*depth_width+c];
+                    if (neighb_d > 0)
                     {
                         d = mappedDepthTmp[r*depth_width+c];
                         break;
@@ -552,7 +552,7 @@ public:
         }
     }
 
-    void mapDepthFrameToRgbFrame (uint16_t* depth_d16, float* depth_values)
+    void mapDepthFrameToRgbFrame (uint16_t* depth_d16, uint16_t* depth_values)
     {
         const size_t depth_width = getDepthWidth();
         const size_t depth_height = getDepthHeight();
@@ -567,7 +567,7 @@ public:
                     colorCoordinates
                     );
 
-        std::fill(depth_values, depth_values+depth_width*depth_height, 0.f);
+        std::fill(depth_values, depth_values+depth_width*depth_height, 0);
 
         // FIXME: this is tricky. In our convention, we want a mapped depth image,
         // but keeping its original resolution. Kinect for Windows logically returns
@@ -586,9 +586,9 @@ public:
             if (c >= 0 && c < depth_width && r >= 0 && r < depth_height)
             {
                 
-                float depth = float(NuiDepthPixelToDepth(d)) / 1000.f;
+                uint16_t depth_in_mm = NuiDepthPixelToDepth(d);
                 int idx = r*depth_width+c;
-                depth_values[idx] = depth;
+                depth_values[idx] = depth_in_mm;
             }
         }
     }
@@ -601,7 +601,7 @@ public:
     INuiSensor* sensor;
 
     long* colorCoordinates;
-    float* mappedDepthTmp;
+    uint16_t* mappedDepthTmp;
 
     NuiResolution depthResolution;
     WinHandle nextDepthFrameEvent;
@@ -677,11 +677,11 @@ bool Kin4WinGrabber :: connectToDevice()
         nui->colorResolution = NUI_IMAGE_RESOLUTION_1280x960;
 
     m_rgbd_image.rawRgbRef()   = Mat3b(nui->getColorHeight(), nui->getColorWidth());
-    m_rgbd_image.rawDepthRef() = Mat1f(nui->getDepthHeight(), nui->getDepthWidth ());
+    m_rgbd_image.rawDepth16bitsRef() = Mat1f(nui->getDepthHeight(), nui->getDepthWidth ());
     //m_rgbd_image.rawIntensityRef() = Mat1f(defaultFrameHeight, defaultFrameWidth);
 
     m_current_image.rawRgbRef()   = Mat3b(nui->getColorHeight(), nui->getColorWidth());
-    m_current_image.rawDepthRef() = Mat1f(nui->getDepthHeight(), nui->getDepthWidth ());
+    m_current_image.rawDepth16bitsRef() = Mat1f(nui->getDepthHeight(), nui->getDepthWidth ());
     //m_current_image.rawIntensityRef() = Mat1f(defaultFrameHeight, defaultFrameWidth);
 
     // FIXME: This should be done at connectToDevice time.
@@ -876,8 +876,8 @@ void Kin4WinGrabber :: run()
             {
                 QWriteLocker locker(&m_lock);
                 m_current_image.swap(m_rgbd_image);
-                nui->postprocessDepthData(m_rgbd_image.rawDepthRef().ptr<float>());
-                cv::flip(m_rgbd_image.rawDepth(), m_rgbd_image.rawDepthRef(), 1);
+                nui->postprocessDepthData(m_rgbd_image.rawDepth16bitsRef().ptr<uint16_t>());
+                cv::flip(m_rgbd_image.rawDepth16bits(), m_rgbd_image.rawDepth16bitsRef(), 1);
                 cv::flip(m_rgbd_image.rawRgb(), m_rgbd_image.rawRgbRef(), 1);
             }
 
