@@ -5,7 +5,7 @@
 
 namespace ntk { namespace hub {
 
-struct Outlet;
+class Outlet;
 
 //------------------------------------------------------------------------------
 
