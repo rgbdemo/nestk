@@ -946,7 +946,7 @@ namespace ntk
         // Everything is done by the grabber.
         setFilterFlags(RGBDProcessorFlags::NiteProcessed
                        | RGBDProcessorFlags::ComputeMapping
-                       | RGBDProcessorFlags::ErodeDepthBorders);
+                       /*| RGBDProcessorFlags::ErodeDepthBorders*/);
     }
 
     void OpenniRGBDProcessor :: computeMappings()
