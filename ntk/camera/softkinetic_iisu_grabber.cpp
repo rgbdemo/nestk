@@ -418,10 +418,13 @@ void SoftKineticIisuGrabber :: handleNewFrame()
         QWriteLocker locker(&m_lock);
         // FIXME: ugly hack to handle the possible time
         // gaps between rgb and IR frames in dual mode.
+        m_current_image.setTimestamp(getCurrentTimestamp());
         m_current_image.swap(m_rgbd_image);
         m_rgb_transmitted = true;
         m_depth_transmitted = true;
     }
+
+
 
     advertiseNewFrame();
 }

@@ -412,11 +412,9 @@ void SoftKineticGrabber :: handleNewFrame()
     }
 
     {
-        int64 grab_time = ntk::Time::getMillisecondCounter();
-        ntk_dbg_print(grab_time - m_last_grab_time, 2);
-        m_last_grab_time = grab_time;
         QWriteLocker locker(&m_lock);
-        // FIXME: ugly hack to handle the possible time
+        m_current_image.setTimestamp(getCurrentTimestamp());
+        // FIXME: hack to handle the possible time
         // gaps between rgb and IR frames in dual mode.
         m_current_image.swap(m_rgbd_image);
         m_rgb_transmitted = true;
