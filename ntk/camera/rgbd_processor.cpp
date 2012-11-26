@@ -58,7 +58,8 @@ static void copy16bitsToFloat (const cv::Mat1w& src_im, cv::Mat1f& dest_im)
 SoftKineticRGBDProcessor::SoftKineticRGBDProcessor()
     : RGBDProcessor()
 {
-    setFilterFlags(RGBDProcessorFlags::FilterMedian | RGBDProcessorFlags::FilterEdges);
+    setFilterFlags(RGBDProcessorFlags::FilterMedian | RGBDProcessorFlags::FilterEdges /* | RGBDProcessorFlags::ErodeDepthBorders */);
+    // setFilterFlags(RGBDProcessorFlags::FilterBilateral | RGBDProcessorFlags::FilterEdges);
 }
 
 } // ntk
@@ -70,11 +71,11 @@ namespace ntk
             m_image(0),
             //m_flags(FixGeometry | FixBias | UndistortImages | ComputeNormals),
             m_flags(RGBDProcessorFlags::UndistortImages),
-            m_min_depth(0.3f),
+            m_min_depth(0.1f),
             m_max_depth(10.0f),
             m_max_normal_angle(80),
             m_max_time_depth_delta(0.1f),
-            m_max_spatial_depth_delta(0.1f),
+            m_max_spatial_depth_delta(0.05f),
             m_mapping_resolution(1.0f),
             m_min_amplitude(1000),
             m_max_amplitude(-1)
@@ -667,7 +668,12 @@ namespace ntk
     void RGBDProcessor::erodeDepthBorders()
     {
         cv::Mat1b& depth_mask_im = m_image->depthMaskRef();
-        cv::erode(depth_mask_im, depth_mask_im, cv::Mat(), cv::Point(-1,-1), 3);
+        cv::Mat1b tmp_im;
+        depth_mask_im.copyTo(tmp_im);
+        cv::morphologyEx(tmp_im, depth_mask_im,
+                         cv::MORPH_ERODE,
+                         getStructuringElement(cv::MORPH_CROSS,
+                                               cv::Size(3,3)));
     }
 
     void RGBDProcessor :: removeEdgeOutliers()
@@ -946,7 +952,7 @@ namespace ntk
         // Everything is done by the grabber.
         setFilterFlags(RGBDProcessorFlags::NiteProcessed
                        | RGBDProcessorFlags::ComputeMapping
-                       /*| RGBDProcessorFlags::ErodeDepthBorders*/);
+                       | RGBDProcessorFlags::ErodeDepthBorders);
     }
 
     void OpenniRGBDProcessor :: computeMappings()
