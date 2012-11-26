@@ -55,8 +55,6 @@ public:
   virtual std::string grabberType () const { return "softkinetic"; }
 
 public:
-  void depthCallBack(uint16_t *buf, int width, int height);
-  void rgbCallBack(uint8_t *buf, int width, int height);
   void onNewColorSample(DepthSense::ColorNode::NewSampleReceivedData data);
   void onNewDepthSample(DepthSense::DepthNode::NewSampleReceivedData data);
   void onDeviceConnected(DepthSense::Context::DeviceAddedData data);

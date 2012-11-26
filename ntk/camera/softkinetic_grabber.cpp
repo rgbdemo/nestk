@@ -27,6 +27,8 @@
 using namespace cv;
 using namespace DepthSense;
 
+#define SOFTKINETIC_CONFIDENCE_AS_COLOR 1
+
 namespace ntk
 {
 
@@ -95,6 +97,11 @@ void SoftKineticGrabber :: estimateCalibration(DepthSense::StereoCameraParameter
     int32_t depth_height = -1;
     FrameFormat_toResolution (m_depth_node.getConfiguration().frameFormat, &depth_width, &depth_height);
 
+#ifdef SOFTKINETIC_CONFIDENCE_AS_COLOR
+    rgb_width = depth_width;
+    rgb_height = depth_height;
+#endif
+
     m_calib_data->depth_intrinsics = cv::Mat1d(3,3);
     setIdentity(m_calib_data->depth_intrinsics);
     m_calib_data->depth_intrinsics(0,0) = fx;
@@ -115,10 +122,17 @@ void SoftKineticGrabber :: estimateCalibration(DepthSense::StereoCameraParameter
     m_calib_data->raw_depth_size = cv::Size(depth_width, depth_height);
     m_calib_data->depth_size = cv::Size(depth_width, depth_height);
 
+#ifndef SOFTKINETIC_CONFIDENCE_AS_COLOR
     float rgb_fx = parameters.colorIntrinsics.fx;
     float rgb_fy = parameters.colorIntrinsics.fy;
     float rgb_cx = parameters.colorIntrinsics.cx;
     float rgb_cy = parameters.colorIntrinsics.cy;
+#else
+    float rgb_fx = parameters.depthIntrinsics.fx;
+    float rgb_fy = parameters.depthIntrinsics.fy;
+    float rgb_cx = parameters.depthIntrinsics.cx;
+    float rgb_cy = parameters.depthIntrinsics.cy;
+#endif
 
     m_calib_data->rgb_intrinsics = cv::Mat1d(3,3);
     setIdentity(m_calib_data->rgb_intrinsics);
@@ -128,11 +142,19 @@ void SoftKineticGrabber :: estimateCalibration(DepthSense::StereoCameraParameter
     m_calib_data->rgb_intrinsics(1,2) = rgb_cy;
 
     m_calib_data->rgb_distortion = Mat1d(1,5);
+#ifndef SOFTKINETIC_CONFIDENCE_AS_COLOR
     m_calib_data->rgb_distortion(0,0) = parameters.colorIntrinsics.k1;
     m_calib_data->rgb_distortion(0,1) = parameters.colorIntrinsics.k2;
     m_calib_data->rgb_distortion(0,2) = parameters.colorIntrinsics.p1;
     m_calib_data->rgb_distortion(0,3) = parameters.colorIntrinsics.p2;
     m_calib_data->rgb_distortion(0,4) = parameters.colorIntrinsics.k3;
+#else
+    m_calib_data->rgb_distortion(0,0) = parameters.depthIntrinsics.k1;
+    m_calib_data->rgb_distortion(0,1) = parameters.depthIntrinsics.k2;
+    m_calib_data->rgb_distortion(0,2) = parameters.depthIntrinsics.p1;
+    m_calib_data->rgb_distortion(0,3) = parameters.depthIntrinsics.p2;
+    m_calib_data->rgb_distortion(0,4) = parameters.depthIntrinsics.k3;
+#endif
     m_calib_data->zero_rgb_distortion = false;
 
     m_calib_data->R = Mat1d(3,3);
@@ -158,9 +180,11 @@ void SoftKineticGrabber :: estimateCalibration(DepthSense::StereoCameraParameter
     m_calib_data->T = Mat1d(3,1);
     m_calib_data->T = 0.;
 
+#ifndef SOFTKINETIC_CONFIDENCE_AS_COLOR
     m_calib_data->T(0,0) = -parameters.extrinsics.t1;
     m_calib_data->T(0,1) = -parameters.extrinsics.t2;
     m_calib_data->T(0,2) = -parameters.extrinsics.t3;
+#endif
 
     m_calib_data->depth_pose = new Pose3D();
     m_calib_data->depth_pose->setCameraParametersFromOpencv(m_calib_data->depth_intrinsics);
@@ -177,6 +201,10 @@ void SoftKineticGrabber::onNewColorSample(ColorNode::NewSampleReceivedData data)
 {
     if (!m_connected) // not yet in running mode.
         return;
+
+#ifdef SOFTKINETIC_CONFIDENCE_AS_COLOR
+    return;
+#endif
 
     // std::clog << cv::format("Color: %d pixels\n", data.colorMap.size());
     cv::Vec3b* rgb_buffer = m_current_image.rawRgbRef().ptr<cv::Vec3b>(0);
@@ -205,6 +233,18 @@ void SoftKineticGrabber::onNewDepthSample(DepthNode::NewSampleReceivedData data)
         m_context.quit();
         return;
     }
+
+#ifdef SOFTKINETIC_CONFIDENCE_AS_COLOR
+    const int16_t* confidence_map_values = data.confidenceMap;
+    const int16_t* last_confidence_value = data.confidenceMap + data.confidenceMap.size();
+    float* confidence_buffer = m_current_image.rawAmplitudeRef().ptr<float>();
+    while (confidence_map_values != last_confidence_value)
+    {
+        (*confidence_buffer++) = *confidence_map_values++;
+    }
+    m_current_image.rawRgbRef() = ntk::toMat3b(ntk::normalize_toMat1b(m_current_image.rawAmplitude()));
+    m_rgb_transmitted = false;
+#endif
 
     // std::clog << cv::format("Depth: %d\n", data.depthMap.size());
     float* depth_buffer = m_current_image.rawDepthRef().ptr<float>(0);
@@ -281,6 +321,9 @@ void SoftKineticGrabber :: configureNode(Node node)
         // config.mode = DepthNode::CAMERA_MODE_LONG_RANGE;
         config.saturation = true;
         m_depth_node.setEnableDepthMap(true);
+#ifdef SOFTKINETIC_CONFIDENCE_AS_COLOR
+        m_depth_node.setEnableConfidenceMap(true);
+#endif
         try
         {
             m_context.requestControl(m_depth_node,0);
@@ -445,11 +488,21 @@ void SoftKineticGrabber :: run()
     int depth_height = -1;
     FrameFormat_toResolution (m_depth_node.getConfiguration().frameFormat, &depth_width, &depth_height);
 
+#ifdef SOFTKINETIC_CONFIDENCE_AS_COLOR
+    color_width = depth_width;
+    color_height = depth_height;
+#endif
+
     m_rgbd_image.rawRgbRef() = Mat3b(color_height, color_width);
     m_rgbd_image.rawDepthRef() = Mat1f(depth_height, depth_width);
 
     m_current_image.rawRgbRef() = Mat3b(color_height, color_width);
     m_current_image.rawDepthRef() = Mat1f(depth_height, depth_width);
+
+#ifdef SOFTKINETIC_CONFIDENCE_AS_COLOR
+    m_rgbd_image.rawAmplitudeRef() = Mat1f(depth_height, depth_width);
+    m_current_image.rawAmplitudeRef() = Mat1f(depth_height, depth_width);
+#endif
 
     m_current_image.setCalibration(m_calib_data);
     m_rgbd_image.setCalibration(m_calib_data);

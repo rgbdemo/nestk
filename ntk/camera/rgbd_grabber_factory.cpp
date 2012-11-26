@@ -342,7 +342,7 @@ RGBDGrabberFactory::createGrabbers(const ntk::RGBDGrabberFactory::Params& orig_p
     else
     {
         createKin4winGrabbers(params, grabbers);
-        // createOpenniGrabbers(params, grabbers);
+        createOpenniGrabbers(params, grabbers);
         createPmdGrabbers(params, grabbers);
         createSoftKineticGrabbers(params, grabbers);
         createSoftKineticIisuGrabbers(params, grabbers);
