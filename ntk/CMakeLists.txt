@@ -394,6 +394,8 @@ IF (WIN32)
   set(WINMM_LIBRARY winmm)
 ENDIF()
 
+find_package(Boost REQUIRED)
+
 TARGET_LINK_LIBRARIES(nestk
   ${Boost_LIBRARIES}
   ${QT_LIBRARIES}
