@@ -83,7 +83,7 @@ public:
   bool withRgbDataAndCalibrated() const { return rawRgb().data && m_calibration; }
   bool withDepthDataAndCalibrated() const { return rawDepth().data && m_calibration; }
   bool hasRgb() const { return rawRgb().data != 0; }
-  bool hasDepth() const { return rawDepth().data != 0; }
+  bool hasDepth() const { return depth().data != 0; }
 
   const RGBDImageHeader& header () const { return m_header; }
   void setHeader (const RGBDImageHeader& header) { m_header = header; }
