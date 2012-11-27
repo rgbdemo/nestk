@@ -82,6 +82,7 @@ public:
 
   bool withRgbDataAndCalibrated() const { return rawRgb().data && m_calibration; }
   bool withDepthDataAndCalibrated() const { return rawDepth().data && m_calibration; }
+  // FIXME: should check the rgb field.
   bool hasRgb() const { return rawRgb().data != 0; }
   bool hasDepth() const { return depth().data != 0; }
 
