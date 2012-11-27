@@ -190,7 +190,7 @@ void Marker::rotateXAxis(Mat &rotation)
 
 /**
 */
-Mat Marker::createMarkerImage(int id,int size) throw (cv::Exception)
+Mat Marker::createMarkerImage(int id,int size)
 {
     if (id>=1024) throw cv::Exception(9004,"id>=1024","createMarker",__FILE__,__LINE__);
     Mat marker(size,size, CV_8UC1);
