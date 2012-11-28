@@ -672,8 +672,8 @@ namespace ntk
         depth_mask_im.copyTo(tmp_im);
         cv::morphologyEx(tmp_im, depth_mask_im,
                          cv::MORPH_ERODE,
-                         getStructuringElement(cv::MORPH_CROSS,
-                                               cv::Size(5,5)));
+                         getStructuringElement(cv::MORPH_RECT,
+                                               cv::Size(3,3)));
     }
 
     void RGBDProcessor :: removeEdgeOutliers()
@@ -951,8 +951,9 @@ namespace ntk
     {
         // Everything is done by the grabber.
         setFilterFlags(RGBDProcessorFlags::NiteProcessed
-                       | RGBDProcessorFlags::ComputeMapping
-                       | RGBDProcessorFlags::ErodeDepthBorders);
+                       | RGBDProcessorFlags::ComputeMapping/*
+                       | RGBDProcessorFlags::ErodeDepthBorders
+                       | RGBDProcessorFlags::RemoveSmallStructures*/);
     }
 
     void OpenniRGBDProcessor :: computeMappings()
