@@ -204,6 +204,8 @@ namespace ntk
     void applyTransform(const Pose3D& pose);
     void applyScaleTransform(float x_scale, float y_scale, float z_scale);
     void computeNormalsFromFaces();
+    void invertFaceNormals();
+    void duplicateSharedVertices();
     void computeVertexFaceMap(std::vector< std::vector<int> >& faces_per_vertex) const;
     void computeFaceNeighbors(std::vector< std::vector<int> >& faces_neighbors,
                               const std::vector< std::vector<int> >& faces_per_vertex) const;

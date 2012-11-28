@@ -707,6 +707,20 @@ void Mesh::computeNormalsFromFaces()
     }
 }
 
+void Mesh::invertFaceNormals()
+{
+    foreach_idx(face_i, faces)
+    {
+        std::swap (faces[face_i].indices[0], faces[face_i].indices[2]);
+    }
+}
+
+void Mesh::duplicateSharedVertices()
+{
+    // FIXME: implement
+    abort ();
+}
+
 void Mesh::computeVertexFaceMap(std::vector< std::vector<int> >& faces_per_vertex) const
 {
     faces_per_vertex.resize(vertices.size());
