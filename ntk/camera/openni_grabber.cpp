@@ -466,7 +466,8 @@ void OpenniGrabber :: estimateCalibration()
     // When hardware alignment is enabled, to focus length has to be adjusted
     // to match the color one. This empirical factor computed by averaging checkerboard
     // calibrations seem quite good.
-    const double f_correction_factor = m_hardware_registration ? 528.0/570.34 : 1.0;
+    // const double f_correction_factor = m_hardware_registration ? 528.0/570.34 : 1.0;
+    const double f_correction_factor = m_hardware_registration ? 535.0/570.34 : 1.0;
     fx *= f_correction_factor;
     fy *= f_correction_factor;
 
