@@ -673,7 +673,7 @@ namespace ntk
         cv::morphologyEx(tmp_im, depth_mask_im,
                          cv::MORPH_ERODE,
                          getStructuringElement(cv::MORPH_CROSS,
-                                               cv::Size(3,3)));
+                                               cv::Size(5,5)));
     }
 
     void RGBDProcessor :: removeEdgeOutliers()
