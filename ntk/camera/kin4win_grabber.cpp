@@ -763,8 +763,8 @@ void Kin4WinGrabber :: estimateCalibration()
     // These factors were estimated using chessboard calibration.
     // They seem to accurately correct the bias in object sizes output by
     // the default parameters.
-    // const double f_correction_factor = 528.0/570.34;
-    const double f_correction_factor = 1.0; // FIXME: what should it be for Kinect for Windows?
+    const double f_correction_factor = 535.0/570.34;
+    // const double f_correction_factor = 1.0; // FIXME: what should it be for Kinect for Windows?
     fx *= f_correction_factor;
     fy *= f_correction_factor;
 
