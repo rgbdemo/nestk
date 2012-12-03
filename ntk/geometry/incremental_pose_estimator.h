@@ -31,6 +31,8 @@ namespace ntk
 class IncrementalPoseEstimator
 {
 public:
+    virtual ~IncrementalPoseEstimator () {}
+
     virtual bool estimateCurrentPose() = 0;
     virtual void reset() { m_current_pose = Pose3D(); }
     virtual IncrementalPoseEstimator* clone() const = 0;
