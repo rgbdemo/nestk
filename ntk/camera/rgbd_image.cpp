@@ -48,7 +48,56 @@ RGBDImageHeader::RGBDImageHeader()
     : camera_serial("unknown")
     , timestamp(-1)
     , grabber_type("unknown")
+    , calibration (0)
 {
+}
+
+void RGBDImageHeader::loadFromDir(const std::string &dir, const RGBDCalibration* input_calib)
+{
+    this->directory = dir;
+
+    const RGBDCalibration* calib = 0;
+    if (!input_calib && is_file(dir+"/calibration.yml"))
+    {
+        // FIXME: use smart pointer.
+        RGBDCalibration* new_calib = new RGBDCalibration;
+        new_calib->loadFromFile((dir+"/calibration.yml").c_str());
+        calib = new_calib;
+    }
+    else
+    {
+        calib = input_calib;
+    }
+
+    this->calibration = calib;
+
+    if (is_file(dir+"/serial"))
+    {
+        std::ifstream f ((dir+"/serial").c_str());
+        f >> camera_serial;
+        f.close ();
+    }
+
+    if (is_file(dir+"/grabber-type"))
+    {
+        std::ifstream f ((dir+"/grabber-type").c_str());
+        f >> grabber_type;
+        f.close ();
+    }
+
+    if (is_file(dir+"/timestamp"))
+    {
+        std::ifstream f ((dir+"/timestamp").c_str());
+        f >> timestamp;
+        f.close ();
+    }
+
+    if (is_file(dir + "/rgb_pose.avs") && calib)
+    {
+        ntk::Pose3D pose;
+        pose.parseAvsFile((dir + "/rgb_pose.avs").c_str());
+        setEstimatedWorldRgbPose(pose);
+    }
 }
 
 std::string RGBDImageHeader::getUniqueId() const
@@ -57,15 +106,46 @@ std::string RGBDImageHeader::getUniqueId() const
     return cv::format("%s-%08d", camera_serial.c_str(), timestamp);
 }
 
+Pose3D RGBDImageHeader :: sensorDepthPose() const
+{
+    if (0 == calibration)
+        return Pose3D();
+    return *(calibration->depth_pose);
+}
+
+Pose3D RGBDImageHeader :: sensorRgbPose() const
+{
+    if (0 == calibration)
+        return Pose3D();
+    Pose3D pose = sensorDepthPose();
+    pose.toRightCamera(calibration->rgb_intrinsics, calibration->R, calibration->T);
+    return pose;
+}
+
+Pose3D RGBDImageHeader :: estimatedWorldRgbPose() const
+{
+    ntk_assert(calibration, "Calibration must be available!");
+    Pose3D pose = estimatedWorldDepthPose();
+    if (!pose.isValid())
+        return pose;
+    pose.toRightCamera(calibration->rgb_intrinsics, calibration->R, calibration->T);
+    return pose;
+}
+
+void RGBDImageHeader :: setEstimatedWorldRgbPose(const Pose3D& pose)
+{
+    ntk_assert(calibration, "Calibration must be available!");
+    estimated_world_depth_pose = pose;
+    estimated_world_depth_pose.toLeftCamera(calibration->depth_intrinsics, calibration->R, calibration->T);
+}
+
 RGBDImage::RGBDImage()
-    : m_calibration(0),
-      m_skeleton(0)
+    : m_skeleton(0)
 {
 }
 
 RGBDImage::RGBDImage(const RGBDImage& rhs)
     : EventData(rhs),
-      m_calibration(0),
       m_skeleton(0)
 {
     rhs.copyTo(*this);
@@ -108,44 +188,9 @@ void RGBDImage :: loadFromDir(const std::string& dir,
                               const RGBDCalibration* input_calib,
                               RGBDProcessor* processor)
 {
-    m_header.directory = dir;
-    m_header.timestamp = 0;
     ntk_dbg_print(dir, 2);
 
-    const RGBDCalibration* calib = 0;
-    if (!input_calib && is_file(dir+"/calibration.yml"))
-    {
-        // FIXME: use smart pointer.
-        RGBDCalibration* new_calib = new RGBDCalibration;
-        new_calib->loadFromFile((dir+"/calibration.yml").c_str());
-        calib = new_calib;
-    }
-    else
-    {
-        calib = input_calib;
-    }
-    setCalibration(calib);
-
-    if (is_file(dir+"/serial"))
-    {
-        std::ifstream f ((dir+"/serial").c_str());
-        f >> m_header.camera_serial;
-        f.close ();
-    }
-
-    if (is_file(dir+"/grabber-type"))
-    {
-        std::ifstream f ((dir+"/grabber-type").c_str());
-        f >> m_header.grabber_type;
-        f.close ();
-    }
-
-    if (is_file(dir+"/timestamp"))
-    {
-        std::ifstream f ((dir+"/timestamp").c_str());
-        f >> m_header.timestamp;
-        f.close ();
-    }
+    m_header.loadFromDir (dir, input_calib);
 
     if (!is_file(dir+"/raw/color.png") && is_file(dir+"/color.png"))
     {
@@ -229,13 +274,6 @@ void RGBDImage :: loadFromDir(const std::string& dir,
             rawIntensityRef() = imread(dir + "/raw/intensity.png", 0);
             ntk_ensure(rawIntensityRef().data, ("Could not read raw intensity image from " + dir).c_str());
         }
-
-        if (is_file(dir + "/rgb_pose.avs") && calib)
-        {
-            ntk::Pose3D pose;
-            pose.parseAvsFile((dir + "/rgb_pose.avs").c_str());
-            setEstimatedWorldRgbPose(pose);
-        }
     }
 
     if (processor)
@@ -261,7 +299,6 @@ void RGBDImage :: copyTo(RGBDImage& other) const
     m_raw_depth_16bits.copyTo(other.m_raw_depth_16bits);
     m_user_labels.copyTo(other.m_user_labels);
     other.m_header = m_header;
-    other.m_calibration = m_calibration;
 #if defined(USE_NITE) || defined(NESTK_USE_NITE)
     if (m_skeleton)
     {
@@ -298,7 +335,6 @@ void RGBDImage :: swap(RGBDImage& other)
     cv::swap(m_raw_depth, other.m_raw_depth);
     cv::swap(m_raw_depth_16bits, other.m_raw_depth_16bits);
     cv::swap(m_user_labels, other.m_user_labels);
-    std::swap(m_calibration, other.m_calibration);
     std::swap(m_header, other.m_header);
 }
 
@@ -327,39 +363,6 @@ void RGBDImage :: fillRgbFromUserLabels(cv::Mat3b& img) const
         else
             img(r,c) = colors[label%nb_colors];
     }
-}
-
-Pose3D RGBDImage :: sensorDepthPose() const
-{
-    if (0 == m_calibration)
-        return Pose3D();
-    return *calibration()->depth_pose;
-}
-
-Pose3D RGBDImage :: sensorRgbPose() const
-{
-    if (0 == m_calibration)
-        return Pose3D();
-    Pose3D pose = sensorDepthPose();
-    pose.toRightCamera(m_calibration->rgb_intrinsics, m_calibration->R, m_calibration->T);
-    return pose;
-}
-
-Pose3D RGBDImage :: estimatedWorldRgbPose() const
-{
-    ntk_assert(m_calibration, "Calibration must be available!");
-    Pose3D pose = estimatedWorldDepthPose();
-    if (!pose.isValid())
-        return pose;
-    pose.toRightCamera(m_calibration->rgb_intrinsics, m_calibration->R, m_calibration->T);
-    return pose;
-}
-
-void RGBDImage :: setEstimatedWorldRgbPose(const Pose3D& pose)
-{
-    ntk_assert(m_calibration, "Calibration must be available!");
-    m_header.estimated_world_depth_pose = pose;
-    m_header.estimated_world_depth_pose.toLeftCamera(m_calibration->depth_intrinsics, m_calibration->R, m_calibration->T);
 }
 
 bool RGBDImage::hasEmptyRawDepthImage() const
