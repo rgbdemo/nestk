@@ -74,11 +74,11 @@ public: // Outlet
 // FIXME: Qt's signal declarations cannot be preprocessor-expanded.
 
 signals:
-    void    realChanged (const String& name,       Real          real   );
-    void  stringChanged (const String& name, const String&       string );
-    void stringsChanged (const String& name, const Strings&      strings);
-    void   imageChanged (const String& name, const Image&        image  );
-    void    meshChanged (const String& name, const MeshConstPtr& mesh   );
+    void    realChanged (const String& name,       Real          value);
+    void  stringChanged (const String& name, const String&       value);
+    void stringsChanged (const String& name, const Strings&      value);
+    void   imageChanged (const String& name, const Image&        value);
+    void    meshChanged (const String& name, const MeshConstPtr& value);
 };
 
 } }
