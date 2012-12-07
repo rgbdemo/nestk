@@ -361,7 +361,7 @@ void kinect_shift_ir_to_depth(cv::Mat3b& im, bool highres)
 
 void loadImageList(const QStringList& view_dirs,
                    RGBDProcessor *processor,
-                   RGBDCalibration *calibration,
+                   RGBDCalibrationPtr calibration,
                    std::vector<RGBDImage>& images)
 {
     images.clear();
@@ -376,7 +376,7 @@ void loadImageList(const QStringList& view_dirs,
 void loadImageList(const QDir& image_dir,
                    const QStringList& view_list,
                    ntk::RGBDProcessor* processor,
-                   RGBDCalibration* calibration,
+                   RGBDCalibrationPtr calibration,
                    std::vector<RGBDImage>& images)
 {
     QStringList view_dirs;

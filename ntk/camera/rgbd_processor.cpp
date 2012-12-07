@@ -411,7 +411,7 @@ namespace ntk
         if (!m_image->calibration()->zero_rgb_distortion)
         {
             if (m_image->calibration()->rgb_undistort_map1.empty())
-                const_cast<RGBDCalibration*>(m_image->calibration())->updateDistortionMaps();
+                const_Ptr_cast<RGBDCalibration>(m_image->calibration())->updateDistortionMaps();
             remap(rgb_im, tmp3b,
                   m_image->calibration()->rgb_undistort_map1,
                   m_image->calibration()->rgb_undistort_map2,
@@ -422,7 +422,7 @@ namespace ntk
         if (!m_image->calibration()->zero_depth_distortion)
         {
             if (m_image->calibration()->depth_undistort_map1.empty())
-                const_cast<RGBDCalibration*>(m_image->calibration())->updateDistortionMaps();
+                const_Ptr_cast<RGBDCalibration>(m_image->calibration())->updateDistortionMaps();
             remap(m_image->rawDepthRef(), m_image->depthRef(),
                   m_image->calibration()->depth_undistort_map1,
                   m_image->calibration()->depth_undistort_map2,

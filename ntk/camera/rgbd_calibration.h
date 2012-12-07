@@ -158,6 +158,7 @@ public:
 private:
   RGBDCalibration(const RGBDCalibration& rhs);
 };
+ntk_ptr_typedefs (RGBDCalibration)
 
 } // ntk
 

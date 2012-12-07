@@ -91,13 +91,13 @@ void kinect_shift_ir_to_depth(cv::Mat3b& im, bool highres = false);
 
 void loadImageList(const QStringList& view_dirs,
                    ntk::RGBDProcessor* processor,
-                   ntk::RGBDCalibration* calibration,
+                   ntk::RGBDCalibrationPtr calibration,
                    std::vector<ntk::RGBDImage>& images);
 
 void loadImageList(const QDir& image_dir,
                    const QStringList& view_list,
                    RGBDProcessor *processor,
-                   RGBDCalibration *calibration,
+                   RGBDCalibrationPtr calibration,
                    std::vector<ntk::RGBDImage>& images);
 
 float calibrate_kinect_scale_factor(const std::vector<ntk::RGBDImage>& images,

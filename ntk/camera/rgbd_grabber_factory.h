@@ -56,7 +56,7 @@ protected:
     bool createSoftKineticIisuGrabbers(const ntk::RGBDGrabberFactory::Params &params, std::vector<GrabberData>& grabbers);
 
     RGBDProcessor* createProcessor(const enum_grabber_type& grabber_type);
-    RGBDCalibration* tryLoadCalibration(const Params &params, const std::string &camera_serial);
+    RGBDCalibrationPtr tryLoadCalibration(const Params &params, const std::string &camera_serial);
 
 protected:
     OpenniDriver* ni_driver;

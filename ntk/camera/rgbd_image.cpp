@@ -52,15 +52,15 @@ RGBDImageHeader::RGBDImageHeader()
 {
 }
 
-void RGBDImageHeader::loadFromDir(const std::string &dir, const RGBDCalibration* input_calib)
+void RGBDImageHeader::loadFromDir(const std::string &dir, RGBDCalibrationConstPtr input_calib)
 {
     this->directory = dir;
 
-    const RGBDCalibration* calib = 0;
+    RGBDCalibrationConstPtr calib;
     if (!input_calib && is_file(dir+"/calibration.yml"))
     {
         // FIXME: use smart pointer.
-        RGBDCalibration* new_calib = new RGBDCalibration;
+        RGBDCalibrationPtr new_calib = new RGBDCalibration;
         new_calib->loadFromFile((dir+"/calibration.yml").c_str());
         calib = new_calib;
     }
@@ -152,7 +152,7 @@ RGBDImage::RGBDImage(const RGBDImage& rhs)
 }
 
 RGBDImage::RGBDImage(const std::string& dir,
-                     const RGBDCalibration* calib,
+                     RGBDCalibrationConstPtr calib,
                      RGBDProcessor* processor)
     :  m_skeleton(0)
 {
@@ -178,14 +178,14 @@ std::string RGBDImage::getUniqueId() const
 }
 
 void RGBDImage :: loadFromFile(const std::string& dir,
-                               const RGBDCalibration* calib)
+                               RGBDCalibrationConstPtr calib)
 {
     ntk_assert(0, "not implemented.");
 }
 
 // Load from a viewXXXX directory.
 void RGBDImage :: loadFromDir(const std::string& dir,
-                              const RGBDCalibration* input_calib,
+                              RGBDCalibrationConstPtr input_calib,
                               RGBDProcessor* processor)
 {
     ntk_dbg_print(dir, 2);

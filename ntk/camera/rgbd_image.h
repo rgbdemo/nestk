@@ -37,9 +37,9 @@ namespace ntk
   {
       RGBDImageHeader ();
 
-      void loadFromDir (const std::string& directory, const RGBDCalibration* input_calib);
+      void loadFromDir (const std::string& directory, RGBDCalibrationConstPtr input_calib);
 
-      void setCalibration(const RGBDCalibration* new_calibration) { calibration = new_calibration; }
+      void setCalibration(RGBDCalibrationConstPtr new_calibration) { calibration = new_calibration; }
 
       /*! Get unique id from timestamp and camera serial. */
       std::string getUniqueId() const;
@@ -64,7 +64,7 @@ namespace ntk
       int timestamp;
       std::string grabber_type;
       // FIXME: huge memory leaks here, should be a smart pointer!
-      const RGBDCalibration* calibration;
+      RGBDCalibrationConstPtr calibration;
   };
 
 /*!
@@ -89,7 +89,7 @@ public:
 
   /*! Initialize from an viewXXXX directory. */
   RGBDImage(const std::string& dir,
-            const RGBDCalibration* calib = 0,
+            RGBDCalibrationConstPtr calib = RGBDCalibrationConstPtr(),
             RGBDProcessor* processor = 0);
 
   RGBDImage& operator=(const RGBDImage& rhs);
@@ -116,12 +116,12 @@ public:
 
   /*! Load from a viewXXXX directory. */
   void loadFromDir(const std::string& dir,
-                   const RGBDCalibration* calib = 0,
+                   RGBDCalibrationConstPtr calib = RGBDCalibrationConstPtr(),
                    RGBDProcessor* processor = 0);
 
   /*! Load from a single color image. No depth data. */
   void loadFromFile(const std::string& dir,
-                    const RGBDCalibration* calib = 0);
+                    RGBDCalibrationConstPtr calib = RGBDCalibrationConstPtr());
 
   /*! Return the serial number or unique id of the source camera. */
   void setCameraSerial(const std::string& serial) { m_header.camera_serial = serial; }
@@ -136,10 +136,10 @@ public:
   int timestamp() const { return m_header.timestamp; }
 
   /*! Associated optional calibration data. */
-  const RGBDCalibration* calibration() const { return m_header.calibration; }
+  RGBDCalibrationConstPtr calibration() const { return m_header.calibration; }
 
   /*! Set an associated calibration data. */
-  void setCalibration(const RGBDCalibration* calibration) { m_header.setCalibration (calibration); }
+  void setCalibration(RGBDCalibrationConstPtr calibration) { m_header.setCalibration (calibration); }
 
   /*! Set an associated viewXXXX directory. */
   void setDirectory(const std::string& dir) { m_header.directory = dir; }

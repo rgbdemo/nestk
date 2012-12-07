@@ -288,10 +288,10 @@ bool RGBDGrabberFactory :: createFileGrabbers(const ntk::RGBDGrabberFactory::Par
     return true;
 }
 
-RGBDCalibration* RGBDGrabberFactory::tryLoadCalibration(const ntk::RGBDGrabberFactory::Params &params,
-                                                        const std::string& camera_serial)
+RGBDCalibrationPtr RGBDGrabberFactory::tryLoadCalibration(const ntk::RGBDGrabberFactory::Params &params,
+                                                          const std::string& camera_serial)
 {
-    ntk::RGBDCalibration* calib_data = 0;
+    ntk::RGBDCalibrationPtr calib_data;
 
     std::string filename;
     try
@@ -316,8 +316,6 @@ RGBDCalibration* RGBDGrabberFactory::tryLoadCalibration(const ntk::RGBDGrabberFa
     catch (const std::exception& e)
     {
         ntk_dbg(0) << "Warning: could not load calibration file " << filename;
-        if (calib_data)
-            delete_and_zero(calib_data);
     }
 
     return calib_data;
@@ -353,9 +351,9 @@ RGBDGrabberFactory::createGrabbers(const ntk::RGBDGrabberFactory::Params& orig_p
         GrabberData& data = grabbers[i];
         if (params.synchronous)
             data.grabber->setSynchronous(true);
-        RGBDCalibration* calibration = tryLoadCalibration(params, data.grabber->cameraSerial());
+        RGBDCalibrationPtr calibration = tryLoadCalibration(params, data.grabber->cameraSerial());
         if (calibration)
-            data.grabber->setCalibrationData(*calibration);
+            data.grabber->setCalibrationData(calibration);
         data.processor = createProcessor(data.type);
     }
 
