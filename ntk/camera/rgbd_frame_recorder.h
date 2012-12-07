@@ -90,6 +90,7 @@ public:
 
 public:
   void writeFrame(const RGBDImage& image, const std::string& dir);
+  void writeHeader(const RGBDImageHeader& header, const std::string& dir);
 
 private:
   QDir m_dir;

@@ -100,6 +100,49 @@ namespace ntk
       ++m_frame_index;
   }
 
+  void RGBDFrameRecorder :: writeHeader(const RGBDImageHeader& header, const std::string& frame_dir)
+  {
+      QDir dir (frame_dir.c_str());
+      dir.mkpath("raw");
+
+      std::string filename;
+
+      if (!header.camera_serial.empty())
+      {
+          filename = cv::format("%s/serial", frame_dir.c_str());
+          std::ofstream f (filename.c_str());
+          f << header.camera_serial;
+          f.close ();
+      }
+
+      {
+          filename = cv::format("%s/timestamp", frame_dir.c_str());
+          std::ofstream f (filename.c_str());
+          f << header.timestamp;
+          f.close ();
+      }
+
+      if (!header.grabber_type.empty())
+      {
+          filename = cv::format("%s/grabber-type", frame_dir.c_str());
+          std::ofstream f (filename.c_str());
+          f << header.grabber_type;
+          f.close ();
+      }
+
+      if (m_save_rgb_pose && header.estimatedWorldRgbPose().isValid())
+      {
+        filename = cv::format("%s/rgb_pose.avs", frame_dir.c_str());
+        header.estimatedWorldRgbPose().saveToAvsFile(filename.c_str());
+      }
+
+      if (m_save_calibration && header.calibration)
+      {
+        filename = cv::format("%s/calibration.yml", frame_dir.c_str());
+        header.calibration->saveToFile(filename.c_str());
+      }
+  }
+
   void RGBDFrameRecorder :: writeFrame(const RGBDImage& image, const std::string& frame_dir)
   {
       std::string raw_frame_dir = format("%s/raw", frame_dir.c_str(), m_frame_index);
@@ -107,42 +150,9 @@ namespace ntk
       QDir dir (frame_dir.c_str());
       dir.mkpath("raw");
 
+      writeHeader (image.header (), frame_dir);
+
       std::string filename;
-
-      if (!image.cameraSerial().empty())
-      {
-          filename = cv::format("%s/serial", frame_dir.c_str());
-          std::ofstream f (filename.c_str());
-          f << image.cameraSerial ();
-          f.close ();
-      }
-
-      {
-          filename = cv::format("%s/timestamp", frame_dir.c_str());
-          std::ofstream f (filename.c_str());
-          f << image.timestamp ();
-          f.close ();
-      }
-
-      if (!image.grabberType().empty())
-      {
-          filename = cv::format("%s/grabber-type", frame_dir.c_str());
-          std::ofstream f (filename.c_str());
-          f << image.grabberType ();
-          f.close ();
-      }
-
-      if (m_save_rgb_pose && image.estimatedWorldRgbPose().isValid())
-      {
-        filename = cv::format("%s/rgb_pose.avs", frame_dir.c_str());
-        image.estimatedWorldRgbPose().saveToAvsFile(filename.c_str());
-      }
-
-      if (m_save_calibration && image.calibration())
-      {
-        filename = cv::format("%s/calibration.yml", frame_dir.c_str());
-        image.calibration()->saveToFile(filename.c_str());
-      }
 
       if (!m_only_raw)
       {
