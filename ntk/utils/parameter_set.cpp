@@ -5,6 +5,14 @@
 namespace ntk
 {
 
+ParameterSet::ParameterSet(const ParameterSet &rhs)
+{
+    QMutexLocker __(&mutex);
+    QMutexLocker _(&rhs.mutex);
+    this->properties = rhs.properties;
+    // FIXME: should also copy watchers?
+}
+
 void ParameterSet :: setParameter(const QString& name, const QVariant& value)
 {
     {

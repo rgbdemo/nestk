@@ -21,6 +21,9 @@ class ParameterSet
 {
 public:
     ParameterSet() {}
+    ParameterSet(const ParameterSet& rhs);
+
+    virtual ~ParameterSet () {}
 
     void addWatcher(ParameterSetWatcher* watcher) { watchers.insert(watcher); }
     void removeWatcher(ParameterSetWatcher* watcher) { watchers.remove(watcher); }
