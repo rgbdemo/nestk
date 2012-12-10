@@ -111,6 +111,14 @@ public:
         return width < 0 || height < 0 || depth < 0;
     }
 
+    void moveCenterTo (const cv::Point3f& p)
+    {
+        cv::Point3f delta = p - centroid ();
+        x += delta.x;
+        y += delta.y;
+        z += delta.z;
+    }
+
     cv::Point3_<T> centroid() const
     {
         return cv::Point3_<T>(x+(width/T(2)), y+(height/T(2)), z + (depth / T(2)));
