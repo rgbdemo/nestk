@@ -50,11 +50,7 @@ public:
   {}
 
 public:
-  void stopThread()
-  {
-      setThreadShouldExit(true);
-      wait();
-  }
+  void stopThread();
 
   void setThreadShouldExit(bool thread_should_exit = true) { m_thread_should_exit = thread_should_exit; }
 
