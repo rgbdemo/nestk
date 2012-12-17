@@ -9,7 +9,10 @@ void     setStatus (const String& status);
 void   resetStatus ();
 
 // hub.error
-void      setError (const String& status);
+void setError   (const String& error);
+
+// hub.message
+void setMessage (const String& message);
 
 // hub.progress
 void   setProgress (Real progress);
