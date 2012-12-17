@@ -25,6 +25,11 @@ void   resetStatus ()
     Hub::getInstance()->resetString("status");
 }
 
+void setError (const String& status)
+{
+    setStatus (status);
+}
+
 void   setProgress (Real progress)
 {
     Hub::getInstance()->setReal("progress", progress);

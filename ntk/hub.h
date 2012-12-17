@@ -8,6 +8,9 @@ namespace ntk { namespace hub {
 void     setStatus (const String& status);
 void   resetStatus ();
 
+// hub.error
+void      setError (const String& status);
+
 // hub.progress
 void   setProgress (Real progress);
 void resetProgress ();
