@@ -277,7 +277,7 @@ namespace ntk
   class exception : public std::exception
   {
   public:
-    exception(std::string& what) throw() : m_what(what)
+    exception(const std::string& what) throw() : m_what(what)
     {}
 
     virtual ~exception() throw() {}
