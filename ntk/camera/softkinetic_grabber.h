@@ -54,6 +54,8 @@ public:
 
   virtual std::string grabberType () const { return "softkinetic"; }
 
+  static bool hasDll ();
+
 public:
   void onNewColorSample(DepthSense::ColorNode::NewSampleReceivedData data);
   void onNewDepthSample(DepthSense::DepthNode::NewSampleReceivedData data);

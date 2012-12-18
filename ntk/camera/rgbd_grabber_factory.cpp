@@ -163,6 +163,12 @@ bool RGBDGrabberFactory :: createPmdGrabbers(const ntk::RGBDGrabberFactory::Para
 bool RGBDGrabberFactory :: createSoftKineticGrabbers(const ntk::RGBDGrabberFactory::Params &params, std::vector<GrabberData>& grabbers)
 {
 #ifdef NESTK_USE_SOFTKINETIC
+    if (!SoftKineticGrabber::hasDll())
+    {
+        ntk_dbg(1) << "No softkinetic dll";
+        return false;
+    }
+
     ntk_dbg(1) << "Trying softkinetic backend";
 
     std::vector<std::string> calibration_files;

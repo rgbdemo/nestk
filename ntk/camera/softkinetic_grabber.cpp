@@ -439,6 +439,25 @@ bool SoftKineticGrabber :: disconnectFromDevice()
     return true;
 }
 
+bool SoftKineticGrabber::hasDll()
+{
+#ifdef _MSC_VER
+    // Trigger Kinect SDK DLL loading by calling one of its functions.
+    __try
+    {
+        int32_t rgb_width, rgb_height;
+        FrameFormat_toResolution (FRAME_FORMAT_VGA, &rgb_width, &rgb_height);
+        return true;
+    }
+    __except(EXCEPTION_EXECUTE_HANDLER)
+    {
+        return false;
+    }
+#else
+    return true;
+#endif
+}
+
 void SoftKineticGrabber :: handleNewFrame()
 {
     if (m_depth_transmitted || m_rgb_transmitted)
