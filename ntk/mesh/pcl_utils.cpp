@@ -360,6 +360,41 @@ void removeExtrapoledTriangles(ntk::Mesh& surface, const ntk::Mesh& ground_cloud
     surface = filtered_surface;
 }
 
+void
+copyVertexColors (const ntk::Mesh& fromPoints, ntk::Mesh& toSurface, float radius)
+{
+    if (!fromPoints.hasColors())
+        return;
+
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr fromCloud (new pcl::PointCloud<pcl::PointXYZRGB>());
+    ntk::meshToPointCloud(*fromCloud, fromPoints);
+    pcl::octree::OctreePointCloudSearch<pcl::PointXYZRGB> fromOctree (radius / 10.0f);
+    fromOctree.setInputCloud(fromCloud);
+    fromOctree.addPointsFromInputCloud();
+
+    toSurface.colors.resize(toSurface.vertices.size());
+
+    std::vector<int> pointIdxRadiusSearch;
+    std::vector<float>  pointRadiusSquaredDistance;
+
+    foreach_idx(i, toSurface.vertices)
+    {
+        const cv::Point3f vertex = toSurface.vertices[i];
+
+        pointIdxRadiusSearch.clear();
+        pointRadiusSquaredDistance.clear();
+
+        int numNeighbors = fromOctree.radiusSearch (ntk::toPcl(vertex, toSurface.colors[i]),
+            radius, pointIdxRadiusSearch, pointRadiusSquaredDistance, 1);
+        if (numNeighbors > 0)
+        {
+            pcl::PointXYZRGB p = fromCloud->points[pointIdxRadiusSearch[0]];
+            const cv::Vec3b rgb(p.r, p.g, p.b);
+            toSurface.colors[i] = rgb;
+        }
+    }
+}
+
 #ifdef HAVE_PCL_GREATER_THAN_1_5_1
 void planarRegionToMesh(ntk::Mesh& mesh, const pcl::PlanarRegion<pcl::PointNormal>& region)
 {
