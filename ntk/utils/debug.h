@@ -29,6 +29,9 @@
 namespace ntk
 {
   extern int ntk_debug_level;
+
+  void setDebugFileName (const std::string& logfile);
+
   class XmlSerializable;
 }
 

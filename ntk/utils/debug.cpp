@@ -26,8 +26,24 @@
 #include <QtGlobal>
 #include <QMutex>
 #include <QMutexLocker>
+#include <QFile>
+#include <QDesktopServices>
 
 typedef const char* CString;
+
+namespace ntk
+{
+
+QString debugLogFileName;
+QMutex debugLogFileLock;
+
+void setDebugFileName (const std::string& logfile)
+{
+    QMutexLocker _ (&debugLogFileLock);
+    debugLogFileName = QString::fromStdString(logfile);
+}
+
+}
 
 #if _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -41,21 +57,44 @@ void printWindowsDebugOutputLine (CString prefix, CString message)
     OutputDebugString(line.c_str());
 }
 
+void printFileLogOutputLine (CString prefix, CString message)
+{
+    std::string line(prefix);
+    line += message;
+    line += "\r\n";
+
+    {
+        QMutexLocker _ (&ntk::debugLogFileLock);
+        if (ntk::debugLogFileName.isNull())
+            return;
+
+        QFile f (ntk::debugLogFileName);
+        if (f.open(QIODevice::Append))
+        {
+            f.write(line.c_str());
+            f.close();
+        }
+    }
+}
+
 void printStandardLine (CString prefix, CString message)
 {
     printWindowsDebugOutputLine(prefix, message);
+    printFileLogOutputLine (prefix, message);
     std::cout << prefix << message << std::endl;
 }
 
 void printErrorLine (CString prefix, CString message)
 {
     printWindowsDebugOutputLine(prefix, message);
+    printFileLogOutputLine (prefix, message);
     std::cerr << prefix << message << std::endl;
 }
 
 void printLogLine (CString prefix, CString message)
 {
     printWindowsDebugOutputLine(prefix, message);
+    printFileLogOutputLine (prefix, message);
     std::clog << prefix << message << std::endl;
 }
 #else
