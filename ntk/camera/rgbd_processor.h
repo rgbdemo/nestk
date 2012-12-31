@@ -98,7 +98,7 @@ public:
   RGBDProcessorFlags getFilterFlags() const { return m_flags; }
 
   /*! Set the depth range. */
-  void setMinDepth(float meters) { m_min_depth = meters; }
+  void setMinDepth(float meters) { m_min_depth = std::max(meters, 1e-5f); }
   float minDepth() const { return m_min_depth; }
   void setMaxDepth(float meters) { m_max_depth = meters; }
   float maxDepth() const { return m_max_depth; }

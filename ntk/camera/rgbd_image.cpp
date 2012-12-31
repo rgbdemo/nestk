@@ -49,6 +49,8 @@ RGBDImageHeader::RGBDImageHeader()
     , timestamp(-1)
     , grabber_type("unknown")
     , calibration (0)
+    , filter_min_depth (0.1f)
+    , filter_max_depth (10.f)
 {
 }
 

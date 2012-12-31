@@ -65,6 +65,8 @@ namespace ntk
       std::string grabber_type;
       // FIXME: huge memory leaks here, should be a smart pointer!
       RGBDCalibrationConstPtr calibration;
+      float filter_min_depth;
+      float filter_max_depth;
   };
 
 /*!
@@ -103,6 +105,7 @@ public:
   bool hasDepth() const { return depth().data != 0; }
 
   const RGBDImageHeader& header () const { return m_header; }
+  RGBDImageHeader& header () { return m_header; }
   void setHeader (const RGBDImageHeader& header) { m_header = header; }
 
   /*! Get unique id from timestamp and camera serial. */

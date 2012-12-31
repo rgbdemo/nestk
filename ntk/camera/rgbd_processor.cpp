@@ -295,10 +295,12 @@ namespace ntk
         tc.elapsedMsecs("computeDepth");
 
         m_image->depthMaskRef() = cv::Mat1b(m_image->depth().size());
+        m_image->header().filter_min_depth = m_min_depth;
+        m_image->header().filter_max_depth = m_max_depth;
         for_all_rc(m_image->depthMaskRef())
         {
             float d = m_image->depth()(r,c);
-            if (d < 1e-5 || ntk::math::isnan(d))
+            if (d < m_min_depth || d > m_max_depth || ntk::math::isnan(d))
                 m_image->depthMaskRef()(r,c) = 0;
             else
                 m_image->depthMaskRef()(r,c) = 255;
