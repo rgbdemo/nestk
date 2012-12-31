@@ -36,11 +36,13 @@ namespace ntk
 
 QString debugLogFileName;
 QMutex debugLogFileLock;
+bool hasLogFileName = false;
 
 void setDebugFileName (const std::string& logfile)
 {
     QMutexLocker _ (&debugLogFileLock);
     debugLogFileName = QString::fromStdString(logfile);
+    hasLogFileName = true;
 }
 
 }
@@ -59,6 +61,10 @@ void printWindowsDebugOutputLine (CString prefix, CString message)
 
 void printFileLogOutputLine (CString prefix, CString message)
 {
+    // FIXME: avoid overloading the hard drive by default.
+    if (!ntk::hasLogFileName)
+        return;
+
     std::string line(prefix);
     line += message;
     line += "\r\n";
