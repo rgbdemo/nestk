@@ -1042,6 +1042,9 @@ void Mesh::removeIsolatedVertices()
     colors = new_mesh.colors;
     normals = new_mesh.normals;
     texcoords = new_mesh.texcoords;
+
+    if (hasNormals())
+        computeNormalsFromFaces();
 }
 
 struct FaceComparatorByIndices
