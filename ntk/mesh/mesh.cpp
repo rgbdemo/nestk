@@ -1043,7 +1043,7 @@ void Mesh::removeIsolatedVertices()
     normals = new_mesh.normals;
     texcoords = new_mesh.texcoords;
 
-    if (hasNormals())
+    if (hasFaces() && hasNormals())
         computeNormalsFromFaces();
 }
 
