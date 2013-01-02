@@ -72,6 +72,27 @@ protected:
 };
 ntk_ptr_typedefs(RGBDModeler)
 
+class DummyRGBDModeler : public RGBDModeler
+{
+public:
+    DummyRGBDModeler(int processing_time_msecs = 20)
+        : RGBDModeler()
+        , m_processing_time (processing_time_msecs)
+    {}
+
+public:
+    virtual void acquireLock() const {}
+    virtual void releaseLock() const {}
+    virtual int numPoints() const { return 0; }
+
+public:
+    virtual bool addNewView(const RGBDImage& image, Pose3D& depth_pose);
+
+private:
+    int m_processing_time;
+};
+ntk_ptr_typedefs(DummyRGBDModeler)
+
 class RGBDModelerInOwnThread : public RGBDModeler, public EventProcessingBlockInOwnThread
 {
 public:
