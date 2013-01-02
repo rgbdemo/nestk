@@ -87,37 +87,38 @@ namespace ntk
   {
   public:
       FrameRate()
-          : m_last_tick(),
+          : m_last_reference_tick(),
             m_frame_counter(0),
             m_frame_rate(-1)
       {}
 
   public:
+      enum { delta_frames = 10 };
       void tick()
       {
-          const int delta_frames = 10;
+          m_last_tick = cv::getTickCount();
 
           if (m_frame_counter == 0)
           {
-              m_last_tick = cv::getTickCount();
+              m_last_reference_tick = m_last_tick;
               ++m_frame_counter;
               return;
           }
 
           if (m_frame_counter < delta_frames)
           {
-              double current_tick = cv::getTickCount();
-              m_frame_rate = m_frame_counter / ((current_tick - m_last_tick)/cv::getTickFrequency());
+              double current_tick = m_last_tick;
+              m_frame_rate = m_frame_counter / ((current_tick - m_last_reference_tick)/cv::getTickFrequency());
               ++m_frame_counter;
               return;
           }
 
           if (m_frame_counter % delta_frames == 0)
           {
-              double current_tick = cv::getTickCount();
+              double current_tick = m_last_tick;
 
-              m_frame_rate = delta_frames / ((current_tick - m_last_tick)/cv::getTickFrequency());
-              m_last_tick = current_tick;
+              m_frame_rate = delta_frames / ((current_tick - m_last_reference_tick)/cv::getTickFrequency());
+              m_last_reference_tick = current_tick;
           }
 
           ++m_frame_counter;
@@ -128,7 +129,18 @@ namespace ntk
           return m_frame_rate;
       }
 
+      bool goingSlowerThan (float target_fps) const
+      {
+          if (m_frame_counter == 0)
+              return true;
+
+          double current_tick = cv::getTickCount();
+          double frame_rate = 1.0 / ((current_tick - m_last_tick)/cv::getTickFrequency());
+          return frame_rate < target_fps;
+      }
+
   private:
+      double m_last_reference_tick;
       double m_last_tick;
       int m_frame_counter;
       float m_frame_rate;
