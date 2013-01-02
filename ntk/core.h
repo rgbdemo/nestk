@@ -21,6 +21,7 @@
 # define   	NTK_CORE_H_
 
 # include <limits>
+# include <math.h>
 
 # include "opencv2/core/core_c.h"
 # include "opencv2/core/core.hpp"
