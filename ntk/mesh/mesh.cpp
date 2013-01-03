@@ -315,10 +315,10 @@ void Mesh::loadFromPlyFile(const char* filename)
     {
         ntk_dbg(0) << "[ERROR] " << strerror(err);
     }
-    ntk_ensure(mesh_file, "Could not open mesh file.");
+    ntk_throw_exception_if(!mesh_file, "Could not open mesh file.");
 
     ply::PlyFile* ply_file = ply::read_ply(mesh_file);
-    ntk_ensure(ply_file, "Could not parse mesh file.");
+    ntk_throw_exception_if(!ply_file, "Could not parse mesh file.");
 
     for (int i = 0; i < ply_file->num_elem_types; i++)
     {
