@@ -327,7 +327,7 @@ void SoftKineticGrabber :: configureNode(Node node)
         try
         {
             m_context.requestControl(m_depth_node,0);
-            m_depth_node.setConfidenceThreshold(200);
+            m_depth_node.setConfidenceThreshold(150);
             m_depth_node.setConfiguration(config);
         }
         catch (const std::exception& e)
