@@ -223,8 +223,8 @@ namespace ntk
         {
             if (m_use_compressed_format)
             {
-                filename = cv::format("%s/raw/depth16bits.lzf", frame_dir.c_str());
-                imwrite_Mat1w_lzf(filename.c_str(), image.rawDepth16bits());
+                filename = cv::format("%s/raw/depth16bits.lz4", frame_dir.c_str());
+                imwrite_Mat1w_openni_lz4(filename.c_str(), image.rawDepth16bits());
             }
             else
             {

@@ -244,6 +244,11 @@ void RGBDImage :: loadFromDir(const std::string& dir,
             rawDepth16bitsRef() = imread_Mat1w_lzf(dir + "/raw/depth16bits.lzf");
             ntk_ensure(rawDepth16bitsRef().data, ("Could not read lzf depth image from " + dir).c_str());
         }
+        else if (is_file(dir + "/raw/depth16bits.lz4"))
+        {
+            rawDepth16bitsRef() = imread_Mat1w_openni_lz4(dir + "/raw/depth16bits.lz4");
+            ntk_ensure(rawDepth16bitsRef().data, ("Could not read lz4 depth image from " + dir).c_str());
+        }
 
         if (is_file(dir + "/raw/amplitude.raw"))
         {

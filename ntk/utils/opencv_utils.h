@@ -357,6 +357,21 @@ cv::Mat1w imread_Mat1w_lzf(const std::string& filename);
 /*! Write a 16 bits image to binary file, compressed in LZF. Only works for Little Endian platforms. */
 void imwrite_Mat1w_lzf(const std::string& filename, const cv::Mat1w& m);
 
+/*! Read a 16 bits image from raw binary file, compressed with OpenNI + LZF. Only works for Little Endian platforms. */
+cv::Mat1w imread_Mat1w_openni_lzf(const std::string& filename);
+/*! Write a 16 bits image to binary file, compressed with OpenNI + LZF. Only works for Little Endian platforms. */
+void imwrite_Mat1w_openni_lzf(const std::string& filename, const cv::Mat1w& m);
+
+/*! Read a 16 bits image from raw binary file, compressed with OpenNI + LZ4. Only works for Little Endian platforms. */
+cv::Mat1w imread_Mat1w_openni_lz4(const std::string& filename);
+/*! Write a 16 bits image to binary file, compressed with OpenNI + LZ4. Only works for Little Endian platforms. */
+void imwrite_Mat1w_openni_lz4(const std::string& filename, const cv::Mat1w& m);
+
+/*! Read a 16 bits image from raw binary file, compressed with OpenNI. Only works for Little Endian platforms. */
+cv::Mat1w imread_Mat1w_openni(const std::string& filename);
+/*! Write a 16 bits image to binary file, compressed with OpenNI. Only works for Little Endian platforms. */
+void imwrite_Mat1w_openni(const std::string& filename, const cv::Mat1w& m);
+
 inline cv::Mat getCvByteImage(int width, int height) { return cv::Mat(height, width, CV_8UC1); }
 inline cv::Mat getCvFloatImage(int width, int height) { return cv::Mat(height, width, CV_32FC1); }
 inline cv::Mat getCvColorByteImage(int width, int height) { return cv::Mat(height, width, CV_8UC3); }
