@@ -189,6 +189,8 @@ inline cv::Point2f toPoint2f(const cv::Point& p)
 inline cv::Vec3f nearest_pixel(const cv::Vec3f& p)
 { return cv::Vec3f(ntk::math::rnd(p[0]), ntk::math::rnd(p[1]), p[2]); }
 
+bool is_yx_in_range(const cv::Mat& image, int y, int x);
+
 template <class T>
 inline T bilinear_sample(const cv::Mat_<T>& img, float y, float x)
 {
