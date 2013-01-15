@@ -88,6 +88,9 @@ RGBDProcessor* RGBDGrabberFactory::createProcessor(const enum_grabber_type& grab
 
 bool RGBDGrabberFactory :: createOpenniGrabbers(const ntk::RGBDGrabberFactory::Params &params, std::vector<GrabberData>& grabbers)
 {
+#ifndef NESTK_USE_OPENNI
+    return false;
+#else
     if (!OpenniDriver::hasDll())
         return false;
 
@@ -120,6 +123,7 @@ bool RGBDGrabberFactory :: createOpenniGrabbers(const ntk::RGBDGrabberFactory::P
     QDir::setCurrent(prev.absolutePath());
 
     return ni_driver->numDevices() > 0;
+#endif
 }
 
 bool RGBDGrabberFactory :: createPmdGrabbers(const ntk::RGBDGrabberFactory::Params &paramss, std::vector<GrabberData>& grabbers)
