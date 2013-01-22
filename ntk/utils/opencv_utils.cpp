@@ -658,18 +658,19 @@ cv::Point3f computeCentroid(const std::vector<cv::Point3f>& points)
     lzf_data.truncate(nread_bytes);
 
     cv::Mat1w m (rows, cols);
-    cv::Mat1s grad (rows, cols);
+    cv::Mat1w grad (rows, cols);
 
     unsigned int nbytes = pcl::lzfDecompress (lzf_data.constData(), lzf_data.size(), grad.ptr<char*>(), total_bytes);
     ntk_throw_exception_if (nbytes != total_bytes, "Could not decode the image");
 
-    uint16_t* cur = m.ptr<unsigned short>();
-    const int16_t* cur_grad = grad.ptr<short>();
-    const int16_t* end_grad = grad.ptr<short>(m.rows, m.cols);
-    int16_t prev = 0;
+    uint16_t* cur = m.ptr<uint16_t>();
+    const uint16_t* cur_grad = grad.ptr<uint16_t>();
+    const uint16_t* end_grad = grad.ptr<uint16_t>(m.rows, m.cols);
+    uint16_t prev = 0;
     while (cur_grad != end_grad)
     {
-        *cur = prev + *cur_grad;
+        int diff = *cur_grad % 2 == 0 ? *cur_grad / 2 : -(*cur_grad+1)/2;
+        *cur = prev + diff;
         prev = *cur;
         ++cur;
         ++cur_grad;
@@ -843,15 +844,17 @@ cv::Point3f computeCentroid(const std::vector<cv::Point3f>& points)
 
       qint32 rows = m.rows, cols = m.cols;
 
-      cv::Mat1s grad (m.size());
-      grad = (short) 0;
-      const uint16_t* cur = m.ptr<unsigned short>();
-      int16_t* cur_grad = grad.ptr<short>();
-      const uint16_t* end = m.ptr<unsigned short>(m.rows, m.cols);
-      int16_t prev = 0;
+      cv::Mat1w grad (m.size());
+      grad = (uint16_t) 0;
+      const uint16_t* cur = m.ptr<uint16_t>();
+      uint16_t* cur_grad = grad.ptr<uint16_t>();
+      const uint16_t* end = m.ptr<uint16_t>(m.rows, m.cols);
+      uint16_t prev = 0;
       while (cur != end)
       {
-          *cur_grad = *cur - prev;
+          int diff = *cur - prev;
+          if (diff < 0) *cur_grad = 2*std::abs(diff)-1;
+          else *cur_grad = 2*diff;
           prev = *cur;
           ++cur;
           ++cur_grad;
