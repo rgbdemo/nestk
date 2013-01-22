@@ -213,44 +213,20 @@ bool IncrementalPoseEstimatorFromRgbFeatures::estimateCurrentPose()
         closest_view_index = computeNumMatchesWithPrevious(image, *image_features, best_matches);
         tc.elapsedMsecs(" -- computeNumMatchesWithPrevious -- ");
         ntk_dbg_print(closest_view_index, 1);
-        ntk_dbg_print(best_matches.size(), 1);
-
-        cv::Mat3b debug_img;
-        // m_features[closest_view_index]->drawMatches(m_image_data[closest_view_index].color, image.rgb(), *image_features, best_matches, debug_img);
-        m_features[closest_view_index]->draw(m_image_data[closest_view_index].image.rgb(), debug_img);
-        hub::setImage("features", debug_img);
+        ntk_dbg_print(best_matches.size(), 1);       
 
 #ifdef HEAVY_DEBUG
         imwrite("/tmp/debug_matches.png", debug_img);
 #endif
 
         new_pose = m_image_data[closest_view_index].depth_pose;
-#if 0
-        new_rgb_pose = new_pose;
-        new_rgb_pose.toRightCamera(image.calibration()->rgb_intrinsics,
-                                   image.calibration()->R, image.calibration()->T);
-#endif
 
         if (best_matches.size() > 0)
         {
             Pose3D delta_pose = new_pose;
 
-#if 0
-            std::vector<bool> valid_points;
-
-            // Estimate the relative pose w.r.t the closest view.
-            if (!estimateDeltaPose(new_rgb_pose, image, *image_features, best_matches, valid_points, closest_view_index))
-                pose_ok = false;
-
-            tc.elapsedMsecs(" -- estimateDeltaPose -- ");
-
-            new_pose = new_rgb_pose;
-            new_pose.toLeftCamera(image.calibration()->depth_intrinsics,
-                                  image.calibration()->R, image.calibration()->T);
-#else
             if (!estimateDeltaPose(new_pose, image, image_features, best_matches, closest_view_index))
                 pose_ok = false;
-#endif
 
             // Compute the difference between the reference image pose and the new image one.
             delta_pose.invert();
@@ -260,8 +236,8 @@ bool IncrementalPoseEstimatorFromRgbFeatures::estimateCurrentPose()
             // so fast and this usually result from bad feature matches.
             double delta_rotation = cv::norm(delta_pose.cvRodriguesRotation());
             double delta_translation = cv::norm(delta_pose.cvTranslation());
-            ntk_dbg_print(delta_rotation, 1);
-            ntk_dbg_print(delta_translation, 1);
+            ntk_dbg_print(delta_rotation, 2);
+            ntk_dbg_print(delta_translation, 2);
             if (delta_rotation > max_delta_rotation || delta_translation > max_delta_translation)
                 pose_ok = false;
         }
@@ -290,6 +266,13 @@ bool IncrementalPoseEstimatorFromRgbFeatures::estimateCurrentPose()
 
     if (pose_ok)
     {
+        // m_features[closest_view_index]->drawMatches(m_image_data[closest_view_index].color, image.rgb(), *image_features, best_matches, debug_img);
+        if (closest_view_index >= 0)
+        {
+            m_features[closest_view_index]->draw(m_image_data[closest_view_index].image.rgb(), m_feedback_image);
+            hub::setImage("features", m_feedback_image);
+        }
+
         Pose3D new_rgb_pose = new_pose;
         new_rgb_pose.toRightCamera(image.calibration()->rgb_intrinsics,
                                    image.calibration()->R, image.calibration()->T);
@@ -317,7 +300,18 @@ bool IncrementalPoseEstimatorFromRgbFeatures::estimateCurrentPose()
         return true;
     }
     else
+    {
+        if (!m_feedback_image.empty())
+        {
+            for_all_rc (m_feedback_image)
+            {
+                m_feedback_image(r,c)[2] = ntk::math::max(m_feedback_image(r,c)[2], 255);
+            }
+            hub::setImage("features", m_feedback_image);
+        }
+
         return false;
+    }
 }
 
 void IncrementalPoseEstimatorFromRgbFeatures::reset()

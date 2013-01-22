@@ -104,6 +104,7 @@ private:
     FeatureSetParams m_feature_parameters;
     bool m_use_icp;
     bool m_incremental_model;
+    cv::Mat3b m_feedback_image;
 };
 
 } // ntk
