@@ -687,6 +687,9 @@ applyScaleTransform(float x_scale, float y_scale, float z_scale)
 
 void Mesh::computeNormalsFromFaces()
 {
+    if (!hasFaces())
+        return;
+
     normals.clear();
     normals.resize(vertices.size(), Vec3f(0,0,0));
     foreach_idx(i, faces)
