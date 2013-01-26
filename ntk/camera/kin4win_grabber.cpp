@@ -241,8 +241,8 @@ public:
 
             if (that->m_near_mode_changed)
             {
-                ntk_dbg_print(that->m_near_mode_changed, 0);
-                ntk_dbg_print(that->m_near_mode, 0);
+                ntk_dbg_print(that->m_near_mode_changed, 1);
+                ntk_dbg_print(that->m_near_mode, 1);
                 if (that->m_near_mode)
                     sensor->NuiImageStreamSetImageFrameFlags(depthStreamHandle, NUI_IMAGE_STREAM_FLAG_ENABLE_NEAR_MODE);
                 else
@@ -671,7 +671,7 @@ bool Kin4WinGrabber :: connectToDevice()
 {
     QMutexLocker ni_locker(&m_ni_mutex);
 
-    ntk_dbg(1) << format("[Kinect %x] connecting", this);
+    ntk_info("[Kinect %x] connecting\n", this);
 
     if (m_high_resolution)
         nui->colorResolution = NUI_IMAGE_RESOLUTION_1280x960;
@@ -727,7 +727,7 @@ bool Kin4WinGrabber :: disconnectFromDevice()
 {
     QMutexLocker ni_locker(&m_ni_mutex);
 
-    ntk_dbg(1) << format("[Kinect %x] disconnecting", this);
+    ntk_info("[Kinect %x] disconnecting\n", this);
 
     nui->unInit();
 
@@ -744,8 +744,8 @@ void Kin4WinGrabber::setNearMode(bool enable)
 {
     m_near_mode = enable;
     m_near_mode_changed = true;
-    ntk_dbg_print(m_near_mode, 0);
-    ntk_dbg_print(m_near_mode_changed, 0);
+    ntk_dbg_print(m_near_mode, 1);
+    ntk_dbg_print(m_near_mode_changed, 1);
 }
 
 void Kin4WinGrabber :: estimateCalibration()
@@ -768,14 +768,6 @@ void Kin4WinGrabber :: estimateCalibration()
     // const double f_correction_factor = 1.0; // FIXME: what should it be for Kinect for Windows?
     fx *= f_correction_factor;
     fy *= f_correction_factor;
-
-    printf("fx=%f\n", fx);
-    printf("fy=%f\n", fy);
-    printf("cx=%f\n", cx);
-    printf("cy=%f\n", cy);
-    ntk_dbg_print(fy, 1);
-    ntk_dbg_print(cx, 1);
-    ntk_dbg_print(cy, 1);
 
     // FIXME: this bias was not observed anymore in recent experiments.
     // const double cy_correction_factor = 267.0/240.0;
@@ -911,11 +903,11 @@ ntk::Kin4WinDriver::hasDll ()
 
 ntk::Kin4WinDriver::Kin4WinDriver()
 {
-    ntk_dbg(1) << "Initializing Kin4Win driver";
+    ntk_info("Initializing Kin4Win driver\n");
 
     int kin4win_sensors_count;
     WinRet ret = NuiGetSensorCount(&kin4win_sensors_count);
-    ntk_dbg_print(kin4win_sensors_count, 1);
+    ntk_dbg(1) << cv::format("Number of Kinect for Windows devices: %d\n", kin4win_sensors_count);
 
     for (int i = 0; i < kin4win_sensors_count; ++i)
     {

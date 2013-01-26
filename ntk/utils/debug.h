@@ -29,8 +29,10 @@
 namespace ntk
 {
   extern int ntk_debug_level;
+  extern int ntk_log_level;
 
-  void setDebugFileName (const std::string& logfile);
+  void setLogFileName (const std::string& logfile);
+  std::string getLogFileName ();
 
   class XmlSerializable;
 }
@@ -123,5 +125,17 @@ namespace ntk {
   ntk_dbg(level) << "</Leaving> " << PRETTY_FUNCTION \
                  << " (" << this << ")" \
                  << " (" << cv::getThreadNum() << ")";
+
+namespace ntk
+{
+
+void print_log (const int level, const char* prefix, const char* fmt, ...);
+
+} // ntk
+
+#define   ntk_error(...) ntk::print_log(0,   "ERROR: ", __VA_ARGS__)
+#define    ntk_warn(...) ntk::print_log(1, "WARNING: ", __VA_ARGS__)
+#define    ntk_info(...) ntk::print_log(2,    "INFO: ", __VA_ARGS__)
+#define ntk_verbose(...) ntk::print_log(3, "VERBOSE: ", __VA_ARGS__)
 
 #endif 	    /* !NTK_UTILS_DEBUG_H_ */

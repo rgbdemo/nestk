@@ -216,7 +216,7 @@ bool OpenniGrabber :: connectToDevice()
         return true;
 
     QMutexLocker ni_locker(&m_ni_mutex);
-    ntk_dbg(1) << format("[Kinect %x] connecting", this);
+    ntk_info("[Kinect %x] connecting\n", this);
 
     XnStatus status;
     xn::NodeInfoList device_node_info_list;
@@ -239,9 +239,9 @@ bool OpenniGrabber :: connectToDevice()
     status = m_driver.niContext().CreateProductionTree(deviceInfo, m_ni_device);
     m_driver.checkXnError(status, "Create Device Node");
     const XnProductionNodeDescription& description = deviceInfo.GetDescription();
-    ntk_dbg(1) << format("device %d: vendor %s name %s, instance %s, serial %s",
-                         m_camera_id,
-                         description.strVendor, description.strName, deviceInfo.GetInstanceName(), m_driver.deviceInfo(m_camera_id).serial.c_str());
+    ntk_info("device %d: vendor %s name %s, instance %s, serial %s\n",
+             m_camera_id,
+             description.strVendor, description.strName, deviceInfo.GetInstanceName(), m_driver.deviceInfo(m_camera_id).serial.c_str());
     xn::Query query;
     query.AddNeededNode(deviceInfo.GetInstanceName());
 
@@ -262,7 +262,7 @@ bool OpenniGrabber :: connectToDevice()
     if (status != XN_STATUS_OK)
     {
         m_has_rgb = false;
-        ntk_dbg(1) << "Warning: no color stream!";
+        ntk_warn("no color stream!");
     }
 
     if (m_has_rgb)
@@ -294,7 +294,7 @@ bool OpenniGrabber :: connectToDevice()
 
         if (!is_kinect && m_ni_depth_generator.IsCapabilitySupported(XN_CAPABILITY_FRAME_SYNC) && !m_high_resolution)
         {
-            ntk_dbg(1) << "Frame Sync supported.";
+            ntk_info("Frame Sync supported.\n");
             status = m_ni_depth_generator.GetFrameSyncCap ().FrameSyncWith (m_ni_rgb_generator);
             m_driver.checkXnError(status, "Set Frame Sync");
         }
@@ -390,7 +390,7 @@ bool OpenniGrabber :: connectToDevice()
 bool OpenniGrabber :: disconnectFromDevice()
 {
     QMutexLocker ni_locker(&m_ni_mutex);
-    ntk_dbg(1) << format("[Kinect %x] disconnecting", this);
+    ntk_info("[Kinect %x] disconnecting\n", this);
 
     m_ni_depth_generator.StopGenerating();
     m_ni_rgb_generator.StopGenerating();
@@ -748,7 +748,7 @@ void OpenniGrabber :: run()
 
         advertiseNewFrame();
     }
-    ntk_dbg(1) << format("[%x] finishing", this);
+    ntk_info("[%x] finishing\n", this);
 }
 
 // Callback: New user was detected
@@ -865,9 +865,43 @@ OpenniDriver::deviceInfo (int index) const
     return m_device_nodes[index];
 }
 
+void OpenniWriteLogEntry (const XnLogEntry* pEntry, void* pCookie)
+{
+    switch (pEntry->nSeverity)
+    {
+    case XN_LOG_INFO:
+        ntk_info("OpenNI: %s\n", pEntry->strMessage);
+        break;
+    case XN_LOG_WARNING:
+        ntk_warn("OpenNI: %s\n", pEntry->strMessage);
+        break;
+    case XN_LOG_ERROR:
+        ntk_error("OpenNI: %s\n", pEntry->strMessage);
+        break;
+    case XN_LOG_VERBOSE:
+    default:
+        ntk_verbose("OpenNI: %s\n", pEntry->strMessage);
+    }
+}
+
+void OpenniWriteUnformatted (const XnChar* strMessage, void* pCookie)
+{
+    ntk_info("OpenNI: %s\n", strMessage);
+}
+
+void OpenniOnConfigurationChanged (void* pCookie)
+{
+    ntk_info("OpenNI configuration changed.\n");
+}
+
+void OpenniOnClosing (void* pCookie)
+{
+    ntk_info("OpenNI closing.\n");
+}
+
 ntk::OpenniDriver::OpenniDriver() : m_config(new Config(this))
 {
-    ntk_dbg(1) << "Initializing OpenNI driver";
+    ntk_info("Initializing OpenNI driver\n");
 
     if (ntk::ntk_debug_level >= 1)
     {
@@ -875,6 +909,19 @@ ntk::OpenniDriver::OpenniDriver() : m_config(new Config(this))
         xnLogSetSeverityFilter(XN_LOG_WARNING);
         xnLogSetMaskState("ALL", true);
     }
+
+    {
+        xnLogSetMaskState("ALL", true);
+        xnLogSetSeverityFilter(XN_LOG_INFO);
+        XnLogWriter* writer = new XnLogWriter; // FIXME: small leak on exit here.
+        writer->pCookie = 0;
+        writer->WriteEntry = &OpenniWriteLogEntry;
+        writer->WriteUnformatted = &OpenniWriteUnformatted;
+        writer->OnConfigurationChanged = &OpenniOnConfigurationChanged;
+        writer->OnClosing = &OpenniOnClosing;
+        xnLogRegisterLogWriter (writer);
+    }
+
     if (ntk::ntk_debug_level >= 2)
     {
         xnLogSetConsoleOutput(true);
@@ -895,7 +942,7 @@ ntk::OpenniDriver::OpenniDriver() : m_config(new Config(this))
     {
         const xn::NodeInfo& deviceInfo = *nodeIt;
         const XnProductionNodeDescription& description = deviceInfo.GetDescription();
-        ntk_dbg(1) << format("Found device: vendor %s name %s", description.strVendor, description.strName);
+        ntk_info("Found device: vendor %s name %s\n", description.strVendor, description.strName);
         DeviceInfo info;
         info.camera_type = description.strName;
         info.vendor = description.strVendor;
@@ -921,8 +968,8 @@ ntk::OpenniDriver::OpenniDriver() : m_config(new Config(this))
         DeviceInfo& info = m_device_nodes[i];
         if (info.serial.empty())
             info.serial = i;
-        ntk_dbg(1) << cv::format("[Device %d] %s, %s, serial=%s",
-                                 i, info.vendor.c_str(), info.camera_type.c_str(), info.serial.c_str());
+        ntk_info("[Device %d] %s, %s, serial=%s\n",
+                 i, info.vendor.c_str(), info.camera_type.c_str(), info.serial.c_str());
     }
 
     strcpy(m_license.strVendor, "PrimeSense");
@@ -941,7 +988,7 @@ void ntk::OpenniDriver :: checkXnError(const XnStatus& status, const char* what)
 {
     if (status != XN_STATUS_OK)
     {
-        ntk_dbg(0) << "[ERROR] " << cv::format("%s failed: %s\n", what, xnGetStatusString(status));
+        ntk_error("%s failed: %s\n", what, xnGetStatusString(status));
         ntk_throw_exception("Error in OpenniGrabber.");
     }
 }

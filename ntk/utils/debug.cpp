@@ -29,20 +29,45 @@
 #include <QFile>
 #include <QDesktopServices>
 
+#include <cstdio>
+
+#include <iostream>
+
 typedef const char* CString;
 
 namespace ntk
 {
 
-QString debugLogFileName;
-QMutex debugLogFileLock;
+QString logFileName;
+QMutex logFileLock;
 bool hasLogFileName = false;
+FILE* logFileHandle = 0;
 
-void setDebugFileName (const std::string& logfile)
+void setLogFileName (const std::string& logfile)
 {
-    QMutexLocker _ (&debugLogFileLock);
-    debugLogFileName = QString::fromStdString(logfile);
-    hasLogFileName = true;
+    QMutexLocker _ (&logFileLock);
+    if (logFileHandle)
+    {
+        fclose (logFileHandle);
+        logFileHandle = 0;
+    }
+
+    logFileName = QString::fromStdString(logfile);
+    if (logfile.empty())
+    {
+        hasLogFileName = false;
+    }
+    else
+    {
+        logFileHandle = fopen (logFileName.toAscii(), "a");
+        hasLogFileName = true;
+    }
+}
+
+std::string getLogFileName ()
+{
+    QMutexLocker _ (&logFileLock);
+    return logFileName.toStdString();
 }
 
 }
@@ -59,48 +84,21 @@ void printWindowsDebugOutputLine (CString prefix, CString message)
     OutputDebugString(line.c_str());
 }
 
-void printFileLogOutputLine (CString prefix, CString message)
-{
-    // FIXME: avoid overloading the hard drive by default.
-    if (!ntk::hasLogFileName)
-        return;
-
-    std::string line(prefix);
-    line += message;
-    line += "\r\n";
-
-    {
-        QMutexLocker _ (&ntk::debugLogFileLock);
-        if (ntk::debugLogFileName.isNull())
-            return;
-
-        QFile f (ntk::debugLogFileName);
-        if (f.open(QIODevice::Append))
-        {
-            f.write(line.c_str());
-            f.close();
-        }
-    }
-}
-
 void printStandardLine (CString prefix, CString message)
 {
     printWindowsDebugOutputLine(prefix, message);
-    printFileLogOutputLine (prefix, message);
     std::cout << prefix << message << std::endl;
 }
 
 void printErrorLine (CString prefix, CString message)
 {
     printWindowsDebugOutputLine(prefix, message);
-    printFileLogOutputLine (prefix, message);
     std::cerr << prefix << message << std::endl;
 }
 
 void printLogLine (CString prefix, CString message)
 {
     printWindowsDebugOutputLine(prefix, message);
-    printFileLogOutputLine (prefix, message);
     std::clog << prefix << message << std::endl;
 }
 #else
@@ -176,6 +174,7 @@ QMutex MsgHandler::mutex;
 namespace ntk
 {
   int ntk_debug_level = 0;
+  int ntk_log_level = 0;
 
   extern QTextStream qErr;
   extern QTextStream qOut;
@@ -230,4 +229,41 @@ NtkDebug :: ~NtkDebug()
     MsgHandler::use();
 
     qDebug() << "[DBG]" << s;
+}
+
+namespace ntk
+{
+
+void print_log (const int level, const char* prefix, const char* fmt, ...)
+{
+    if (level > ntk::ntk_log_level)
+        return;
+
+    ntk::logFileLock.lock();
+    FILE* handle;
+
+    if (0 != ntk::logFileHandle)
+    {
+        handle = ntk::logFileHandle;
+    }
+    else
+    {
+        ntk::logFileLock.unlock();
+        if (level == 0)
+            handle = stderr;
+        else
+            handle = stdout;
+    }
+
+    fprintf (handle, prefix);
+    va_list args;
+    va_start(args, fmt);
+    vfprintf (handle, fmt, args);
+    va_end (args);
+
+    fflush (handle);
+
+    logFileLock.unlock();
+}
+
 }

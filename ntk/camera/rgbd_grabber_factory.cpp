@@ -100,13 +100,17 @@ RGBDProcessor* RGBDGrabberFactory::createProcessor(const enum_grabber_type& grab
 bool RGBDGrabberFactory :: createOpenniGrabbers(const ntk::RGBDGrabberFactory::Params &params, std::vector<GrabberData>& grabbers)
 {
     if (!OpenniDriver::hasDll())
+    {
+        ntk_warn("No OpenNI dll found.\n");
         return false;
+    }
 
     // Config dir is supposed to be next to the binaries.
     QDir prev = QDir::current();
     QDir::setCurrent(QApplication::applicationDirPath());
     OpenniDriver* ni_driver = new OpenniDriver();
 
+    ntk_info("Number of Openni devices: %d\n", ni_driver->numDevices());
     ntk_dbg_print(ni_driver->numDevices(), 1);
 
     // Create grabbers.
@@ -165,11 +169,11 @@ bool RGBDGrabberFactory :: createSoftKineticGrabbers(const ntk::RGBDGrabberFacto
 #ifdef NESTK_USE_SOFTKINETIC
     if (!SoftKineticGrabber::hasDll())
     {
-        ntk_dbg(1) << "No softkinetic dll";
+        ntk_warn("No softkinetic DepthSense dll found.\n");
         return false;
     }
 
-    ntk_dbg(1) << "Trying softkinetic backend";
+    ntk_info("Trying softkinetic backend\n");
 
     std::vector<std::string> calibration_files;
 
@@ -190,7 +194,7 @@ bool RGBDGrabberFactory :: createSoftKineticGrabbers(const ntk::RGBDGrabberFacto
     grabbers.push_back(new_data);
     return true;
 #else
-    ntk_dbg(1) << "No support for softkinetic, skipping.";
+    ntk_info("No support for softkinetic, skipping.\n");
     return false;
 #endif
 }
@@ -229,14 +233,22 @@ bool RGBDGrabberFactory :: createKin4winGrabbers(const ntk::RGBDGrabberFactory::
 #ifdef NESTK_USE_KIN4WIN
 
     if (!Kin4WinDriver::hasDll())
+    {
+        ntk_warn("No Kinect for Windows SDK dll found.\n");
         return false;
+    }
 
     std::vector<std::string> calibration_files;
 
     Kin4WinDriver* kin_driver = new Kin4WinDriver;
 
     if (kin_driver->numDevices() < 1)
+    {
+        ntk_info("No Kinect for Windows devices found.\n");
         return false;
+    }
+
+    ntk_info("Number of Kinect for Windows devices found: %d.\n", kin_driver->numDevices());
 
     // Create grabbers.
     for (int i = 0; i < kin_driver->numDevices(); ++i)
@@ -254,6 +266,7 @@ bool RGBDGrabberFactory :: createKin4winGrabbers(const ntk::RGBDGrabberFactory::
 
     return true;
 #else
+    ntk_info ("No support for Kinect for Windows SDK.\n");
     return false;
 #endif
 }
@@ -271,7 +284,7 @@ bool RGBDGrabberFactory :: createFileGrabbers(const ntk::RGBDGrabberFactory::Par
         QString camera_path = root_path.absoluteFilePath(name);
         if (QDir(camera_path).entryList(QStringList("view*"), QDir::Dirs, QDir::Name).size() == 0)
         {
-            ntk_dbg(0) << "Warning, directory " << camera_path << " has no images, skipping.";
+            ntk_warn("Warning, directory %s has no images, skipping.\n", camera_path);
             continue;
         }
         image_directories.push_back(camera_path.toStdString());
@@ -321,7 +334,7 @@ RGBDCalibrationPtr RGBDGrabberFactory::tryLoadCalibration(const ntk::RGBDGrabber
     }
     catch (const std::exception& e)
     {
-        ntk_dbg(0) << "Warning: could not load calibration file " << filename;
+        ntk_warn("Warning: could not load calibration file %s\n", filename);
     }
 
     return calib_data;
