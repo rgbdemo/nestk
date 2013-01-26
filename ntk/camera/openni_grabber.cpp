@@ -865,7 +865,7 @@ OpenniDriver::deviceInfo (int index) const
     return m_device_nodes[index];
 }
 
-void OpenniWriteLogEntry (const XnLogEntry* pEntry, void* pCookie)
+void XN_CALLBACK_TYPE OpenniWriteLogEntry (const XnLogEntry* pEntry, void* pCookie)
 {
     switch (pEntry->nSeverity)
     {
@@ -884,17 +884,17 @@ void OpenniWriteLogEntry (const XnLogEntry* pEntry, void* pCookie)
     }
 }
 
-void OpenniWriteUnformatted (const XnChar* strMessage, void* pCookie)
+void XN_CALLBACK_TYPE OpenniWriteUnformatted (const XnChar* strMessage, void* pCookie)
 {
     ntk_info("OpenNI: %s\n", strMessage);
 }
 
-void OpenniOnConfigurationChanged (void* pCookie)
+void XN_CALLBACK_TYPE OpenniOnConfigurationChanged (void* pCookie)
 {
     ntk_info("OpenNI configuration changed.\n");
 }
 
-void OpenniOnClosing (void* pCookie)
+void XN_CALLBACK_TYPE OpenniOnClosing (void* pCookie)
 {
     ntk_info("OpenNI closing.\n");
 }
