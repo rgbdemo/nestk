@@ -284,7 +284,7 @@ bool RGBDGrabberFactory :: createFileGrabbers(const ntk::RGBDGrabberFactory::Par
         QString camera_path = root_path.absoluteFilePath(name);
         if (QDir(camera_path).entryList(QStringList("view*"), QDir::Dirs, QDir::Name).size() == 0)
         {
-            ntk_warn("Warning, directory %s has no images, skipping.\n", camera_path);
+            ntk_warn("Warning, directory %s has no images, skipping.\n", camera_path.c_str());
             continue;
         }
         image_directories.push_back(camera_path.toStdString());
@@ -334,7 +334,7 @@ RGBDCalibrationPtr RGBDGrabberFactory::tryLoadCalibration(const ntk::RGBDGrabber
     }
     catch (const std::exception& e)
     {
-        ntk_warn("Warning: could not load calibration file %s\n", filename);
+        ntk_warn("Warning: could not load calibration file %s\n", filename.c_str());
     }
 
     return calib_data;
