@@ -87,19 +87,19 @@ void printWindowsDebugOutputLine (CString prefix, CString message)
 void printStandardLine (CString prefix, CString message)
 {
     printWindowsDebugOutputLine(prefix, message);
-    std::cout << prefix << message << std::endl;
+    // std::cout << prefix << message << std::endl;
 }
 
 void printErrorLine (CString prefix, CString message)
 {
     printWindowsDebugOutputLine(prefix, message);
-    std::cerr << prefix << message << std::endl;
+    // std::cerr << prefix << message << std::endl;
 }
 
 void printLogLine (CString prefix, CString message)
 {
     printWindowsDebugOutputLine(prefix, message);
-    std::clog << prefix << message << std::endl;
+    // std::clog << prefix << message << std::endl;
 }
 #else
 #include <iostream>
