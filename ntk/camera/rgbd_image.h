@@ -217,6 +217,9 @@ public:
   cv::Mat1b& mappedDepthMaskRef() { return m_mapped_depth_mask; }
   const cv::Mat1b& mappedDepthMask() const { return m_mapped_depth_mask; }
 
+  const cv::Mat2w& depthToRgbCoords () const { return m_depth_to_rgb_coord; }
+  cv::Mat2w& depthToRgbCoordsRef () { return m_depth_to_rgb_coord; }
+
   /*! Accessors to 3D normals. */
   cv::Mat3f& normalRef() { return m_normal; }
   const cv::Mat3f& normal() const { return m_normal; }
@@ -295,6 +298,7 @@ private:
   cv::Mat1f m_mapped_depth;
   cv::Mat1b m_depth_mask;
   cv::Mat1b m_mapped_depth_mask;
+  cv::Mat2w m_depth_to_rgb_coord;
   cv::Mat3f m_normal;
   cv::Mat1f m_amplitude;
   cv::Mat1f m_intensity;

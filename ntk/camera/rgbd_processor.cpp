@@ -62,6 +62,48 @@ SoftKineticRGBDProcessor::SoftKineticRGBDProcessor()
     // setFilterFlags(RGBDProcessorFlags::FilterBilateral | RGBDProcessorFlags::FilterEdges);
 }
 
+Kin4winRGBDProcessor::Kin4winRGBDProcessor()
+    : RGBDProcessor()
+{
+    // Everything is done by the grabber.
+    setFilterFlags(RGBDProcessorFlags::NiteProcessed
+                   | RGBDProcessorFlags::ComputeMapping/*
+                   | RGBDProcessorFlags::ErodeDepthBorders
+                   | RGBDProcessorFlags::RemoveSmallStructures*/);
+}
+
+void Kin4winRGBDProcessor::computeMappings()
+{
+    // FIXME: implement.
+    static const int neighbors[6][2] = { {-1, 0}, {1, 0}, {0, -1}, {0, 1}, {-1, -1}, {1, 1} };
+    const size_t depth_width = m_image->depth().cols;
+    const size_t depth_height = m_image->depth().rows;
+
+    m_image->mappedDepthRef().create(m_image->rgb().size());
+    m_image->mappedDepthRef() = 0.f;
+    float* mapped_depth_values = m_image->mappedDepthRef().ptr<float>();
+
+    m_image->mappedRgbRef().create(m_image->depth().size());
+    m_image->mappedRgbRef() = cv::Vec3b(0,0,0);
+    cv::Vec3b* mapped_rgb_values = m_image->mappedRgbRef().ptr<cv::Vec3b>();
+
+    for (int r = 0; r < depth_height; ++r)
+    for (int c = 0; c < depth_width; ++c)
+    {
+        if (m_image->depth()(r,c) < 1e-5)
+            continue;
+
+        cv::Vec2w rgb_coords = m_image->depthToRgbCoords()(r, c);
+        if (!is_yx_in_range(m_image->rgb(), rgb_coords[0], rgb_coords[1]))
+            continue;
+
+        m_image->mappedRgbRef()(r, c) = m_image->rgb()(rgb_coords[0], rgb_coords[1]);
+        m_image->mappedDepthRef()(rgb_coords[0], rgb_coords[1]) = m_image->depth()(r, c);
+    }
+
+    // FIXME: no hole filling here, make sure algorithms using local mappedDepth do a neighbor search.
+}
+
 } // ntk
 
 namespace ntk
@@ -1009,9 +1051,13 @@ namespace ntk
     RGBDProcessor* RGBDProcessorFactory :: createProcessor(const RGBDProcessorFactory::Params& params)
     {
         RGBDProcessor* processor = 0;
-        if (params.grabber_type == "openni" || params.grabber_type == "kin4win")
+        if (params.grabber_type == "openni")
         {
             processor = new OpenniRGBDProcessor();
+        }
+        else if (params.grabber_type == "kin4win")
+        {
+            processor = new Kin4winRGBDProcessor();
         }
         else if (params.grabber_type == "freenect")
         {

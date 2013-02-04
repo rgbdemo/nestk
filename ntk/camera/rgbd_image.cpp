@@ -296,6 +296,7 @@ void RGBDImage :: copyTo(RGBDImage& other) const
     m_mapped_depth.copyTo(other.m_mapped_depth);
     m_depth_mask.copyTo(other.m_depth_mask);
     m_mapped_depth_mask.copyTo(other.m_mapped_depth_mask);
+    m_depth_to_rgb_coord.copyTo(other.m_depth_to_rgb_coord);
     m_normal.copyTo(other.m_normal);
     m_amplitude.copyTo(other.m_amplitude);
     m_intensity.copyTo(other.m_intensity);
@@ -333,6 +334,7 @@ void RGBDImage :: swap(RGBDImage& other)
     cv::swap(m_mapped_depth, other.m_mapped_depth);
     cv::swap(m_depth_mask, other.m_depth_mask);
     cv::swap(m_mapped_depth_mask, other.m_mapped_depth_mask);
+    cv::swap(m_depth_to_rgb_coord, other.m_depth_to_rgb_coord);
     cv::swap(m_normal, other.m_normal);
     cv::swap(m_amplitude, other.m_amplitude);
     cv::swap(m_intensity, other.m_intensity);
