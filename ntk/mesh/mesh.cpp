@@ -185,6 +185,46 @@ cv::Vec3f Mesh::getFaceNormal(int face_i) const
     return n;
 }
 
+void Mesh::addPlane(const Point3f &center, const Point3f &normal, const Point3f &sizes)
+{
+    Point3f line1[2] = { Point3f(center.x-sizes.x, center.y-sizes.y, center.z-sizes.z),
+                         Point3f(center.x-sizes.x, center.y+sizes.y, center.z-sizes.z) };
+    Point3f line2[2] = { Point3f(center.x+sizes.x, center.y-sizes.y, center.z-sizes.z),
+                         Point3f(center.x+sizes.x, center.y+sizes.y, center.z-sizes.z) };
+    Point3f line3[2] = { Point3f(center.x-sizes.x, center.y-sizes.y, center.z+sizes.z),
+                         Point3f(center.x-sizes.x, center.y+sizes.y, center.z+sizes.z) };
+    Point3f line4[2] = { Point3f(center.x+sizes.x, center.y-sizes.y, center.z+sizes.z),
+                         Point3f(center.x+sizes.x, center.y+sizes.y, center.z+sizes.z) };
+
+    ntk::Plane plane (normal, center);
+
+    Point3f plane_p1 = plane.intersectionWithLine(line1[0], line1[1]);
+    Point3f plane_p2 = plane.intersectionWithLine(line2[0], line2[1]);
+    Point3f plane_p3 = plane.intersectionWithLine(line3[0], line3[1]);
+    Point3f plane_p4 = plane.intersectionWithLine(line4[0], line4[1]);
+
+    vertices.push_back(plane_p1);
+    vertices.push_back(plane_p2);
+    vertices.push_back(plane_p3);
+    vertices.push_back(plane_p4);
+
+    {
+        Face f;
+        f.indices[0] = 0;
+        f.indices[1] = 1;
+        f.indices[2] = 2;
+        faces.push_back(f);
+    }
+
+    {
+        Face f;
+        f.indices[0] = 2;
+        f.indices[1] = 1;
+        f.indices[2] = 3;
+        faces.push_back(f);
+    }
+}
+
 void Mesh::saveToPlyFile(const char* filename) const
 {   
     if (texture.data)

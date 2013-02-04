@@ -197,10 +197,13 @@ namespace ntk
     cv::Point3f centerize();
     cv::Point3f center() const;
     cv::Vec3f getFaceNormal(int face_i) const;
+
+    void addPlane(const cv::Point3f& center, const cv::Point3f& normal, const cv::Point3f& sizes);
     void addCube(const cv::Point3f& center, const cv::Point3f& sizes, const cv::Vec3b& color = cv::Vec3b(255,0,0));
     void addSurfel(const Surfel& surfel);
     void addPointFromSurfel(const Surfel& surfel);
     void addMesh(const ntk::Mesh& rhs);
+
     void applyTransform(const Pose3D& pose);
     void applyScaleTransform(float x_scale, float y_scale, float z_scale);
     void computeNormalsFromFaces();
