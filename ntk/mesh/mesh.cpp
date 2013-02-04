@@ -140,6 +140,12 @@ void Mesh::applyTransform(const Pose3D& pose)
 {
     foreach_idx(i, vertices)
             vertices[i] = pose.cameraTransform(vertices[i]);
+
+    ntk::Pose3D normal_pose;
+    normal_pose.applyTransformBefore(cv::Vec3f(0.f,0.f,0.f), pose.cvEulerRotation());
+
+    foreach_idx(i, normals)
+            normals[i] = normal_pose.cameraTransform(normals[i]);
 }
 
 Point3f Mesh :: centerize()
