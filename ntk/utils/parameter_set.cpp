@@ -32,8 +32,6 @@ void ParameterSet :: setParameters(const ParameterSet& rhs)
     while (it.hasNext())
     {
         it.next ();
-        ntk_dbg_print (it.key(), 1);
-        ntk_dbg_print (it.value().toString(), 1);
         properties[it.key()] = it.value();
     }
 }
