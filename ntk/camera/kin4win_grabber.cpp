@@ -170,36 +170,85 @@ public:
         if (FAILED(ret))
         {
             if (E_NUI_DEVICE_IN_USE == ret)
+            {
                 alert(Messages::inUseError);
+                ntk_error("Kinect for Windows already in use.\n");
+            }
+            else if (E_NUI_NOTGENUINE == ret)
+            {
+                ntk_error("Kinect for Windows is not genuine.\n");
+            }
+            else if (E_NUI_INSUFFICIENTBANDWIDTH == ret)
+            {
+                ntk_error("Insufficient bandwidth.\n");
+            }
+            else if (E_NUI_NOTSUPPORTED == ret)
+            {
+                ntk_error("Kinect for Windows device not supported.\n");
+            }
+            else if (E_NUI_NOTCONNECTED == ret)
+            {
+                ntk_error("Kinect for Windows is not connected.\n");
+            }
+            else if (E_NUI_NOTREADY == ret)
+            {
+                ntk_error("Kinect for Windows is not ready.\n");
+            }
+            else if (E_NUI_NOTPOWERED == ret)
+            {
+                ntk_error("Kinect for Windows is not powered.\n");
+            }
+            else if (E_NUI_DATABASE_NOT_FOUND == ret)
+            {
+                ntk_error("Kinect for Windows database not found.\n");
+            }
+            else if (E_NUI_DATABASE_VERSION_MISMATCH == ret)
+            {
+                ntk_error("Kinect for Windows database version mismatch.\n");
+            }
             else
+            {
                 alert(Messages::initError);
+                ntk_error("Kinect for Windows could not initialize.\n");
+            }
 
             return ret;
         }
+
+        ntk_info("Kinect for Windows: initialized successfully\n");
 
         ret = sensor->NuiImageStreamOpen(NUI_IMAGE_TYPE_COLOR, colorResolution, 0, 2, nextColorFrameEvent, &colorStreamHandle);
 
         if (FAILED(ret))
         {
             alert(Messages::colorStreamError);
+            ntk_error("Kinect for Windows: could not open color stream\n");
             return ret;
         }
+
+        ntk_info("Kinect for Windows: color stream opened.\n");
 
         ret = sensor->NuiImageStreamOpen(NUI_IMAGE_TYPE_DEPTH, depthResolution, 0, 2, nextDepthFrameEvent, &depthStreamHandle);
 
         if (FAILED(ret))
         {
             alert(Messages::depthStreamError);
+            ntk_error("Kinect for Windows: could not open depth stream\n");
             return ret;
         }
+
+        ntk_info("Kinect for Windows: depth stream opened.\n");
 
         ret = sensor->NuiImageStreamSetImageFrameFlags(depthStreamHandle, NUI_IMAGE_STREAM_FLAG_ENABLE_NEAR_MODE);
 
         if (FAILED(ret))
         {
             alert(Messages::nearModeError);
+            ntk_error("Kinect for Windows: could not set near mode\n");
             return ret;
         }
+
+        ntk_info("Kinect for Windows: flags set.\n");
 
         stopProcessingEvent = CreateEvent(0, FALSE, FALSE, 0);
         processingThreadHandle = CreateThread(NULL, 0, processThread, this, 0, NULL);       

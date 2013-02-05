@@ -78,8 +78,10 @@ RGBDProcessor* RGBDGrabberFactory::createProcessor(const enum_grabber_type& grab
     switch (grabber_type)
     {
     case OPENNI:
-    case KIN4WIN:
         return new OpenniRGBDProcessor;
+
+    case KIN4WIN:
+        return new Kin4winRGBDProcessor;
 
     case SOFTKINETIC:
         return new SoftKineticRGBDProcessor;
