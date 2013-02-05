@@ -206,9 +206,6 @@ class Kin4winRGBDProcessor : public RGBDProcessor
 {
 public:
   Kin4winRGBDProcessor();
-
-protected:
-  virtual void computeMappings();
 };
 
 // For backward compatiblity.
