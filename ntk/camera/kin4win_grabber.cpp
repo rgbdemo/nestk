@@ -125,6 +125,7 @@ public:
         if (FAILED(ret))
         {
             alert(Messages::creationError);
+            ntk_error("Kinect for Windows: could not create a sensor handler.\n");
             return ret;
         }
 
@@ -243,9 +244,9 @@ public:
 
         if (FAILED(ret))
         {
-            alert(Messages::nearModeError);
-            ntk_error("Kinect for Windows: could not set near mode\n");
-            return ret;
+            ntk_warn("Kinect for Windows: could not set near mode\n");
+            ntk_warn("Kinect for Windows: must be an Xbox Kinect.\n");
+            ret = SEVERITY_SUCCESS;
         }
 
         ntk_info("Kinect for Windows: flags set.\n");
