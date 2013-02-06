@@ -63,10 +63,30 @@ SoftKineticRGBDProcessor::SoftKineticRGBDProcessor()
 }
 
 Kin4winRGBDProcessor::Kin4winRGBDProcessor()
-    : RGBDProcessor()
+    : OpenniRGBDProcessor()
 {
     // Everything is done by the grabber.
-    setFilterFlags(RGBDProcessorFlags::NiteProcessed);
+    setFilterFlags(RGBDProcessorFlags::NiteProcessed | RGBDProcessorFlags::ComputeMapping);
+}
+
+void Kin4winRGBDProcessor::computeMappings()
+{
+    if (m_image->calibration().empty())
+        return;
+
+    if (m_image->calibration()->depth_pose->isIdentity()
+            && m_image->calibration()->rgb_pose->isIdentity())
+    {
+        // Dummy mapping, like when using Openni registration.
+        // ntk_dbg(1) << "Using OPENNI rgbd processor mapping.";
+        return OpenniRGBDProcessor::computeMappings();
+    }
+    else
+    {
+        // Do the actual mapping using transforms.
+        // ntk_dbg(1) << "Using rgbd processor mapping.";
+        return RGBDProcessor::computeMappings();
+    }
 }
 
 } // ntk

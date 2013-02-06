@@ -246,6 +246,10 @@ public:
         {
             ntk_warn("Kinect for Windows: could not set near mode\n");
             ntk_warn("Kinect for Windows: must be an Xbox Kinect.\n");
+            // FIXME: for some unknown reason, the estimateCalibration technique does not work
+            // with Kinect for Xbox. So use regular alignment in that case.
+            that->m_align_depth_to_color = true;
+            that->m_is_xbox_kinect = true;
             ret = SEVERITY_SUCCESS;
         }
 
@@ -376,18 +380,19 @@ public:
             ntk_assert(width  == that->m_current_image.rawDepth16bits().cols, "Bad width");
             ntk_assert(height == that->m_current_image.rawDepth16bits().rows, "Bad height");
 
-#if 0
+            if (that->m_align_depth_to_color)
             {
                 QWriteLocker locker(&that->m_lock);
                 uint16_t* depth_buf = that->m_current_image.rawDepth16bitsRef().ptr<uint16_t>();
                 mapDepthFrameToRgbFrame(buf, depth_buf);
             }
-#endif
-
-            QWriteLocker locker(&that->m_lock);
-            uint16_t* depth_buf = that->m_current_image.rawDepth16bitsRef().ptr<uint16_t>();
-            cv::Vec2w* depth_to_color_coords = that->m_current_image.depthToRgbCoordsRef().ptr<cv::Vec2w>();
-            extractDepthAndColorCoords (buf, depth_buf, depth_to_color_coords);
+            else
+            {
+                QWriteLocker locker(&that->m_lock);
+                uint16_t* depth_buf = that->m_current_image.rawDepth16bitsRef().ptr<uint16_t>();
+                cv::Vec2w* depth_to_color_coords = that->m_current_image.depthToRgbCoordsRef().ptr<cv::Vec2w>();
+                extractDepthAndColorCoords (buf, depth_buf, depth_to_color_coords);
+            }
         }
         else
         {
@@ -520,7 +525,7 @@ public:
     }
 
     // FIXME: Untested.
-    cv::Point3f depthToRealWorld (cv::Point3f p)
+    cv::Point3f depthToRealWorld (const cv::Point3f& p)
     {
         Vector4 v = NuiTransformDepthImageToSkeleton(
                     LONG(p.x),
@@ -607,7 +612,11 @@ public:
         for (int i = 0; i < depth_width*depth_height; ++i)
         {
             uint16_t d = *depth_d16++;
-            if (d == NUI_IMAGE_DEPTH_MINIMUM || d == NUI_IMAGE_DEPTH_MAXIMUM || d == NUI_IMAGE_DEPTH_NO_VALUE)
+            if (d < NUI_IMAGE_DEPTH_MINIMUM_NEAR_MODE
+                    || d > NUI_IMAGE_DEPTH_MAXIMUM
+                    || d == NUI_IMAGE_DEPTH_TOO_FAR_VALUE
+                    || d == NUI_IMAGE_DEPTH_NO_VALUE
+                    || d == NUI_IMAGE_DEPTH_UNKNOWN_VALUE)
                 *depth_values = 0;
             else
                 *depth_values = NuiDepthPixelToDepth(d);
@@ -643,7 +652,11 @@ public:
             int r = colorCoordinates[i*2+1] * ratio;
 
             uint16_t d = *depth_d16++;
-            if (d == NUI_IMAGE_DEPTH_MINIMUM || d == NUI_IMAGE_DEPTH_MAXIMUM || d == NUI_IMAGE_DEPTH_NO_VALUE)
+            if (d < NUI_IMAGE_DEPTH_MINIMUM_NEAR_MODE
+                    || d > NUI_IMAGE_DEPTH_MAXIMUM
+                    || d == NUI_IMAGE_DEPTH_NO_VALUE
+                    || d == NUI_IMAGE_DEPTH_TOO_FAR_VALUE
+                    || d == NUI_IMAGE_DEPTH_UNKNOWN_VALUE)
                 continue;
 
             if (c >= 0 && c < depth_width && r >= 0 && r < depth_height)
@@ -692,9 +705,10 @@ Kin4WinGrabber :: Kin4WinGrabber(Kin4WinDriver& driver, int camera_id) :
     m_camera_id(camera_id),
     m_near_mode(true),
     m_near_mode_changed(true),
-    m_high_resolution(false)
+    m_high_resolution(false),
+    m_align_depth_to_color(true),
+    m_is_xbox_kinect(false)
 {
-
 }
 
 Kin4WinGrabber :: Kin4WinGrabber(Kin4WinDriver& driver, const std::string& camera_serial) :
@@ -702,7 +716,9 @@ Kin4WinGrabber :: Kin4WinGrabber(Kin4WinDriver& driver, const std::string& camer
     m_driver(driver),
     m_camera_id(-1),
     m_camera_serial(camera_serial),
-    m_high_resolution(false)
+    m_high_resolution(false),
+    m_align_depth_to_color(true),
+    m_is_xbox_kinect(false)
 {
     //for (size_t i = 0; i < driver.numDevices(); ++i)
     //{
@@ -842,7 +858,8 @@ void Kin4WinGrabber :: estimateCalibration()
     float width_ratio = float(rgb_width)/depth_width;
     float height_ratio = float(rgb_height)/depth_height;
 
-    float rgb_fx = fx;
+    const float correction_factor = 535.0f/570.34f;
+    float rgb_fx = correction_factor * fx;
     // Pixels are square on a Kinect.
     // Image height gets cropped when going from 1280x1024 in 640x480.
     // The ratio remains 2.
@@ -878,21 +895,23 @@ void Kin4WinGrabber :: estimateCalibration()
     {
         cv::RNG rng;
         // Estimate rgb calibration.
-        std::vector< std::vector<Point3f> > model_points (20);
-        std::vector< std::vector<Point2f> > rgb_points (20);
-        std::vector< std::vector<Point2f> > depth_points (20);
+        std::vector< std::vector<Point3f> > model_points (30);
+        std::vector< std::vector<Point2f> > rgb_points (30);
+        std::vector< std::vector<Point2f> > depth_points (30);
         for (int i = 0; i < model_points.size(); ++i)
         {
             for (int k = 0; k < 100; ++k)
             {
                 int r = rng(depth_height);
                 int c = rng(depth_width);
-                int depth = rng.uniform(NUI_IMAGE_DEPTH_MINIMUM, NUI_IMAGE_DEPTH_MAXIMUM_NEAR_MODE);
+                int depth = rng.uniform(NUI_IMAGE_DEPTH_MINIMUM_NEAR_MODE, NUI_IMAGE_DEPTH_MAXIMUM_NEAR_MODE);
                 LONG color_c, color_r;
-                NuiImageGetColorPixelCoordinatesFromDepthPixelAtResolution(
+                HRESULT ret = nui->sensor->NuiImageGetColorPixelCoordinatesFromDepthPixelAtResolution(
                             nui->colorResolution,
                             nui->depthResolution,
                             0, c, r, depth, &color_c, &color_r);
+                if (!SUCCEEDED(ret))
+                    continue;
 
                 cv::Point3f world = nui->depthToRealWorld(cv::Point3f(c, r, depth));
                 // ntk_dbg_print (cv::Point2f(c, r), 1);
@@ -908,26 +927,38 @@ void Kin4WinGrabber :: estimateCalibration()
             }
         }
 
-        std::vector<Mat> rvecs, tvecs;
-        double reprojection_error = calibrateCamera(model_points, rgb_points, m_calib_data->rawRgbSize(),
-                                                    m_calib_data->rgb_intrinsics, m_calib_data->rgb_distortion,
-                                                    rvecs, tvecs, CV_CALIB_USE_INTRINSIC_GUESS | CV_CALIB_FIX_PRINCIPAL_POINT | CV_CALIB_FIX_ASPECT_RATIO | CV_CALIB_ZERO_TANGENT_DIST);
+        {
+            std::vector<Mat> rvecs, tvecs;
+            double reprojection_error = calibrateCamera(model_points, rgb_points, m_calib_data->rawRgbSize(),
+                                                        m_calib_data->rgb_intrinsics, m_calib_data->rgb_distortion,
+                                                        rvecs, tvecs, CV_CALIB_USE_INTRINSIC_GUESS | CV_CALIB_FIX_PRINCIPAL_POINT | CV_CALIB_FIX_ASPECT_RATIO | CV_CALIB_ZERO_TANGENT_DIST);
+            ntk_dbg_print (reprojection_error, 1);
+        }
         m_calib_data->rgb_distortion = 0.f;
-        ntk_dbg_print (reprojection_error, 1);
 
-        cv::Mat E(3,3,CV_64F),F(3,3,CV_64F);
-        stereoCalibrate(model_points,
-                        rgb_points,
-                        depth_points,
-                        m_calib_data->rgb_intrinsics, m_calib_data->rgb_distortion,
-                        m_calib_data->depth_intrinsics, m_calib_data->depth_distortion,
-                        m_calib_data->raw_depth_size,
-                        m_calib_data->R, m_calib_data->T, E, F,
-                        TermCriteria(TermCriteria::COUNT+TermCriteria::EPS, 50, 1e-6),
-                        CALIB_FIX_INTRINSIC);
+        m_calib_data->T = 0.;
+        setIdentity(m_calib_data->R);
 
-        double stereo_reprojection_error = computeCalibrationError(F, rgb_points, depth_points);
-        ntk_dbg_print (stereo_reprojection_error, 1);
+        if (m_align_depth_to_color)
+        {
+            m_calib_data->rgb_intrinsics.copyTo(m_calib_data->depth_intrinsics);
+        }
+        else
+        {
+            cv::Mat E(3,3,CV_64F),F(3,3,CV_64F);
+            stereoCalibrate(model_points,
+                            rgb_points,
+                            depth_points,
+                            m_calib_data->rgb_intrinsics, m_calib_data->rgb_distortion,
+                            m_calib_data->depth_intrinsics, m_calib_data->depth_distortion,
+                            m_calib_data->raw_depth_size,
+                            m_calib_data->R, m_calib_data->T, E, F,
+                            TermCriteria(TermCriteria::COUNT+TermCriteria::EPS, 50, 1e-7),
+                            CALIB_FIX_INTRINSIC);
+
+            double stereo_reprojection_error = computeCalibrationError(F, rgb_points, depth_points);
+            ntk_dbg_print (stereo_reprojection_error, 1);
+        }
     }
 
     ntk_dbg_print (m_calib_data->rgb_intrinsics(0,0), 1);
@@ -985,7 +1016,8 @@ void Kin4WinGrabber :: run()
                 QWriteLocker locker(&m_lock);
                 m_current_image.swap(m_rgbd_image);
                 // FIXME: move this to rgbd_processor.
-                // nui->postprocessDepthData(m_rgbd_image.rawDepth16bitsRef().ptr<uint16_t>());
+                if (m_align_depth_to_color)
+                    nui->postprocessDepthData(m_rgbd_image.rawDepth16bitsRef().ptr<uint16_t>());
                 cv::flip(m_rgbd_image.rawDepth16bits(), m_rgbd_image.rawDepth16bitsRef(), 1);
                 cv::flip(m_rgbd_image.rawRgb(), m_rgbd_image.rawRgbRef(), 1);
             }

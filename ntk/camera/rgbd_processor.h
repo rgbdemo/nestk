@@ -202,10 +202,13 @@ protected:
 };
 
 /*! RGBDProcessor with default parameters for OpenNI/Nite. */
-class Kin4winRGBDProcessor : public RGBDProcessor
+class Kin4winRGBDProcessor : public OpenniRGBDProcessor
 {
 public:
   Kin4winRGBDProcessor();
+
+protected:
+  virtual void computeMappings();
 };
 
 // For backward compatiblity.

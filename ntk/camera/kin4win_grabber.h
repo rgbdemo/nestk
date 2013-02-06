@@ -75,6 +75,8 @@ private:
     bool m_near_mode;
     bool m_near_mode_changed;
     bool m_high_resolution;
+    bool m_align_depth_to_color;
+    bool m_is_xbox_kinect;
 };
 
 }

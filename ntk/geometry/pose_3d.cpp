@@ -602,6 +602,11 @@ Pose3D Pose3D :: computeDeltaPoseWith(const Pose3D& new_pose) const
 #endif
 }
 
+bool Pose3D::isIdentity() const
+{
+    return impl->camera_transform.isApprox(Eigen::Isometry3d::Identity());
+}
+
 /*!
  * Compute 3D rotation and translation from a fundamental matrix.
  * Assumes both images come from the same camera.
