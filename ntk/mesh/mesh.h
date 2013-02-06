@@ -193,7 +193,13 @@ namespace ntk
 
   public:
     void loadFromPlyFile(const char* filename);
-    void saveToPlyFile(const char* filename) const;
+    void saveToPlyFile(const char* filename, bool use_binary = false) const;
+    void saveToAsciiPlyFile(const char* filename) const;
+    void saveToBinaryPlyFile(const char* filename) const;
+
+    void saveToObjFile(const char* filename) const;
+    void saveToStlFile(const char* filename) const;
+
     cv::Point3f centerize();
     cv::Point3f center() const;
     cv::Vec3f getFaceNormal(int face_i) const;
