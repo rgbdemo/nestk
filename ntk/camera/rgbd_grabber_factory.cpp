@@ -9,6 +9,10 @@
 # include <ntk/camera/openni_grabber.h>
 #endif
 
+#ifdef NESTK_USE_OPENNI2
+# include <ntk/camera/openni2_grabber.h>
+#endif
+
 #ifdef NESTK_USE_FREENECT
 # include <ntk/camera/freenect_grabber.h>
 #endif
@@ -136,6 +140,12 @@ bool RGBDGrabberFactory :: createOpenniGrabbers(const ntk::RGBDGrabberFactory::P
     QDir::setCurrent(prev.absolutePath());
 
     return ni_driver->numDevices() > 0;
+}
+
+bool RGBDGrabberFactory :: createOpenni2Grabbers(const ntk::RGBDGrabberFactory::Params &params, std::vector<GrabberData>& grabbers)
+{
+    // FIXME: Implement.
+    return false;
 }
 
 bool RGBDGrabberFactory :: createPmdGrabbers(const ntk::RGBDGrabberFactory::Params &paramss, std::vector<GrabberData>& grabbers)
@@ -362,6 +372,7 @@ RGBDGrabberFactory::createGrabbers(const ntk::RGBDGrabberFactory::Params& orig_p
     {
         createKin4winGrabbers(params, grabbers);
         createOpenniGrabbers(params, grabbers);
+        createOpenni2Grabbers(params, grabbers);
         createPmdGrabbers(params, grabbers);
         createSoftKineticGrabbers(params, grabbers);
         createSoftKineticIisuGrabbers(params, grabbers);

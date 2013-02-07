@@ -297,6 +297,13 @@ IF (NESTK_USE_NITE)
       )
 ENDIF()
 
+IF (NESTK_USE_OPENNI2)
+  SET (ntk_sources ${ntk_sources}
+       camera/openni2_grabber.h
+       camera/openni2_grabber.cpp
+  )
+ENDIF()
+
 IF (NESTK_USE_FREENECT OR USE_FREENECT)
   SET (ntk_sources ${ntk_sources}
        camera/freenect_grabber.h
