@@ -58,7 +58,7 @@ IF (NESTK_USE_SOFTKINETIC_IISU)
    TARGET_LINK_LIBRARIES(softkinetic-iisu-backend nestk)
 ENDIF()
 
-IF (NESTK_USE_PCL)
+IF (NESTK_USE_PCL AND NESTK_USE_OPENNI)
     ADD_EXECUTABLE(pcl-compatibility pcl_compatibility.cpp)
     TARGET_LINK_LIBRARIES(pcl-compatibility nestk)
 

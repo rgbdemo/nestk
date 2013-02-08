@@ -17,6 +17,10 @@
  * Author: Nicolas Burrus <nicolas.burrus@uc3m.es>, (C) 2010
  */
 
+#ifndef NESTK_USE_OPENNI
+# error "Nestk must be built with Openni support to compile this sample."
+#endif
+
 #include <ntk/ntk.h>
 #include <ntk/utils/debug.h>
 #include <ntk/camera/openni_grabber.h>

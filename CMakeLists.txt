@@ -52,7 +52,11 @@ CONFIGURE_FILE(UseNestk.cmake.in
 
 FILE(GLOB CMAKE_FILES "cmake/*.cmake")
 
+EXPORT(TARGETS nestk glew
+       FILE "${nestk_BINARY_DIR}/nestk-config.cmake")
+
 INSTALL(FILES
             "${nestk_BINARY_DIR}/UseNestk.cmake"
+            "${nestk_BINARY_DIR}/nestk-config.cmake"
             ${CMAKE_FILES}
         DESTINATION share/cmake)
