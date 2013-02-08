@@ -124,9 +124,11 @@ public:
      */
     OpenniGrabber(OpenniDriver& driver, const std::string& camera_serial);
 
+    virtual std::string grabberType () const { return "openni"; }
+
     /*! set a new xml config file for the grabber
    * call it before initialize() */
-    void set_xml_config_file(const std::string & xml_filename);
+    void setXmlConfigFile(const std::string & xml_filename);
 
     /*! Call it before starting the thread. */
     virtual bool connectToDevice();

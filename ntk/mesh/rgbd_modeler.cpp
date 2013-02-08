@@ -189,4 +189,11 @@ void RGBDModelerInOwnThread::run()
     }
 }
 
+bool DummyRGBDModeler::addNewView(const RGBDImage &image, Pose3D &depth_pose)
+{
+    if (m_processing_time > 0)
+        ntk::sleep (m_processing_time);
+    return true;
+}
+
 } // ntk

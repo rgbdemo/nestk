@@ -7,6 +7,7 @@
 #include <ntk/utils/time.h>
 #include <ntk/geometry/pose_3d.h>
 #include <ntk/gui/image_window.h>
+#include <ntk/camera/calibration.h>
 
 #include <QDateTime>
 #include <string>
@@ -124,6 +125,7 @@ public:
         if (FAILED(ret))
         {
             alert(Messages::creationError);
+            ntk_error("Kinect for Windows: could not create a sensor handler.\n");
             return ret;
         }
 
@@ -144,7 +146,7 @@ public:
     WinRet init ()
     {
         colorCoordinates = new long[getDepthHeight()*getDepthWidth()*2];
-        mappedDepthTmp = new float[getDepthHeight()*getDepthWidth()];
+        mappedDepthTmp = new uint16_t[getDepthHeight()*getDepthWidth()];
 
         WinRet ret;
         bool result;
@@ -169,36 +171,89 @@ public:
         if (FAILED(ret))
         {
             if (E_NUI_DEVICE_IN_USE == ret)
+            {
                 alert(Messages::inUseError);
+                ntk_error("Kinect for Windows already in use.\n");
+            }
+            else if (E_NUI_NOTGENUINE == ret)
+            {
+                ntk_error("Kinect for Windows is not genuine.\n");
+            }
+            else if (E_NUI_INSUFFICIENTBANDWIDTH == ret)
+            {
+                ntk_error("Insufficient bandwidth.\n");
+            }
+            else if (E_NUI_NOTSUPPORTED == ret)
+            {
+                ntk_error("Kinect for Windows device not supported.\n");
+            }
+            else if (E_NUI_NOTCONNECTED == ret)
+            {
+                ntk_error("Kinect for Windows is not connected.\n");
+            }
+            else if (E_NUI_NOTREADY == ret)
+            {
+                ntk_error("Kinect for Windows is not ready.\n");
+            }
+            else if (E_NUI_NOTPOWERED == ret)
+            {
+                ntk_error("Kinect for Windows is not powered.\n");
+            }
+            else if (E_NUI_DATABASE_NOT_FOUND == ret)
+            {
+                ntk_error("Kinect for Windows database not found.\n");
+            }
+            else if (E_NUI_DATABASE_VERSION_MISMATCH == ret)
+            {
+                ntk_error("Kinect for Windows database version mismatch.\n");
+            }
             else
+            {
                 alert(Messages::initError);
+                ntk_error("Kinect for Windows could not initialize.\n");
+            }
 
             return ret;
         }
+
+        ntk_info("Kinect for Windows: initialized successfully\n");
 
         ret = sensor->NuiImageStreamOpen(NUI_IMAGE_TYPE_COLOR, colorResolution, 0, 2, nextColorFrameEvent, &colorStreamHandle);
 
         if (FAILED(ret))
         {
             alert(Messages::colorStreamError);
+            ntk_error("Kinect for Windows: could not open color stream\n");
             return ret;
         }
+
+        ntk_info("Kinect for Windows: color stream opened.\n");
 
         ret = sensor->NuiImageStreamOpen(NUI_IMAGE_TYPE_DEPTH, depthResolution, 0, 2, nextDepthFrameEvent, &depthStreamHandle);
 
         if (FAILED(ret))
         {
             alert(Messages::depthStreamError);
+            ntk_error("Kinect for Windows: could not open depth stream\n");
             return ret;
         }
+
+        ntk_info("Kinect for Windows: depth stream opened.\n");
 
         ret = sensor->NuiImageStreamSetImageFrameFlags(depthStreamHandle, NUI_IMAGE_STREAM_FLAG_ENABLE_NEAR_MODE);
 
         if (FAILED(ret))
         {
-            alert(Messages::nearModeError);
-            return ret;
+            ntk_warn("Kinect for Windows: could not set near mode\n");
+            ntk_warn("Kinect for Windows: must be an Xbox Kinect.\n");
+            // FIXME: for some unknown reason, the estimateCalibration technique does not work
+            // with Kinect for Xbox. So use regular alignment in that case.
+            that->m_align_depth_to_color = true;
+            that->m_is_xbox_kinect = true;
+            ret = SEVERITY_SUCCESS;
         }
+
+        ntk_info("Kinect for Windows: flags set.\n");
 
         stopProcessingEvent = CreateEvent(0, FALSE, FALSE, 0);
         processingThreadHandle = CreateThread(NULL, 0, processThread, this, 0, NULL);       
@@ -241,8 +296,8 @@ public:
 
             if (that->m_near_mode_changed)
             {
-                ntk_dbg_print(that->m_near_mode_changed, 0);
-                ntk_dbg_print(that->m_near_mode, 0);
+                ntk_dbg_print(that->m_near_mode_changed, 1);
+                ntk_dbg_print(that->m_near_mode, 1);
                 if (that->m_near_mode)
                     sensor->NuiImageStreamSetImageFrameFlags(depthStreamHandle, NUI_IMAGE_STREAM_FLAG_ENABLE_NEAR_MODE);
                 else
@@ -322,41 +377,22 @@ public:
 
             uint16_t* buf = reinterpret_cast<uint16_t*>(lockedRect.pBits);
 
-            ntk_assert(width  == that->m_current_image.rawDepth().cols, "Bad width");
-            ntk_assert(height == that->m_current_image.rawDepth().rows, "Bad height");
+            ntk_assert(width  == that->m_current_image.rawDepth16bits().cols, "Bad width");
+            ntk_assert(height == that->m_current_image.rawDepth16bits().rows, "Bad height");
 
+            if (that->m_align_depth_to_color)
             {
                 QWriteLocker locker(&that->m_lock);
-                float* depth_buf = that->m_current_image.rawDepthRef().ptr<float>();
+                uint16_t* depth_buf = that->m_current_image.rawDepth16bitsRef().ptr<uint16_t>();
                 mapDepthFrameToRgbFrame(buf, depth_buf);
             }
-
-#if 0
-            for (int i = 0; i < width * height; ++i)
-                *depth_buf++ = float(NuiDepthPixelToDepth(*buf++)) / 1000.f;
-#endif
-
-            //DWORD frameWidth, frameHeight;
-        
-            //NuiImageResolutionToSize(imageFrame.eResolution, frameWidth, frameHeight);
-        
-            //// draw the bits to the bitmap
-            //RGBQUAD * rgbrun = m_rgbWk;
-            //USHORT * pBufferRun = (USHORT *)LockedRect.pBits;
-
-            //// end pixel is start + width*height - 1
-            //USHORT * pBufferEnd = pBufferRun + (frameWidth * frameHeight);
-
-            //assert( frameWidth * frameHeight <= ARRAYSIZE(m_rgbWk) );
-
-            //while ( pBufferRun < pBufferEnd )
-            //{
-            //    *rgbrun = Nui_ShortToQuad_Depth( *pBufferRun );
-            //    ++pBufferRun;
-            //    ++rgbrun;
-            //}
-
-            // m_pDrawDepth->Draw( (BYTE*) m_rgbWk, frameWidth * frameHeight * 4 );
+            else
+            {
+                QWriteLocker locker(&that->m_lock);
+                uint16_t* depth_buf = that->m_current_image.rawDepth16bitsRef().ptr<uint16_t>();
+                cv::Vec2w* depth_to_color_coords = that->m_current_image.depthToRgbCoordsRef().ptr<cv::Vec2w>();
+                extractDepthAndColorCoords (buf, depth_buf, depth_to_color_coords);
+            }
         }
         else
         {
@@ -489,15 +525,12 @@ public:
     }
 
     // FIXME: Untested.
-    cv::Point3f depthToRealWorld (cv::Point3f p)
+    cv::Point3f depthToRealWorld (const cv::Point3f& p)
     {
-        const int w = getDepthWidth();
-        const int h = getDepthHeight();
-
         Vector4 v = NuiTransformDepthImageToSkeleton(
-                    LONG(double(w - p.x - 1) / double(w)),
-                    LONG(double(p.y) / double(h)),
-                    USHORT(p.z * 1000) << 3,
+                    LONG(p.x),
+                    LONG(p.y),
+                    USHORT(p.z),
                     depthResolution
                     );
 
@@ -516,10 +549,10 @@ public:
 
         d >>= 3;
 
-        return cv::Point3f(x, y, float(d) / 1000.f);
+        return cv::Point3f(x, y, (float) d / 1000.f);
     }
 
-    void postprocessDepthData (float* depth_values)
+    void postprocessDepthData (uint16_t* depth_values)
     {
         static const int neighbors[6][2] = { {-1, 0}, {1, 0}, {0, -1}, {0, 1}, {-1, -1}, {1, 1} };
         const size_t depth_width = getDepthWidth();
@@ -531,8 +564,8 @@ public:
         for (int ref_r = 0; ref_r < depth_height; ++ref_r)
         for (int ref_c = 0; ref_c < depth_width; ++ref_c)
         {
-            float& d = depth_values[ref_r*depth_width+ref_c];
-            if (d > 1e-5) continue;
+            uint16_t& d = depth_values[ref_r*depth_width+ref_c];
+            if (d > 0) continue;
 
             for (int neighb = 0; neighb < 6; ++neighb)
             {
@@ -541,8 +574,8 @@ public:
 
                 if (c >= 0 && c < depth_width && r >= 0 && r < depth_height)
                 {
-                    float neighb_d = mappedDepthTmp[r*depth_width+c];
-                    if (neighb_d > 1e-5)
+                    uint16_t neighb_d = mappedDepthTmp[r*depth_width+c];
+                    if (neighb_d > 0)
                     {
                         d = mappedDepthTmp[r*depth_width+c];
                         break;
@@ -552,7 +585,7 @@ public:
         }
     }
 
-    void mapDepthFrameToRgbFrame (uint16_t* depth_d16, float* depth_values)
+    void extractDepthAndColorCoords (uint16_t* depth_d16, uint16_t* depth_values, cv::Vec2w* color_coords)
     {
         const size_t depth_width = getDepthWidth();
         const size_t depth_height = getDepthHeight();
@@ -567,7 +600,46 @@ public:
                     colorCoordinates
                     );
 
-        std::fill(depth_values, depth_values+depth_width*depth_height, 0.f);
+        for (int i = 0; i < depth_width*depth_height; ++i)
+        {
+            int c = colorCoordinates[i*2];
+            int r = colorCoordinates[i*2+1];
+            (*color_coords)[0] = r;
+            (*color_coords)[1] = c;
+            ++color_coords;
+        }
+
+        for (int i = 0; i < depth_width*depth_height; ++i)
+        {
+            uint16_t d = *depth_d16++;
+            if (d < NUI_IMAGE_DEPTH_MINIMUM_NEAR_MODE
+                    || d > NUI_IMAGE_DEPTH_MAXIMUM
+                    || d == NUI_IMAGE_DEPTH_TOO_FAR_VALUE
+                    || d == NUI_IMAGE_DEPTH_NO_VALUE
+                    || d == NUI_IMAGE_DEPTH_UNKNOWN_VALUE)
+                *depth_values = 0;
+            else
+                *depth_values = NuiDepthPixelToDepth(d);
+            ++depth_values;
+        }
+    }
+
+    void mapDepthFrameToRgbFrame (uint16_t* depth_d16, uint16_t* depth_values)
+    {
+        const size_t depth_width = getDepthWidth();
+        const size_t depth_height = getDepthHeight();
+        const size_t rgb_width = getColorWidth();
+
+        sensor->NuiImageGetColorPixelCoordinateFrameFromDepthPixelFrameAtResolution(
+                    colorResolution,
+                    depthResolution,
+                    depth_width*depth_height,
+                    depth_d16,
+                    depth_width*depth_height*2,
+                    colorCoordinates
+                    );
+
+        std::fill(depth_values, depth_values+depth_width*depth_height, 0);
 
         // FIXME: this is tricky. In our convention, we want a mapped depth image,
         // but keeping its original resolution. Kinect for Windows logically returns
@@ -580,15 +652,18 @@ public:
             int r = colorCoordinates[i*2+1] * ratio;
 
             uint16_t d = *depth_d16++;
-            if (d == NUI_IMAGE_DEPTH_MINIMUM || d == NUI_IMAGE_DEPTH_MAXIMUM || d == NUI_IMAGE_DEPTH_NO_VALUE)
+            if (d < NUI_IMAGE_DEPTH_MINIMUM_NEAR_MODE
+                    || d > NUI_IMAGE_DEPTH_MAXIMUM
+                    || d == NUI_IMAGE_DEPTH_NO_VALUE
+                    || d == NUI_IMAGE_DEPTH_TOO_FAR_VALUE
+                    || d == NUI_IMAGE_DEPTH_UNKNOWN_VALUE)
                 continue;
 
             if (c >= 0 && c < depth_width && r >= 0 && r < depth_height)
             {
-                
-                float depth = float(NuiDepthPixelToDepth(d)) / 1000.f;
+                uint16_t depth_in_mm = NuiDepthPixelToDepth(d);
                 int idx = r*depth_width+c;
-                depth_values[idx] = depth;
+                depth_values[idx] = depth_in_mm;
             }
         }
     }
@@ -601,7 +676,7 @@ public:
     INuiSensor* sensor;
 
     long* colorCoordinates;
-    float* mappedDepthTmp;
+    uint16_t* mappedDepthTmp;
 
     NuiResolution depthResolution;
     WinHandle nextDepthFrameEvent;
@@ -630,9 +705,10 @@ Kin4WinGrabber :: Kin4WinGrabber(Kin4WinDriver& driver, int camera_id) :
     m_camera_id(camera_id),
     m_near_mode(true),
     m_near_mode_changed(true),
-    m_high_resolution(false)
+    m_high_resolution(false),
+    m_align_depth_to_color(true),
+    m_is_xbox_kinect(false)
 {
-
 }
 
 Kin4WinGrabber :: Kin4WinGrabber(Kin4WinDriver& driver, const std::string& camera_serial) :
@@ -640,7 +716,9 @@ Kin4WinGrabber :: Kin4WinGrabber(Kin4WinDriver& driver, const std::string& camer
     m_driver(driver),
     m_camera_id(-1),
     m_camera_serial(camera_serial),
-    m_high_resolution(false)
+    m_high_resolution(false),
+    m_align_depth_to_color(true),
+    m_is_xbox_kinect(false)
 {
     //for (size_t i = 0; i < driver.numDevices(); ++i)
     //{
@@ -671,18 +749,20 @@ bool Kin4WinGrabber :: connectToDevice()
 {
     QMutexLocker ni_locker(&m_ni_mutex);
 
-    ntk_dbg(1) << format("[Kinect %x] connecting", this);
+    ntk_info("[Kinect %x] connecting\n", this);
 
     if (m_high_resolution)
         nui->colorResolution = NUI_IMAGE_RESOLUTION_1280x960;
 
     m_rgbd_image.rawRgbRef()   = Mat3b(nui->getColorHeight(), nui->getColorWidth());
-    m_rgbd_image.rawDepthRef() = Mat1f(nui->getDepthHeight(), nui->getDepthWidth ());
+    m_rgbd_image.rawDepth16bitsRef() = Mat1f(nui->getDepthHeight(), nui->getDepthWidth ());
+    m_rgbd_image.depthToRgbCoordsRef() = Mat2w(nui->getDepthHeight(), nui->getDepthWidth ());
     //m_rgbd_image.rawIntensityRef() = Mat1f(defaultFrameHeight, defaultFrameWidth);
 
     m_current_image.rawRgbRef()   = Mat3b(nui->getColorHeight(), nui->getColorWidth());
-    m_current_image.rawDepthRef() = Mat1f(nui->getDepthHeight(), nui->getDepthWidth ());
-    //m_current_image.rawIntensityRef() = Mat1f(defaultFrameHeight, defaultFrameWidth);
+    m_current_image.rawDepth16bitsRef() = Mat1f(nui->getDepthHeight(), nui->getDepthWidth ());
+    m_current_image.depthToRgbCoordsRef() = Mat2w(nui->getDepthHeight(), nui->getDepthWidth ());
+    //m_current_image.rawIntensityRef() = Mat1f(defaultFrameHeight, defaultFrameWidth);    
 
     // FIXME: This should be done at connectToDevice time.
     {
@@ -706,6 +786,9 @@ bool Kin4WinGrabber :: connectToDevice()
     m_rgbd_image.setCameraSerial(serial);
     m_current_image.setCameraSerial(serial);
 
+    m_rgbd_image.setGrabberType(grabberType());
+    m_current_image.setGrabberType(grabberType());
+
     if (false) // sample code using the accelerometer to identify each sensor.
     {
         cv::Point3f xyz;
@@ -724,7 +807,7 @@ bool Kin4WinGrabber :: disconnectFromDevice()
 {
     QMutexLocker ni_locker(&m_ni_mutex);
 
-    ntk_dbg(1) << format("[Kinect %x] disconnecting", this);
+    ntk_info("[Kinect %x] disconnecting\n", this);
 
     nui->unInit();
 
@@ -741,12 +824,20 @@ void Kin4WinGrabber::setNearMode(bool enable)
 {
     m_near_mode = enable;
     m_near_mode_changed = true;
-    ntk_dbg_print(m_near_mode, 0);
-    ntk_dbg_print(m_near_mode_changed, 0);
+    ntk_dbg_print(m_near_mode, 1);
+    ntk_dbg_print(m_near_mode_changed, 1);
 }
 
 void Kin4WinGrabber :: estimateCalibration()
 {
+    int rgb_width  = nui->getColorWidth();
+    int rgb_height = nui->getColorHeight();
+
+    int depth_width  = nui->getDepthWidth();
+    int depth_height = nui->getDepthHeight();
+
+    // Deduce depth focal from depth to world transforms.
+
     cv::Point3f p = nui->realWorldToDepth(cv::Point3f(0.f, 0.f, 1.f));
 
     double cx = p.x;
@@ -755,36 +846,9 @@ void Kin4WinGrabber :: estimateCalibration()
     p = nui->realWorldToDepth(cv::Point3f(1.f, 1.f, 1.f));
 
     double fx = (p.x - cx);
-    double fy = -(p.y - cy);
-
-    // These factors were estimated using chessboard calibration.
-    // They seem to accurately correct the bias in object sizes output by
-    // the default parameters.
-    // const double f_correction_factor = 528.0/570.34;
-    const double f_correction_factor = 1.0; // FIXME: what should it be for Kinect for Windows?
-    fx *= f_correction_factor;
-    fy *= f_correction_factor;
-
-    printf("fx=%f\n", fx);
-    printf("fy=%f\n", fy);
-    printf("cx=%f\n", cx);
-    printf("cy=%f\n", cy);
-    ntk_dbg_print(fy, 1);
-    ntk_dbg_print(cx, 1);
-    ntk_dbg_print(cy, 1);
-
-    // FIXME: this bias was not observed anymore in recent experiments.
-    // const double cy_correction_factor = 267.0/240.0;
-    const double cy_correction_factor = 1.0;
-    cy *= cy_correction_factor;
+    double fy = -(p.y - cy);  
 
     m_calib_data = new RGBDCalibration();
-
-    int rgb_width  = nui->getColorWidth();
-    int rgb_height = nui->getColorHeight();
-
-    int depth_width  = nui->getDepthWidth();
-    int depth_height = nui->getDepthHeight();
 
     m_calib_data->setRawRgbSize(cv::Size(rgb_width, rgb_height));
     m_calib_data->setRgbSize(cv::Size(rgb_width, rgb_height));
@@ -794,13 +858,16 @@ void Kin4WinGrabber :: estimateCalibration()
     float width_ratio = float(rgb_width)/depth_width;
     float height_ratio = float(rgb_height)/depth_height;
 
-    float rgb_fx = fx * width_ratio;
+    const float correction_factor = 535.0f/570.34f;
+    float rgb_fx = correction_factor * fx;
     // Pixels are square on a Kinect.
     // Image height gets cropped when going from 1280x1024 in 640x480.
     // The ratio remains 2.
     float rgb_fy = rgb_fx;
     float rgb_cx = cx * width_ratio;
     float rgb_cy = cy * width_ratio;
+
+    // Initialize intrinsics.
 
     m_calib_data->rgb_intrinsics = cv::Mat1d(3,3);
     setIdentity(m_calib_data->rgb_intrinsics);
@@ -813,8 +880,6 @@ void Kin4WinGrabber :: estimateCalibration()
     m_calib_data->rgb_distortion = 0.;
     m_calib_data->zero_rgb_distortion = true;
 
-    // After getAlternativeViewpoint, both camera have the same parameters.
-
     m_calib_data->depth_intrinsics = cv::Mat1d(3,3);
     setIdentity(m_calib_data->depth_intrinsics);
     m_calib_data->depth_intrinsics(0,0) = fx;
@@ -826,11 +891,85 @@ void Kin4WinGrabber :: estimateCalibration()
     m_calib_data->depth_distortion = 0.;
     m_calib_data->zero_depth_distortion = true;
 
-    m_calib_data->R = Mat1d(3,3);
-    setIdentity(m_calib_data->R);
+    // Estimate rgb intrinsics and stereo transform.
+    {
+        cv::RNG rng;
+        // Estimate rgb calibration.
+        std::vector< std::vector<Point3f> > model_points (30);
+        std::vector< std::vector<Point2f> > rgb_points (30);
+        std::vector< std::vector<Point2f> > depth_points (30);
+        for (int i = 0; i < model_points.size(); ++i)
+        {
+            for (int k = 0; k < 100; ++k)
+            {
+                int r = rng(depth_height);
+                int c = rng(depth_width);
+                int depth = rng.uniform(NUI_IMAGE_DEPTH_MINIMUM_NEAR_MODE, NUI_IMAGE_DEPTH_MAXIMUM_NEAR_MODE);
+                LONG color_c, color_r;
+                HRESULT ret = nui->sensor->NuiImageGetColorPixelCoordinatesFromDepthPixelAtResolution(
+                            nui->colorResolution,
+                            nui->depthResolution,
+                            0, c, r, depth, &color_c, &color_r);
+                if (!SUCCEEDED(ret))
+                    continue;
 
-    m_calib_data->T = Mat1d(3,1);
-    m_calib_data->T = 0.;
+                cv::Point3f world = nui->depthToRealWorld(cv::Point3f(c, r, depth));
+                // ntk_dbg_print (cv::Point2f(c, r), 1);
+                // ntk_dbg_print (cv::Point2f(color_c, color_r), 1);
+                // ntk_dbg_print (world, 1);
+
+                if (color_c >= 0 && color_c < rgb_width && color_r >= 0 && color_r < rgb_height)
+                {
+                    model_points[i].push_back(world);
+                    rgb_points[i].push_back(cv::Point2f(color_c, color_r));
+                    depth_points[i].push_back(cv::Point2f(c, r));
+                }
+            }
+        }
+
+        {
+            std::vector<Mat> rvecs, tvecs;
+            double reprojection_error = calibrateCamera(model_points, rgb_points, m_calib_data->rawRgbSize(),
+                                                        m_calib_data->rgb_intrinsics, m_calib_data->rgb_distortion,
+                                                        rvecs, tvecs, CV_CALIB_USE_INTRINSIC_GUESS | CV_CALIB_FIX_PRINCIPAL_POINT | CV_CALIB_FIX_ASPECT_RATIO | CV_CALIB_ZERO_TANGENT_DIST);
+            ntk_dbg_print (reprojection_error, 1);
+        }
+        m_calib_data->rgb_distortion = 0.f;
+
+        m_calib_data->T = 0.;
+        setIdentity(m_calib_data->R);
+
+        if (m_align_depth_to_color)
+        {
+            m_calib_data->rgb_intrinsics.copyTo(m_calib_data->depth_intrinsics);
+        }
+        else
+        {
+            cv::Mat E(3,3,CV_64F),F(3,3,CV_64F);
+            stereoCalibrate(model_points,
+                            rgb_points,
+                            depth_points,
+                            m_calib_data->rgb_intrinsics, m_calib_data->rgb_distortion,
+                            m_calib_data->depth_intrinsics, m_calib_data->depth_distortion,
+                            m_calib_data->raw_depth_size,
+                            m_calib_data->R, m_calib_data->T, E, F,
+                            TermCriteria(TermCriteria::COUNT+TermCriteria::EPS, 50, 1e-7),
+                            CALIB_FIX_INTRINSIC);
+
+            double stereo_reprojection_error = computeCalibrationError(F, rgb_points, depth_points);
+            ntk_dbg_print (stereo_reprojection_error, 1);
+        }
+    }
+
+    ntk_dbg_print (m_calib_data->rgb_intrinsics(0,0), 1);
+    ntk_dbg_print (m_calib_data->rgb_intrinsics(1,1), 1);
+    ntk_dbg_print (m_calib_data->rgb_intrinsics(0,2), 1);
+    ntk_dbg_print (m_calib_data->rgb_intrinsics(1,2), 1);
+
+    ntk_dbg_print (m_calib_data->depth_intrinsics(0,0), 1);
+    ntk_dbg_print (m_calib_data->depth_intrinsics(1,1), 1);
+    ntk_dbg_print (m_calib_data->depth_intrinsics(0,2), 1);
+    ntk_dbg_print (m_calib_data->depth_intrinsics(1,2), 1);
 
     m_calib_data->depth_pose = new Pose3D();
     m_calib_data->depth_pose->setCameraParametersFromOpencv(m_calib_data->depth_intrinsics);
@@ -840,7 +979,8 @@ void Kin4WinGrabber :: estimateCalibration()
                                           m_calib_data->R,
                                           m_calib_data->T);
 
-    m_calib_data->camera_type = "kin4win";
+    ntk_dbg_print (m_calib_data->rgb_pose->cvEulerRotation(), 1);
+    ntk_dbg_print (m_calib_data->rgb_pose->cvTranslation(), 1);
 }
 
 void Kin4WinGrabber :: run()
@@ -875,8 +1015,10 @@ void Kin4WinGrabber :: run()
             {
                 QWriteLocker locker(&m_lock);
                 m_current_image.swap(m_rgbd_image);
-                nui->postprocessDepthData(m_rgbd_image.rawDepthRef().ptr<float>());
-                cv::flip(m_rgbd_image.rawDepth(), m_rgbd_image.rawDepthRef(), 1);
+                // FIXME: move this to rgbd_processor.
+                if (m_align_depth_to_color)
+                    nui->postprocessDepthData(m_rgbd_image.rawDepth16bitsRef().ptr<uint16_t>());
+                cv::flip(m_rgbd_image.rawDepth16bits(), m_rgbd_image.rawDepth16bitsRef(), 1);
                 cv::flip(m_rgbd_image.rawRgb(), m_rgbd_image.rawRgbRef(), 1);
             }
 
@@ -909,11 +1051,11 @@ ntk::Kin4WinDriver::hasDll ()
 
 ntk::Kin4WinDriver::Kin4WinDriver()
 {
-    ntk_dbg(1) << "Initializing Kin4Win driver";
+    ntk_info("Initializing Kin4Win driver\n");
 
     int kin4win_sensors_count;
     WinRet ret = NuiGetSensorCount(&kin4win_sensors_count);
-    ntk_dbg_print(kin4win_sensors_count, 1);
+    ntk_dbg(1) << cv::format("Number of Kinect for Windows devices: %d\n", kin4win_sensors_count);
 
     for (int i = 0; i < kin4win_sensors_count; ++i)
     {

@@ -19,7 +19,7 @@
 
 #include <ntk/ntk.h>
 #include <ntk/utils/debug.h>
-#include <ntk/camera/openni_grabber.h>
+#include <ntk/camera/softkinetic_iisu_grabber.h>
 
 #include <QApplication>
 #include <QDir>
@@ -30,8 +30,6 @@ using namespace ntk;
 
 namespace opt
 {
-ntk::arg<bool> high_resolution("--highres", "High resolution color image.", 0);
-ntk::arg<int> kinect_id("--kinect-id", "Kinect id", 0);
 }
 
 int main(int argc, char **argv)
@@ -48,15 +46,8 @@ int main(int argc, char **argv)
     QApplication app (argc, argv);
     QDir::setCurrent(QApplication::applicationDirPath());
 
-    // Declare the global OpenNI driver. Only one can be instantiated in a program.
-    OpenniDriver ni_driver;
-
-    // Declare the frame grabber.
-    OpenniGrabber grabber(ni_driver, opt::kinect_id());
-
-    // High resolution 1280x1024 RGB Image.
-    if (opt::high_resolution())
-        grabber.setHighRgbResolution(true);
+    // Declare the grabber.
+    SoftKineticIisuGrabber grabber;
 
     // Start the grabber.
     grabber.connectToDevice();
@@ -65,12 +56,8 @@ int main(int argc, char **argv)
     // Holder for the current image.
     RGBDImage image;
 
-    // Image post processor. Compute mappings when RGB resolution is 1280x1024.
-    OpenniRGBDProcessor post_processor;
-
     namedWindow("depth");
     namedWindow("color");
-    namedWindow("users");
 
     char last_c = 0;
     while (true && (last_c != 27))
@@ -78,23 +65,18 @@ int main(int argc, char **argv)
         // Wait for a new frame, get a local copy and postprocess it.
         grabber.waitForNextFrame();
         grabber.copyImageTo(image);
-        post_processor.processImage(image);
 
-        // Prepare the depth view, mapped onto rgb frame.
-        cv::Mat1b debug_depth_img = normalize_toMat1b(image.mappedDepth());
+        // Prepare the depth view.
+        cv::Mat1b debug_depth_img = normalize_toMat1b(image.rawDepth());
 
         // Prepare the color view with skeleton and handpoint.
         cv::Mat3b debug_color_img;
-        image.rgb().copyTo(debug_color_img);
-
-        // Prepare the user mask view as colors.
-        cv::Mat3b debug_users;
-        image.fillRgbFromUserLabels(debug_users);
+        image.rawRgb().copyTo(debug_color_img);
 
         imshow("depth", debug_depth_img);
         imshow("color", debug_color_img);
-        imshow("users", debug_users);
         last_c = (cv::waitKey(10) & 0xff);
     }
     grabber.stop();
 }
+

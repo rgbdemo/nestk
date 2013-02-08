@@ -20,6 +20,8 @@
 #ifndef NTK_MESH_PCL_UTILS_HPP
 #define NTK_MESH_PCL_UTILS_HPP
 
+#include <ntk/camera/rgbd_image.h>
+
 #include "pcl_utils.h"
 
 #include <pcl/filters/passthrough.h>

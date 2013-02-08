@@ -123,7 +123,7 @@ public:
     * 
     * Note that : The first bit, is the inverse of the hamming parity. This avoids the 0 0 0 0 0 to be valid
     */
-    static cv::Mat createMarkerImage(int id,int size) throw (cv::Exception);
+    static cv::Mat createMarkerImage(int id,int size);
     
     
 private:

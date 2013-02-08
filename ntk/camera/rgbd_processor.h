@@ -53,7 +53,8 @@ public:
       FlipColorImage = 0x40000, // horizontally flip the color image
       NiteProcessed = 0x80000, // raw = mapped = postprocessed
       FilterBilateral = 0x100000,
-      ComputeHighQualityNormals = 0x200000 // compute normals (required by FilterNormals)
+      ComputeHighQualityNormals = 0x200000, // compute normals (required by FilterNormals)
+      ErodeDepthBorders = 0x400000 // erode depth image borders.
     };
 
     RGBDProcessorFlags(int flags) { m_flags = flags; }
@@ -97,7 +98,7 @@ public:
   RGBDProcessorFlags getFilterFlags() const { return m_flags; }
 
   /*! Set the depth range. */
-  void setMinDepth(float meters) { m_min_depth = meters; }
+  void setMinDepth(float meters) { m_min_depth = std::max(meters, 1e-5f); }
   float minDepth() const { return m_min_depth; }
   void setMaxDepth(float meters) { m_max_depth = meters; }
   float maxDepth() const { return m_max_depth; }
@@ -158,6 +159,7 @@ protected:
   virtual void computeKinectDepthBaseline();
   virtual void removeSmallStructures();
   virtual void fillSmallHoles();
+  virtual void erodeDepthBorders();
 
 protected:
   RGBDImage* m_image;
@@ -193,12 +195,17 @@ typedef FreenectRGBDProcessor KinectProcessor;
 class OpenniRGBDProcessor : public RGBDProcessor
 {
 public:
-  OpenniRGBDProcessor()
-    : RGBDProcessor()
-  {
-    // Everything is done by the grabber.
-    setFilterFlags(RGBDProcessorFlags::NiteProcessed | RGBDProcessorFlags::ComputeMapping);
-  }
+  OpenniRGBDProcessor();
+
+protected:
+  virtual void computeMappings();
+};
+
+/*! RGBDProcessor with default parameters for OpenNI/Nite. */
+class Kin4winRGBDProcessor : public OpenniRGBDProcessor
+{
+public:
+  Kin4winRGBDProcessor();
 
 protected:
   virtual void computeMappings();
@@ -211,11 +218,7 @@ typedef OpenniRGBDProcessor NiteProcessor;
 class SoftKineticRGBDProcessor : public RGBDProcessor
 {
 public:
-  SoftKineticRGBDProcessor()
-    : RGBDProcessor()
-  {
-      setFilterFlags(RGBDProcessorFlags::FilterMedian | RGBDProcessorFlags::FilterEdges);
-  }
+  SoftKineticRGBDProcessor();
 };
 
 class RGBDProcessorFactory
@@ -223,15 +226,15 @@ class RGBDProcessorFactory
 public:
     struct Params
     {
-        Params() : camera_type("kinect-ni"), do_mapping(true)
+        Params() : grabber_type("openni"), do_mapping(true)
         {}
 
-        std::string camera_type;
+        std::string grabber_type;
         bool do_mapping;
     };
 
 public:
-    RGBDProcessor* createProcessor(const RGBDProcessorFactory::Params& params);
+    static RGBDProcessor* createProcessor(const RGBDProcessorFactory::Params& params);
 };
 
 /*!

@@ -20,12 +20,12 @@ struct Outlet::Impl : public ntk::EventListener
         Hub::getInstance()->detachOutlet(that);
     }
 
-    void subscribe (String name)
+    void subscribe (const String& name)
     {
         Hub::getInstance()->subscribeOutlet(that, name);
     }
 
-    void unsubscribe (String name)
+    void unsubscribe (const String& name)
     {
         Hub::getInstance()->unsubscribeOutlet(that, name);
     }

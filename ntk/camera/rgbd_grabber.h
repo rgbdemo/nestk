@@ -22,7 +22,7 @@
 
 #include <ntk/core.h>
 #include <ntk/thread/utils.h>
-#include <ntk/camera/calibration.h>
+#include <ntk/camera/rgbd_image.h>
 #include <ntk/thread/event.h>
 
 #include <QThread>
@@ -84,6 +84,9 @@ public:
   virtual void setCameraSerial(const std::string& serial) { m_camera_serial = serial; }
   const std::string& cameraSerial() const { return m_camera_serial; }
 
+  /*! Return an identifier of the camera type. */
+  virtual std::string grabberType () const = 0;
+
   /*! Set the tilt angle for motorized grabbers such as Kinect. */
   virtual void setTiltAngle(int angle) {}
 
@@ -94,13 +97,13 @@ public:
   virtual double frameRate() const { return m_framerate; }
 
   /*! Set the calibration data that will be included in each image. */
-  void setCalibrationData(ntk::RGBDCalibration& data)
-  { m_calib_data = &data; m_rgbd_image.setCalibration(&data); }
+  void setCalibrationData(ntk::RGBDCalibrationPtr data)
+  { m_calib_data = data; m_rgbd_image.setCalibration(data); }
 
-  ntk::RGBDCalibration* calibrationData()
+  ntk::RGBDCalibrationPtr calibrationData()
   { return m_calib_data; }
 
-  const ntk::RGBDCalibration* calibrationData() const
+  ntk::RGBDCalibrationConstPtr calibrationData() const
   { return m_calib_data; }
 
   /*! Thread safe deep copy. */
@@ -159,13 +162,13 @@ public:
 protected:
   bool threadShouldExit () const;
   void advertiseNewFrame();
-  float getCurrentTimestamp();
+  int getCurrentTimestamp();
 
 protected:
   mutable RecursiveQReadWriteLock m_lock;
   mutable QMutex m_condition_lock;
   QWaitCondition m_condition;
-  ntk::RGBDCalibration* m_calib_data;
+  ntk::RGBDCalibrationPtr m_calib_data;
   RGBDImage m_rgbd_image;
   uint64 m_last_frame_tick;
   double m_framerate;

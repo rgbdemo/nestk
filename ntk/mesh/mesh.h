@@ -21,9 +21,7 @@
 # define NTK_MESH_MESH_H
 
 #include <ntk/core.h>
-#include <ntk/camera/calibration.h>
-#include <ntk/geometry/plane.h>
-#include <ntk/geometry/pose_3d.h>
+
 #include <ntk/utils/opencv_utils.h>
 #include <ntk/thread/event.h>
 
@@ -32,6 +30,9 @@
 
 namespace ntk
 {
+
+  class Pose3D;
+  class Plane;
 
   struct Patch
   {
@@ -192,17 +193,28 @@ namespace ntk
 
   public:
     void loadFromPlyFile(const char* filename);
-    void saveToPlyFile(const char* filename) const;
+    void saveToPlyFile(const char* filename, bool use_binary = false) const;
+    void saveToAsciiPlyFile(const char* filename) const;
+    void saveToBinaryPlyFile(const char* filename) const;
+
+    void saveToObjFile(const char* filename) const;
+    void saveToStlFile(const char* filename) const;
+
     cv::Point3f centerize();
     cv::Point3f center() const;
     cv::Vec3f getFaceNormal(int face_i) const;
+
+    void addPlane(const cv::Point3f& center, const cv::Point3f& normal, const cv::Point3f& sizes);
     void addCube(const cv::Point3f& center, const cv::Point3f& sizes, const cv::Vec3b& color = cv::Vec3b(255,0,0));
     void addSurfel(const Surfel& surfel);
     void addPointFromSurfel(const Surfel& surfel);
     void addMesh(const ntk::Mesh& rhs);
+
     void applyTransform(const Pose3D& pose);
     void applyScaleTransform(float x_scale, float y_scale, float z_scale);
     void computeNormalsFromFaces();
+    void invertFaceNormals();
+    void duplicateSharedVertices();
     void computeVertexFaceMap(std::vector< std::vector<int> >& faces_per_vertex) const;
     void computeFaceNeighbors(std::vector< std::vector<int> >& faces_neighbors,
                               const std::vector< std::vector<int> >& faces_per_vertex) const;

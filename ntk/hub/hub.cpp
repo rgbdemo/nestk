@@ -7,15 +7,39 @@
 #include <QHash>
 #include <QMutex>
 #include <QMutexLocker>
+#include <QCoreApplication>
+#include <QObject>
 
 namespace ntk { namespace hub {
+
+static Hub* singleton = 0;
 
 Hub*
 Hub::getInstance()
 {
-    static Hub instance;
+    static Hub* instance = singleton = new Hub;
 
-    return &instance;
+    static bool leaked = true;
+
+    if (0 == singleton)
+        return 0;
+
+    if (!leaked)
+        return instance;
+
+    static QCoreApplication* app = 0;
+
+    if (0 == app)
+        app = QCoreApplication::instance();
+
+    if (0 == app)
+        return instance;
+
+    ::QObject::connect(app, SIGNAL(aboutToQuit()), instance->impl, SLOT(quit));
+
+    leaked = false;
+
+    return instance;
 }
 
 //------------------------------------------------------------------------------
@@ -60,6 +84,13 @@ Hub::postUpdate (Update* update)
     EventBroadcaster* sender = reinterpret_cast<EventBroadcaster*>(qHash(update->name.toAscii()));
 
     newEvent(sender, HubUpdatePtr(update));
+}
+
+void
+Hub::quit ()
+{
+    delete singleton;
+    singleton = 0;
 }
 
 //------------------------------------------------------------------------------
@@ -131,8 +162,8 @@ FWD_IMPL_0(void, Hub, disable)
 
 FWD_IMPL_1(void, Hub,      attachOutlet, Outlet*)
 FWD_IMPL_1(void, Hub,      detachOutlet, Outlet*)
-FWD_IMPL_2(void, Hub,   subscribeOutlet, Outlet*, String)
-FWD_IMPL_2(void, Hub, unsubscribeOutlet, Outlet*, String)
+FWD_IMPL_2(void, Hub,   subscribeOutlet, Outlet*, const String&)
+FWD_IMPL_2(void, Hub, unsubscribeOutlet, Outlet*, const String&)
 FWD_IMPL_1(void, Hub,       startOutlet, Outlet*)
 FWD_IMPL_1(void, Hub,        stopOutlet, Outlet*)
 

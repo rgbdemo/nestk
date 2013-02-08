@@ -21,7 +21,6 @@
 #include <ntk/mesh/mesh_generator.h>
 #include <ntk/utils/debug.h>
 #include <ntk/camera/openni_grabber.h>
-#include <ntk/gesture/body_event.h>
 
 #include <QApplication>
 #include <QDir>

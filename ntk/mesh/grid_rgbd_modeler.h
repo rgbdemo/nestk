@@ -20,7 +20,7 @@
 #pragma once
 
 #include <ntk/core.h>
-#include <ntk/camera/calibration.h>
+#include <ntk/camera/rgbd_calibration.h>
 #include <ntk/mesh/mesh.h>
 #include <ntk/mesh/rgbd_modeler.h>
 #include <ntk/utils/opencv_utils.h>

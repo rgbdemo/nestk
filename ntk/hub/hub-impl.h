@@ -9,13 +9,7 @@
 #include <QHash>
 #include <QSet>
 #include <QMutex>
-
-namespace ntk { namespace hub {
-
-struct Hub::Impl
-{
-public:
-    Impl (Hub* that);
+#include <QObject>
 
 #define HUB_IMPL_MEMBER(name, ...) \
     mutable QMutex      name##Mutex;     \
@@ -28,12 +22,23 @@ public:
 #define HUB_IMPL_VALUES(Type, type, Val)                            \
     HUB_IMPL_MEMBER_TYPEDEF(Type##Values, type##Values, QHash<String, Val>)
 
+#define HUB_IMPL_LOCKED(name) QMutexLocker _(&name##Mutex);
+
 #define HUB_TYPE(Type, type, Arg, Ret, Val) \
     HUB_IMPL_VALUES(Type, type, Val)
-        HUB_TYPES()
-#undef  HUB_TYPE
 
-#define HUB_IMPL_LOCKED(name) QMutexLocker _(&name##Mutex);
+namespace ntk { namespace hub {
+
+struct Hub::Impl : QObject
+{
+    Q_OBJECT
+
+public:
+     Impl (Hub* that);
+    ~Impl ();
+
+public slots:
+     void quit ();
 
 public: // Names
     bool maybeAddName (const QString& name)
@@ -85,6 +90,9 @@ public: // Names
         return *i;
     }
 
+public:
+    HUB_TYPES()
+
 public: // Names
     static const QString emptyName;
     struct Dictionary
@@ -97,41 +105,16 @@ public: // Names
 public: // Outlets
     void      attachOutlet (Outlet* outlet);
     void      detachOutlet (Outlet* outlet);
-    void   subscribeOutlet (Outlet* outlet, String name);
-    void unsubscribeOutlet (Outlet* outlet, String name);
+    void   subscribeOutlet (Outlet* outlet, const String& name);
+    void unsubscribeOutlet (Outlet* outlet, const String& name);
     void       startOutlet (Outlet* outlet);
     void        stopOutlet (Outlet* outlet);
 
 public: // Activity
-    void setEnabled (bool enabled_)
-    {
-        HUB_IMPL_LOCKED(enabled)
-
-        enabled = enabled_;
-    }
-    void  enable () { setEnabled(true);  }
-    void disable () { setEnabled(false); }
-
-    bool isActive (const QString& name)
-    {
-        {
-            HUB_IMPL_LOCKED(enabled)
-
-            if (!enabled)
-                return false;
-        }
-
-        {
-            HUB_IMPL_LOCKED(activeSubscriptions);
-
-            const ActiveSubscriptions::ConstIterator i = activeSubscriptions.find(name);
-
-            if (i == activeSubscriptions.end())
-                return false;
-
-            return 0 < i.value();
-        }
-    }
+    void setEnabled (bool enabled);
+    void     enable ();
+    void    disable ();
+    bool   isActive (const QString& name);
 
 private:
     HUB_IMPL_MEMBER(enabled, bool)
@@ -157,3 +140,5 @@ private:
 };
 
 } }
+
+#undef HUB_TYPE

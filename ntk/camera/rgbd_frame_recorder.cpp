@@ -32,6 +32,8 @@
 #include <pcl/io/pcd_io.h>
 #endif
 
+#include <fstream>
+
 using namespace cv;
 
 namespace ntk
@@ -75,9 +77,9 @@ namespace ntk
       std::string path = m_dir.absolutePath().toStdString();
       if (m_include_serial)
           path += "/" + image.cameraSerial();
-      path += format("/view%04d", m_frame_index);
+      path += format("/view", m_frame_index);
       if (m_include_timestamp)
-          path += format("-%f", image.timestamp());
+          path += format("-%08d", image.timestamp());
       return path;
   }
 
@@ -98,6 +100,49 @@ namespace ntk
       ++m_frame_index;
   }
 
+  void RGBDFrameRecorder :: writeHeader(const RGBDImageHeader& header, const std::string& frame_dir)
+  {
+      QDir dir (frame_dir.c_str());
+      dir.mkpath("raw");
+
+      std::string filename;
+
+      if (!header.camera_serial.empty())
+      {
+          filename = cv::format("%s/serial", frame_dir.c_str());
+          std::ofstream f (filename.c_str());
+          f << header.camera_serial;
+          f.close ();
+      }
+
+      {
+          filename = cv::format("%s/timestamp", frame_dir.c_str());
+          std::ofstream f (filename.c_str());
+          f << header.timestamp;
+          f.close ();
+      }
+
+      if (!header.grabber_type.empty())
+      {
+          filename = cv::format("%s/grabber-type", frame_dir.c_str());
+          std::ofstream f (filename.c_str());
+          f << header.grabber_type;
+          f.close ();
+      }
+
+      if (m_save_rgb_pose && header.estimatedWorldRgbPose().isValid())
+      {
+        filename = cv::format("%s/rgb_pose.avs", frame_dir.c_str());
+        header.estimatedWorldRgbPose().saveToAvsFile(filename.c_str());
+      }
+
+      if (m_save_calibration && header.calibration)
+      {
+        filename = cv::format("%s/calibration.yml", frame_dir.c_str());
+        header.calibration->saveToFile(filename.c_str());
+      }
+  }
+
   void RGBDFrameRecorder :: writeFrame(const RGBDImage& image, const std::string& frame_dir)
   {
       std::string raw_frame_dir = format("%s/raw", frame_dir.c_str(), m_frame_index);
@@ -105,19 +150,9 @@ namespace ntk
       QDir dir (frame_dir.c_str());
       dir.mkpath("raw");
 
+      writeHeader (image.header (), frame_dir);
+
       std::string filename;
-
-      if (m_save_rgb_pose && image.estimatedWorldRgbPose().isValid())
-      {
-        filename = cv::format("%s/rgb_pose.avs", frame_dir.c_str());
-        image.estimatedWorldRgbPose().saveToAvsFile(filename.c_str());
-      }
-
-      if (m_save_calibration && image.calibration())
-      {
-        filename = cv::format("%s/calibration.yml", frame_dir.c_str());
-        image.calibration()->saveToFile(filename.c_str());
-      }
 
       if (!m_only_raw)
       {
@@ -136,7 +171,7 @@ namespace ntk
       }
 
       if (m_use_compressed_format)
-          filename = cv::format("%s/raw/color.png", frame_dir.c_str());
+          filename = cv::format("%s/raw/color.jpg", frame_dir.c_str());
       else
           filename = cv::format("%s/raw/color.bmp", frame_dir.c_str());
       imwrite(filename, image.rawRgb());
@@ -179,6 +214,28 @@ namespace ntk
         {
           filename = cv::format("%s/raw/depth.yml", frame_dir.c_str());
           imwrite_yml(filename.c_str(), image.rawDepth());
+        }
+      }
+
+      if (!image.rawDepth16bits().empty())
+      {
+        if (m_use_binary_raw)
+        {
+            if (m_use_compressed_format)
+            {
+                filename = cv::format("%s/raw/depth16bits.lzf", frame_dir.c_str());
+                imwrite_Mat1w_lzf(filename.c_str(), image.rawDepth16bits());
+            }
+            else
+            {
+                filename = cv::format("%s/raw/depth16bits.raw", frame_dir.c_str());
+                imwrite_Mat1w_raw(filename.c_str(), image.rawDepth16bits());
+            }
+        }
+        else
+        {
+          filename = cv::format("%s/raw/depth16bits.yml", frame_dir.c_str());
+          imwrite_yml(filename.c_str(), image.rawDepth16bits());
         }
       }
 

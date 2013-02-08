@@ -2,6 +2,7 @@
 
 #include "relative_pose_estimator_rgbd_icp.h"
 
+#include <ntk/camera/rgbd_processor.h>
 #include <ntk/mesh/pcl_utils.h>
 #include <ntk/mesh/mesh_generator.h>
 #include <ntk/utils/time.h>

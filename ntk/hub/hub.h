@@ -5,16 +5,14 @@
 
 namespace ntk { namespace hub {
 
-struct Outlet;
+class Outlet;
 
 //------------------------------------------------------------------------------
 
 class Hub
-: public ntk::AsyncEventListener
-, public ntk::EventBroadcaster
+: public  ntk::EventBroadcaster
+, private ntk::AsyncEventListener
 {
-    Q_OBJECT
-
 public:
     static Hub* getInstance ();
 
@@ -61,13 +59,14 @@ public:
 public:
     void      attachOutlet (Outlet* outlet);
     void      detachOutlet (Outlet* outlet);
-    void   subscribeOutlet (Outlet* outlet, String name);
-    void unsubscribeOutlet (Outlet* outlet, String name);
+    void   subscribeOutlet (Outlet* outlet, const String& name);
+    void unsubscribeOutlet (Outlet* outlet, const String& name);
     void       startOutlet (Outlet* outlet);
     void        stopOutlet (Outlet* outlet);
 
 private:
     void postUpdate (Update* update);
+    void quit ();
 
 private:
     struct Impl;

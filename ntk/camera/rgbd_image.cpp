@@ -21,9 +21,10 @@
 #include <ntk/utils/opencv_utils.h>
 #include <ntk/utils/stl.h>
 #include <ntk/camera/rgbd_processor.h>
-#include <ntk/camera/calibration.h>
 
 #include <ntk/image/feature.h>
+
+#include <fstream>
 
 #include <QDir>
 
@@ -34,6 +35,7 @@ namespace ntk
 {
 struct Skeleton
 {};
+
 }
 #endif
 
@@ -42,24 +44,117 @@ using namespace cv;
 namespace ntk
 {
 
+RGBDImageHeader::RGBDImageHeader()
+    : camera_serial("unknown")
+    , timestamp(-1)
+    , grabber_type("unknown")
+    , calibration (0)
+    , filter_min_depth (0.1f)
+    , filter_max_depth (10.f)
+{
+}
+
+void RGBDImageHeader::loadFromDir(const std::string &dir, RGBDCalibrationConstPtr input_calib)
+{
+    this->directory = dir;
+
+    RGBDCalibrationConstPtr calib;
+    if (!input_calib && is_file(dir+"/calibration.yml"))
+    {
+        // FIXME: use smart pointer.
+        RGBDCalibrationPtr new_calib = new RGBDCalibration;
+        new_calib->loadFromFile((dir+"/calibration.yml").c_str());
+        calib = new_calib;
+    }
+    else
+    {
+        calib = input_calib;
+    }
+
+    this->calibration = calib;
+
+    if (is_file(dir+"/serial"))
+    {
+        std::ifstream f ((dir+"/serial").c_str());
+        f >> camera_serial;
+        f.close ();
+    }
+
+    if (is_file(dir+"/grabber-type"))
+    {
+        std::ifstream f ((dir+"/grabber-type").c_str());
+        f >> grabber_type;
+        f.close ();
+    }
+
+    if (is_file(dir+"/timestamp"))
+    {
+        std::ifstream f ((dir+"/timestamp").c_str());
+        f >> timestamp;
+        f.close ();
+    }
+
+    if (is_file(dir + "/rgb_pose.avs") && calib)
+    {
+        ntk::Pose3D pose;
+        pose.parseAvsFile((dir + "/rgb_pose.avs").c_str());
+        setEstimatedWorldRgbPose(pose);
+    }
+}
+
+std::string RGBDImageHeader::getUniqueId() const
+{
+    // FIXME: cache this.
+    return cv::format("%s-%08d", camera_serial.c_str(), timestamp);
+}
+
+Pose3D RGBDImageHeader :: sensorDepthPose() const
+{
+    if (0 == calibration)
+        return Pose3D();
+    return *(calibration->depth_pose);
+}
+
+Pose3D RGBDImageHeader :: sensorRgbPose() const
+{
+    if (0 == calibration)
+        return Pose3D();
+    Pose3D pose = sensorDepthPose();
+    pose.toRightCamera(calibration->rgb_intrinsics, calibration->R, calibration->T);
+    return pose;
+}
+
+Pose3D RGBDImageHeader :: estimatedWorldRgbPose() const
+{
+    ntk_assert(calibration, "Calibration must be available!");
+    Pose3D pose = estimatedWorldDepthPose();
+    if (!pose.isValid())
+        return pose;
+    pose.toRightCamera(calibration->rgb_intrinsics, calibration->R, calibration->T);
+    return pose;
+}
+
+void RGBDImageHeader :: setEstimatedWorldRgbPose(const Pose3D& pose)
+{
+    ntk_assert(calibration, "Calibration must be available!");
+    estimated_world_depth_pose = pose;
+    estimated_world_depth_pose.toLeftCamera(calibration->depth_intrinsics, calibration->R, calibration->T);
+}
+
 RGBDImage::RGBDImage()
-    : m_calibration(0),
-      m_skeleton(0),
-      m_camera_serial("unknown"),
-      m_timestamp(0)
+    : m_skeleton(0)
 {
 }
 
 RGBDImage::RGBDImage(const RGBDImage& rhs)
     : EventData(rhs),
-      m_calibration(0),
       m_skeleton(0)
 {
     rhs.copyTo(*this);
 }
 
 RGBDImage::RGBDImage(const std::string& dir,
-                     const RGBDCalibration* calib,
+                     RGBDCalibrationConstPtr calib,
                      RGBDProcessor* processor)
     :  m_skeleton(0)
 {
@@ -81,37 +176,23 @@ RGBDImage :: ~RGBDImage()
 std::string RGBDImage::getUniqueId() const
 {
     // FIXME: cache this.
-    return cv::format("%s-%f", cameraSerial().c_str(), timestamp());
+    return m_header.getUniqueId ();
 }
 
 void RGBDImage :: loadFromFile(const std::string& dir,
-                               const RGBDCalibration* calib)
+                               RGBDCalibrationConstPtr calib)
 {
     ntk_assert(0, "not implemented.");
 }
 
 // Load from a viewXXXX directory.
 void RGBDImage :: loadFromDir(const std::string& dir,
-                              const RGBDCalibration* input_calib,
+                              RGBDCalibrationConstPtr input_calib,
                               RGBDProcessor* processor)
 {
-    m_directory = dir;
-    m_timestamp = 0;
     ntk_dbg_print(dir, 2);
 
-    const RGBDCalibration* calib = 0;
-    if (!input_calib && is_file(dir+"/calibration.yml"))
-    {
-        // FIXME: use smart pointer.
-        RGBDCalibration* new_calib = new RGBDCalibration;
-        new_calib->loadFromFile((dir+"/calibration.yml").c_str());
-        calib = new_calib;
-    }
-    else
-    {
-        calib = input_calib;
-    }
-    setCalibration(calib);
+    m_header.loadFromDir (dir, input_calib);
 
     if (!is_file(dir+"/raw/color.png") && is_file(dir+"/color.png"))
     {
@@ -131,6 +212,11 @@ void RGBDImage :: loadFromDir(const std::string& dir,
             rawRgbRef() = imread(dir + "/raw/color.bmp", 1);
             ntk_ensure(rawRgbRef().data, ("Could not read raw color image from " + dir).c_str());
         }
+        else if (is_file(dir + "/raw/color.jpg"))
+        {
+            rawRgbRef() = imread(dir + "/raw/color.jpg", 1);
+            ntk_ensure(rawRgbRef().data, ("Could not read raw color image from " + dir).c_str());
+        }
 
         if (is_file(dir + "/raw/depth.raw"))
         {
@@ -141,6 +227,27 @@ void RGBDImage :: loadFromDir(const std::string& dir,
         {
             rawDepthRef() = imread_yml(dir + "/raw/depth.yml");
             ntk_ensure(rawDepthRef().data, ("Could not read raw depth image from " + dir).c_str());
+        }
+
+        if (is_file(dir + "/raw/depth16bits.raw"))
+        {
+            rawDepth16bitsRef() = imread_Mat1w_raw(dir + "/raw/depth16bits.raw");
+            ntk_ensure(rawDepth16bitsRef().data, ("Could not read raw depth image from " + dir).c_str());
+        }
+        else if (is_file(dir + "/raw/depth16bits.yml"))
+        {
+            rawDepth16bitsRef() = imread_yml(dir + "/raw/depth16bits.yml");
+            ntk_ensure(rawDepth16bitsRef().data, ("Could not read raw depth image from " + dir).c_str());
+        }
+        else if (is_file(dir + "/raw/depth16bits.lzf"))
+        {
+            rawDepth16bitsRef() = imread_Mat1w_lzf(dir + "/raw/depth16bits.lzf");
+            ntk_ensure(rawDepth16bitsRef().data, ("Could not read lzf depth image from " + dir).c_str());
+        }
+        else if (is_file(dir + "/raw/depth16bits.lz4"))
+        {
+            rawDepth16bitsRef() = imread_Mat1w_openni_lz4(dir + "/raw/depth16bits.lz4");
+            ntk_ensure(rawDepth16bitsRef().data, ("Could not read lz4 depth image from " + dir).c_str());
         }
 
         if (is_file(dir + "/raw/amplitude.raw"))
@@ -174,13 +281,6 @@ void RGBDImage :: loadFromDir(const std::string& dir,
             rawIntensityRef() = imread(dir + "/raw/intensity.png", 0);
             ntk_ensure(rawIntensityRef().data, ("Could not read raw intensity image from " + dir).c_str());
         }
-
-        if (is_file(dir + "/rgb_pose.avs") && calib)
-        {
-            ntk::Pose3D pose;
-            pose.parseAvsFile((dir + "/rgb_pose.avs").c_str());
-            setEstimatedWorldRgbPose(pose);
-        }
     }
 
     if (processor)
@@ -196,6 +296,7 @@ void RGBDImage :: copyTo(RGBDImage& other) const
     m_mapped_depth.copyTo(other.m_mapped_depth);
     m_depth_mask.copyTo(other.m_depth_mask);
     m_mapped_depth_mask.copyTo(other.m_mapped_depth_mask);
+    m_depth_to_rgb_coord.copyTo(other.m_depth_to_rgb_coord);
     m_normal.copyTo(other.m_normal);
     m_amplitude.copyTo(other.m_amplitude);
     m_intensity.copyTo(other.m_intensity);
@@ -203,12 +304,9 @@ void RGBDImage :: copyTo(RGBDImage& other) const
     m_raw_intensity.copyTo(other.m_raw_intensity);
     m_raw_amplitude.copyTo(other.m_raw_amplitude);
     m_raw_depth.copyTo(other.m_raw_depth);
+    m_raw_depth_16bits.copyTo(other.m_raw_depth_16bits);
     m_user_labels.copyTo(other.m_user_labels);
-    other.m_calibration = m_calibration;
-    other.m_directory = m_directory;
-    other.m_camera_serial = m_camera_serial;
-    other.m_timestamp = m_timestamp;
-    other.m_estimated_world_depth_pose = m_estimated_world_depth_pose;
+    other.m_header = m_header;
 #if defined(USE_NITE) || defined(NESTK_USE_NITE)
     if (m_skeleton)
     {
@@ -236,6 +334,7 @@ void RGBDImage :: swap(RGBDImage& other)
     cv::swap(m_mapped_depth, other.m_mapped_depth);
     cv::swap(m_depth_mask, other.m_depth_mask);
     cv::swap(m_mapped_depth_mask, other.m_mapped_depth_mask);
+    cv::swap(m_depth_to_rgb_coord, other.m_depth_to_rgb_coord);
     cv::swap(m_normal, other.m_normal);
     cv::swap(m_amplitude, other.m_amplitude);
     cv::swap(m_intensity, other.m_intensity);
@@ -243,13 +342,9 @@ void RGBDImage :: swap(RGBDImage& other)
     cv::swap(m_raw_intensity, other.m_raw_intensity);
     cv::swap(m_raw_amplitude, other.m_raw_amplitude);
     cv::swap(m_raw_depth, other.m_raw_depth);
+    cv::swap(m_raw_depth_16bits, other.m_raw_depth_16bits);
     cv::swap(m_user_labels, other.m_user_labels);
-    std::swap(m_calibration, other.m_calibration);
-    std::swap(m_directory, other.m_directory);
-    std::swap(m_skeleton, other.m_skeleton);
-    std::swap(m_camera_serial, other.m_camera_serial);
-    std::swap(m_timestamp, other.m_timestamp);
-    std::swap(m_estimated_world_depth_pose, other.m_estimated_world_depth_pose);
+    std::swap(m_header, other.m_header);
 }
 
 void RGBDImage :: fillRgbFromUserLabels(cv::Mat3b& img) const
@@ -277,37 +372,6 @@ void RGBDImage :: fillRgbFromUserLabels(cv::Mat3b& img) const
         else
             img(r,c) = colors[label%nb_colors];
     }
-}
-
-Pose3D RGBDImage :: sensorDepthPose() const
-{
-    if (0 == m_calibration)
-        return Pose3D();
-    return *calibration()->depth_pose;
-}
-
-Pose3D RGBDImage :: sensorRgbPose() const
-{
-    if (0 == m_calibration)
-        return Pose3D();
-    Pose3D pose = sensorDepthPose();
-    pose.toRightCamera(m_calibration->rgb_intrinsics, m_calibration->R, m_calibration->T);
-    return pose;
-}
-
-Pose3D RGBDImage :: estimatedWorldRgbPose() const
-{
-    ntk_assert(m_calibration, "Calibration must be available!");
-    Pose3D pose = m_estimated_world_depth_pose;
-    pose.toRightCamera(m_calibration->rgb_intrinsics, m_calibration->R, m_calibration->T);
-    return pose;
-}
-
-void RGBDImage :: setEstimatedWorldRgbPose(const Pose3D& pose)
-{
-    ntk_assert(m_calibration, "Calibration must be available!");
-    m_estimated_world_depth_pose = pose;
-    m_estimated_world_depth_pose.toLeftCamera(m_calibration->depth_intrinsics, m_calibration->R, m_calibration->T);
 }
 
 bool RGBDImage::hasEmptyRawDepthImage() const

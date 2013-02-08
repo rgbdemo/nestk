@@ -267,6 +267,9 @@ bool SurfelsRGBDModeler :: addNewView(const RGBDImage& image_, Pose3D& depth_pos
 void SurfelsRGBDModeler :: computeMesh()
 {
     m_mesh.clear();
+    m_mesh.vertices.reserve(m_surfels.size());
+    m_mesh.normals.reserve(m_surfels.size());
+    m_mesh.colors.reserve(m_surfels.size());
 
     foreach_const_it(it, m_surfels, SurfelMap)
     {

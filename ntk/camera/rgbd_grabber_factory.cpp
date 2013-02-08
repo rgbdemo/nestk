@@ -9,6 +9,10 @@
 # include <ntk/camera/openni_grabber.h>
 #endif
 
+#ifdef NESTK_USE_OPENNI2
+# include <ntk/camera/openni2_grabber.h>
+#endif
+
 #ifdef NESTK_USE_FREENECT
 # include <ntk/camera/freenect_grabber.h>
 #endif
@@ -19,6 +23,14 @@
 
 #ifdef NESTK_USE_PMDSDK
 # include <ntk/camera/pmd_grabber.h>
+#endif
+
+#ifdef NESTK_USE_SOFTKINETIC
+# include <ntk/camera/softkinetic_grabber.h>
+#endif
+
+#ifdef NESTK_USE_SOFTKINETIC_IISU
+# include <ntk/camera/softkinetic_iisu_grabber.h>
 #endif
 
 #include <QApplication>
@@ -70,8 +82,13 @@ RGBDProcessor* RGBDGrabberFactory::createProcessor(const enum_grabber_type& grab
     switch (grabber_type)
     {
     case OPENNI:
-    case KIN4WIN:
         return new OpenniRGBDProcessor;
+
+    case KIN4WIN:
+        return new Kin4winRGBDProcessor;
+
+    case SOFTKINETIC:
+        return new SoftKineticRGBDProcessor;
 
     case FREENECT:
         return new FreenectRGBDProcessor;
@@ -92,13 +109,17 @@ bool RGBDGrabberFactory :: createOpenniGrabbers(const ntk::RGBDGrabberFactory::P
     return false;
 #else
     if (!OpenniDriver::hasDll())
+    {
+        ntk_warn("No OpenNI dll found.\n");
         return false;
+    }
 
     // Config dir is supposed to be next to the binaries.
     QDir prev = QDir::current();
     QDir::setCurrent(QApplication::applicationDirPath());
     OpenniDriver* ni_driver = new OpenniDriver();
 
+    ntk_info("Number of Openni devices: %d\n", ni_driver->numDevices());
     ntk_dbg_print(ni_driver->numDevices(), 1);
 
     // Create grabbers.
@@ -110,8 +131,7 @@ bool RGBDGrabberFactory :: createOpenniGrabbers(const ntk::RGBDGrabberFactory::P
             k_grabber->setHighRgbResolution(true);
 
         k_grabber->setCustomBayerDecoding(false);
-        if (params.hardware_registration)
-            k_grabber->setUseHardwareRegistration(false);
+        k_grabber->setUseHardwareRegistration(params.hardware_registration);
 
         GrabberData new_data;
         new_data.grabber = k_grabber;
@@ -124,6 +144,12 @@ bool RGBDGrabberFactory :: createOpenniGrabbers(const ntk::RGBDGrabberFactory::P
 
     return ni_driver->numDevices() > 0;
 #endif
+}
+
+bool RGBDGrabberFactory :: createOpenni2Grabbers(const ntk::RGBDGrabberFactory::Params &params, std::vector<GrabberData>& grabbers)
+{
+    // FIXME: Implement.
+    return false;
 }
 
 bool RGBDGrabberFactory :: createPmdGrabbers(const ntk::RGBDGrabberFactory::Params &paramss, std::vector<GrabberData>& grabbers)
@@ -157,6 +183,14 @@ bool RGBDGrabberFactory :: createPmdGrabbers(const ntk::RGBDGrabberFactory::Para
 bool RGBDGrabberFactory :: createSoftKineticGrabbers(const ntk::RGBDGrabberFactory::Params &params, std::vector<GrabberData>& grabbers)
 {
 #ifdef NESTK_USE_SOFTKINETIC
+    if (!SoftKineticGrabber::hasDll())
+    {
+        ntk_warn("No softkinetic DepthSense dll found.\n");
+        return false;
+    }
+
+    ntk_info("Trying softkinetic backend\n");
+
     std::vector<std::string> calibration_files;
 
     // Config dir is supposed to be next to the binaries.
@@ -176,24 +210,61 @@ bool RGBDGrabberFactory :: createSoftKineticGrabbers(const ntk::RGBDGrabberFacto
     grabbers.push_back(new_data);
     return true;
 #else
+    ntk_info("No support for softkinetic, skipping.\n");
     return false;
 #endif
 }
 
+bool RGBDGrabberFactory :: createSoftKineticIisuGrabbers(const ntk::RGBDGrabberFactory::Params &params, std::vector<GrabberData>& grabbers)
+{
+#ifdef NESTK_USE_SOFTKINETIC_IISU
+    ntk_dbg(1) << "Trying softkinetic iisu backend";
+
+    std::vector<std::string> calibration_files;
+
+    // Config dir is supposed to be next to the binaries.
+    QDir prev = QDir::current();
+    QDir::setCurrent(QApplication::applicationDirPath());
+
+    SoftKineticIisuGrabber* k_grabber = new SoftKineticIisuGrabber();
+    if (!k_grabber->connectToDevice())
+    {
+        delete k_grabber;
+        return false;
+    }
+
+    GrabberData new_data;
+    new_data.grabber = k_grabber;
+    new_data.type = SOFTKINETIC_IISU;
+    grabbers.push_back(new_data);
+    return true;
+#else
+    ntk_dbg(1) << "No support for softkinetic iisu, skipping.";
+    return false;
+#endif
+}
 
 bool RGBDGrabberFactory :: createKin4winGrabbers(const ntk::RGBDGrabberFactory::Params &params, std::vector<GrabberData>& grabbers)
 {
 #ifdef NESTK_USE_KIN4WIN
 
     if (!Kin4WinDriver::hasDll())
+    {
+        ntk_warn("No Kinect for Windows SDK dll found.\n");
         return false;
+    }
 
     std::vector<std::string> calibration_files;
 
     Kin4WinDriver* kin_driver = new Kin4WinDriver;
 
     if (kin_driver->numDevices() < 1)
+    {
+        ntk_info("No Kinect for Windows devices found.\n");
         return false;
+    }
+
+    ntk_info("Number of Kinect for Windows devices found: %d.\n", kin_driver->numDevices());
 
     // Create grabbers.
     for (int i = 0; i < kin_driver->numDevices(); ++i)
@@ -211,6 +282,7 @@ bool RGBDGrabberFactory :: createKin4winGrabbers(const ntk::RGBDGrabberFactory::
 
     return true;
 #else
+    ntk_info ("No support for Kinect for Windows SDK.\n");
     return false;
 #endif
 }
@@ -228,7 +300,7 @@ bool RGBDGrabberFactory :: createFileGrabbers(const ntk::RGBDGrabberFactory::Par
         QString camera_path = root_path.absoluteFilePath(name);
         if (QDir(camera_path).entryList(QStringList("view*"), QDir::Dirs, QDir::Name).size() == 0)
         {
-            ntk_dbg(0) << "Warning, directory " << camera_path << " has no images, skipping.";
+            ntk_warn("Warning, directory %s has no images, skipping.\n", camera_path.toAscii().constData());
             continue;
         }
         image_directories.push_back(camera_path.toStdString());
@@ -251,10 +323,10 @@ bool RGBDGrabberFactory :: createFileGrabbers(const ntk::RGBDGrabberFactory::Par
     return true;
 }
 
-RGBDCalibration* RGBDGrabberFactory::tryLoadCalibration(const ntk::RGBDGrabberFactory::Params &params,
-                                                        const std::string& camera_serial)
+RGBDCalibrationPtr RGBDGrabberFactory::tryLoadCalibration(const ntk::RGBDGrabberFactory::Params &params,
+                                                          const std::string& camera_serial)
 {
-    ntk::RGBDCalibration* calib_data = 0;
+    ntk::RGBDCalibrationPtr calib_data;
 
     std::string filename;
     try
@@ -278,9 +350,7 @@ RGBDCalibration* RGBDGrabberFactory::tryLoadCalibration(const ntk::RGBDGrabberFa
     }
     catch (const std::exception& e)
     {
-        ntk_dbg(0) << "Warning: could not load calibration file " << filename;
-        if (calib_data)
-            delete_and_zero(calib_data);
+        ntk_warn("Warning: could not load calibration file %s\n", filename.c_str());
     }
 
     return calib_data;
@@ -306,8 +376,10 @@ RGBDGrabberFactory::createGrabbers(const ntk::RGBDGrabberFactory::Params& orig_p
     {
         createKin4winGrabbers(params, grabbers);
         createOpenniGrabbers(params, grabbers);
+        createOpenni2Grabbers(params, grabbers);
         createPmdGrabbers(params, grabbers);
         createSoftKineticGrabbers(params, grabbers);
+        createSoftKineticIisuGrabbers(params, grabbers);
     }
 
     foreach_idx(i, grabbers)
@@ -315,9 +387,9 @@ RGBDGrabberFactory::createGrabbers(const ntk::RGBDGrabberFactory::Params& orig_p
         GrabberData& data = grabbers[i];
         if (params.synchronous)
             data.grabber->setSynchronous(true);
-        RGBDCalibration* calibration = tryLoadCalibration(params, data.grabber->cameraSerial());
+        RGBDCalibrationPtr calibration = tryLoadCalibration(params, data.grabber->cameraSerial());
         if (calibration)
-            data.grabber->setCalibrationData(*calibration);
+            data.grabber->setCalibrationData(calibration);
         data.processor = createProcessor(data.type);
     }
 

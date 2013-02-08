@@ -21,8 +21,9 @@
 #define NTK_MESH_RGBD_MODELER_H
 
 #include <ntk/core.h>
-#include <ntk/camera/calibration.h>
+#include <ntk/camera/rgbd_image.h>
 #include <ntk/mesh/mesh.h>
+#include <ntk/geometry/plane.h>
 #include <ntk/utils/opencv_utils.h>
 #include <ntk/thread/utils.h>
 #include <ntk/thread/event.h>
@@ -70,6 +71,27 @@ protected:
     Rect3f m_bounding_box;
 };
 ntk_ptr_typedefs(RGBDModeler)
+
+class DummyRGBDModeler : public RGBDModeler
+{
+public:
+    DummyRGBDModeler(int processing_time_msecs = 20)
+        : RGBDModeler()
+        , m_processing_time (processing_time_msecs)
+    {}
+
+public:
+    virtual void acquireLock() const {}
+    virtual void releaseLock() const {}
+    virtual int numPoints() const { return 0; }
+
+public:
+    virtual bool addNewView(const RGBDImage& image, Pose3D& depth_pose);
+
+private:
+    int m_processing_time;
+};
+ntk_ptr_typedefs(DummyRGBDModeler)
 
 class RGBDModelerInOwnThread : public RGBDModeler, public EventProcessingBlockInOwnThread
 {

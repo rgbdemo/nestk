@@ -22,6 +22,7 @@
 
 #include <ntk/geometry/pose_3d.h>
 #include <ntk/thread/event.h>
+#include <ntk/camera/rgbd_calibration.h>
 
 #include <QObject>
 
@@ -29,9 +30,44 @@ namespace ntk
 {
 
   class RGBDProcessor;
-  class RGBDCalibration;
   class Skeleton;
   class FeatureSet;
+
+  struct RGBDImageHeader
+  {
+      RGBDImageHeader ();
+
+      void loadFromDir (const std::string& directory, RGBDCalibrationConstPtr input_calib);
+
+      void setCalibration(RGBDCalibrationConstPtr new_calibration) { calibration = new_calibration; }
+
+      /*! Get unique id from timestamp and camera serial. */
+      std::string getUniqueId() const;
+
+      /*! Pose in sensor coordinate frame, according to calibration. */
+      Pose3D sensorDepthPose() const;
+
+      /*! Return the sensor rgb pose associated to the depth pose. */
+      Pose3D sensorRgbPose() const;
+
+      /*! Pose of the image in world coordinates. */
+      const Pose3D estimatedWorldDepthPose() const { return estimated_world_depth_pose; }
+      void setEstimatedWorldDepthPose(const Pose3D& pose) { estimated_world_depth_pose = pose; }
+
+      /*! Return the world rgb pose associated to the depth pose. */
+      Pose3D estimatedWorldRgbPose() const;
+      void setEstimatedWorldRgbPose(const Pose3D& pose);
+
+      std::string directory;
+      ntk::Pose3D estimated_world_depth_pose;
+      std::string camera_serial;
+      int timestamp;
+      std::string grabber_type;
+      // FIXME: huge memory leaks here, should be a smart pointer!
+      RGBDCalibrationConstPtr calibration;
+      float filter_min_depth;
+      float filter_max_depth;
+  };
 
 /*!
  * Stores RGB+Depth data.
@@ -55,52 +91,61 @@ public:
 
   /*! Initialize from an viewXXXX directory. */
   RGBDImage(const std::string& dir,
-            const RGBDCalibration* calib = 0,
+            RGBDCalibrationConstPtr calib = RGBDCalibrationConstPtr(),
             RGBDProcessor* processor = 0);
 
   RGBDImage& operator=(const RGBDImage& rhs);
 
   virtual ~RGBDImage();
 
-  bool withRgbDataAndCalibrated() const { return rawRgb().data && m_calibration; }
-  bool withDepthDataAndCalibrated() const { return rawDepth().data && m_calibration; }
+  bool withRgbDataAndCalibrated() const { return rawRgb().data && m_header.calibration; }
+  bool withDepthDataAndCalibrated() const { return rawDepth().data && m_header.calibration; }
+  // FIXME: should check the rgb field.
   bool hasRgb() const { return rawRgb().data != 0; }
-  bool hasDepth() const { return rawDepth().data != 0; }
+  bool hasDepth() const { return depth().data != 0; }
+
+  const RGBDImageHeader& header () const { return m_header; }
+  RGBDImageHeader& header () { return m_header; }
+  void setHeader (const RGBDImageHeader& header) { m_header = header; }
 
   /*! Get unique id from timestamp and camera serial. */
   std::string getUniqueId() const;
 
   /*! Directory path if loaded from disk. */
-  const std::string& directory() const { return m_directory; }
+  const std::string& directory() const { return m_header.directory; }
 
   /*! Whether the image was loaded from disk. */
-  bool hasDirectory() const { return !m_directory.empty(); }
+  bool hasDirectory() const { return !m_header.directory.empty(); }
 
   /*! Load from a viewXXXX directory. */
   void loadFromDir(const std::string& dir,
-                   const RGBDCalibration* calib = 0,
+                   RGBDCalibrationConstPtr calib = RGBDCalibrationConstPtr(),
                    RGBDProcessor* processor = 0);
 
   /*! Load from a single color image. No depth data. */
   void loadFromFile(const std::string& dir,
-                    const RGBDCalibration* calib = 0);
+                    RGBDCalibrationConstPtr calib = RGBDCalibrationConstPtr());
 
   /*! Return the serial number or unique id of the source camera. */
-  void setCameraSerial(const std::string& serial) { m_camera_serial = serial; }
-  const std::string& cameraSerial() const { return m_camera_serial; }
+  void setCameraSerial(const std::string& serial) { m_header.camera_serial = serial; }
+  const std::string& cameraSerial() const { return m_header.camera_serial; }
+
+  /*! Return the grabber type that generated this image. */
+  void setGrabberType(const std::string& grabber) { m_header.grabber_type = grabber; }
+  const std::string& grabberType() const { return m_header.grabber_type; }
 
   /*! Return the grabbing timestamp in seconds. */
-  void setTimestamp(float t) { m_timestamp = t; }
-  float timestamp() const { return m_timestamp; }
+  void setTimestamp(int t) { m_header.timestamp = t; }
+  int timestamp() const { return m_header.timestamp; }
 
   /*! Associated optional calibration data. */
-  const RGBDCalibration* calibration() const { return m_calibration; }
+  RGBDCalibrationConstPtr calibration() const { return m_header.calibration; }
 
   /*! Set an associated calibration data. */
-  void setCalibration(const RGBDCalibration* calibration) { m_calibration = calibration; }
+  void setCalibration(RGBDCalibrationConstPtr calibration) { m_header.setCalibration (calibration); }
 
   /*! Set an associated viewXXXX directory. */
-  void setDirectory(const std::string& dir) { m_directory = dir; }
+  void setDirectory(const std::string& dir) { m_header.directory = dir; }
 
   /*! Swap content with another image. */
   void swap(RGBDImage& other);
@@ -131,6 +176,10 @@ public:
   /*! Accessors to the raw depth channel. */
   cv::Mat1f& rawDepthRef() { return m_raw_depth; }
   const cv::Mat1f& rawDepth() const { return m_raw_depth; }
+
+  /*! Accessors to the raw depth encoded with 16 bits integer (mm). */
+  cv::Mat1w& rawDepth16bitsRef() { return m_raw_depth_16bits; }
+  const cv::Mat1w& rawDepth16bits() const { return m_raw_depth_16bits; }
 
   /*! Accessors to the raw intensity channel (ignored with Kinect). */
   cv::Mat1f& rawIntensityRef() { return m_raw_intensity; }
@@ -167,6 +216,9 @@ public:
 
   cv::Mat1b& mappedDepthMaskRef() { return m_mapped_depth_mask; }
   const cv::Mat1b& mappedDepthMask() const { return m_mapped_depth_mask; }
+
+  const cv::Mat2w& depthToRgbCoords () const { return m_depth_to_rgb_coord; }
+  cv::Mat2w& depthToRgbCoordsRef () { return m_depth_to_rgb_coord; }
 
   /*! Accessors to 3D normals. */
   cv::Mat3f& normalRef() { return m_normal; }
@@ -217,18 +269,18 @@ public:
   void setSkeletonData(Skeleton* skeleton) { m_skeleton = skeleton; }
 
   /*! Pose in sensor coordinate frame, according to calibration. */
-  Pose3D sensorDepthPose() const;
+  Pose3D sensorDepthPose() const { return m_header.sensorDepthPose(); }
 
   /*! Return the sensor rgb pose associated to the depth pose. */
-  Pose3D sensorRgbPose() const;
+  Pose3D sensorRgbPose() const { return m_header.sensorRgbPose(); }
 
   /*! Pose of the image in world coordinates. */
-  const Pose3D estimatedWorldDepthPose() const { return m_estimated_world_depth_pose; }
-  void setEstimatedWorldDepthPose(const Pose3D& pose) { m_estimated_world_depth_pose = pose; }
+  const Pose3D estimatedWorldDepthPose() const { return m_header.estimatedWorldDepthPose(); }
+  void setEstimatedWorldDepthPose(const Pose3D& pose) { m_header.setEstimatedWorldDepthPose(pose); }
 
   /*! Return the world rgb pose associated to the depth pose. */
-  Pose3D estimatedWorldRgbPose() const;
-  void setEstimatedWorldRgbPose(const Pose3D& pose);
+  Pose3D estimatedWorldRgbPose() const { return m_header.estimatedWorldRgbPose(); }
+  void setEstimatedWorldRgbPose(const Pose3D& pose) { m_header.setEstimatedWorldRgbPose(pose); }
 
   /*! Whether the image does not have any depth pixel. */
   bool hasEmptyRawDepthImage() const;
@@ -246,6 +298,7 @@ private:
   cv::Mat1f m_mapped_depth;
   cv::Mat1b m_depth_mask;
   cv::Mat1b m_mapped_depth_mask;
+  cv::Mat2w m_depth_to_rgb_coord;
   cv::Mat3f m_normal;
   cv::Mat1f m_amplitude;
   cv::Mat1f m_intensity;
@@ -253,14 +306,12 @@ private:
   cv::Mat1f m_raw_intensity;
   cv::Mat1f m_raw_amplitude;
   cv::Mat1f m_raw_depth;
+  cv::Mat1w m_raw_depth_16bits;
   cv::Mat1b m_user_labels;
-  const RGBDCalibration* m_calibration;
-  std::string m_directory;
   Skeleton* m_skeleton;
-  ntk::Pose3D m_estimated_world_depth_pose;
-  std::string m_camera_serial;
-  float m_timestamp;
+  RGBDImageHeader m_header;
   ntk::Ptr<FeatureSet> m_features;
+  std::string m_grabber_type;
 };
 ntk_ptr_typedefs(RGBDImage)
 

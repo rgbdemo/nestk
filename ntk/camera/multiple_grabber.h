@@ -50,6 +50,8 @@ public:
     void setAlternativeDisconnectMode(bool enable);
     void addGrabber(RGBDGrabber* grabber);
 
+    virtual std::string grabberType () const;
+
 public:
     virtual bool connectToDevice();
     virtual bool disconnectFromDevice();

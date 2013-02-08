@@ -6,10 +6,21 @@
 namespace ntk { namespace hub {
 
 Hub::Impl::Impl (Hub* that)
-    : that(that)
-    , enabled(true)
+    : enabled(true)
+    , that(that)
 {
     assert(0 != that);
+}
+
+Hub::Impl::~Impl ()
+{
+
+}
+
+void
+Hub::Impl::quit ()
+{
+    that->quit();
 }
 
 void
@@ -32,7 +43,7 @@ Hub::Impl::detachOutlet (Outlet* outlet)
 }
 
 void
-Hub::Impl::subscribeOutlet (Outlet* outlet, String name)
+Hub::Impl::subscribeOutlet (Outlet* outlet, const String& name)
 {
     QMutexLocker _(&outletInfosMutex);
 
@@ -41,9 +52,8 @@ Hub::Impl::subscribeOutlet (Outlet* outlet, String name)
     outletInfo.subscriptions.insert(name);
 }
 
-
 void
-Hub::Impl::unsubscribeOutlet (Outlet* outlet, String name)
+Hub::Impl::unsubscribeOutlet (Outlet* outlet, const String& name)
 {
     QMutexLocker _(&outletInfosMutex);
 
@@ -51,7 +61,6 @@ Hub::Impl::unsubscribeOutlet (Outlet* outlet, String name)
 
     outletInfo.subscriptions.remove(name);
 }
-
 
 void
 Hub::Impl::startOutlet (Outlet* outlet)
@@ -77,7 +86,7 @@ Hub::Impl::startOutlet (Outlet* outlet)
 
 void
 Hub::Impl::stopOutlet (Outlet* outlet)
-{
+{    
     QMutexLocker _(&outletInfosMutex);
 
     OutletInfo& outletInfo = outletInfos[outlet];
@@ -95,6 +104,50 @@ Hub::Impl::stopOutlet (Outlet* outlet)
     that->removeEventListener(outlet->impl);
 
     outletInfo.running = false;
+}
+
+void
+Hub::Impl::setEnabled (bool enabled_)
+{
+    HUB_IMPL_LOCKED(enabled)
+
+    enabled = enabled_;
+}
+
+void
+Hub::Impl::enable ()
+{
+    setEnabled(true);
+}
+
+void
+Hub::Impl::disable ()
+{
+    setEnabled(false);
+}
+
+bool
+Hub::Impl::isActive (const QString& name)
+{
+    {
+        HUB_IMPL_LOCKED(enabled)
+
+        if (!enabled)
+            return false;
+    }
+
+    {
+        HUB_IMPL_LOCKED(activeSubscriptions);
+
+        const ActiveSubscriptions::ConstIterator i = activeSubscriptions.find(name);
+
+        if (i == activeSubscriptions.end())
+        {
+            return false;
+        }
+
+        return 0 < i.value();
+    }
 }
 
 } }

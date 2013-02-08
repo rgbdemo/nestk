@@ -20,6 +20,8 @@
 #include "mesh.h"
 #include "ply.h"
 
+#include <ntk/geometry/pose_3d.h>
+#include <ntk/geometry/plane.h>
 #include <ntk/utils/debug.h>
 #include <ntk/utils/opencv_utils.h>
 #include <ntk/numeric/utils.h>
@@ -106,8 +108,8 @@ Mesh::Mesh (const Mesh& copy)
 , texcoords(     copy.texcoords)
 , face_texcoords(copy.face_texcoords)
 , faces(         copy.faces)
-, texture(       copy.texture)
 , face_labels(   copy.face_labels)
+, texture(       copy.texture)
 {
 
 }
@@ -138,6 +140,12 @@ void Mesh::applyTransform(const Pose3D& pose)
 {
     foreach_idx(i, vertices)
             vertices[i] = pose.cameraTransform(vertices[i]);
+
+    ntk::Pose3D normal_pose;
+    normal_pose.applyTransformBefore(cv::Vec3f(0.f,0.f,0.f), pose.cvEulerRotation());
+
+    foreach_idx(i, normals)
+            normals[i] = normal_pose.cameraTransform(normals[i]);
 }
 
 Point3f Mesh :: centerize()
@@ -177,7 +185,47 @@ cv::Vec3f Mesh::getFaceNormal(int face_i) const
     return n;
 }
 
-void Mesh::saveToPlyFile(const char* filename) const
+void Mesh::addPlane(const Point3f &center, const Point3f &normal, const Point3f &sizes)
+{
+    Point3f line1[2] = { Point3f(center.x-sizes.x, center.y-sizes.y, center.z-sizes.z),
+                         Point3f(center.x-sizes.x, center.y+sizes.y, center.z-sizes.z) };
+    Point3f line2[2] = { Point3f(center.x+sizes.x, center.y-sizes.y, center.z-sizes.z),
+                         Point3f(center.x+sizes.x, center.y+sizes.y, center.z-sizes.z) };
+    Point3f line3[2] = { Point3f(center.x-sizes.x, center.y-sizes.y, center.z+sizes.z),
+                         Point3f(center.x-sizes.x, center.y+sizes.y, center.z+sizes.z) };
+    Point3f line4[2] = { Point3f(center.x+sizes.x, center.y-sizes.y, center.z+sizes.z),
+                         Point3f(center.x+sizes.x, center.y+sizes.y, center.z+sizes.z) };
+
+    ntk::Plane plane (normal, center);
+
+    Point3f plane_p1 = plane.intersectionWithLine(line1[0], line1[1]);
+    Point3f plane_p2 = plane.intersectionWithLine(line2[0], line2[1]);
+    Point3f plane_p3 = plane.intersectionWithLine(line3[0], line3[1]);
+    Point3f plane_p4 = plane.intersectionWithLine(line4[0], line4[1]);
+
+    vertices.push_back(plane_p1);
+    vertices.push_back(plane_p2);
+    vertices.push_back(plane_p3);
+    vertices.push_back(plane_p4);
+
+    {
+        Face f;
+        f.indices[0] = 0;
+        f.indices[1] = 1;
+        f.indices[2] = 2;
+        faces.push_back(f);
+    }
+
+    {
+        Face f;
+        f.indices[0] = 2;
+        f.indices[1] = 1;
+        f.indices[2] = 3;
+        faces.push_back(f);
+    }
+}
+
+void Mesh::saveToAsciiPlyFile(const char* filename) const
 {   
     if (texture.data)
     {
@@ -288,6 +336,179 @@ void Mesh::saveToPlyFile(const char* filename) const
     ply_file.close();
 }
 
+void Mesh::saveToPlyFile(const char *filename, bool use_binary) const
+{
+    if (use_binary)
+        saveToBinaryPlyFile(filename);
+    else
+        saveToAsciiPlyFile(filename);
+}
+
+void Mesh::saveToBinaryPlyFile(const char *filename) const
+{
+    if (texture.data)
+    {
+        std::string texture_filename = filename;
+        if (texture_filename.size() > 3)
+        {
+            texture_filename.erase(texture_filename.size()-4, 4); // remove .ply
+            texture_filename += ".png";
+        }
+        else
+        {
+            texture_filename += ".texture.png";
+        }
+        imwrite(texture_filename, texture);
+    }
+
+    std::ofstream ply_file (filename, std::ios_base::out | std::ios_base::binary);
+    ply_file << "ply\n";
+    if (QSysInfo::ByteOrder == QSysInfo::LittleEndian)
+        ply_file << "format binary_little_endian 1.0\n";
+    else
+        ply_file << "format binary_big_endian 1.0\n";
+    ply_file << "element vertex " << vertices.size() << "\n";
+    ply_file << "property float x\n";
+    ply_file << "property float y\n";
+    ply_file << "property float z\n";
+
+    if (hasNormals())
+    {
+        ply_file << "property float nx\n";
+        ply_file << "property float ny\n";
+        ply_file << "property float nz\n";
+    }
+
+    if (hasTexcoords())
+    {
+        // put it twice, blender uses (s,t) and meshlab (u,v)
+        ply_file << "property float s\n";
+        ply_file << "property float t\n";
+    }
+
+    if (hasColors())
+    {
+        ply_file << "property uchar red\n";
+        ply_file << "property uchar green\n";
+        ply_file << "property uchar blue\n";
+    }
+
+    if (hasFaces())
+    {
+        ply_file << "element face " << faces.size() << "\n";
+        ply_file << "property list uchar uint vertex_indices\n";
+        // For meshlab wedges.
+        if (hasTexcoords() || hasFaceTexcoords())
+            ply_file << "property list uchar float texcoord\n";
+    }
+
+
+    ply_file << "end_header\n";
+
+    foreach_idx(i, vertices)
+    {
+        ply_file.write(reinterpret_cast<const char*>(&vertices[i].x), sizeof(float)*3);
+
+        if (hasNormals())
+        {
+            cv::Vec3f n = normals[i];
+            for (int k = 0; k < 3; ++k)
+                if (ntk::math::isnan(n[k]))
+                    n[k] = 0.f;
+            ply_file.write(reinterpret_cast<const char*>(&n[0]), sizeof(float)*3);
+        }
+
+        if (hasTexcoords())
+        {
+            ply_file.write(reinterpret_cast<const char*>(&texcoords[i].x), sizeof(float)*2);
+        }
+
+        if (hasColors())
+            ply_file.write(reinterpret_cast<const char*>(&colors[i][0]), sizeof(uchar)*3);
+    }
+
+    if (hasFaces())
+    {
+        foreach_idx(i, faces)
+        {
+            uchar num_vertices = faces[i].numVertices();
+            ply_file.write(reinterpret_cast<const char*>(&num_vertices), sizeof(uchar));
+            ply_file.write(reinterpret_cast<const char*>(&faces[i].indices[0]), 3*sizeof(int));
+
+            uchar num_texcoords = 6;
+            if (hasTexcoords() && !hasFaceTexcoords())
+            {
+                ply_file.write(reinterpret_cast<const char*>(&num_texcoords), sizeof(uchar));
+                for (unsigned j = 0; j < faces[i].numVertices(); ++j)
+                {
+                    cv::Point2f uv (texcoords[faces[i].indices[j]].x, 1.0 - texcoords[faces[i].indices[j]].y);
+                    ply_file.write(reinterpret_cast<const char*>(&uv.x), 2*sizeof(float));
+                }
+            }
+            else if (hasFaceTexcoords())
+            {
+                ply_file.write(reinterpret_cast<const char*>(&num_texcoords), sizeof(uchar));
+                for (unsigned j = 0; j < faces[i].numVertices(); ++j)
+                {
+                    cv::Point2f uv (face_texcoords[i].u[j], 1.0 - face_texcoords[i].v[j]);
+                    ply_file.write(reinterpret_cast<const char*>(&uv.x), 2*sizeof(float));
+                }
+            }
+        }
+    }
+
+    ply_file.close();
+}
+
+void Mesh::saveToObjFile(const char *filename) const
+{
+    std::ofstream obj_file (filename);
+    obj_file << "# Generated.\n";
+
+    foreach_idx (i, vertices)
+    {
+        const cv::Point3f& v = vertices[i];
+        obj_file << "v " << v.x << " " << v.y << " " << v.z;
+
+        if (hasColors())
+        {
+            const cv::Vec3b& c = colors[i];
+            obj_file << " " << c[0]/255.f << " " << c[1]/255.f << " " << c[2]/255.f;
+        }
+
+        obj_file << "\n";
+    }
+
+    obj_file << "\n";
+
+    foreach_idx (i, faces)
+    {
+        const Face& face = faces[i];
+        obj_file << "f " << face.indices[0]+1 << " " << face.indices[1]+1 << " " << face.indices[2]+1 << "\n";
+    }
+
+    obj_file << "# End of file.\n";
+}
+
+void Mesh::saveToStlFile(const char *filename) const
+{
+    std::ofstream stl_file (filename);
+    stl_file << "solid \n";
+    foreach_idx (i, faces)
+    {
+        cv::Vec3f n = getFaceNormal(i);
+        stl_file << "facet normal " << n[0] << " " << n[1] << " " << n[2] << "\n";
+        stl_file << "outer loop\n";
+        for (int k = 0; k < 3; ++k)
+        {
+            const cv::Point3f& v = vertices[faces[i].indices[k]];
+            stl_file << "vertex " << v.x << " " << v.y << " " << v.z << "\n";
+        }
+        stl_file << "endloop\n";
+        stl_file << "endfacet\n";
+    }
+}
+
 void Mesh::loadFromPlyFile(const char* filename)
 {
     vertices.clear();
@@ -313,10 +534,10 @@ void Mesh::loadFromPlyFile(const char* filename)
     {
         ntk_dbg(0) << "[ERROR] " << strerror(err);
     }
-    ntk_ensure(mesh_file, "Could not open mesh file.");
+    ntk_throw_exception_if(!mesh_file, "Could not open mesh file.");
 
     ply::PlyFile* ply_file = ply::read_ply(mesh_file);
-    ntk_ensure(ply_file, "Could not parse mesh file.");
+    ntk_throw_exception_if(!ply_file, "Could not parse mesh file.");
 
     for (int i = 0; i < ply_file->num_elem_types; i++)
     {
@@ -685,6 +906,9 @@ applyScaleTransform(float x_scale, float y_scale, float z_scale)
 
 void Mesh::computeNormalsFromFaces()
 {
+    if (!hasFaces())
+        return;
+
     normals.clear();
     normals.resize(vertices.size(), Vec3f(0,0,0));
     foreach_idx(i, faces)
@@ -703,6 +927,20 @@ void Mesh::computeNormalsFromFaces()
         ntk::normalize(v);
         normals[i] = v;
     }
+}
+
+void Mesh::invertFaceNormals()
+{
+    foreach_idx(face_i, faces)
+    {
+        std::swap (faces[face_i].indices[0], faces[face_i].indices[2]);
+    }
+}
+
+void Mesh::duplicateSharedVertices()
+{
+    // FIXME: implement
+    abort ();
 }
 
 void Mesh::computeVertexFaceMap(std::vector< std::vector<int> >& faces_per_vertex) const
@@ -1026,6 +1264,9 @@ void Mesh::removeIsolatedVertices()
     colors = new_mesh.colors;
     normals = new_mesh.normals;
     texcoords = new_mesh.texcoords;
+
+    if (hasFaces() && hasNormals())
+        computeNormalsFromFaces();
 }
 
 struct FaceComparatorByIndices

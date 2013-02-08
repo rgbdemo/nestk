@@ -31,6 +31,89 @@
 # include <QString>
 # include <QTextStream>
 # include <QDataStream>
+# include <QFileInfo>
+# include <QDir>
+
+namespace ntk
+{
+
+class SerializingDevice
+{
+public:
+    enum DeviceType { NONE, DATASTREAM, BYTEARRAY, FILEINFO, DIRECTORY};
+
+public:
+    SerializingDevice (QDataStream& stream)
+        : stream (&stream)
+        , byte_array (0)
+        , file_info ()
+        , dir ()
+        , device_type (DATASTREAM)
+    {}
+
+    SerializingDevice (QByteArray& array)
+        : stream (0)
+        , byte_array (&array)
+        , file_info ()
+        , dir ()
+        , device_type (BYTEARRAY)
+    {}
+
+    SerializingDevice (const QFileInfo& file_info)
+        : stream (0)
+        , byte_array (0)
+        , file_info (file_info)
+        , dir ()
+        , device_type (FILEINFO)
+    {}
+
+    SerializingDevice (const QDir& dir)
+        : stream (0)
+        , byte_array (0)
+        , file_info ()
+        , dir (dir)
+        , device_type (DIRECTORY)
+    {}
+
+    SerializingDevice ()
+        : stream (0)
+        , byte_array (0)
+        , file_info ()
+        , dir ()
+        , device_type (NONE)
+    {}
+
+public:
+    QDataStream* stream;
+    QByteArray* byte_array;
+    QFileInfo file_info;
+    QDir dir;
+    DeviceType device_type;
+};
+
+template <class T>
+class Serializer
+{
+public:
+    typedef T PtrT;
+
+public:
+    virtual PtrT read (const SerializingDevice& device) { return PtrT(); }
+
+    virtual bool canReadFromDataStream () const { return false; }
+    virtual bool     canReadFromString () const { return false; }
+    virtual bool       canReadFromFile () const { return false; }
+    virtual bool        canReadFromDir () const { return false; }
+
+    virtual void write (const SerializingDevice& device, const PtrT value) { abort (); }
+
+    virtual bool canWriteToDataStream () const { return false; }
+    virtual bool     canWriteToString () const { return false; }
+    virtual bool       canWriteToFile () const { return false; }
+    virtual bool        canWriteToDir () const { return false; }
+};
+
+} // ntk
 
 namespace ntk
 {

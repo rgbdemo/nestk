@@ -30,6 +30,8 @@ SET ( ntk_sources
      camera/multiple_grabber.cpp
      camera/opencv_grabber.h
      camera/opencv_grabber.cpp
+     camera/rgbd_calibration.h
+     camera/rgbd_calibration.cpp
      camera/rgbd_frame_recorder.h
      camera/rgbd_frame_recorder.cpp
      camera/rgbd_grabber.h
@@ -203,7 +205,7 @@ QT4_WRAP_UI(uic_sources
 QT4_WRAP_CPP(moc_sources
   gui/image_widget.h
   gui/image_window.h
-  hub/hub.h
+  hub/hub-impl.h
   mesh/mesh_viewer.h
   thread/event.h
   utils/progressive.h
@@ -295,6 +297,13 @@ IF (NESTK_USE_NITE)
       )
 ENDIF()
 
+IF (NESTK_USE_OPENNI2)
+  SET (ntk_sources ${ntk_sources}
+       camera/openni2_grabber.h
+       camera/openni2_grabber.cpp
+  )
+ENDIF()
+
 IF (NESTK_USE_FREENECT OR USE_FREENECT)
   SET (ntk_sources ${ntk_sources}
        camera/freenect_grabber.h
@@ -314,6 +323,13 @@ IF(NESTK_USE_SOFTKINETIC)
      SET(ntk_sources ${ntk_sources}
         camera/softkinetic_grabber.h
         camera/softkinetic_grabber.cpp
+     )
+ENDIF()
+
+IF(NESTK_USE_SOFTKINETIC_IISU)
+     SET(ntk_sources ${ntk_sources}
+        camera/softkinetic_iisu_grabber.h
+        camera/softkinetic_iisu_grabber.cpp
      )
 ENDIF()
 
@@ -385,6 +401,8 @@ IF (WIN32)
   set(WINMM_LIBRARY winmm)
 ENDIF()
 
+find_package(Boost REQUIRED)
+
 TARGET_LINK_LIBRARIES(nestk
   ${Boost_LIBRARIES}
   ${QT_LIBRARIES}
@@ -392,6 +410,7 @@ TARGET_LINK_LIBRARIES(nestk
   ${G2O_LIBRARIES}
   ${OPENCL_LIBRARIES}
   ${GLEW_LIBRARIES}
+  ${LZ4_LIBRARIES}
   ${GLUT_glut_LIBRARY}
   ${OPENGL_LIBRARIES}
   ${PCL_LIBRARIES}
@@ -402,6 +421,7 @@ TARGET_LINK_LIBRARIES(nestk
   ${LIBUSB_1_LIBRARY}
   ${PMD_LIBRARIES}
   ${SOFTKINETIC_LIBRARY}
+  ${SOFTKINETIC_IISU_LIBRARY}
   ${FREENECT_LIBRARIES}
   ${OPENNI_LIBRARIES}
   ${NITE_LIBRARY}

@@ -14,7 +14,7 @@
 #ifndef CV_ARUCO_H
 #define CV_ARUCO_H
 
-#include <ntk/camera/calibration.h>
+#include <ntk/camera/rgbd_calibration.h>
 
 // #include <opencv/cv.h>
 #include <opencv/highgui.h>

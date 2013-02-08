@@ -62,6 +62,7 @@ namespace ntk
   template<typename _Tp> class CV_EXPORTS Ptr
   {
   public:
+    struct ConstCastTag {};
     struct DynamicCastTag {};
     struct ReinterpretCastTag {};
   public:
@@ -70,6 +71,7 @@ namespace ntk
     ~Ptr();
     Ptr(const Ptr& ptr);
     template <class U>  Ptr(const Ptr<U>& ptr);
+    template <class U>  Ptr(const Ptr<U>& ptr, ConstCastTag);
     template <class U>  Ptr(const Ptr<U>& ptr, DynamicCastTag);
     template <class U>  Ptr(const Ptr<U>& ptr, ReinterpretCastTag);
     Ptr& operator = (const Ptr& ptr);
@@ -158,6 +160,22 @@ namespace ntk
 
   template<typename _Tp>
   template <class _Up>
+  inline Ptr<_Tp>::Ptr(const Ptr<_Up>& ptr, ConstCastTag)
+  {
+    obj = const_cast<_Tp*>(ptr.obj);
+    if (obj)
+    {
+      refcount = ptr.refcount;
+      addref();
+    }
+    else
+    {
+      refcount = 0;
+    }
+  }
+
+  template<typename _Tp>
+  template <class _Up>
   inline Ptr<_Tp>::Ptr(const Ptr<_Up>& ptr, ReinterpretCastTag)
   {
     obj = reinterpret_cast<_Tp*>(ptr.obj);
@@ -192,6 +210,10 @@ namespace ntk
   template <typename _Tp, typename _Up>
   inline Ptr<_Tp> dynamic_Ptr_cast(const Ptr<_Up>& ptr)
   { return Ptr<_Tp>(ptr, typename Ptr<_Tp>::DynamicCastTag()); }
+
+  template <typename _Tp, typename _Up>
+  inline Ptr<_Tp> const_Ptr_cast(const Ptr<_Up>& ptr)
+  { return Ptr<_Tp>(ptr, typename Ptr<_Tp>::ConstCastTag()); }
 
   template <typename _Tp, typename _Up>
   inline Ptr<_Tp> reinterpret_Ptr_cast(const Ptr<_Up>& ptr)
@@ -255,7 +277,7 @@ namespace ntk
   class exception : public std::exception
   {
   public:
-    exception(std::string& what) throw() : m_what(what)
+    exception(const std::string& what) throw() : m_what(what)
     {}
 
     virtual ~exception() throw() {}

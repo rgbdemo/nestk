@@ -35,6 +35,8 @@ public:
   OpencvGrabber(const cv::Size& image_size);
   virtual void connectToDevice(int camera_id = 0);
 
+  virtual std::string grabberType () const { return "opencv"; }
+
 public:
   const cv::Size& imageSize() const { return m_image_size; }
 

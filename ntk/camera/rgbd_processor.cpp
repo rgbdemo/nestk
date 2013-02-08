@@ -22,7 +22,11 @@
 #include <ntk/utils/time.h>
 #include <ntk/geometry/pose_3d.h>
 #include <ntk/image/bilateral_filter.h>
-#include <ntk/camera/calibration.h>
+#include <ntk/camera/rgbd_calibration.h>
+
+#ifdef NESTK_USE_PMDSDK
+#include <ntk/camera/pmd_grabber.h>
+#endif
 
 #ifdef NESTK_USE_PCL
 #include <ntk/mesh/pcl_utils.h>
@@ -39,6 +43,54 @@
 // namespace is pulled at the top-level one. Fully-qualify cv symbols, for now.
 // using namespace cv;
 
+namespace ntk {
+
+static void copy16bitsToFloat (const cv::Mat1w& src_im, cv::Mat1f& dest_im)
+{
+    dest_im = cv::Mat1f (src_im.size ());
+    const uint16_t* src = src_im.ptr<uint16_t>();
+    const uint16_t* end = src + src_im.cols * src_im.rows;
+    float* output = dest_im.ptr<float>();
+    while (end != src)
+        *output++ = (*src++) / 1000.f;
+}
+
+SoftKineticRGBDProcessor::SoftKineticRGBDProcessor()
+    : RGBDProcessor()
+{
+    setFilterFlags(RGBDProcessorFlags::FilterMedian | RGBDProcessorFlags::FilterEdges /* | RGBDProcessorFlags::ErodeDepthBorders */);
+    // setFilterFlags(RGBDProcessorFlags::FilterBilateral | RGBDProcessorFlags::FilterEdges);
+}
+
+Kin4winRGBDProcessor::Kin4winRGBDProcessor()
+    : OpenniRGBDProcessor()
+{
+    // Everything is done by the grabber.
+    setFilterFlags(RGBDProcessorFlags::NiteProcessed | RGBDProcessorFlags::ComputeMapping);
+}
+
+void Kin4winRGBDProcessor::computeMappings()
+{
+    if (m_image->calibration().empty())
+        return;
+
+    if (m_image->calibration()->depth_pose->isIdentity()
+            && m_image->calibration()->rgb_pose->isIdentity())
+    {
+        // Dummy mapping, like when using Openni registration.
+        // ntk_dbg(1) << "Using OPENNI rgbd processor mapping.";
+        return OpenniRGBDProcessor::computeMappings();
+    }
+    else
+    {
+        // Do the actual mapping using transforms.
+        // ntk_dbg(1) << "Using rgbd processor mapping.";
+        return RGBDProcessor::computeMappings();
+    }
+}
+
+} // ntk
+
 namespace ntk
 {
 
@@ -46,11 +98,11 @@ namespace ntk
             m_image(0),
             //m_flags(FixGeometry | FixBias | UndistortImages | ComputeNormals),
             m_flags(RGBDProcessorFlags::UndistortImages),
-            m_min_depth(0.3f),
+            m_min_depth(0.1f),
             m_max_depth(10.0f),
             m_max_normal_angle(80),
             m_max_time_depth_delta(0.1f),
-            m_max_spatial_depth_delta(0.1f),
+            m_max_spatial_depth_delta(0.05f),
             m_mapping_resolution(1.0f),
             m_min_amplitude(1000),
             m_max_amplitude(-1)
@@ -242,12 +294,19 @@ namespace ntk
         if (hasFilterFlag(RGBDProcessorFlags::NiteProcessed) || (!m_image->calibration() || !hasFilterFlag(RGBDProcessorFlags::UndistortImages) || hasFilterFlag(RGBDProcessorFlags::Pause)))
         {
             m_image->rawAmplitude().copyTo(m_image->amplitudeRef());
-            m_image->rawDepth().copyTo(m_image->depthRef());
+            if (!m_image->rawDepth().empty())
+            {
+                m_image->rawDepth().copyTo(m_image->depthRef());
+            }
+            else
+            {
+                copy16bitsToFloat (m_image->rawDepth16bits(), m_image->depthRef());
+            }
             m_image->rawRgb().copyTo(m_image->rgbRef());
             m_image->rawIntensity().copyTo(m_image->intensityRef());
         }
 
-        if (!m_image->rawDepth().data)
+        if (m_image->rawDepth().empty() && m_image->rawDepth16bits().empty())
             return;
 
         if (!hasFilterFlag(RGBDProcessorFlags::NiteProcessed) && m_image->calibration() && hasFilterFlag(RGBDProcessorFlags::UndistortImages))
@@ -262,11 +321,13 @@ namespace ntk
             computeKinectDepthBaseline();
         tc.elapsedMsecs("computeDepth");
 
-        m_image->depthMaskRef() = cv::Mat1b(m_image->rawDepth().size());
+        m_image->depthMaskRef() = cv::Mat1b(m_image->depth().size());
+        m_image->header().filter_min_depth = m_min_depth;
+        m_image->header().filter_max_depth = m_max_depth;
         for_all_rc(m_image->depthMaskRef())
         {
             float d = m_image->depth()(r,c);
-            if (d < 1e-5 || ntk::math::isnan(d))
+            if (d < m_min_depth || d > m_max_depth || ntk::math::isnan(d))
                 m_image->depthMaskRef()(r,c) = 0;
             else
                 m_image->depthMaskRef()(r,c) = 255;
@@ -343,6 +404,9 @@ namespace ntk
 
             if (hasFilterFlag(RGBDProcessorFlags::FillSmallHoles))
                 fillSmallHoles();
+
+            if (hasFilterFlag(RGBDProcessorFlags::ErodeDepthBorders))
+                erodeDepthBorders();
         }
 
         if (m_image->rgb().data)
@@ -375,6 +439,8 @@ namespace ntk
 
         if (!m_image->calibration()->zero_rgb_distortion)
         {
+            if (m_image->calibration()->rgb_undistort_map1.empty())
+                const_Ptr_cast<RGBDCalibration>(m_image->calibration())->updateDistortionMaps();
             remap(rgb_im, tmp3b,
                   m_image->calibration()->rgb_undistort_map1,
                   m_image->calibration()->rgb_undistort_map2,
@@ -384,6 +450,8 @@ namespace ntk
 
         if (!m_image->calibration()->zero_depth_distortion)
         {
+            if (m_image->calibration()->depth_undistort_map1.empty())
+                const_Ptr_cast<RGBDCalibration>(m_image->calibration())->updateDistortionMaps();
             remap(m_image->rawDepthRef(), m_image->depthRef(),
                   m_image->calibration()->depth_undistort_map1,
                   m_image->calibration()->depth_undistort_map2,
@@ -392,7 +460,10 @@ namespace ntk
         }
         else
         {
-            m_image->rawDepthRef().copyTo(m_image->depthRef());
+            if (!m_image->rawDepthRef().empty())
+                m_image->rawDepthRef().copyTo(m_image->depthRef());
+            else
+                copy16bitsToFloat (m_image->rawDepth16bits(), m_image->rawDepthRef());
         }
 
         if (m_image->calibration()->zero_depth_distortion ||
@@ -440,6 +511,7 @@ namespace ntk
 
         cv::Mat3b& mapped_color = m_image->mappedRgbRef();
         mapped_color = cv::Mat3b(m_image->depth().size());
+        mapped_color = cv::Vec3b(0,0,0);
 
         float delta = 1.0 / m_mapping_resolution;
         for (float r = 0; r < depth_im.rows; r += delta )
@@ -620,6 +692,17 @@ namespace ntk
                 depth_im(r,c) = d;
             }
         }
+    }
+
+    void RGBDProcessor::erodeDepthBorders()
+    {
+        cv::Mat1b& depth_mask_im = m_image->depthMaskRef();
+        cv::Mat1b tmp_im;
+        depth_mask_im.copyTo(tmp_im);
+        cv::morphologyEx(tmp_im, depth_mask_im,
+                         cv::MORPH_ERODE,
+                         getStructuringElement(cv::MORPH_RECT,
+                                               cv::Size(3,3)));
     }
 
     void RGBDProcessor :: removeEdgeOutliers()
@@ -892,6 +975,16 @@ namespace ntk
         }
     }
 
+    OpenniRGBDProcessor::OpenniRGBDProcessor()
+        : RGBDProcessor()
+    {
+        // Everything is done by the grabber.
+        setFilterFlags(RGBDProcessorFlags::NiteProcessed
+                       | RGBDProcessorFlags::ComputeMapping/*
+                       | RGBDProcessorFlags::ErodeDepthBorders
+                       | RGBDProcessorFlags::RemoveSmallStructures*/);
+    }
+
     void OpenniRGBDProcessor :: computeMappings()
     {
         cv::Size depth_size = m_image->calibration()->raw_depth_size;
@@ -943,21 +1036,34 @@ namespace ntk
     RGBDProcessor* RGBDProcessorFactory :: createProcessor(const RGBDProcessorFactory::Params& params)
     {
         RGBDProcessor* processor = 0;
-        if (params.camera_type == "kinect-ni")
+        if (params.grabber_type == "openni")
         {
             processor = new OpenniRGBDProcessor();
         }
-        else if (params.camera_type == "kinect-freenect")
+        else if (params.grabber_type == "kin4win")
+        {
+            processor = new Kin4winRGBDProcessor();
+        }
+        else if (params.grabber_type == "freenect")
         {
             processor = new FreenectRGBDProcessor();
         }
-        else if (params.camera_type == "softkinetic")
+        else if (params.grabber_type == "softkinetic")
         {
+            ntk_dbg(1) << "Creating a softkinetic processor";
             processor = new SoftKineticRGBDProcessor();
         }
+#ifdef NESTK_USE_PMDSDK
+        else if (params.grabber_type == "pmd")
+        {
+            processor = new PmdRGBDProcessor();
+        }
+#endif
         else
         {
-            processor = new RGBDProcessor();
+            // By default
+            ntk_dbg(0) << "Warning: don't know which rgbd processor to create, creating OpenNI.";
+            processor = new OpenniRGBDProcessor();
         }
 
         if (params.do_mapping)

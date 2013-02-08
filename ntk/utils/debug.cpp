@@ -26,8 +26,51 @@
 #include <QtGlobal>
 #include <QMutex>
 #include <QMutexLocker>
+#include <QFile>
+#include <QDesktopServices>
+
+#include <cstdio>
+
+#include <iostream>
 
 typedef const char* CString;
+
+namespace ntk
+{
+
+QString logFileName;
+QMutex logFileLock;
+bool hasLogFileName = false;
+FILE* logFileHandle = 0;
+
+void setLogFileName (const std::string& logfile)
+{
+    QMutexLocker _ (&logFileLock);
+    if (logFileHandle)
+    {
+        fclose (logFileHandle);
+        logFileHandle = 0;
+    }
+
+    logFileName = QString::fromStdString(logfile);
+    if (logfile.empty())
+    {
+        hasLogFileName = false;
+    }
+    else
+    {
+        logFileHandle = fopen (logFileName.toAscii(), "a");
+        hasLogFileName = true;
+    }
+}
+
+std::string getLogFileName ()
+{
+    QMutexLocker _ (&logFileLock);
+    return logFileName.toStdString();
+}
+
+}
 
 #if _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -44,19 +87,19 @@ void printWindowsDebugOutputLine (CString prefix, CString message)
 void printStandardLine (CString prefix, CString message)
 {
     printWindowsDebugOutputLine(prefix, message);
-    std::cout << prefix << message << std::endl;
+    // std::cout << prefix << message << std::endl;
 }
 
 void printErrorLine (CString prefix, CString message)
 {
     printWindowsDebugOutputLine(prefix, message);
-    std::cerr << prefix << message << std::endl;
+    // std::cerr << prefix << message << std::endl;
 }
 
 void printLogLine (CString prefix, CString message)
 {
     printWindowsDebugOutputLine(prefix, message);
-    std::clog << prefix << message << std::endl;
+    // std::clog << prefix << message << std::endl;
 }
 #else
 #include <iostream>
@@ -131,6 +174,7 @@ QMutex MsgHandler::mutex;
 namespace ntk
 {
   int ntk_debug_level = 0;
+  int ntk_log_level = 0;
 
   extern QTextStream qErr;
   extern QTextStream qOut;
@@ -185,4 +229,41 @@ NtkDebug :: ~NtkDebug()
     MsgHandler::use();
 
     qDebug() << "[DBG]" << s;
+}
+
+namespace ntk
+{
+
+void print_log (const int level, const char* prefix, const char* fmt, ...)
+{
+    if (level > ntk::ntk_log_level)
+        return;
+
+    ntk::logFileLock.lock();
+    FILE* handle;
+
+    if (0 != ntk::logFileHandle)
+    {
+        handle = ntk::logFileHandle;
+    }
+    else
+    {
+        ntk::logFileLock.unlock();
+        if (level == 0)
+            handle = stderr;
+        else
+            handle = stdout;
+    }
+
+    fprintf (handle, prefix);
+    va_list args;
+    va_start(args, fmt);
+    vfprintf (handle, fmt, args);
+    va_end (args);
+
+    fflush (handle);
+
+    logFileLock.unlock();
+}
+
 }

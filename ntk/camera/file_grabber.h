@@ -43,6 +43,10 @@ public:
    */
   FileGrabber(const std::string& path, bool is_directory);
 
+public:
+  /*! Return an identifier of the camera type. */
+  virtual std::string grabberType () const { return m_grabber_type; }
+
 protected:
   virtual void run();
 
@@ -52,6 +56,7 @@ private:
   RGBDImage m_buffer_image;
   int m_current_image_index;
   bool m_is_directory;
+  std::string m_grabber_type;
 };
 
 } // ntk
