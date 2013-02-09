@@ -56,6 +56,10 @@ RGBDGrabberFactory::getDefaultGrabberType()
     return OPENNI;
 #endif
 
+#ifdef NESTK_USE_OPENNI2
+    return OPENNI2;
+#endif
+
 #ifdef NESTK_USE_FREENECT
     return FREENECT;
 #endif
@@ -72,16 +76,29 @@ RGBDGrabberFactory::getDefaultGrabberType()
 }
 
 RGBDGrabberFactory::RGBDGrabberFactory()
-    : ni_driver(0),
-      kin4win_driver(0)
+    : ni_driver(0)
+    , ni2_driver(0)
+    , kin4win_driver(0)
 {
 }
+
+RGBDGrabberFactory::~RGBDGrabberFactory()
+{
+    delete kin4win_driver;
+    delete ni2_driver;
+    delete ni_driver;
+}
+
 
 RGBDProcessor* RGBDGrabberFactory::createProcessor(const enum_grabber_type& grabber_type)
 {
     switch (grabber_type)
     {
     case OPENNI:
+        return new OpenniRGBDProcessor;
+
+    case OPENNI2:
+        // FIXME: Is this valid?
         return new OpenniRGBDProcessor;
 
     case KIN4WIN:
@@ -105,6 +122,7 @@ RGBDProcessor* RGBDGrabberFactory::createProcessor(const enum_grabber_type& grab
 
 bool RGBDGrabberFactory :: createOpenniGrabbers(const ntk::RGBDGrabberFactory::Params &params, std::vector<GrabberData>& grabbers)
 {
+#ifdef NESTK_USE_OPENNI
     if (!OpenniDriver::hasDll())
     {
         ntk_warn("No OpenNI dll found.\n");
@@ -114,7 +132,8 @@ bool RGBDGrabberFactory :: createOpenniGrabbers(const ntk::RGBDGrabberFactory::P
     // Config dir is supposed to be next to the binaries.
     QDir prev = QDir::current();
     QDir::setCurrent(QApplication::applicationDirPath());
-    OpenniDriver* ni_driver = new OpenniDriver();
+
+    ni_driver = new OpenniDriver();
 
     ntk_info("Number of Openni devices: %d\n", ni_driver->numDevices());
     ntk_dbg_print(ni_driver->numDevices(), 1);
@@ -140,12 +159,50 @@ bool RGBDGrabberFactory :: createOpenniGrabbers(const ntk::RGBDGrabberFactory::P
     QDir::setCurrent(prev.absolutePath());
 
     return ni_driver->numDevices() > 0;
+#else
+    return false;
+#endif
 }
 
 bool RGBDGrabberFactory :: createOpenni2Grabbers(const ntk::RGBDGrabberFactory::Params &params, std::vector<GrabberData>& grabbers)
 {
-    // FIXME: Implement.
+#ifdef NESTK_USE_OPENNI2
+    if (!Openni2Driver::hasDll())
+    {
+        ntk_warn("No OpenNI2 dll found.\n");
+        return false;
+    }
+
+    ni2_driver = new Openni2Driver();
+
+    Openni2Driver::SensorInfos sensorInfos = ni2_driver->getSensorInfos();
+
+    ntk_info("Number of Openni devices: %d\n", sensorInfos.size());
+    ntk_dbg_print(sensorInfos.size(), 1);
+
+    // Create grabbers.
+    for (unsigned n = 0; n < sensorInfos.size(); ++n)
+    {
+        Openni2Grabber* grabber = new Openni2Grabber(*ni2_driver, n);
+
+        if (params.high_resolution)
+            grabber->setHighRgbResolution(true);
+
+        grabber->setCustomBayerDecoding(false);
+        grabber->setUseHardwareRegistration(params.hardware_registration);
+
+        GrabberData data;
+        data.grabber = grabber;
+        data.type = OPENNI2;
+        data.processor = createProcessor(OPENNI2);
+
+        grabbers.push_back(data);
+    }
+
+    return sensorInfos.size() > 0;
+#else
     return false;
+#endif
 }
 
 bool RGBDGrabberFactory :: createPmdGrabbers(const ntk::RGBDGrabberFactory::Params &paramss, std::vector<GrabberData>& grabbers)
@@ -252,7 +309,7 @@ bool RGBDGrabberFactory :: createKin4winGrabbers(const ntk::RGBDGrabberFactory::
 
     std::vector<std::string> calibration_files;
 
-    Kin4WinDriver* kin_driver = new Kin4WinDriver;
+    kin4win_driver = new Kin4WinDriver;
 
     if (kin_driver->numDevices() < 1)
     {

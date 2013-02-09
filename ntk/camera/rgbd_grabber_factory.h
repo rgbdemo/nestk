@@ -7,12 +7,13 @@ namespace ntk
 {
 
 class OpenniDriver;
+class Openni2Driver;
 class Kin4WinDriver;
 
 class RGBDGrabberFactory
 {
 public:
-    enum enum_grabber_type { DEFAULT = 0, OPENNI = 1, FREENECT = 2, KIN4WIN = 3, PMD = 4, SOFTKINETIC = 5, SOFTKINETIC_IISU = 6 };
+    enum enum_grabber_type { DEFAULT = 0, OPENNI = 1, FREENECT = 2, KIN4WIN = 3, PMD = 4, SOFTKINETIC = 5, SOFTKINETIC_IISU = 6, OPENNI2 = 7 };
 
     static enum_grabber_type getDefaultGrabberType();
 
@@ -42,7 +43,8 @@ public:
     };
 
 public:
-    RGBDGrabberFactory();
+     RGBDGrabberFactory();
+    ~RGBDGrabberFactory();
 
     std::vector<GrabberData> createGrabbers(const Params& params);
 
@@ -61,6 +63,7 @@ protected:
 
 protected:
     OpenniDriver* ni_driver;
+    Openni2Driver* ni2_driver;
     Kin4WinDriver* kin4win_driver;
 };
 

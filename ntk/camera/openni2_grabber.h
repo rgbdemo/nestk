@@ -1,37 +1,53 @@
 #pragma once
 
 #include <ntk/camera/rgbd_grabber.h>
-#include <OpenNI2/OpenNI.h>
+#include <set>
 
-namespace ntk
-{
+namespace openni {
+    class DeviceInfo;
+}
+
+//------------------------------------------------------------------------------
+
+namespace ntk {
 
 class Openni2Driver
 {
 public:
-    struct DeviceInfo
-    {
-        std::string creation_info;
-        std::string camera_type;
-        std::string serial;
-        std::string vendor;
-        unsigned short vendor_id;
-        unsigned short product_id;
-        unsigned char bus;
-        unsigned char address;
-    };
+    static bool hasDll ();
 
 public:
-    Openni2Driver();
+     Openni2Driver();
     ~Openni2Driver();
 
 public:
-    int numDevices() const;
-    const DeviceInfo& deviceInfo(int index) const;
+    struct SensorInfo
+    {
+        SensorInfo (const openni::DeviceInfo& info);
+
+        bool operator < (const SensorInfo& rhs) const
+        {
+            return key < rhs.key;
+        }
+
+        const QString uri;
+        const QString vendor;
+        const QString name;
+        const QString vendorId;
+        const QString productId;
+        const QString key;
+    };
 
 public:
-    static bool hasDll ();
+    typedef std::vector<SensorInfo> SensorInfos;
+    SensorInfos getSensorInfos () const;
+
+public:
+    class Impl;
+    Impl* impl;
 };
+
+//------------------------------------------------------------------------------
 
 class Openni2Grabber : public ntk::RGBDGrabber
 {
