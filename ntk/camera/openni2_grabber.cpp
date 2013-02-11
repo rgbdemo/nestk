@@ -30,10 +30,7 @@ Openni2Driver::hasDll ()
     // Trigger OpenNI2 SDK DLL loading by calling one of its functions.
     __try
     {
-        OniStatus status = oniInitialize(ONI_API_VERSION);
-        // FIXME: Call something without side effects above and remove below.
-        if (ONI_STATUS_OK == status)
-            oniShutdown();
+        const int version = OpenNi::getVersion();
 
         return true;
     }
