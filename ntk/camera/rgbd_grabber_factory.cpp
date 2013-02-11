@@ -183,21 +183,28 @@ bool RGBDGrabberFactory :: createOpenni2Grabbers(const ntk::RGBDGrabberFactory::
 #ifdef NESTK_USE_OPENNI2
     if (!Openni2Driver::hasDll())
     {
-        ntk_warn("No OpenNI2 dll found.\n");
+        ntk_warn("OpenNI2: No dll found.\n");
         return false;
     }
 
     ni2_driver = new Openni2Driver();
 
-    Openni2Driver::SensorInfos sensorInfos = ni2_driver->getSensorInfos();
+    if (!ni2_driver->isReady())
+    {
+        ntk_error("OpenNI2: %s\n", ni2_driver->getLastError().toUtf8().constData());
+        return false;
+    }
 
-    ntk_info("Number of Openni devices: %d\n", sensorInfos.size());
+    Openni2Driver::SensorInfos sensorInfos;
+    ni2_driver->getSensorInfos(sensorInfos);
+
+    ntk_info("OpenNI2: Number of devices: %d\n", sensorInfos.size());
     ntk_dbg_print(sensorInfos.size(), 1);
 
     // Create grabbers.
     for (unsigned n = 0; n < sensorInfos.size(); ++n)
     {
-        Openni2Grabber* grabber = new Openni2Grabber(*ni2_driver, n);
+        Openni2Grabber* grabber = new Openni2Grabber(*ni2_driver, sensorInfos[n].uri);
 
         if (params.high_resolution)
             grabber->setHighRgbResolution(true);
