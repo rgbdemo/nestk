@@ -442,7 +442,7 @@ bool SoftKineticGrabber :: disconnectFromDevice()
 bool SoftKineticGrabber::hasDll()
 {
 #ifdef _MSC_VER
-    // Trigger Kinect SDK DLL loading by calling one of its functions.
+    // Trigger SoftKinetic DLL loading by calling one of its functions.
     __try
     {
         int32_t rgb_width, rgb_height;
