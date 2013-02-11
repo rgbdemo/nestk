@@ -42,10 +42,16 @@ public:
         std::string message;
     };
 
-public:
+private:
      RGBDGrabberFactory();
-    ~RGBDGrabberFactory();
 
+public:
+     static RGBDGrabberFactory& instance ();
+
+public:
+     ~RGBDGrabberFactory();
+
+public:
     std::vector<GrabberData> createGrabbers(const Params& params);
 
 protected:

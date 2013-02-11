@@ -97,6 +97,12 @@ RGBDGrabberFactory::~RGBDGrabberFactory()
 #endif
 }
 
+RGBDGrabberFactory&
+RGBDGrabberFactory::instance ()
+{
+    static RGBDGrabberFactory ret;
+    return ret;
+}
 
 RGBDProcessor* RGBDGrabberFactory::createProcessor(const enum_grabber_type& grabber_type)
 {
