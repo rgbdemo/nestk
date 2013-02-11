@@ -84,9 +84,17 @@ RGBDGrabberFactory::RGBDGrabberFactory()
 
 RGBDGrabberFactory::~RGBDGrabberFactory()
 {
+#ifdef NESTK_USE_KIN4WIN
     delete kin4win_driver;
+#endif
+
+#ifdef NESTK_USE_OPENNI2
     delete ni2_driver;
+#endif
+
+#ifdef NESTK_USE_OPENNI
     delete ni_driver;
+#endif
 }
 
 
