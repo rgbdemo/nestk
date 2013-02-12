@@ -209,6 +209,15 @@ void debugStream (VideoStream& stream)
 }
 
 bool
+haveEqualSize (const VideoMode& first, const VideoMode& second)
+{
+    const bool sameWidth  = first.getResolutionX() == second.getResolutionX();
+    const bool sameHeight = first.getResolutionY() == second.getResolutionY();
+
+    return sameWidth && sameHeight;
+}
+
+bool
 haveEqualSize (const cv::Mat& matrix, VideoFrameRef frame)
 {
     const bool sameWidth  = matrix.cols == frame.getWidth();
@@ -310,7 +319,7 @@ decodeColorFrame_RGB888 (RGBDImage& image, VideoFrameRef frame)
 
  // const RGB888Pixel* framePixels = reinterpret_cast<const RGB888Pixel*>(frame.getData());
     const quint8*      framePixels = reinterpret_cast<const quint8*     >(frame.getData());
-    const int          frameSize   = frame.getDataSize() / sizeof(RGB888Pixel);
+    const int          frameSize   = frame.getDataSize() / sizeof(RGB888Pixel) * 3;
     quint8*            imagePixels = image.rawRgbRef().ptr<quint8>();
 
     // FIXME: RGB or BGR?
@@ -338,6 +347,18 @@ decodeColorFrame (RGBDImage& image, VideoFrameRef frame)
     }
 
     return false;
+}
+
+void
+prepareFrameImage (RGBDImage& image, int width, int height, RGBDCalibrationConstPtr calibration)
+{
+    const cv::Size size(width, height);
+
+    image.rawDepth16bitsRef() = cv::Mat1w(size);
+    image.rawRgbRef() = cv::Mat3b(size);
+
+    // FIXME: Fix image calibration estimation and enable this.
+    // image.setCalibration(calibration);
 }
 
 } }
@@ -426,12 +447,26 @@ struct Openni2Grabber::Impl
 
             // FIXME: Some m_rgbd_image locking should be necessary here. Check that.
             image.swap(that->m_rgbd_image);
-
-            color.ready = false;
-            depth.ready = false;
         }
 
         that->advertiseNewFrame();
+    }
+
+    RGBDCalibrationConstPtr
+    estimateCalibration (int width, int height) const
+    {
+        const cv::Size size(width, height);
+
+        RGBDCalibration* ret = new RGBDCalibration;
+
+        ret->setRawRgbSize(size);
+        ret->setRgbSize(size);
+        ret->raw_depth_size = size;
+        ret->depth_size = size;
+
+        // FIXME: Set missing calibration data.
+
+        return ret;
     }
 
     Openni2Grabber* that;
@@ -600,15 +635,28 @@ Openni2Grabber::setUseHardwareRegistration(bool enable)
 void
 Openni2Grabber::run ()
 {
+    if (!m_connected)
+        ntk_error("OpenNI2: Cannot start grabbing: Device not connected.");
+
     Status status = STATUS_OK;
 
-    // FIXME: Initialize image.
+    // FIXME: Handle differing depth and color frame sizes.
+    if (!haveEqualSize(impl->depth.stream.getVideoMode(), impl->color.stream.getVideoMode()))
+        ntk_error("OpenNI2: Cannot start grabbing: Incompatible depth and stream sizes.");
+
+    const int frameWidth  = impl->depth.stream.getVideoMode().getResolutionX();
+    const int frameHeight = impl->depth.stream.getVideoMode().getResolutionY();
+
+    RGBDCalibrationConstPtr calibration = impl->estimateCalibration(frameWidth, frameHeight);
+
+    prepareFrameImage( impl->image, frameWidth, frameHeight, calibration);
+    prepareFrameImage(m_rgbd_image, frameWidth, frameHeight, calibration);
 
     impl->depth.stream.addNewFrameListener(&impl->depth.listener);
     impl->depth.stream.start();
     if (STATUS_OK  != status)
     {
-        ntk_error("OpenNI2: Couldn't start the depth stream\n%s\n", OpenNI::getExtendedError());
+        ntk_error("OpenNI2: Cannot start grabbing: Couldn't start the depth stream\n%s\n", OpenNI::getExtendedError());
         return;
     }
 
@@ -616,7 +664,7 @@ Openni2Grabber::run ()
     impl->color.stream.start();
     if (STATUS_OK  != status)
     {
-        ntk_error("OpenNI2: Couldn't start the color stream\n%s\n", OpenNI::getExtendedError());
+        ntk_error("OpenNI2: Cannot start grabbing: Couldn't start the color stream\n%s\n", OpenNI::getExtendedError());
         return;
     }
 
