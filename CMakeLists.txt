@@ -97,7 +97,7 @@ CONFIGURE_FILE(UseNestk.cmake.in
 
 FILE(GLOB CMAKE_FILES "cmake/*.cmake")
 
-EXPORT(TARGETS nestk glew
+EXPORT(TARGETS nestk glew lz4
        FILE "${nestk_BINARY_DIR}/nestk-config.cmake")
 
 INSTALL(FILES
