@@ -176,6 +176,12 @@ namespace ntk
                                  const Pose3D& depth_pose,
                                  const Pose3D& rgb_pose)
   {
+    if ((!depth_pose.isValid() || !rgb_pose.isValid())
+            && (image.calibration().empty()
+                || 0 == image.calibration()->depth_pose
+                || 0 == image.calibration()->rgb_pose))
+      return; // No poses, no 3d.
+
     const Pose3D& real_depth_pose = depth_pose.isValid() ? depth_pose : *(image.calibration()->depth_pose);
     const Pose3D& real_rgb_pose = rgb_pose.isValid() ? rgb_pose : *(image.calibration()->rgb_pose);
 
