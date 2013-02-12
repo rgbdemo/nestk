@@ -3,6 +3,7 @@
 #include <brief/impl.h>
 #include <set>
 #include <iterator>
+#include <algorithm>
 #include <cassert>
 #include <cstdio>
 #include <QMutex>
@@ -170,6 +171,179 @@ inline bool operator == (const VideoStream& lhs, const VideoStream& rhs)
 
 }
 
+//------------------------------------------------------------------------------
+
+namespace ntk { namespace {
+
+void debugStream (VideoStream& stream)
+{
+    VideoFrameRef frame;
+
+    stream.readFrame(&frame);
+
+    DepthPixel* pDepth;
+    RGB888Pixel* pColor;
+
+    int middleIndex = (frame.getHeight()+1) * frame.getWidth() / 2;
+
+    switch (frame.getVideoMode().getPixelFormat())
+    {
+    case PIXEL_FORMAT_DEPTH_1_MM:
+    case PIXEL_FORMAT_DEPTH_100_UM:
+        pDepth = (DepthPixel*)frame.getData();
+        ntk_info("[%08llu] %8d\n", (long long)frame.getTimestamp(),
+            pDepth[middleIndex]);
+        break;
+
+    case PIXEL_FORMAT_RGB888:
+        pColor = (RGB888Pixel*)frame.getData();
+        ntk_info("[%08llu] 0x%02x%02x%02x\n", (long long)frame.getTimestamp(),
+            pColor[middleIndex].r&0xff,
+            pColor[middleIndex].g&0xff,
+            pColor[middleIndex].b&0xff);
+        break;
+
+    default:
+        ntk_info("Unknown format\n");
+    }
+}
+
+bool
+haveEqualSize (const cv::Mat& matrix, VideoFrameRef frame)
+{
+    const bool sameWidth  = matrix.cols == frame.getWidth();
+    const bool sameHeight = matrix.rows == frame.getHeight();
+
+    return sameWidth && sameHeight;
+}
+
+const char*
+getPixelFormatName (PixelFormat format)
+{
+    switch (format)
+    {
+    case openni::PIXEL_FORMAT_DEPTH_1_MM:
+        return "1 mm";
+    case openni::PIXEL_FORMAT_DEPTH_100_UM:
+        return "100 um";
+    case openni::PIXEL_FORMAT_SHIFT_9_2:
+        return "Shifts 9.2";
+    case openni::PIXEL_FORMAT_SHIFT_9_3:
+        return "Shifts 9.3";
+    case openni::PIXEL_FORMAT_RGB888:
+        return "RGB 888";
+    case openni::PIXEL_FORMAT_YUV422:
+        return "YUV 422";
+    case openni::PIXEL_FORMAT_GRAY8:
+        return "Grayscale 8-bit";
+    case openni::PIXEL_FORMAT_GRAY16:
+        return "Grayscale 16-bit";
+    case openni::PIXEL_FORMAT_JPEG:
+        return "JPEG";
+    default:
+        return "Unknown";
+    }
+}
+
+bool
+decode16BitDepthFrame (RGBDImage &image, VideoFrameRef frame)
+{
+    if (!haveEqualSize(image.rawRgbRef(), frame))
+    {
+        ntk_error("OpenNI2: Bad depth frame size.\n");
+        return false;
+    }
+
+    const DepthPixel* framePixels = reinterpret_cast<const DepthPixel*>(frame.getData());
+    const int         frameSize   = frame.getDataSize() / sizeof(DepthPixel);
+    quint16*          imagePixels = image.rawDepth16bitsRef().ptr<quint16>();
+
+    std::copy(framePixels, framePixels + frameSize, imagePixels);
+
+    return true;
+}
+
+bool
+decodeDepthFrame_1_MM (RGBDImage& image, VideoFrameRef frame)
+{
+    // FIXME: Is there any additional processing needed here?
+    return decode16BitDepthFrame(image, frame);
+}
+
+bool
+decodeDepthFrame_100_UM (RGBDImage& image, VideoFrameRef frame)
+{
+    // FIXME: Is there any additional processing needed here?
+    return decode16BitDepthFrame(image, frame);
+}
+
+bool
+decodeDepthFrame (RGBDImage& image, VideoFrameRef frame)
+{
+    const VideoMode& mode = frame.getVideoMode();
+    const PixelFormat& format = mode.getPixelFormat();
+
+    switch (format)
+    {
+        case PIXEL_FORMAT_DEPTH_1_MM:   return decodeDepthFrame_1_MM(image, frame);
+        case PIXEL_FORMAT_DEPTH_100_UM: return decodeDepthFrame_100_UM(image, frame);
+
+        case PIXEL_FORMAT_SHIFT_9_2:    // FIXME: Implement.
+        case PIXEL_FORMAT_SHIFT_9_3:    // FIXME: Implement.
+
+    default:
+        ntk_error("OpenNI2: Unhandled depth frame format: %s.\n", getPixelFormatName(format));
+    }
+
+    return false;
+}
+
+bool
+decodeColorFrame_RGB888 (RGBDImage& image, VideoFrameRef frame)
+{
+    if(!haveEqualSize(image.rawRgbRef(), frame))
+    {
+        ntk_error("OpenNI2: Bad color frame size.\n");
+
+        return false;
+    }
+
+ // const RGB888Pixel* framePixels = reinterpret_cast<const RGB888Pixel*>(frame.getData());
+    const quint8*      framePixels = reinterpret_cast<const quint8*     >(frame.getData());
+    const int          frameSize   = frame.getDataSize() / sizeof(RGB888Pixel);
+    quint8*            imagePixels = image.rawRgbRef().ptr<quint8>();
+
+    // FIXME: RGB or BGR?
+    std::copy(framePixels, framePixels + frameSize, imagePixels);
+
+    return true;
+}
+
+bool
+decodeColorFrame (RGBDImage& image, VideoFrameRef frame)
+{
+    const VideoMode& mode = frame.getVideoMode();
+    const PixelFormat& format = mode.getPixelFormat();
+
+    switch (format)
+    {
+        case PIXEL_FORMAT_RGB888: return decodeColorFrame_RGB888(image, frame);
+        case PIXEL_FORMAT_YUV422: // FIXME: Implement.
+        case PIXEL_FORMAT_GRAY8 : // FIXME: Implement.
+        case PIXEL_FORMAT_GRAY16: // FIXME: Implement.
+        case PIXEL_FORMAT_JPEG  : // FIXME: Implement.
+
+    default:
+        ntk_error("OpenNI2: Unhandled color frame format: %s.\n", getPixelFormatName(format));
+    }
+
+    return false;
+}
+
+} }
+
+//------------------------------------------------------------------------------
+
 namespace ntk {
 
 struct Openni2Grabber::Impl
@@ -193,62 +367,71 @@ struct Openni2Grabber::Impl
     {
         VideoFrameRef frame;
 
+        stream.readFrame(&frame);
+
+        // debugStream(stream);
+
         if (depth.stream == stream)
         {
-            ntk_dbg(2) << "OpenNI2: Depth frame available.";
-            frame = depth.frame;
+            ntk_dbg(2) << "OpenNI2: Depth frame available.\n";
+
+            QMutexLocker _(&mutex);
+
+            depth.frame = frame;
+            depth.ready = true;
         }
 
         if (color.stream == stream)
         {
-            ntk_dbg(2) << "OpenNI2: Color frame available.";
-            frame = color.frame;
+            ntk_dbg(2) << "OpenNI2: Color frame available.\n";
+
+            QMutexLocker _(&mutex);
+
+            color.frame = frame;
+            color.ready = true;
         }
 
-        stream.readFrame(&frame);
-
-        DepthPixel* pDepth;
-        RGB888Pixel* pColor;
-
-        int middleIndex = (frame.getHeight()+1) * frame.getWidth() / 2;
-
-        switch (frame.getVideoMode().getPixelFormat())
-        {
-        case PIXEL_FORMAT_DEPTH_1_MM:
-        case PIXEL_FORMAT_DEPTH_100_UM:
-            pDepth = (DepthPixel*)frame.getData();
-            ntk_info("[%08llu] %8d\n", (long long)frame.getTimestamp(),
-                pDepth[middleIndex]);
-            break;
-
-        case PIXEL_FORMAT_RGB888:
-            pColor = (RGB888Pixel*)frame.getData();
-            ntk_info("[%08llu] 0x%02x%02x%02x\n", (long long)frame.getTimestamp(),
-                pColor[middleIndex].r&0xff,
-                pColor[middleIndex].g&0xff,
-                pColor[middleIndex].b&0xff);
-            break;
-
-        default:
-            ntk_info("Unknown format\n");
-        }
+        onPartialFrame();
     }
 
     void
-    onFullFrame ()
+    onPartialFrame ()
     {
+        if (!color.ready || !depth.ready)
+            return; // Stubbornly refuse to expose incomplete frames.
+
         image.setTimestamp(that->getCurrentTimestamp());
+
+        VideoFrameRef depthFrame;
+        VideoFrameRef colorFrame;
 
         {
             QMutexLocker _(&mutex);
 
+            depthFrame = depth.frame;
+            colorFrame = color.frame;
+
+            depth.ready = false;
+            color.ready = false;
+        }
+
+        if (!decodeDepthFrame(image, depthFrame))
+            return;
+
+        if (!decodeColorFrame(image, colorFrame))
+            return;
+
+        {
+            QMutexLocker _(&mutex);
+
+            // FIXME: Some m_rgbd_image locking should be necessary here. Check that.
             image.swap(that->m_rgbd_image);
+
+            color.ready = false;
+            depth.ready = false;
         }
 
         that->advertiseNewFrame();
-
-        color.dirty = true;
-        depth.dirty = true;
     }
 
     Openni2Grabber* that;
@@ -266,6 +449,12 @@ struct Openni2Grabber::Impl
 
     struct Channel
     {
+        Channel ()
+            : ready(false)
+        {
+
+        }
+
         struct FrameListener : VideoStream::NewFrameListener
         {
             virtual void onNewFrame (VideoStream& stream)
@@ -277,7 +466,7 @@ struct Openni2Grabber::Impl
         };
 
         FrameListener listener;
-        bool             dirty;
+        bool             ready;
         VideoFrameRef    frame;
         VideoStream     stream;
     };
@@ -412,6 +601,8 @@ void
 Openni2Grabber::run ()
 {
     Status status = STATUS_OK;
+
+    // FIXME: Initialize image.
 
     impl->depth.stream.addNewFrameListener(&impl->depth.listener);
     impl->depth.stream.start();
