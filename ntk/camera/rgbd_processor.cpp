@@ -58,6 +58,8 @@ static void copy16bitsToFloat (const cv::Mat1w& src_im, cv::Mat1f& dest_im)
 SoftKineticRGBDProcessor::SoftKineticRGBDProcessor()
     : RGBDProcessor()
 {
+    setMinDepth (0.15f);
+    setMaxDepth (2.0f);
     setFilterFlags(RGBDProcessorFlags::FilterMedian | RGBDProcessorFlags::FilterEdges /* | RGBDProcessorFlags::ErodeDepthBorders */);
     // setFilterFlags(RGBDProcessorFlags::FilterBilateral | RGBDProcessorFlags::FilterEdges);
 }
