@@ -332,18 +332,18 @@ bool RGBDGrabberFactory :: createKin4winGrabbers(const ntk::RGBDGrabberFactory::
 
     kin4win_driver = new Kin4WinDriver;
 
-    if (kin_driver->numDevices() < 1)
+    if (kin4win_driver->numDevices() < 1)
     {
         ntk_info("No Kinect for Windows devices found.\n");
         return false;
     }
 
-    ntk_info("Number of Kinect for Windows devices found: %d.\n", kin_driver->numDevices());
+    ntk_info("Number of Kinect for Windows devices found: %d.\n", kin4win_driver->numDevices());
 
     // Create grabbers.
-    for (int i = 0; i < kin_driver->numDevices(); ++i)
+    for (int i = 0; i < kin4win_driver->numDevices(); ++i)
     {
-        Kin4WinGrabber* k_grabber = new Kin4WinGrabber(*kin_driver, i);
+        Kin4WinGrabber* k_grabber = new Kin4WinGrabber(*kin4win_driver, i);
 
         if (params.high_resolution)
             k_grabber->setHighRgbResolution(true);
