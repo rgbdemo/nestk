@@ -397,10 +397,8 @@ inline bool is_yx_in_range(const cv::Mat& image, int y, int x)
 inline bool is_zyx_in_range(const cv::Mat& image, int z, int y, int x)
 { return (x >= 0) && (y >= 0) && (z >= 0) && (x < image.size[0]) && (y < image.size[1]) && (z < image.size[2]); }
 
-inline void normalize(cv::Vec3f& v)
-{
-    v *= float(1.0 / (sqrt(v.dot(v))));
-}
+inline void normalize(cv::Vec3f& v) { v *= float(1.0 / (sqrt(v.dot(v)))); }
+inline void normalize(cv::Point3f& v) { v *= float(1.0 / (sqrt(v.dot(v)))); }
 
 inline cv::Vec3b bgr_to_rgb(const cv::Vec3b& v)
 { return cv::Vec3b(v[2], v[1], v[0]); }
