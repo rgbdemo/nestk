@@ -788,6 +788,7 @@ const cv::Mat1d Pose3D :: cvCameraTransformd() const
 void Pose3D::getEigenCameraTransform(EigenIsometry3dHolder* holder) const
 {
     holder->camera_transform = &(impl->camera_transform);
+    holder->projective_transform = &(impl->project_transform);
 }
 
 void Pose3D::cvRotationMatrixTranslation(cv::Mat1d& translation, cv::Mat1d& rotation) const
