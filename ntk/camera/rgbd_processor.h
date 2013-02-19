@@ -76,6 +76,19 @@ private:
     int m_flags;
 };
 
+} // ntk
+
+// Algorithms
+namespace ntk
+{
+
+void computeNormals (const cv::Mat1f& depth_im, const ntk::Pose3D& depth_pose, cv::Mat3f& normals_im);
+
+} // ntk
+
+namespace ntk
+{
+
 /*!
  * Process raw RGB-D images to generate postprocessed members.
  * Various options are available through flags.

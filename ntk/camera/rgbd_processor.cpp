@@ -43,6 +43,37 @@
 // namespace is pulled at the top-level one. Fully-qualify cv symbols, for now.
 // using namespace cv;
 
+namespace ntk
+{
+
+void computeNormals (const cv::Mat1f& depth_im, const ntk::Pose3D& depth_pose, cv::Mat3f& normals_im)
+{
+    ntk_ensure (depth_pose.isValid(), "Calibration required.");
+    ntk::TimeCount tc ("computeNormals", 2);
+
+    normals_im.create (depth_im.size());
+    normals_im = infinite_point();
+
+    cv::Mat1f dx, dy;
+
+    // norm is 32 for 3x3 kernel.
+    // norm is 128 for 5x5 kernel.
+    float kernel_norm = 1.0/128.0; // sobel 5x5 multiplies by 128 the unit derivate.
+    cv::Sobel(depth_im, dx, CV_32F, 1, 0, 5, kernel_norm);
+    cv::Sobel(depth_im, dy, CV_32F, 0, 1, 5, kernel_norm);
+
+    for_all_rc(depth_im)
+    {
+        cv::Vec3f n = estimate_normal_from_depth (depth_im, depth_pose,
+                                                  r, c, 0.03f,
+                                                  dx.data ? &dx : 0, dy.data ? &dy : 0);
+        normals_im (r,c) = n;
+    }
+    tc.stop();
+}
+
+} // ntk
+
 namespace ntk {
 
 static void copy16bitsToFloat (const cv::Mat1w& src_im, cv::Mat1f& dest_im)
@@ -164,30 +195,8 @@ namespace ntk
     // FIXME: why is it so slow ?
     void RGBDProcessor :: computeNormals(RGBDImage& image)
     {
-        ntk_ensure(image.calibration(), "Calibration required.");
-        ntk::TimeCount tc("computeNormals", 2);
-        const Pose3D& depth_pose = *image.calibration()->depth_pose;
-        const cv::Mat1f& depth_im = image.depth();
-        cv::Mat3f& normal_im = image.normalRef();
-        normal_im = cv::Mat3f(depth_im.size());
-        normal_im = infinite_point();
-
-        cv::Mat1f dx, dy;
-
-        // norm is 32 for 3x3 kernel.
-        // norm is 128 for 5x5 kernel.
-        float kernel_norm = 1.0/128.0; // sobel 5x5 multiplies by 128 the unit derivate.
-        cv::Sobel(depth_im, dx, CV_32F, 1, 0, 5, kernel_norm);
-        cv::Sobel(depth_im, dy, CV_32F, 0, 1, 5, kernel_norm);
-
-        for_all_rc(depth_im)
-        {
-            cv::Vec3f n = estimate_normal_from_depth(depth_im, depth_pose,
-                                                     r, c, 0.03f,
-                                                     dx.data ? &dx : 0, dy.data ? &dy : 0);
-            normal_im(r,c) = n;
-        }
-        tc.stop();
+        ntk_ensure (image.calibration(), "Calibration required.");
+        ntk::computeNormals (image.depth(), *image.calibration()->depth_pose, image.normalRef());
     }
 
 #ifdef NESTK_USE_PCL
