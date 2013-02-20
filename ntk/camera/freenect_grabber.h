@@ -67,6 +67,8 @@ public:
   /*! Special mode switching between IR and RGB after each frame. */
   void setDualRgbIR(bool enable);
 
+  virtual std::string grabberType() const { return "freenect"; }
+
 public:
   void depthCallBack(uint16_t *buf, int width, int height);
   void rgbCallBack(uint8_t *buf, int width, int height);

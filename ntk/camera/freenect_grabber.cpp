@@ -123,6 +123,9 @@ void FreenectGrabber :: startKinect()
 
 bool FreenectGrabber :: connectToDevice()
 {
+    if (m_connected)
+        return true;
+
     if (freenect_init(&f_ctx, NULL) < 0)
     {
         ntk_dbg(0) << "freenect_init() failed";

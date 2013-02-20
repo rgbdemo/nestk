@@ -43,8 +43,8 @@ int main(int argc, char** argv)
 
   ntk::ntk_debug_level = 1; // set the debug level
 
-  RGBDCalibration calibration;
-  calibration.loadFromFile(opt::calibration_file());
+  RGBDCalibrationPtr calibration (new RGBDCalibration);
+  calibration->loadFromFile(opt::calibration_file());
 
   FreenectGrabber grabber;
   grabber.connectToDevice();

@@ -236,8 +236,17 @@ bool OpenniGrabber :: connectToDevice()
 
     xn::NodeInfo deviceInfo = *nodeIt;
     ntk_assert(m_driver.deviceInfo(m_camera_id).creation_info == deviceInfo.GetCreationInfo(), "Inconsistent nodes!");
-    status = m_driver.niContext().CreateProductionTree(deviceInfo, m_ni_device);
-    m_driver.checkXnError(status, "Create Device Node");
+    status = m_driver.niContext().CreateProductionTree(deviceInfo, m_ni_device);    
+
+    try
+    {
+        m_driver.checkXnError(status, "Create Device Node");
+    }
+    catch (const std::exception& e)
+    {
+        return false;
+    }
+
     const XnProductionNodeDescription& description = deviceInfo.GetDescription();
     ntk_info("device %d: vendor %s name %s, instance %s, serial %s\n",
              m_camera_id,
