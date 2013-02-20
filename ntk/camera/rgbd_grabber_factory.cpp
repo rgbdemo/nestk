@@ -152,6 +152,24 @@ bool RGBDGrabberFactory :: createOpenni2Grabbers(const ntk::RGBDGrabberFactory::
     return false;
 }
 
+bool RGBDGrabberFactory :: createFreenectGrabbers(const ntk::RGBDGrabberFactory::Params &params, std::vector<GrabberData>& grabbers)
+{
+#ifndef NESTK_USE_FREENECT
+    return false;
+#else
+    FreenectGrabber* k_grabber = new FreenectGrabber();
+
+    GrabberData new_data;
+    new_data.grabber = k_grabber;
+    new_data.type = FREENECT;
+    new_data.processor = createProcessor(FREENECT);
+    grabbers.push_back(new_data);
+
+    bool ok = k_grabber->connectToDevice();
+    return ok;
+#endif
+}
+
 bool RGBDGrabberFactory :: createPmdGrabbers(const ntk::RGBDGrabberFactory::Params &paramss, std::vector<GrabberData>& grabbers)
 {
 #ifdef NESTK_USE_PMDSDK
@@ -375,8 +393,12 @@ RGBDGrabberFactory::createGrabbers(const ntk::RGBDGrabberFactory::Params& orig_p
     else
     {
         createKin4winGrabbers(params, grabbers);
-        createOpenniGrabbers(params, grabbers);
-        createOpenni2Grabbers(params, grabbers);
+        if (params.default_type != FREENECT)
+        {
+            createOpenniGrabbers(params, grabbers);
+            createOpenni2Grabbers(params, grabbers);
+        }
+        createFreenectGrabbers(params, grabbers);
         createPmdGrabbers(params, grabbers);
         createSoftKineticGrabbers(params, grabbers);
         createSoftKineticIisuGrabbers(params, grabbers);
