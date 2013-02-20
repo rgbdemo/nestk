@@ -143,17 +143,17 @@ void SoftKineticGrabber :: estimateCalibration(DepthSense::StereoCameraParameter
 
     m_calib_data->rgb_distortion = Mat1d(1,5);
 #ifndef SOFTKINETIC_CONFIDENCE_AS_COLOR
-    m_calib_data->rgb_distortion(0,0) = parameters.colorIntrinsics.k1;
-    m_calib_data->rgb_distortion(1,0) = parameters.colorIntrinsics.k2;
-    m_calib_data->rgb_distortion(2,0) = parameters.colorIntrinsics.p1;
-    m_calib_data->rgb_distortion(3,0) = parameters.colorIntrinsics.p2;
-    m_calib_data->rgb_distortion(4,0) = parameters.colorIntrinsics.k3;
+    m_calib_data->rgb_distortion(0, 0) = parameters.colorIntrinsics.k1;
+    m_calib_data->rgb_distortion(0, 1) = parameters.colorIntrinsics.k2;
+    m_calib_data->rgb_distortion(0, 2) = parameters.colorIntrinsics.p1;
+    m_calib_data->rgb_distortion(0, 3) = parameters.colorIntrinsics.p2;
+    m_calib_data->rgb_distortion(0, 4) = parameters.colorIntrinsics.k3;
 #else
-    m_calib_data->rgb_distortion(0,0) = parameters.depthIntrinsics.k1;
-    m_calib_data->rgb_distortion(1,0) = parameters.depthIntrinsics.k2;
-    m_calib_data->rgb_distortion(2,0) = parameters.depthIntrinsics.p1;
-    m_calib_data->rgb_distortion(3,0) = parameters.depthIntrinsics.p2;
-    m_calib_data->rgb_distortion(4,0) = parameters.depthIntrinsics.k3;
+    m_calib_data->rgb_distortion(0, 0) = parameters.depthIntrinsics.k1;
+    m_calib_data->rgb_distortion(0, 1) = parameters.depthIntrinsics.k2;
+    m_calib_data->rgb_distortion(0, 2) = parameters.depthIntrinsics.p1;
+    m_calib_data->rgb_distortion(0, 3) = parameters.depthIntrinsics.p2;
+    m_calib_data->rgb_distortion(0, 4) = parameters.depthIntrinsics.k3;
 #endif
     m_calib_data->zero_rgb_distortion = false;
 
