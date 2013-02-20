@@ -31,14 +31,14 @@ public:
             return key < rhs.key;
         }
 
-        const QString uri;
-        const QString vendor;
-        const QString name;
-        const quint16 vendorId;
-        const quint16 productId;
+        QString uri;
+        QString vendor;
+        QString name;
+        quint16 vendorId;
+        quint16 productId;
 
     private:
-        const QString key;
+        QString key;
     };
 
 public:
@@ -48,7 +48,7 @@ public:
     QString getLastError () const;
 
 public:
-    class Impl;
+    struct Impl;
     Impl* impl;
 };
 
@@ -77,7 +77,7 @@ protected:
     virtual void run();
 
 private:
-    class Impl;
+    struct Impl;
     Impl* impl;
 };
 

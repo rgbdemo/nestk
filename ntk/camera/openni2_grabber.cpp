@@ -34,7 +34,7 @@ Openni2Driver::hasDll ()
     // Trigger OpenNI2 SDK DLL loading by calling one of its functions.
     __try
     {
-        const int version = OpenNi::getVersion();
+        const Version version = OpenNI::getVersion();
 
         return true;
     }
