@@ -82,6 +82,8 @@ private:
 namespace ntk
 {
 
+void subsampleDepth (const cv::Mat1f& depth_im, cv::Mat1f& subsampled_im, int factor);
+
 void computeNormals (const cv::Mat1f& depth_im, const ntk::Pose3D& depth_pose, cv::Mat3f& normals_im);
 
 } // ntk

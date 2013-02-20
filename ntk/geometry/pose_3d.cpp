@@ -431,6 +431,24 @@ void Pose3D :: setCameraParameters(double fx, double fy, double cx, double cy, b
     impl->computeProjectiveTransform();
 }
 
+void Pose3D::upsampleImageSize(int upsampling_factor)
+{
+    m_focal_x *= upsampling_factor;
+    m_focal_y *= upsampling_factor;
+    m_image_center_x *= upsampling_factor;
+    m_image_center_y *= upsampling_factor;
+    impl->computeProjectiveTransform();
+}
+
+void Pose3D::subsampleImageSize(int subsampling_factor)
+{
+    m_focal_x /= subsampling_factor;
+    m_focal_y /= subsampling_factor;
+    m_image_center_x /= subsampling_factor;
+    m_image_center_y /= subsampling_factor;
+    impl->computeProjectiveTransform();
+}
+
 void Pose3D :: saveToBundlerFile(const char* filename)
 {
     std::ofstream f (filename);

@@ -46,6 +46,13 @@
 namespace ntk
 {
 
+void subsampleDepth (const cv::Mat1f& depth_im, cv::Mat1f& subsampled_im, int factor)
+{
+    subsampled_im.create (depth_im.rows / factor, depth_im.cols / factor);
+    for_all_rc (subsampled_im)
+        subsampled_im (r, c) = depth_im (r * factor, c * factor);
+}
+
 void computeNormals (const cv::Mat1f& depth_im, const ntk::Pose3D& depth_pose, cv::Mat3f& normals_im)
 {
     ntk_ensure (depth_pose.isValid(), "Calibration required.");

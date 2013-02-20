@@ -93,6 +93,12 @@ public:
   /*!  Set parameters from intrinsics matrix. */
   void setCameraParameters(double fx, double fy, double cx, double cy, bool orthographic = false);
 
+  /*! Adjust intrinsics to match the given subsampling factor. */
+  void subsampleImageSize (int subsampling_factor);
+
+  /*! Adjust intrinsics to match the given upsampling factor. */
+  void upsampleImageSize(int upsampling_factor);
+
 public:
   /*!
    * Transform a right camera into a left camera using stereo parameters.
