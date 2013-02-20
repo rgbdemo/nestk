@@ -746,6 +746,13 @@ cv::Point3f Pose3D :: cameraTransform(const cv::Point3f& p) const
     return toVec3f(ep);
 }
 
+cv::Point3f Pose3D :: rotationTransform(const cv::Point3f& p) const
+{
+    Eigen::Vector3d ep; toEigen(p, ep);
+    ep = impl->camera_transform.rotation() * ep;
+    return toVec3f(ep);
+}
+
 cv::Mat1f Pose3D :: cvInvCameraTransform() const
 {
     cv::Mat1f m(4,4);
@@ -806,6 +813,7 @@ const cv::Mat1d Pose3D :: cvCameraTransformd() const
 void Pose3D::getEigenCameraTransform(EigenIsometry3dHolder* holder) const
 {
     holder->camera_transform = &(impl->camera_transform);
+    holder->inv_camera_transform = &(impl->inv_camera_transform);
     holder->projective_transform = &(impl->project_transform);
 }
 

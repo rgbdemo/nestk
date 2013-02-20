@@ -12,10 +12,12 @@ class EigenIsometry3dHolder
 public:
     EigenIsometry3dHolder()
         : camera_transform (0)
+        , inv_camera_transform (0)
         , projective_transform (0)
     {}
 
     Eigen::Isometry3d* camera_transform;
+    Eigen::Isometry3d* inv_camera_transform;
     Eigen::Projective3d* projective_transform;
 };
 

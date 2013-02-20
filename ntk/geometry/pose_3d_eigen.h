@@ -41,6 +41,14 @@ public:
         return *holder.camera_transform;
     }
 
+    /*! Returns the inverse camera transform as an Eigen double 4x4 matrix. */
+    const Eigen::Isometry3d& eigenInvCameraTransform() const
+    {
+        EigenIsometry3dHolder holder;
+        pose.getEigenCameraTransform(&holder);
+        return *holder.inv_camera_transform;
+    }
+
     /*! Returns the camera transform as an Eigen double 4x4 matrix. */
     const Eigen::Projective3d& eigenProjectiveTransform() const
     {

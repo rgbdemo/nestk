@@ -246,6 +246,9 @@ public:
   /*! Apply the inverse camera transform on a given 3D point. */
   cv::Point3f invCameraTransform(const cv::Point3f& p) const;
 
+  /*! Only apply the rotational part of the camera transform to a point. */
+  cv::Point3f rotationTransform(const cv::Point3f& p) const;
+
   /*! Project a 3D point to image plane. */
   cv::Point3f projectToImage(const cv::Point3f& p) const;
 
