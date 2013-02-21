@@ -209,6 +209,9 @@ public:
   /*! Go from OpenCV coordinate system (x right, y down) to OpenGL (x right, y up). */
   void fromCvToGL();
 
+  /*! Go from OpenCV coordinate system (x right, y down) to OpenGL (x right, y up). */
+  void applyFromCvToGLBefore();
+
   /*!
    * Set the 3D camera transformation from OpenCV translation
    * and rodrigues vector.

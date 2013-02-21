@@ -862,6 +862,11 @@ void Pose3D :: fromGLToRos()
     applyTransformAfter(Vec3f(0,0,0), Vec3f(static_cast<float>(M_PI)/2.0f, 0, static_cast<float>(-M_PI)/2.0f));
 }
 
+void Pose3D :: applyFromCvToGLBefore()
+{
+    applyTransformBefore(Vec3f(0,0,0), Vec3f(static_cast<float>(M_PI), 0, 0));
+}
+
 void Pose3D :: fromCvToGL()
 {
     applyTransformAfter(Vec3f(0,0,0), Vec3f(static_cast<float>(M_PI), 0, 0));
