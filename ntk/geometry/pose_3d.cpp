@@ -620,9 +620,19 @@ Pose3D Pose3D :: computeDeltaPoseWith(const Pose3D& new_pose) const
 #endif
 }
 
-bool Pose3D::isIdentity() const
+bool Pose3D::isIdentity(float rotation_cos_threshold, float translation_threshold) const
 {
-    return impl->camera_transform.isApprox(Eigen::Isometry3d::Identity());
+    const Eigen::Matrix4d& transform = impl->camera_transform.matrix ();
+
+    double cos_angle = 0.5 * (transform.coeff (0, 0) + transform.coeff (1, 1) + transform.coeff (2, 2) - 1);
+
+    double translation_sqr = transform.coeff (0, 3) * transform.coeff (0, 3) +
+                             transform.coeff (1, 3) * transform.coeff (1, 3) +
+                             transform.coeff (2, 3) * transform.coeff (2, 3);
+
+    return (cos_angle >= rotation_cos_threshold) && (translation_sqr < translation_threshold);
+
+    // return impl->camera_transform.isApprox(Eigen::Isometry3d::Identity());
 }
 
 /*!
@@ -928,6 +938,8 @@ void Pose3D :: unprojectFromImage(const cv::Mat1f& pixels, const cv::Mat1b& mask
 {
     Eigen::Vector4d epix;
     Eigen::Vector4d evox;
+
+    voxels.create (pixels.size());
 
     epix(3) = 1; // w does not change.
 

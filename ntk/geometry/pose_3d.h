@@ -143,7 +143,7 @@ public:
   bool isValid() const { return m_has_camera_params; }
 
   /*! Whether the transform is identity. */
-  bool isIdentity() const;
+  bool isIdentity(float rotation_cos_threshold = 0.999999f, float translation_threshold = 1e-5f * 1e-5f) const;
 
   /*! Change from pin-hole to orthographic model. */
   void setOrthographic(bool ortho);
