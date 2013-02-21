@@ -228,6 +228,9 @@ inline cv::Vec3f infinite_point()
                      std::numeric_limits<float>::quiet_NaN());
 }
 
+template <class VecT>
+inline void make_infinite (VecT& v) { v[0] = std::numeric_limits<float>::quiet_NaN(); }
+
 inline bool isnan(const cv::Point3f& p)
 { return ntk::math::isnan(p.x); }
 
@@ -398,6 +401,7 @@ inline bool is_zyx_in_range(const cv::Mat& image, int z, int y, int x)
 { return (x >= 0) && (y >= 0) && (z >= 0) && (x < image.size[0]) && (y < image.size[1]) && (z < image.size[2]); }
 
 inline void normalize(cv::Vec3f& v) { v *= float(1.0 / (sqrt(v.dot(v)))); }
+inline void normalize(cv::Vec4f& v) { v *= float(1.0 / (sqrt(v.dot(v)))); }
 inline void normalize(cv::Point3f& v) { v *= float(1.0 / (sqrt(v.dot(v)))); }
 
 inline cv::Vec3b bgr_to_rgb(const cv::Vec3b& v)
