@@ -53,6 +53,100 @@ void subsampleDepth (const cv::Mat1f& depth_im, cv::Mat1f& subsampled_im, int fa
         subsampled_im (r, c) = depth_im (r * factor, c * factor);
 }
 
+void subsampleDepthSmooth (const cv::Mat1f& depth_im, cv::Mat1f& subsampled_im, int factor, float max_depth_diff)
+{
+    subsampled_im.create (depth_im.rows / factor, depth_im.cols / factor);
+
+    for_all_rc (subsampled_im)
+    {
+        float center_depth = depth_im (r * factor, c * factor);
+
+        if (center_depth < 1e-5)
+        {
+            subsampled_im (r, c) = 1e-5;
+            continue;
+        }
+
+        if (!(r > 2 && r < (subsampled_im.rows - 2) && c > 2 && c < (subsampled_im.cols - 2)))
+        {
+            subsampled_im (r, c) = center_depth;
+            continue;
+        }
+
+        int count = 0;
+        float sum = 0.f;
+
+        for (int dy = -2; dy < 3; ++dy)
+        for (int dx = -2; dx < 3; ++dx)
+        {
+            float new_depth = depth_im (r * factor + dy, c * factor + dx);
+            if (new_depth > 1e-5 && std::abs(new_depth - center_depth) < max_depth_diff)
+            {
+                ++count;
+                sum += new_depth;
+            }
+        }
+
+        subsampled_im (r, c) = sum / count;
+    }
+}
+
+void computeNormalsEigen (const cv::Mat1f& depth_im, const ntk::Pose3D& depth_pose, cv::Mat3f& normals_im)
+{
+    ntk_ensure (depth_pose.isValid(), "Calibration required.");
+
+    ntk::TimeCount tc_normals("Normals", 1);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>);
+
+    pcl::PointXYZ nan_point;
+    nan_point.getVector4fMap().setConstant (std::numeric_limits<float>::quiet_NaN());
+
+    cloud->width = depth_im.cols;
+    cloud->height = depth_im.rows;
+    cloud->points.resize(cloud->width*cloud->height, nan_point);
+    cloud->is_dense = true;
+
+    for (int r = 0; r < depth_im.rows; ++r)
+    for (int c = 0; c < depth_im.cols; ++c)
+    {
+        float d = depth_im (r,c);
+        if (d < 1e-5)
+            continue;
+
+        cv::Point3f p = depth_pose.unprojectFromImage(cv::Point2f(c,r), d);
+        pcl::PointXYZ pcl_p;
+        pcl_p.x = p.x;
+        pcl_p.y = p.y;
+        pcl_p.z = p.z;
+        cloud->points[r*cloud->width+c] = pcl_p;
+    }
+
+    tc_normals.elapsedMsecs(" -- imageToPointCloud");
+
+    pcl::PointCloud<pcl::Normal> normals;
+    pcl::IntegralImageNormalEstimation<pcl::PointXYZ, pcl::Normal> normal_estimator;
+    normal_estimator.setNormalEstimationMethod (normal_estimator.COVARIANCE_MATRIX);
+    normal_estimator.setMaxDepthChangeFactor (1.f);
+    normal_estimator.setNormalSmoothingSize (7.0f);
+    normal_estimator.setInputCloud(cloud);
+    normal_estimator.compute(normals);
+    tc_normals.elapsedMsecs(" -- compute normals");
+
+    normals_im.create (depth_im.size());
+    fillWithNan (normals_im);
+    for_all_rc (depth_im)
+    {
+        pcl::Normal& p = normals.points[depth_im.cols*r+c];
+        if (p.normal_z < 0) continue;
+        cv::Vec3f cv_p (p.normal_x, p.normal_y, p.normal_z);
+        normalize(cv_p);
+        ntk_assert(cv::norm(cv_p) > 0.9 || ntk_isnan(cv_p[0]), "No null normal");
+        normals_im (r,c) = depth_pose.invCameraTransform(cv_p); // normals are in image space.
+    }
+
+    tc_normals.stop(" -- transformation to Mat1f");
+}
+
 void computeNormals (const cv::Mat1f& depth_im, const ntk::Pose3D& depth_pose, cv::Mat3f& normals_im)
 {
     ntk_ensure (depth_pose.isValid(), "Calibration required.");

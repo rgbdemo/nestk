@@ -20,11 +20,60 @@
 #include "bilateral_filter.h"
 
 #include <ntk/utils/debug.h>
+#include <ntk/core.h>
+#include <ntk/utils/opencv_utils.h>
 
 using namespace cv;
 
 namespace ntk
 {
+
+void depth_bilateralFilter (const cv::Mat1f& src, cv::Mat1f& dst, float sigma_color, float sigma_space)
+{
+    float sigma_space2_inv_half = 0.5f / (sigma_space * sigma_space);
+    float sigma_color2_inv_half = 0.5f / (sigma_color * sigma_color);
+
+    dst.create (src.size ());
+    dst = 0.f;
+
+    for_all_rc (src)
+    {
+        const int R = 6;
+        const int D = R * 2 + 1;
+
+        float value = src (r, c);
+
+        if (value < 1e-5)
+            continue;
+
+        int tx = std::min (c - D / 2 + D, src.cols - 1);
+        int ty = std::min (r - D / 2 + D, src.rows - 1);
+
+        float sum1 = 0;
+        float sum2 = 0;
+
+        for (int cy = std::max (r - D / 2, 0); cy < ty; ++cy)
+        {
+            for (int cx = std::max (c - D / 2, 0); cx < tx; ++cx)
+            {
+                float tmp = src (cy, cx);
+                if (tmp < 1e-5)
+                    continue;
+
+                float space2 = (c - cx) * (c - cx) + (r - cy) * (r - cy);
+                float color2 = (value - tmp) * (value - tmp);
+
+                float weight = std::exp (-(space2 * sigma_space2_inv_half + color2 * sigma_color2_inv_half));
+
+                sum1 += tmp * weight;
+                sum2 += weight;
+            }
+        }
+
+        float res = sum1 / sum2;
+        dst (r, c) = std::max (0.f, std::min (res, value * 3.f));
+    }
+}
 
 void
 depth_bilateralFilter( const Mat1f& src_, Mat1f& dst_,
