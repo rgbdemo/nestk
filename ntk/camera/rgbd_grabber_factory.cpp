@@ -186,6 +186,10 @@ bool RGBDGrabberFactory :: createOpenni2Grabbers(const ntk::RGBDGrabberFactory::
         return false;
     }
 
+    // Drivers dll are supposed to be next to the binaries.
+    QDir prev = QDir::current();
+    QDir::setCurrent(QApplication::applicationDirPath());
+
     ni2_driver = new Openni2Driver();
 
     if (!ni2_driver->isReady())
@@ -218,6 +222,8 @@ bool RGBDGrabberFactory :: createOpenni2Grabbers(const ntk::RGBDGrabberFactory::
 
         grabbers.push_back(data);
     }
+
+    QDir::setCurrent(prev.absolutePath());
 
     return sensorInfos.size() > 0;
 #else
