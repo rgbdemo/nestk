@@ -254,10 +254,22 @@ getPixelFormatName (PixelFormat format)
     }
 }
 
+
+float getDepthUnitInMeters (const openni::PixelFormat& format)
+{
+    switch (format)
+    {
+    case PIXEL_FORMAT_DEPTH_100_UM:
+        return 1.f / 10000.f;
+    default:
+        return 1.f / 1000.f;
+    }
+}
+
 bool
 decode16BitDepthFrame (RGBDImage &image, VideoFrameRef frame)
 {
-    if (!haveEqualSize(image.rawRgbRef(), frame))
+    if (!haveEqualSize(image.rawDepth16bits(), frame))
     {
         ntk_error("OpenNI2: Bad depth frame size.\n");
         return false;
@@ -290,7 +302,7 @@ bool
 decodeDepthFrame (RGBDImage& image, VideoFrameRef frame)
 {
     const VideoMode& mode = frame.getVideoMode();
-    const PixelFormat& format = mode.getPixelFormat();
+    const PixelFormat format = mode.getPixelFormat();
 
     switch (format)
     {
@@ -738,6 +750,8 @@ Openni2Grabber::run ()
 
     if (!m_calib_data)
         m_calib_data = impl->estimateCalibration();
+
+    m_calib_data->setRawDepthUnitInMeters (getDepthUnitInMeters (impl->depth.stream.getVideoMode().getPixelFormat()));
 
     prepareFrameImage( impl->image, m_calib_data);
     prepareFrameImage(m_rgbd_image, m_calib_data);

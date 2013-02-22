@@ -74,6 +74,9 @@ public:
   const cv::Size& rawDepthSize() const { return raw_depth_size; }
   const cv::Size& depthSize() const { return depth_size; }
 
+  float rawDepthUnitInMeters () const { return raw_depth_unit_in_meters; }
+  void setRawDepthUnitInMeters (float unit) { raw_depth_unit_in_meters = unit; }
+
   /*! Deduce infrared intrinsics from depth intrinsics. */
   void computeInfraredIntrinsicsFromDepth();
 
@@ -152,6 +155,7 @@ public:
 
   cv::Size raw_depth_size;
   cv::Size depth_size;
+  float raw_depth_unit_in_meters;
 
   cv::Size infrared_size;
 

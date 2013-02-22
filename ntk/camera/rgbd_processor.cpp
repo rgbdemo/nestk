@@ -177,14 +177,14 @@ void computeNormals (const cv::Mat1f& depth_im, const ntk::Pose3D& depth_pose, c
 
 namespace ntk {
 
-static void copy16bitsToFloat (const cv::Mat1w& src_im, cv::Mat1f& dest_im)
+static void copy16bitsToFloat (const cv::Mat1w& src_im, cv::Mat1f& dest_im, float raw_depth_unit_in_meters)
 {
     dest_im = cv::Mat1f (src_im.size ());
     const uint16_t* src = src_im.ptr<uint16_t>();
     const uint16_t* end = src + src_im.cols * src_im.rows;
     float* output = dest_im.ptr<float>();
     while (end != src)
-        *output++ = (*src++) / 1000.f;
+        *output++ = (*src++) * raw_depth_unit_in_meters;
 }
 
 SoftKineticRGBDProcessor::SoftKineticRGBDProcessor()
@@ -412,7 +412,8 @@ namespace ntk
             }
             else
             {
-                copy16bitsToFloat (m_image->rawDepth16bits(), m_image->depthRef());
+                const float unit_in_meters = m_image->calibration() ? m_image->calibration()->rawDepthUnitInMeters() : 1.f/1000.f;
+                copy16bitsToFloat (m_image->rawDepth16bits(), m_image->depthRef(), unit_in_meters);
             }
             m_image->rawRgb().copyTo(m_image->rgbRef());
             m_image->rawIntensity().copyTo(m_image->intensityRef());
@@ -575,7 +576,10 @@ namespace ntk
             if (!m_image->rawDepthRef().empty())
                 m_image->rawDepthRef().copyTo(m_image->depthRef());
             else
-                copy16bitsToFloat (m_image->rawDepth16bits(), m_image->rawDepthRef());
+            {
+                const float unit_in_meters = m_image->calibration() ? m_image->calibration()->rawDepthUnitInMeters() : 1.f/1000.f;
+                copy16bitsToFloat (m_image->rawDepth16bits(), m_image->rawDepthRef(), unit_in_meters);
+            }
         }
 
         if (m_image->calibration()->zero_depth_distortion ||

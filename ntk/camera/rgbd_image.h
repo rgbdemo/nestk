@@ -63,7 +63,6 @@ namespace ntk
       std::string camera_serial;
       int timestamp;
       std::string grabber_type;
-      // FIXME: huge memory leaks here, should be a smart pointer!
       RGBDCalibrationConstPtr calibration;
       float filter_min_depth;
       float filter_max_depth;

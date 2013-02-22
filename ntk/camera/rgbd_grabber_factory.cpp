@@ -112,7 +112,6 @@ RGBDProcessor* RGBDGrabberFactory::createProcessor(const enum_grabber_type& grab
         return new OpenniRGBDProcessor;
 
     case OPENNI2:
-        // FIXME: Is this valid?
         return new OpenniRGBDProcessor;
 
     case KIN4WIN:

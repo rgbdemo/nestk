@@ -49,7 +49,8 @@ RGBDCalibration::RGBDCalibration() :
     raw_rgb_size(0,0),
     rgb_size(0,0),
     raw_depth_size(0,0),
-    depth_size(0,0)
+    depth_size(0,0),
+    raw_depth_unit_in_meters(1.f / 1000.f) // default is mm
 {
     R_extrinsics = Mat1d(3,3);
     setIdentity(R_extrinsics);
@@ -101,6 +102,7 @@ void RGBDCalibration::copyTo(RGBDCalibration &rhs) const
 
     rhs.raw_rgb_size = raw_rgb_size;
     rhs.rgb_size = rgb_size;
+    rhs.raw_depth_unit_in_meters = raw_depth_unit_in_meters;
 
     rhs.raw_depth_size = raw_depth_size;
     rhs.depth_size = depth_size;
@@ -144,6 +146,16 @@ void RGBDCalibration :: loadFromFile(const char* filename)
     depth_size = cv::Size(size_mat(0,0), size_mat(0,1));
     readMatrix(calibration_file, "raw_depth_size", size_mat);
     raw_depth_size = cv::Size(size_mat(0,0), size_mat(0,1));
+
+    try {
+        cv::Mat1f raw_depth_unit_in_meters_mat (1,1);
+        readMatrix(calibration_file, "raw_depth_unit_in_meters", raw_depth_unit_in_meters_mat);
+        this->raw_depth_unit_in_meters = raw_depth_unit_in_meters_mat(0,0);
+    }
+    catch(...)
+    {
+        ntk_dbg(1) << "Warning: could not load raw_depth_unit_in_meters";
+    }
 
     try {
         readMatrix(calibration_file, "R_extrinsics", R_extrinsics);
@@ -258,6 +270,12 @@ void RGBDCalibration :: saveToFile(const char* filename) const
     size_matrix(0,0) = raw_depth_size.width;
     size_matrix(0,1) = raw_depth_size.height;
     writeMatrix(output_file, "raw_depth_size", size_matrix);
+
+    {
+        cv::Mat1f raw_depth_unit_in_meters_mat (1,1);
+        raw_depth_unit_in_meters_mat(0,0) = this->raw_depth_unit_in_meters;
+        writeMatrix(output_file, "raw_depth_unit_in_meters", raw_depth_unit_in_meters_mat);
+    }
 
     size_matrix(0,0) = infrared_size.width;
     size_matrix(0,1) = infrared_size.height;
