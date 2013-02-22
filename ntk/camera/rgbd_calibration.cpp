@@ -50,7 +50,9 @@ RGBDCalibration::RGBDCalibration() :
     rgb_size(0,0),
     raw_depth_size(0,0),
     depth_size(0,0),
-    raw_depth_unit_in_meters(1.f / 1000.f) // default is mm
+    raw_depth_unit_in_meters(1.f / 1000.f), // default is mm
+    min_depth_in_meters(0.4f),
+    max_depth_in_meters(5.0f) // kinect defaults
 {
     R_extrinsics = Mat1d(3,3);
     setIdentity(R_extrinsics);
@@ -103,6 +105,8 @@ void RGBDCalibration::copyTo(RGBDCalibration &rhs) const
     rhs.raw_rgb_size = raw_rgb_size;
     rhs.rgb_size = rgb_size;
     rhs.raw_depth_unit_in_meters = raw_depth_unit_in_meters;
+    rhs.min_depth_in_meters = min_depth_in_meters;
+    rhs.max_depth_in_meters = max_depth_in_meters;
 
     rhs.raw_depth_size = raw_depth_size;
     rhs.depth_size = depth_size;
@@ -155,6 +159,17 @@ void RGBDCalibration :: loadFromFile(const char* filename)
     catch(...)
     {
         ntk_dbg(1) << "Warning: could not load raw_depth_unit_in_meters";
+    }
+
+    try {
+        cv::Mat1f min_max_depth (2,1);
+        readMatrix(calibration_file, "min_max_depth_in_meters", min_max_depth);
+        this->min_depth_in_meters = min_max_depth(0,0);
+        this->max_depth_in_meters = min_max_depth(1,0);
+    }
+    catch(...)
+    {
+        ntk_dbg(1) << "Warning: could not load min_max_depth_in_meters";
     }
 
     try {
@@ -275,6 +290,13 @@ void RGBDCalibration :: saveToFile(const char* filename) const
         cv::Mat1f raw_depth_unit_in_meters_mat (1,1);
         raw_depth_unit_in_meters_mat(0,0) = this->raw_depth_unit_in_meters;
         writeMatrix(output_file, "raw_depth_unit_in_meters", raw_depth_unit_in_meters_mat);
+    }
+
+    {
+        cv::Mat1f min_max_depth (2,1);
+        min_max_depth(0,0) = this->min_depth_in_meters;
+        min_max_depth(1,0) = this->max_depth_in_meters;
+        writeMatrix(output_file, "min_max_depth_in_meters", min_max_depth);
     }
 
     size_matrix(0,0) = infrared_size.width;

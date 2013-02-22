@@ -62,8 +62,8 @@ public:
 
     virtual std::string grabberType () const { return "openni2"; }
 
-    virtual bool      connectToDevice();
-    virtual bool disconnectFromDevice();
+    virtual bool      connectToDevice ();
+    virtual bool disconnectFromDevice ();
 
     virtual void setIRMode (bool enabled);
 

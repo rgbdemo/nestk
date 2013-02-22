@@ -752,6 +752,8 @@ Openni2Grabber::run ()
         m_calib_data = impl->estimateCalibration();
 
     m_calib_data->setRawDepthUnitInMeters (getDepthUnitInMeters (impl->depth.stream.getVideoMode().getPixelFormat()));
+    m_calib_data->setMinDepthInMeters (impl->depth.stream.getMinPixelValue () * m_calib_data->rawDepthUnitInMeters());
+    m_calib_data->setMaxDepthInMeters (impl->depth.stream.getMaxPixelValue () * m_calib_data->rawDepthUnitInMeters());
 
     prepareFrameImage( impl->image, m_calib_data);
     prepareFrameImage(m_rgbd_image, m_calib_data);

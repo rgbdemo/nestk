@@ -229,6 +229,9 @@ void SoftKineticGrabber::onNewDepthSample(DepthNode::NewSampleReceivedData data)
         if (!m_calib_data)
             estimateCalibration(data.stereoCameraParameters);
 
+        m_calib_data->setMinDepthInMeters (0.15f);
+        m_calib_data->setMaxDepthInMeters (2.0f);
+
         // Stop sending events until the connection happens.
         m_context.quit();
         return;

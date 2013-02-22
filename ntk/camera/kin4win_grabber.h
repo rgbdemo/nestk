@@ -64,6 +64,7 @@ protected:
 
 private:
     void estimateCalibration();
+    void updateCalibrationMinMaxDepth ();
 
 private:
     Nui* nui; // FIXME: Handle multiple device setups.

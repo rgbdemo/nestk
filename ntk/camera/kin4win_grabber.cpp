@@ -774,6 +774,7 @@ bool Kin4WinGrabber :: connectToDevice()
         if (!m_calib_data)
         {
             estimateCalibration();
+            updateCalibrationMinMaxDepth ();
             m_current_image.setCalibration(m_calib_data);
             m_rgbd_image.setCalibration(m_calib_data);
         }
@@ -826,6 +827,7 @@ void Kin4WinGrabber::setNearMode(bool enable)
     m_near_mode_changed = true;
     ntk_dbg_print(m_near_mode, 1);
     ntk_dbg_print(m_near_mode_changed, 1);
+    updateCalibrationMinMaxDepth ();
 }
 
 void Kin4WinGrabber :: estimateCalibration()
@@ -981,6 +983,23 @@ void Kin4WinGrabber :: estimateCalibration()
 
     ntk_dbg_print (m_calib_data->rgb_pose->cvEulerRotation(), 1);
     ntk_dbg_print (m_calib_data->rgb_pose->cvTranslation(), 1);
+}
+
+void Kin4WinGrabber::updateCalibrationMinMaxDepth ()
+{
+    if (!m_calib_data)
+        return;
+
+    if (m_near_mode && !m_is_xbox_kinect)
+    {
+        m_calib_data->setMinDepthInMeters(0.4f);
+        m_calib_data->setMaxDepthInMeters(2.0f);
+    }
+    else
+    {
+        m_calib_data->setMinDepthInMeters(0.8f);
+        m_calib_data->setMaxDepthInMeters(5.0f);
+    }
 }
 
 void Kin4WinGrabber :: run()
