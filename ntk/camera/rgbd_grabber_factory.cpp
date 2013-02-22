@@ -467,11 +467,13 @@ RGBDGrabberFactory::createGrabbers(const ntk::RGBDGrabberFactory::Params& orig_p
     else
     {
         createKin4winGrabbers(params, grabbers);
+
         if (params.default_type != FREENECT)
         {
             createOpenniGrabbers(params, grabbers);
             createOpenni2Grabbers(params, grabbers);
         }
+
         createFreenectGrabbers(params, grabbers);
         createPmdGrabbers(params, grabbers);
         createSoftKineticGrabbers(params, grabbers);

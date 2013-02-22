@@ -350,15 +350,11 @@ decodeColorFrame (RGBDImage& image, VideoFrameRef frame)
 }
 
 void
-prepareFrameImage (RGBDImage& image, int width, int height, RGBDCalibrationConstPtr calibration)
+prepareFrameImage (RGBDImage& image, RGBDCalibrationConstPtr calibration)
 {
-    const cv::Size size(width, height);
-
-    image.rawDepth16bitsRef() = cv::Mat1w(size);
-    image.rawRgbRef() = cv::Mat3b(size);
-
-    // FIXME: Fix image calibration estimation and enable this.
-    // image.setCalibration(calibration);
+    image.rawDepth16bitsRef() = cv::Mat1w(calibration->rawDepthSize());
+    image.rawRgbRef() = cv::Mat3b(calibration->rawRgbSize());
+    image.setCalibration(calibration);
 }
 
 } }
@@ -373,6 +369,7 @@ struct Openni2Grabber::Impl
         : that(that_)
         , driver(driver_)
         , uri(uri_)
+        , subsampling (1)
     {
         color.listener.that = this;
         depth.listener.that = this;
@@ -452,20 +449,100 @@ struct Openni2Grabber::Impl
         that->advertiseNewFrame();
     }
 
-    RGBDCalibrationConstPtr
-    estimateCalibration (int width, int height) const
+    RGBDCalibrationPtr
+    estimateCalibration () const
     {
-        const cv::Size size(width, height);
-
         RGBDCalibration* ret = new RGBDCalibration;
 
-        ret->setRawRgbSize(size);
-        ret->setRgbSize(size);
-        ret->raw_depth_size = size;
-        ret->depth_size = size;
+        float proj_x = 0, proj_y = 0, proj_z = 0;
+        openni::CoordinateConverter::convertWorldToDepth(depth.stream, 0, 0, -1, &proj_x, &proj_y, &proj_z);
 
-        // FIXME: Set missing calibration data.
+        double cx = proj_x;
+        double cy = proj_y;
 
+        openni::CoordinateConverter::convertWorldToDepth (depth.stream, 1, 1, -1, &proj_x, &proj_y, &proj_z);
+        double fx = -(proj_x - cx);
+        double fy = proj_y - cy;
+
+        // When hardware alignment is enabled, to focus length has to be adjusted
+        // to match the color one. This empirical factor computed by averaging checkerboard
+        // calibrations seem quite good.
+        // const double f_correction_factor = m_hardware_registration ? 528.0/570.34 : 1.0;
+        const double f_correction_factor = hardwareRegistration ? 535.0/570.34 : 1.0;
+        fx *= f_correction_factor;
+        fy *= f_correction_factor;
+
+        // FIXME: this bias was not observed anymore in recent experiments.
+        // const double cy_correction_factor = 267.0/240.0;
+        const double cy_correction_factor = 1.0;
+        cy *= cy_correction_factor;
+
+        fx /= subsampling;
+        fy /= subsampling;
+        cx /= subsampling;
+        cy /= subsampling;
+
+        int rgb_width = color.stream.getVideoMode().getResolutionX();
+        int rgb_height = color.stream.getVideoMode().getResolutionY();
+
+        int depth_width = depth.stream.getVideoMode().getResolutionX();
+        int depth_height = depth.stream.getVideoMode().getResolutionY();
+
+        ret->setRawRgbSize(cv::Size(rgb_width, rgb_height));
+        ret->setRgbSize(cv::Size(rgb_width, rgb_height));
+        ret->raw_depth_size = cv::Size(depth_width, depth_height);
+        ret->depth_size = cv::Size(depth_width, depth_height);
+
+        float width_ratio = float(rgb_width)/depth_width;
+        float height_ratio = float(rgb_height)/depth_height;
+
+        float rgb_fx = fx * width_ratio;
+        // Pixels are square on a Kinect.
+        // Image height gets cropped when going from 1280x1024 in 640x480.
+        // The ratio remains 2.
+        float rgb_fy = rgb_fx;
+        float rgb_cx = cx * width_ratio;
+        float rgb_cy = cy * width_ratio;
+
+        ret->rgb_intrinsics = cv::Mat1d(3,3);
+        setIdentity(ret->rgb_intrinsics);
+        ret->rgb_intrinsics(0,0) = rgb_fx;
+        ret->rgb_intrinsics(1,1) = rgb_fy;
+        ret->rgb_intrinsics(0,2) = rgb_cx;
+        ret->rgb_intrinsics(1,2) = rgb_cy;
+
+        ret->rgb_distortion = cv::Mat1d(1,5);
+        ret->rgb_distortion = 0.;
+        ret->zero_rgb_distortion = true;
+
+        // After getAlternativeViewpoint, both camera have the same parameters.
+
+        ret->depth_intrinsics = cv::Mat1d(3,3);
+        setIdentity(ret->depth_intrinsics);
+        ret->depth_intrinsics(0,0) = fx;
+        ret->depth_intrinsics(1,1) = fy;
+        ret->depth_intrinsics(0,2) = cx;
+        ret->depth_intrinsics(1,2) = cy;
+
+        ret->depth_distortion = cv::Mat1d(1,5);
+        ret->depth_distortion = 0.;
+        ret->zero_depth_distortion = true;
+
+        ret->R = cv::Mat1d(3,3);
+        setIdentity(ret->R);
+
+        ret->T = cv::Mat1d(3,1);
+        ret->T = 0.;
+
+        ret->depth_pose = new Pose3D();
+        ret->depth_pose->setCameraParametersFromOpencv(ret->depth_intrinsics);
+
+        ret->rgb_pose = new Pose3D();
+        ret->rgb_pose->toRightCamera(ret->rgb_intrinsics,
+                                              ret->R,
+                                              ret->T);
+
+        ret->computeInfraredIntrinsicsFromDepth();
         return ret;
     }
 
@@ -572,9 +649,21 @@ Openni2Grabber::connectToDevice ()
         }
     }
 
-    // FIXME: SENSOR_IR is also available. Expose it.
+    if (impl->hardwareRegistration)
+    {
+        if (impl->device.isImageRegistrationModeSupported (IMAGE_REGISTRATION_DEPTH_TO_COLOR))
+            impl->device.setImageRegistrationMode (IMAGE_REGISTRATION_DEPTH_TO_COLOR);
+        else
+        {
+            ntk_warn ("Depth - Color registration not supported by this device.\n");
+            impl->hardwareRegistration = false;
+        }
+    }
 
-    // impl->device.setDepthColorSyncEnabled(true);
+    if (STATUS_OK != impl->device.setDepthColorSyncEnabled (true))
+        ntk_warn ("Cannot synchronize depth and color images.\n");
+
+    // FIXME: SENSOR_IR is also available. Expose it.
 
     m_connected = true;
     return true;
@@ -647,10 +736,11 @@ Openni2Grabber::run ()
     const int frameWidth  = impl->depth.stream.getVideoMode().getResolutionX();
     const int frameHeight = impl->depth.stream.getVideoMode().getResolutionY();
 
-    RGBDCalibrationConstPtr calibration = impl->estimateCalibration(frameWidth, frameHeight);
+    if (!m_calib_data)
+        m_calib_data = impl->estimateCalibration();
 
-    prepareFrameImage( impl->image, frameWidth, frameHeight, calibration);
-    prepareFrameImage(m_rgbd_image, frameWidth, frameHeight, calibration);
+    prepareFrameImage( impl->image, m_calib_data);
+    prepareFrameImage(m_rgbd_image, m_calib_data);
 
     impl->depth.stream.addNewFrameListener(&impl->depth.listener);
     impl->depth.stream.start();
