@@ -72,6 +72,13 @@ StreamType& operator<<(StreamType& output, const Eigen::Matrix<_Scalar,N,M>& arr
   return output;
 }
 
+inline Eigen::Vector3f eigen_cross (const Eigen::Vector4f& v1, const Eigen::Vector4f& v2)
+{
+    Eigen::Vector3f v1_3f (v1.x(), v1.y(), v1.z());
+    Eigen::Vector3f v2_3f (v2.x(), v2.y(), v2.z());
+    return v1_3f.cross (v2_3f);
+}
+
 template <typename CvScalarType, typename EScalarType>
 inline void toEigen(const cv::Point3_<CvScalarType>& p, Eigen::Matrix<EScalarType,3,1>& ep)
 {
