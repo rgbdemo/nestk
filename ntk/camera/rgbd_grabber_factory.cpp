@@ -475,8 +475,11 @@ RGBDGrabberFactory::createGrabbers(const ntk::RGBDGrabberFactory::Params& orig_p
 
         if (params.default_type != FREENECT)
         {
-            createOpenniGrabbers(params, grabbers);
             createOpenni2Grabbers(params, grabbers);
+
+            // Fall back to OpenNI 1.
+            if (0 == grabbers.size())
+                createOpenniGrabbers(params, grabbers);
         }
 
         createFreenectGrabbers(params, grabbers);
