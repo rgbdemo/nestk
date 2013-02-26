@@ -47,7 +47,7 @@ Openni2Driver::hasDll ()
 #endif
 }
 
-class Openni2Driver::Impl
+struct Openni2Driver::Impl
         : public OpenNI::DeviceConnectedListener
         , public OpenNI::DeviceDisconnectedListener
         , public OpenNI::DeviceStateChangedListener
@@ -59,7 +59,7 @@ public:
      {
          QMutexLocker _(&mutex);
 
-         openni::Status rc = OpenNI::initialize();
+         Status rc = OpenNI::initialize();
 
          if (rc != STATUS_OK)
          {
@@ -231,38 +231,30 @@ getPixelFormatName (PixelFormat format)
 {
     switch (format)
     {
-    case openni::PIXEL_FORMAT_DEPTH_1_MM:
-        return "1 mm";
-    case openni::PIXEL_FORMAT_DEPTH_100_UM:
-        return "100 um";
-    case openni::PIXEL_FORMAT_SHIFT_9_2:
-        return "Shifts 9.2";
-    case openni::PIXEL_FORMAT_SHIFT_9_3:
-        return "Shifts 9.3";
-    case openni::PIXEL_FORMAT_RGB888:
-        return "RGB 888";
-    case openni::PIXEL_FORMAT_YUV422:
-        return "YUV 422";
-    case openni::PIXEL_FORMAT_GRAY8:
-        return "Grayscale 8-bit";
-    case openni::PIXEL_FORMAT_GRAY16:
-        return "Grayscale 16-bit";
-    case openni::PIXEL_FORMAT_JPEG:
-        return "JPEG";
-    default:
-        return "Unknown";
+    case PIXEL_FORMAT_DEPTH_1_MM  : return "1 mm";
+    case PIXEL_FORMAT_DEPTH_100_UM: return "100 um";
+    case PIXEL_FORMAT_SHIFT_9_2   : return "Shifts 9.2";
+    case PIXEL_FORMAT_SHIFT_9_3   : return "Shifts 9.3";
+    case PIXEL_FORMAT_RGB888      : return "RGB 888";
+    case PIXEL_FORMAT_YUV422      : return "YUV 422";
+    case PIXEL_FORMAT_GRAY8       : return "Grayscale 8-bit";
+    case PIXEL_FORMAT_GRAY16      : return "Grayscale 16-bit";
+    case PIXEL_FORMAT_JPEG        : return "JPEG";
+
+    default: return "Unknown";
     }
 }
 
-
-float getDepthUnitInMeters (const openni::PixelFormat& format)
+float getDepthUnitInMeters (const PixelFormat& format)
 {
     switch (format)
     {
-    case PIXEL_FORMAT_DEPTH_100_UM:
-        return 1.f / 10000.f;
+    case PIXEL_FORMAT_DEPTH_100_UM: return 1.f / 10000.f;
+    case PIXEL_FORMAT_DEPTH_1_MM  : return 1.f / 1000.f;
+
     default:
-        return 1.f / 1000.f;
+        ntk_error("OpenNI2: Unhandled pixel format: %s\n", getPixelFormatName(format));
+        return 1.f;
     }
 }
 
@@ -370,13 +362,68 @@ prepareFrameImage (RGBDImage& image, RGBDCalibrationConstPtr calibration)
     image.setCalibration(calibration);
 }
 
+// FIXME: Unused.
+bool
+setStreamResolution (VideoStream& stream, int width, int height)
+{
+    VideoMode mode = stream.getVideoMode();
+    mode.setResolution(width, height);
+    return STATUS_OK == stream.setVideoMode(mode);
+}
+
+// FIXME: Unused.
+bool
+setStreamPixelFormat (VideoStream& stream, PixelFormat format)
+{
+    VideoMode mode = stream.getVideoMode();
+    mode.setPixelFormat(format);
+    return STATUS_OK == stream.setVideoMode(mode);
+}
+
 bool
 prepareStream (VideoStream& stream)
 {
-    if (STATUS_OK != stream.setMirroringEnabled(false))
-        return false;
+    return STATUS_OK == stream.setMirroringEnabled(false);
+}
 
-    return true;
+bool
+prepareDepthStream (VideoStream& stream, const SensorInfo& info)
+{
+    const Array<VideoMode>& modes = info.getSupportedVideoModes();
+
+    VideoMode mode = modes[0];
+
+    // Check whether 100_UM is supported.
+    for (int i = 1; i < modes.getSize (); ++i)
+    {
+        if (modes[i].getPixelFormat() != PIXEL_FORMAT_DEPTH_100_UM)
+            continue;
+
+        mode.setPixelFormat (PIXEL_FORMAT_DEPTH_100_UM);
+        break;
+    }
+
+    mode.setResolution(640, 480);
+    mode.setFps(30);
+
+    if (STATUS_OK != stream.setVideoMode(mode))
+        ntk_warn("Could not switch to VGA depth mode.\n");
+
+    return prepareStream(stream);
+}
+
+bool
+prepareColorStream (VideoStream& stream, const SensorInfo& info)
+{
+    VideoMode mode = info.getSupportedVideoModes()[0];
+
+    mode.setResolution(640, 480);
+    mode.setFps(30);
+
+    if (STATUS_OK != stream.setVideoMode(mode))
+        ntk_warn ("Could not switch to VGA color mode.\n");
+
+    return prepareStream(stream);
 }
 
 } }
@@ -477,12 +524,12 @@ struct Openni2Grabber::Impl
         RGBDCalibration* ret = new RGBDCalibration;
 
         float proj_x = 0, proj_y = 0, proj_z = 0;
-        openni::CoordinateConverter::convertWorldToDepth(depth.stream, 0, 0, -1, &proj_x, &proj_y, &proj_z);
+        CoordinateConverter::convertWorldToDepth(depth.stream, 0, 0, -1, &proj_x, &proj_y, &proj_z);
 
         double cx = proj_x;
         double cy = proj_y;
 
-        openni::CoordinateConverter::convertWorldToDepth (depth.stream, 1, 1, -1, &proj_x, &proj_y, &proj_z);
+        CoordinateConverter::convertWorldToDepth (depth.stream, 1, 1, -1, &proj_x, &proj_y, &proj_z);
         double fx = -(proj_x - cx);
         double fy = proj_y - cy;
 
@@ -651,36 +698,44 @@ Openni2Grabber::connectToDevice ()
         return false;
     }
 
-    if (NULL != impl->device.getSensorInfo(SENSOR_DEPTH))
+    const SensorInfo* const depthInfo = impl->device.getSensorInfo(SENSOR_DEPTH);
+    if (NULL == depthInfo)
     {
-        status = impl->depth.stream.create(impl->device, SENSOR_DEPTH);
-        if (STATUS_OK != status)
-        {
-            ntk_error("OpenNI2: Couldn't create depth stream: %s\n", OpenNI::getExtendedError());
-            return false;
-        }
-
-        if (!prepareStream(impl->depth.stream))
-        {
-            ntk_error("OpenNI2: Couldn't prepare depth stream: %s\n", OpenNI::getExtendedError());
-            return false;
-        }
+        ntk_error ("No depth sensor.\n");
+        return false;
     }
 
-    if (NULL != impl->device.getSensorInfo(SENSOR_COLOR))
+    status = impl->depth.stream.create(impl->device, SENSOR_DEPTH);
+    if (STATUS_OK != status)
     {
-        status = impl->color.stream.create(impl->device, SENSOR_COLOR);
-        if (STATUS_OK != status)
-        {
-            ntk_error("OpenNI2: Couldn't create color stream: %s\n", OpenNI::getExtendedError());
-            return false;
-        }
+        ntk_error("OpenNI2: Couldn't create depth stream: %s\n", OpenNI::getExtendedError());
+        return false;
+    }
 
-        if (!prepareStream(impl->color.stream))
-        {
-            ntk_error("OpenNI2: Couldn't prepare color stream: %s\n", OpenNI::getExtendedError());
-            return false;
-        }
+    if (!prepareDepthStream(impl->depth.stream, *depthInfo))
+    {
+        ntk_error("OpenNI2: Couldn't prepare depth stream: %s\n", OpenNI::getExtendedError());
+        return false;
+    }
+
+    const SensorInfo* const colorInfo = impl->device.getSensorInfo(SENSOR_COLOR);
+    if (NULL == colorInfo)
+    {
+        ntk_error ("No color sensor.\n");
+        return false;
+    }
+
+    status = impl->color.stream.create(impl->device, SENSOR_COLOR);
+    if (STATUS_OK != status)
+    {
+        ntk_error("OpenNI2: Couldn't create color stream: %s\n", OpenNI::getExtendedError());
+        return false;
+    }
+
+    if (!prepareColorStream(impl->color.stream, *colorInfo))
+    {
+        ntk_error("OpenNI2: Couldn't prepare color stream: %s\n", OpenNI::getExtendedError());
+        return false;
     }
 
     if (impl->hardwareRegistration)
@@ -696,40 +751,6 @@ Openni2Grabber::connectToDevice ()
 
     if (STATUS_OK != impl->device.setDepthColorSyncEnabled (true))
         ntk_warn ("Cannot synchronize depth and color images.\n");
-
-    const openni::SensorInfo* depth_info = impl->device.getSensorInfo(openni::SENSOR_DEPTH);
-    if (0 == depth_info)
-    {
-        ntk_error ("No depth sensor.\n");
-        return false;
-    }
-    const openni::Array<openni::VideoMode>& depth_video_modes = depth_info->getSupportedVideoModes();
-
-    openni::VideoMode depth_vga_mode = depth_info->getSupportedVideoModes()[0];
-    // Check if 100_UM is supported.
-    for (int i = 1; i < depth_video_modes.getSize (); ++i)
-    {
-        if (depth_video_modes[i].getPixelFormat() == PIXEL_FORMAT_DEPTH_100_UM)
-        {
-            depth_vga_mode.setPixelFormat (PIXEL_FORMAT_DEPTH_100_UM);
-            break;
-        }
-    }
-    depth_vga_mode.setResolution (640, 480);
-    depth_vga_mode.setFps (30);
-    if (openni::STATUS_OK != impl->depth.stream.setVideoMode (depth_vga_mode))
-        ntk_warn ("Could not switch to VGA depth mode.\n");
-
-    const openni::SensorInfo* color_info = impl->device.getSensorInfo(openni::SENSOR_COLOR);
-    if (0 == color_info)
-    {
-        ntk_error ("No color sensor.\n");
-        return false;
-    }
-    openni::VideoMode color_vga_mode = color_info->getSupportedVideoModes()[0];
-    color_vga_mode.setResolution (640, 480);
-    if (openni::STATUS_OK != impl->color.stream.setVideoMode (color_vga_mode))
-        ntk_warn ("Could not switch to VGA color mode.\n");
 
     // FIXME: SENSOR_IR is also available. Expose it.
 
