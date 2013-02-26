@@ -677,6 +677,9 @@ Openni2Grabber::connectToDevice ()
 
     // FIXME: SENSOR_IR is also available. Expose it.
 
+    if (!m_calib_data)
+        m_calib_data = impl->estimateCalibration();
+
     m_connected = true;
     return true;
 }
@@ -739,6 +742,8 @@ Openni2Grabber::run ()
     if (!m_connected)
         ntk_error("OpenNI2: Cannot start grabbing: Device not connected.");
 
+    assert(0 != m_calib_data);
+
     Status status = STATUS_OK;
 
     // FIXME: Handle differing depth and color frame sizes.
@@ -747,9 +752,6 @@ Openni2Grabber::run ()
 
     const int frameWidth  = impl->depth.stream.getVideoMode().getResolutionX();
     const int frameHeight = impl->depth.stream.getVideoMode().getResolutionY();
-
-    if (!m_calib_data)
-        m_calib_data = impl->estimateCalibration();
 
     m_calib_data->setRawDepthUnitInMeters (getDepthUnitInMeters (impl->depth.stream.getVideoMode().getPixelFormat()));
     m_calib_data->setMinDepthInMeters (impl->depth.stream.getMinPixelValue () * m_calib_data->rawDepthUnitInMeters());
