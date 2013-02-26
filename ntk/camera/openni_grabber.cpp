@@ -109,6 +109,8 @@ OpenniGrabber :: OpenniGrabber(OpenniDriver& driver, int camera_id) :
     m_has_rgb(true)
 {
     setDefaultBayerMode();
+
+    setCameraSerial(m_driver.deviceInfo(m_camera_id).serial);
 }
 
 OpenniGrabber :: OpenniGrabber(OpenniDriver& driver, const std::string& camera_serial) :
@@ -143,6 +145,8 @@ OpenniGrabber :: OpenniGrabber(OpenniDriver& driver, const std::string& camera_s
     }
 
     setDefaultBayerMode();
+
+    setCameraSerial(m_driver.deviceInfo(m_camera_id).serial);
 }
 
 void OpenniGrabber :: setDefaultBayerMode()
@@ -562,6 +566,9 @@ void OpenniGrabber :: estimateCalibration()
                                           m_calib_data->R,
                                           m_calib_data->T);
 
+    xn::IRMetaData irMD;
+    m_ni_ir_generator.GetMetaData(irMD);
+    m_calib_data->infrared_size = cv::Size(irMD.XRes(), irMD.YRes());
     m_calib_data->computeInfraredIntrinsicsFromDepth();
 }
 
