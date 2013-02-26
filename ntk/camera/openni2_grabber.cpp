@@ -335,7 +335,8 @@ decodeColorFrame_RGB888 (RGBDImage& image, VideoFrameRef frame)
     quint8*            imagePixels = image.rawRgbRef().ptr<quint8>();
 
     // FIXME: RGB or BGR?
-    std::copy(framePixels, framePixels + frameSize, imagePixels);
+    std::copy (framePixels, framePixels + frameSize, imagePixels);
+    cv::cvtColor (image.rawRgbRef(), image.rawRgbRef(), CV_RGB2BGR);
 
     return true;
 }
@@ -695,6 +696,40 @@ Openni2Grabber::connectToDevice ()
 
     if (STATUS_OK != impl->device.setDepthColorSyncEnabled (true))
         ntk_warn ("Cannot synchronize depth and color images.\n");
+
+    const openni::SensorInfo* depth_info = impl->device.getSensorInfo(openni::SENSOR_DEPTH);
+    if (0 == depth_info)
+    {
+        ntk_error ("No depth sensor.\n");
+        return false;
+    }
+    const openni::Array<openni::VideoMode>& depth_video_modes = depth_info->getSupportedVideoModes();
+
+    openni::VideoMode depth_vga_mode = depth_info->getSupportedVideoModes()[0];
+    // Check if 100_UM is supported.
+    for (int i = 1; i < depth_video_modes.getSize (); ++i)
+    {
+        if (depth_video_modes[i].getPixelFormat() == PIXEL_FORMAT_DEPTH_100_UM)
+        {
+            depth_vga_mode.setPixelFormat (PIXEL_FORMAT_DEPTH_100_UM);
+            break;
+        }
+    }
+    depth_vga_mode.setResolution (640, 480);
+    depth_vga_mode.setFps (30);
+    if (openni::STATUS_OK != impl->depth.stream.setVideoMode (depth_vga_mode))
+        ntk_warn ("Could not switch to VGA depth mode.\n");
+
+    const openni::SensorInfo* color_info = impl->device.getSensorInfo(openni::SENSOR_COLOR);
+    if (0 == color_info)
+    {
+        ntk_error ("No color sensor.\n");
+        return false;
+    }
+    openni::VideoMode color_vga_mode = color_info->getSupportedVideoModes()[0];
+    color_vga_mode.setResolution (640, 480);
+    if (openni::STATUS_OK != impl->color.stream.setVideoMode (color_vga_mode))
+        ntk_warn ("Could not switch to VGA color mode.\n");
 
     // FIXME: SENSOR_IR is also available. Expose it.
 
