@@ -439,10 +439,13 @@ RGBDCalibrationPtr RGBDGrabberFactory::tryLoadCalibration(const ntk::RGBDGrabber
                                   camera_serial.c_str()).c_str();
         }
 
+        ntk_dbg (1) << "Trying to load calibration from " << filename.c_str();
+
         if (!filename.empty())
         {
             calib_data = new RGBDCalibration();
             calib_data->loadFromFile(filename.c_str());
+            ntk_dbg (1) << "Ok, calibration loaded from " << filename.c_str();
         }
     }
     catch (const std::exception& e)
