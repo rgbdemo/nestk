@@ -369,6 +369,15 @@ prepareFrameImage (RGBDImage& image, RGBDCalibrationConstPtr calibration)
     image.setCalibration(calibration);
 }
 
+bool
+prepareStream (VideoStream& stream)
+{
+    if (STATUS_OK != stream.setMirroringEnabled(false))
+        return false;
+
+    return true;
+}
+
 } }
 
 //------------------------------------------------------------------------------
@@ -646,7 +655,13 @@ Openni2Grabber::connectToDevice ()
         status = impl->depth.stream.create(impl->device, SENSOR_DEPTH);
         if (STATUS_OK != status)
         {
-            ntk_error("OpenNI2: Couldn't create depth stream\n%s\n", OpenNI::getExtendedError());
+            ntk_error("OpenNI2: Couldn't create depth stream: %s\n", OpenNI::getExtendedError());
+            return false;
+        }
+
+        if (!prepareStream(impl->depth.stream))
+        {
+            ntk_error("OpenNI2: Couldn't prepare depth stream: %s\n", OpenNI::getExtendedError());
             return false;
         }
     }
@@ -656,7 +671,13 @@ Openni2Grabber::connectToDevice ()
         status = impl->color.stream.create(impl->device, SENSOR_COLOR);
         if (STATUS_OK != status)
         {
-            ntk_error("OpenNI2: Couldn't create color stream\n%s\n", OpenNI::getExtendedError());
+            ntk_error("OpenNI2: Couldn't create color stream: %s\n", OpenNI::getExtendedError());
+            return false;
+        }
+
+        if (!prepareStream(impl->color.stream))
+        {
+            ntk_error("OpenNI2: Couldn't prepare color stream: %s\n", OpenNI::getExtendedError());
             return false;
         }
     }
@@ -764,7 +785,7 @@ Openni2Grabber::run ()
     impl->depth.stream.start();
     if (STATUS_OK  != status)
     {
-        ntk_error("OpenNI2: Cannot start grabbing: Couldn't start the depth stream\n%s\n", OpenNI::getExtendedError());
+        ntk_error("OpenNI2: Cannot start grabbing: Couldn't start the depth stream: %s\n", OpenNI::getExtendedError());
         return;
     }
 
@@ -772,7 +793,7 @@ Openni2Grabber::run ()
     impl->color.stream.start();
     if (STATUS_OK  != status)
     {
-        ntk_error("OpenNI2: Cannot start grabbing: Couldn't start the color stream\n%s\n", OpenNI::getExtendedError());
+        ntk_error("OpenNI2: Cannot start grabbing: Couldn't start the color stream: %s\n", OpenNI::getExtendedError());
         return;
     }
 
