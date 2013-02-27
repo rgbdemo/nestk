@@ -146,7 +146,7 @@ void MeshViewer :: addMeshToDisplayList(const ntk::Mesh& mesh, const Pose3D& pos
         glEnd();
     }
     int64 point_end_time = ntk::Time::getMillisecondCounter();
-    ntk_dbg_print(point_end_time-point_start_time, 1);
+    ntk_dbg_print(point_end_time-point_start_time, 2);
 
     {
         glBegin(GL_TRIANGLES);
