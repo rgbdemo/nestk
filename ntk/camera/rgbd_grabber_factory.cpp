@@ -44,7 +44,8 @@ RGBDGrabberFactory::Params::Params()
       synchronous(false),
       track_users(false),
       high_resolution(false),
-      hardware_registration(true)
+      hardware_registration(true),
+      disable_openni2(false)
 {
 
 }
@@ -478,7 +479,8 @@ RGBDGrabberFactory::createGrabbers(const ntk::RGBDGrabberFactory::Params& orig_p
 
         if (params.default_type != FREENECT)
         {
-            createOpenni2Grabbers(params, grabbers);
+            if (!params.disable_openni2)
+                createOpenni2Grabbers(params, grabbers);
 
             // Fall back to OpenNI 1.
             if (0 == grabbers.size())

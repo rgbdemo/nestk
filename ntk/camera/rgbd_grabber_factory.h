@@ -31,6 +31,7 @@ public:
         bool track_users;
         bool high_resolution;
         bool hardware_registration;
+        bool disable_openni2;
     };
 
     struct GrabberData
