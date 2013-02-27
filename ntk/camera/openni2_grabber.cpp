@@ -355,11 +355,14 @@ decodeColorFrame (RGBDImage& image, VideoFrameRef frame)
 }
 
 void
-prepareFrameImage (RGBDImage& image, RGBDCalibrationConstPtr calibration)
+prepareFrameImage (RGBDImage& image, RGBDCalibrationConstPtr calibration,
+                   const std::string& serial, const std::string& grabber_type)
 {
     image.rawDepth16bitsRef() = cv::Mat1w(calibration->rawDepthSize());
     image.rawRgbRef() = cv::Mat3b(calibration->rawRgbSize());
     image.setCalibration(calibration);
+    image.setCameraSerial(serial);
+    image.setGrabberType(grabber_type);
 }
 
 // FIXME: Unused.
@@ -424,6 +427,24 @@ prepareColorStream (VideoStream& stream, const SensorInfo& info)
         ntk_warn ("Could not switch to VGA color mode.\n");
 
     return prepareStream(stream);
+}
+
+std::string readSerialNumber (openni::Device& device)
+{
+#if 0 // FIXME: does not work.
+    std::string serial_string;
+    Status rc = device.getProperty<std::string>(DEVICE_PROPERTY_SERIAL_NUMBER, &serial_string);
+
+    ntk_dbg_print (serial_string, 1);
+    ntk_dbg_print (rc, 1);
+    ntk_dbg_print (serial_string.empty(), 1);
+    ntk_dbg_print (serial_string.size(), 1);
+
+    if (STATUS_OK == rc && !serial_string.empty())
+        return serial_string;
+#endif
+    ntk_warn ("Could not read device serial number.\n");
+    return "unknown";
 }
 
 } }
@@ -612,6 +633,12 @@ struct Openni2Grabber::Impl
                                               ret->T);
 
         ret->computeInfraredIntrinsicsFromDepth();
+
+        ret->setRawDepthUnitInMeters (getDepthUnitInMeters (depth.stream.getVideoMode().getPixelFormat()));
+        // FIXME: OpenNI wrongly returns 0 here. Return the lowest possible depth.
+        ret->setMinDepthInMeters (std::max (0.25f, depth.stream.getMinPixelValue () * ret->rawDepthUnitInMeters()));
+        ret->setMaxDepthInMeters (depth.stream.getMaxPixelValue () * ret->rawDepthUnitInMeters());
+
         return ret;
     }
 
@@ -757,6 +784,8 @@ Openni2Grabber::connectToDevice ()
     if (!m_calib_data)
         m_calib_data = impl->estimateCalibration();
 
+    setCameraSerial (readSerialNumber (impl->device));
+
     m_connected = true;
     return true;
 }
@@ -830,12 +859,8 @@ Openni2Grabber::run ()
     const int frameWidth  = impl->depth.stream.getVideoMode().getResolutionX();
     const int frameHeight = impl->depth.stream.getVideoMode().getResolutionY();
 
-    m_calib_data->setRawDepthUnitInMeters (getDepthUnitInMeters (impl->depth.stream.getVideoMode().getPixelFormat()));
-    m_calib_data->setMinDepthInMeters (impl->depth.stream.getMinPixelValue () * m_calib_data->rawDepthUnitInMeters());
-    m_calib_data->setMaxDepthInMeters (impl->depth.stream.getMaxPixelValue () * m_calib_data->rawDepthUnitInMeters());
-
-    prepareFrameImage( impl->image, m_calib_data);
-    prepareFrameImage(m_rgbd_image, m_calib_data);
+    prepareFrameImage( impl->image, m_calib_data, m_camera_serial, grabberType());
+    prepareFrameImage(m_rgbd_image, m_calib_data, m_camera_serial, grabberType());
 
     impl->depth.stream.addNewFrameListener(&impl->depth.listener);
     impl->depth.stream.start();

@@ -1152,7 +1152,7 @@ namespace ntk
     RGBDProcessor* RGBDProcessorFactory :: createProcessor(const RGBDProcessorFactory::Params& params)
     {
         RGBDProcessor* processor = 0;
-        if (params.grabber_type == "openni")
+        if (params.grabber_type == "openni" || params.grabber_type == "openni2")
         {
             processor = new OpenniRGBDProcessor();
         }
@@ -1178,7 +1178,7 @@ namespace ntk
         else
         {
             // By default
-            ntk_dbg(0) << "Warning: don't know which rgbd processor to create, creating OpenNI.";
+            ntk_dbg(0) << "Warning: don't know which rgbd processor to create for " << params.grabber_type << " , creating OpenNI.";
             processor = new OpenniRGBDProcessor();
         }
 
