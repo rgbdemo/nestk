@@ -52,12 +52,12 @@ RGBDGrabberFactory::Params::Params()
 RGBDGrabberFactory::enum_grabber_type
 RGBDGrabberFactory::getDefaultGrabberType()
 {
-#ifdef NESTK_USE_OPENNI
-    return OPENNI;
-#endif
-
 #ifdef NESTK_USE_OPENNI2
     return OPENNI2;
+#endif
+
+#ifdef NESTK_USE_OPENNI
+    return OPENNI;
 #endif
 
 #ifdef NESTK_USE_FREENECT
