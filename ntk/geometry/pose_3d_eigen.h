@@ -29,7 +29,7 @@ namespace ntk
 class EigenPose3DAccessor
 {
 public:
-    EigenPose3DAccessor(Pose3D& pose)
+    EigenPose3DAccessor(const Pose3D& pose)
         : pose(pose)
     {}
 
@@ -57,7 +57,7 @@ public:
         return *holder.projective_transform;
     }
 
-    Pose3D& pose;
+    const Pose3D& pose;
 };
 
 }

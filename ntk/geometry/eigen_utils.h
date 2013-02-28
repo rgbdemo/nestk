@@ -207,6 +207,15 @@ inline Eigen::Vector3d toEigenVector3d(const cv::Vec3f& v)
 inline Eigen::Vector3f toEigenVector3f(const cv::Vec3f& v)
 { Eigen::Vector3f r; toEigen(v, r); return r; }
 
+inline Eigen::Vector3f toEigenVector3f(const Eigen::Vector4f& v)
+{ return Eigen::Map<const Eigen::Vector3f, Eigen::Aligned>(v.data()); }
+
+inline Eigen::Map<const Eigen::Vector3f, Eigen::Aligned> asEigenVector3f(const Eigen::Vector4f& v)
+{ return Eigen::Map<const Eigen::Vector3f, Eigen::Aligned>(v.data()); }
+
+inline Eigen::Vector4f toEigenVector4f(const cv::Vec3f& v)
+{ Eigen::Vector4f r (v[0], v[1], v[2], 1); return r; }
+
 inline Eigen::Vector4d toEigenVector4d(const cv::Vec3f& v)
 { Eigen::Vector4d r; toEigen(v, r); return r; }
 

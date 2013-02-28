@@ -44,6 +44,7 @@ namespace ntk
   {
   public:
     static uint64 getMillisecondCounter() { return 1000.0*cv::getTickCount()/cv::getTickFrequency(); }
+    static float getMicrosecondCounter() { return 1000000.0*cv::getTickCount()/cv::getTickFrequency(); }
   };
 
   class TimeCount
