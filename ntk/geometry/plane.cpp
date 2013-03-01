@@ -45,6 +45,15 @@ Plane :: Plane(const cv::Vec3f& normal, const cv::Point3f p)
   d = -(normal[0]*p.x + normal[1]*p.y + normal[2]*p.z);
 }
 
+Plane :: Plane (const cv::Point3f& p1, const cv::Point3f& p2, const cv::Point3f& p3)
+{
+    Vec3f v01 = p2 - p1;
+    Vec3f v02 = p3 - p1;
+    Vec3f n = v01.cross(v02);
+    ntk::normalize(n);
+    *this = ntk::Plane (n, p1);
+}
+
 cv::Vec3f Plane :: normal() const
 {
   cv::Vec3f n(a,b,c);
@@ -60,9 +69,15 @@ bool Plane :: isValid() const
 
 float Plane :: distanceToPlane(const Point3f& p) const
 {
+    float v = signedDistanceToPlane(p);
+    return std::abs(v);
+}
+
+float Plane :: signedDistanceToPlane(const Point3f& p) const
+{
     float v = a*p.x + b*p.y + c*p.z + d;
     v /= sqrt(a*a+b*b+c*c);
-    return std::abs(v);
+    return v;
 }
 
 Point3f Plane :: intersectionWithLine (const Point3f& p1, const Point3f& p2) const

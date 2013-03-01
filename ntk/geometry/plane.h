@@ -37,6 +37,11 @@ public:
    */
   Plane(const cv::Vec3f& normal, const cv::Point3f p);
 
+  /*!
+   * Construct a plane using three points.
+   */
+  Plane (const cv::Point3f& p1, const cv::Point3f& p2, const cv::Point3f& p3);
+
   Plane() : a(0), b(0), c(0), d(0)
   {}
 
@@ -50,6 +55,8 @@ public:
   cv::Point3f intersectionWithLine (const cv::Point3f& p1, const cv::Point3f& p2) const;
 
   float distanceToPlane(const cv::Point3f& p) const;
+
+  float signedDistanceToPlane(const cv::Point3f& p) const;
 
   double a,b,c,d;
 };
