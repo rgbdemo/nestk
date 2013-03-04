@@ -161,18 +161,16 @@ void AsyncEventListener :: customEvent(QEvent* generic_event)
     generic_event->accept();
     m_handler_running = true;
     const int queue_size = currentQueueSize();
-    int i = 0;
-    while (m_event_signaled || i < queue_size)
+    for (int i = 0; i < queue_size; ++i)
     {
-        m_event_signaled = false;
         Event event = waitForNewEvent();
         handleAsyncEvent(event);
         // FIXME: this is important on Windows to avoid the application
         // spending all its time handling these custom events.
         // FIXME: this seems to slow down QT for nothing.
-        QApplication::processEvents();
-        ++i;
+        // QApplication::processEvents();
     }
+    m_event_signaled = false;
     m_handler_running = false;
 }
 
