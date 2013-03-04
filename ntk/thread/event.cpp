@@ -169,6 +169,7 @@ void AsyncEventListener :: customEvent(QEvent* generic_event)
         handleAsyncEvent(event);
         // FIXME: this is important on Windows to avoid the application
         // spending all its time handling these custom events.
+        // FIXME: this seems to slow down QT for nothing.
         QApplication::processEvents();
         ++i;
     }
