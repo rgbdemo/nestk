@@ -22,6 +22,7 @@
 
 #include <pcl/ros/conversions.h>
 #include <pcl/octree/octree.h>
+#include <pcl/search/kdtree.h>
 #include <pcl/surface/ear_clipping.h>
 
 #include<Eigen/StdVector>
@@ -370,9 +371,8 @@ copyVertexColors (const ntk::Mesh& fromPoints, ntk::Mesh& toSurface, float max_d
 
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr fromCloud (new pcl::PointCloud<pcl::PointXYZRGB>());
     ntk::meshToPointCloud(*fromCloud, fromPoints);
-    pcl::octree::OctreePointCloudSearch<pcl::PointXYZRGB> fromOctree (max_dist / 10.0f);
-    fromOctree.setInputCloud(fromCloud);
-    fromOctree.addPointsFromInputCloud();
+    pcl::search::KdTree<pcl::PointXYZRGB> fromKdtree;
+    fromKdtree.setInputCloud(fromCloud);
 
     toSurface.colors.resize(toSurface.vertices.size());
 
@@ -386,7 +386,7 @@ copyVertexColors (const ntk::Mesh& fromPoints, ntk::Mesh& toSurface, float max_d
         pointIdxRadiusSearch.clear();
         pointRadiusSquaredDistance.clear();
 
-        int numNeighbors = fromOctree.nearestKSearch (ntk::toPcl(vertex, toSurface.colors[i]), 1, pointIdxRadiusSearch, pointRadiusSquaredDistance);
+        int numNeighbors = fromKdtree.nearestKSearch (ntk::toPcl(vertex, toSurface.colors[i]), 1, pointIdxRadiusSearch, pointRadiusSquaredDistance);
 
         if (numNeighbors > 0 && pointRadiusSquaredDistance[0] < square_max_dist)
         {
