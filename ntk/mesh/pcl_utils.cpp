@@ -361,14 +361,16 @@ void removeExtrapoledTriangles(ntk::Mesh& surface, const ntk::Mesh& ground_cloud
 }
 
 void
-copyVertexColors (const ntk::Mesh& fromPoints, ntk::Mesh& toSurface, float radius)
+copyVertexColors (const ntk::Mesh& fromPoints, ntk::Mesh& toSurface, float max_dist)
 {
     if (!fromPoints.hasColors())
         return;
 
+    const float square_max_dist = ntk::math::sqr (max_dist);
+
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr fromCloud (new pcl::PointCloud<pcl::PointXYZRGB>());
     ntk::meshToPointCloud(*fromCloud, fromPoints);
-    pcl::octree::OctreePointCloudSearch<pcl::PointXYZRGB> fromOctree (radius / 10.0f);
+    pcl::octree::OctreePointCloudSearch<pcl::PointXYZRGB> fromOctree (max_dist / 10.0f);
     fromOctree.setInputCloud(fromCloud);
     fromOctree.addPointsFromInputCloud();
 
@@ -384,9 +386,9 @@ copyVertexColors (const ntk::Mesh& fromPoints, ntk::Mesh& toSurface, float radiu
         pointIdxRadiusSearch.clear();
         pointRadiusSquaredDistance.clear();
 
-        int numNeighbors = fromOctree.radiusSearch (ntk::toPcl(vertex, toSurface.colors[i]),
-            radius, pointIdxRadiusSearch, pointRadiusSquaredDistance, 1);
-        if (numNeighbors > 0)
+        int numNeighbors = fromOctree.nearestKSearch (ntk::toPcl(vertex, toSurface.colors[i]), 1, pointIdxRadiusSearch, pointRadiusSquaredDistance);
+
+        if (numNeighbors > 0 && pointRadiusSquaredDistance[0] < square_max_dist)
         {
             pcl::PointXYZRGB p = fromCloud->points[pointIdxRadiusSearch[0]];
             const cv::Vec3b rgb(p.r, p.g, p.b);

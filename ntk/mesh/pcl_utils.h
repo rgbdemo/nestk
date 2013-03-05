@@ -130,7 +130,7 @@ void meshToTextureMesh(pcl::TextureMesh& texture_mesh, const ntk::Mesh& mesh);
 
 void setupPclTexMaterial(pcl::TexMaterial& mesh_material, const std::string& name);
 
-void copyVertexColors (const ntk::Mesh& fromPoints, ntk::Mesh& toSurface, float radius);
+void copyVertexColors (const ntk::Mesh& fromPoints, ntk::Mesh& toSurface, float max_dist);
 
 template <class PointT>
 void sampledRgbdImageToPointCloud(pcl::PointCloud<PointT>& cloud,
