@@ -37,6 +37,7 @@ public:
 public:
     void setInputPlane(const ntk::Plane& plane) { m_plane = plane; }
     void removePlane(ntk::Mesh& mesh);
+    void setMaxDistance(float dist) { m_max_dist = dist; }
 
 private:
     void addVertex(const Mesh& source, Mesh& output, int index);
