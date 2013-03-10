@@ -117,8 +117,16 @@ void printLogLine (CString prefix, CString message)
 }
 #endif
 
+#if QT_VERSION < 0x050000
 void handleMsg (QtMsgType type, CString msg)
 {
+#else
+void handleMsg (QtMsgType type, const QMessageLogContext& ctx, const QString& str)
+{
+    const QByteArray utf8 = str.toUtf8();
+    const CString msg = utf8.constData();
+    // FIXME: Log context.
+#endif
     switch (type)
     {
         case QtDebugMsg:
@@ -140,12 +148,20 @@ struct MsgHandler
 {
     static void init ()
     {
+#if QT_VERSION < 0x050000
         qInstallMsgHandler(handleMsg);
+#else
+        qInstallMessageHandler(handleMsg);
+#endif
     }
 
     static void quit ()
     {
+#if QT_VERSION < 0x050000
         qInstallMsgHandler(0);
+#else
+        qInstallMessageHandler(0);
+#endif
     }
 
 
