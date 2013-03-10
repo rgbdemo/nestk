@@ -27,7 +27,6 @@
 #include <QMutex>
 #include <QMutexLocker>
 #include <QFile>
-#include <QDesktopServices>
 
 #include <cstdio>
 
