@@ -73,7 +73,7 @@ int main(int argc, char** argv)
     pose.invert();
 
     global::images_dir = QDir(global::opt_images());
-    ntk_ensure(global::images_dir.exists(), (global::images_dir.absolutePath() + " is not a directory.").toAscii());
+    ntk_ensure(global::images_dir.exists(), (global::images_dir.absolutePath() + " is not a directory.").toLatin1());
     global::images_list = global::images_dir.entryList(QStringList("view????*"), QDir::Dirs, QDir::Name);
 
     ntk_ensure(global::images_list.size() > 0, "No images found.");

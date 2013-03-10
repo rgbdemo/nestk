@@ -398,7 +398,7 @@ bool RGBDGrabberFactory :: createFileGrabbers(const ntk::RGBDGrabberFactory::Par
         QString camera_path = root_path.absoluteFilePath(name);
         if (QDir(camera_path).entryList(QStringList("view*"), QDir::Dirs, QDir::Name).size() == 0)
         {
-            ntk_warn("Warning, directory %s has no images, skipping.\n", camera_path.toAscii().constData());
+            ntk_warn("Warning, directory %s has no images, skipping.\n", camera_path.toLatin1().constData());
             continue;
         }
         image_directories.push_back(camera_path.toStdString());

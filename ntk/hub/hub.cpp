@@ -81,7 +81,7 @@ Hub::postUpdate (Update* update)
 
     // FIXME: Trick the event system into believing we have one sender per update.
     // FIXME: This only takes into account the update target :-/
-    EventBroadcaster* sender = reinterpret_cast<EventBroadcaster*>(qHash(update->name.toAscii()));
+    EventBroadcaster* sender = reinterpret_cast<EventBroadcaster*>(qHash(update->name.toLatin1()));
 
     newEvent(sender, HubUpdatePtr(update));
 }

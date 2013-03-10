@@ -59,7 +59,7 @@ void setLogFileName (const std::string& logfile)
     }
     else
     {
-        logFileHandle = fopen (logFileName.toAscii(), "a");
+        logFileHandle = fopen (logFileName.toLatin1(), "a");
         hasLogFileName = true;
     }
 }
