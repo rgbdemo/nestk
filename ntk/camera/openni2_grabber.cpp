@@ -1,11 +1,15 @@
 #include "openni2_grabber.h"
 #include <OpenNI2/OpenNI.h>
+
 #include <brief/impl.h>
+#include <ntk/camera/calibration.h>
+
 #include <set>
 #include <iterator>
 #include <algorithm>
 #include <cassert>
 #include <cstdio>
+
 #include <QMutex>
 #include <QMutexLocker>
 #include <QString>
@@ -559,6 +563,7 @@ struct Openni2Grabber::Impl
         // calibrations seem quite good.
         // const double f_correction_factor = m_hardware_registration ? 528.0/570.34 : 1.0;
         const double f_correction_factor = hardwareRegistration ? 535.0/570.34 : 1.0;
+        // const double f_correction_factor = 1.0;
         fx *= f_correction_factor;
         fy *= f_correction_factor;
 
@@ -624,6 +629,96 @@ struct Openni2Grabber::Impl
         ret->T = cv::Mat1d(3,1);
         ret->T = 0.;
 
+        ret->setRawDepthUnitInMeters (getDepthUnitInMeters (depth.stream.getVideoMode().getPixelFormat()));
+        // FIXME: OpenNI wrongly returns 0 here. Return the lowest possible depth.
+        ret->setMinDepthInMeters (std::max (0.25f, depth.stream.getMinPixelValue () * ret->rawDepthUnitInMeters()));
+        ret->setMaxDepthInMeters (depth.stream.getMaxPixelValue () * ret->rawDepthUnitInMeters());
+
+        // Estimate rgb intrinsics and stereo transform.
+        if (1)
+        {
+            cv::RNG rng;
+
+            const int min_short_depth = 0.3f / ret->rawDepthUnitInMeters();
+            const int max_short_depth = 1.5f / ret->rawDepthUnitInMeters();
+
+            // Estimate rgb calibration.
+            std::vector< std::vector<cv::Point3f> > model_points (30);
+            std::vector< std::vector<cv::Point2f> > rgb_points (30);
+            std::vector< std::vector<cv::Point2f> > depth_points (30);
+            int num_points = 0;
+            for (int i = 0; i < model_points.size(); ++i)
+            {
+                for (int k = 0; k < 100; ++k)
+                {
+                    int r = rng (depth_height);
+                    int c = rng (depth_width);
+                    int d = rng.uniform (min_short_depth, max_short_depth);
+                    int color_c = -1;
+                    int color_r = -1;
+                    Status s = CoordinateConverter::convertDepthToColor (depth.stream,
+                                                                         color.stream,
+                                                                         c, r, d,
+                                                                         &color_c, &color_r);
+                    if (s != STATUS_OK)
+                        continue;
+
+                    cv::Point3f world;
+                    s = CoordinateConverter::convertDepthToWorld(depth.stream, c, r, d, &world.x, &world.y, &world.z);
+                    world *= ret->rawDepthUnitInMeters();
+                    if (s != STATUS_OK)
+                        continue;
+
+                    if (color_c >= 0 && color_c < rgb_width && color_r >= 0 && color_r < rgb_height)
+                    {
+                        model_points[i].push_back(world);
+                        rgb_points[i].push_back(cv::Point2f(color_c, color_r));
+                        depth_points[i].push_back(cv::Point2f(c, r));
+                        ++num_points;
+                    }
+                }
+            }
+
+            if (num_points < 10)
+            {
+                ntk_warn ("Cannot calibrate this OpenNI2 device.\n");
+            }
+            else
+            {
+                std::vector<cv::Mat> rvecs, tvecs;
+                double reprojection_error = cv::calibrateCamera(model_points, rgb_points, ret->rawRgbSize(),
+                                                                ret->rgb_intrinsics, ret->rgb_distortion,
+                                                                rvecs, tvecs, CV_CALIB_USE_INTRINSIC_GUESS | CV_CALIB_FIX_PRINCIPAL_POINT /*| CV_CALIB_FIX_ASPECT_RATIO*/ | CV_CALIB_ZERO_TANGENT_DIST);
+                ntk_dbg_print (reprojection_error, 1);
+
+                ret->rgb_distortion = 0.f;
+
+                ret->T = 0.;
+                setIdentity(ret->R);
+
+                if (hardwareRegistration)
+                {
+                    ret->rgb_intrinsics.copyTo(ret->depth_intrinsics);
+                }
+                else
+                {
+                    cv::Mat E(3,3,CV_64F),F(3,3,CV_64F);
+                    cv::stereoCalibrate(model_points,
+                                        rgb_points,
+                                        depth_points,
+                                        ret->rgb_intrinsics, ret->rgb_distortion,
+                                        ret->depth_intrinsics, ret->depth_distortion,
+                                        ret->raw_depth_size,
+                                        ret->R, ret->T, E, F,
+                                        cv::TermCriteria(cv::TermCriteria::COUNT+cv::TermCriteria::EPS, 50, 1e-7),
+                                        cv::CALIB_FIX_INTRINSIC);
+
+                    double stereo_reprojection_error = ntk::computeCalibrationError(F, rgb_points, depth_points);
+                    ntk_dbg_print (stereo_reprojection_error, 1);
+                }
+            }
+        }
+
         ret->depth_pose = new Pose3D();
         ret->depth_pose->setCameraParametersFromOpencv(ret->depth_intrinsics);
 
@@ -633,11 +728,6 @@ struct Openni2Grabber::Impl
                                               ret->T);
 
         ret->computeInfraredIntrinsicsFromDepth();
-
-        ret->setRawDepthUnitInMeters (getDepthUnitInMeters (depth.stream.getVideoMode().getPixelFormat()));
-        // FIXME: OpenNI wrongly returns 0 here. Return the lowest possible depth.
-        ret->setMinDepthInMeters (std::max (0.25f, depth.stream.getMinPixelValue () * ret->rawDepthUnitInMeters()));
-        ret->setMaxDepthInMeters (depth.stream.getMaxPixelValue () * ret->rawDepthUnitInMeters());
 
         return ret;
     }
@@ -776,15 +866,25 @@ Openni2Grabber::connectToDevice ()
         }
     }
 
+    // FIXME: check this. impl->depth.stream.setProperty(0x1080F003 /* close range */, true);
+
     if (STATUS_OK != impl->device.setDepthColorSyncEnabled (true))
         ntk_warn ("Cannot synchronize depth and color images.\n");
 
     // FIXME: SENSOR_IR is also available. Expose it.
 
+    impl->depth.stream.start();
+    impl->color.stream.start();
+
     if (!m_calib_data)
         m_calib_data = impl->estimateCalibration();
 
+    impl->depth.stream.stop();
+    impl->color.stream.stop();
+
     setCameraSerial (readSerialNumber (impl->device));
+
+    ntk_info("OpenNI2 Status: %s\n", OpenNI::getExtendedError());
 
     m_connected = true;
     return true;
