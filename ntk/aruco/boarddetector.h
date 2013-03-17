@@ -13,7 +13,7 @@
 
 #ifndef _Aruco_BoardDetector_H
 #define _Aruco_BoardDetector_H
-// #include <opencv/cv.h>
+// #include <opencv2/core/core.hpp>
 #include "board.h"
 #include "cameraparameters.h"
 using namespace std;

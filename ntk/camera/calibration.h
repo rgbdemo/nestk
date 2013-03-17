@@ -22,7 +22,7 @@
 #define NTK_STEREO_CALIBRATION_H
 
 #include <ntk/core.h>
-// #include <opencv/cv.h>
+// #include <opencv2/core/core.hpp>
 #include <ntk/camera/rgbd_image.h>
 #include <ntk/camera/rgbd_processor.h>
 

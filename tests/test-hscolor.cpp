@@ -18,7 +18,7 @@
  */
 
 #include <ntk/image/color_model.h>
-#include <opencv/highgui.h>
+#include <opencv2/highgui/highgui.hpp>
 #include <ntk/utils/opencv_utils.h>
 #include <iostream>
 
