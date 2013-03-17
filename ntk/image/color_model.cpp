@@ -19,7 +19,7 @@
 
 #include "color_model.h"
 #include <ntk/utils/debug.h>
-#include <opencv/highgui.h>
+#include <opencv2/highgui/highgui.hpp>
 
 using namespace cv;
 

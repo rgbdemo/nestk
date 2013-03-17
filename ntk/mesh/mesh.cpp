@@ -26,7 +26,7 @@
 #include <ntk/utils/opencv_utils.h>
 #include <ntk/numeric/utils.h>
 
-// #include <opencv/cv.h>
+// #include <opencv2/core/core.hpp>
 
 #include <ntk/utils/time.h>
 
