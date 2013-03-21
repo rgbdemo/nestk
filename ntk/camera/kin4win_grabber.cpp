@@ -867,6 +867,9 @@ void Kin4WinGrabber :: estimateCalibration()
     double fx = (p.x - cx);
     double fy = -(p.y - cy);  
 
+    ntk_dbg_print (fx, 1);
+    ntk_dbg_print (fy, 1);
+
     m_calib_data = new RGBDCalibration();
 
     m_calib_data->setRawRgbSize(cv::Size(rgb_width, rgb_height));
@@ -877,7 +880,9 @@ void Kin4WinGrabber :: estimateCalibration()
     float width_ratio = float(rgb_width)/depth_width;
     float height_ratio = float(rgb_height)/depth_height;
 
-    const float correction_factor = 535.0f/570.34f;
+    const float correction_factor = NUI_CAMERA_COLOR_NOMINAL_FOCAL_LENGTH_IN_PIXELS
+            / (NUI_CAMERA_DEPTH_NOMINAL_FOCAL_LENGTH_IN_PIXELS * 2.f);
+    // const float correction_factor = 1.0f;
     float rgb_fx = correction_factor * fx;
     // Pixels are square on a Kinect.
     // Image height gets cropped when going from 1280x1024 in 640x480.
@@ -919,11 +924,11 @@ void Kin4WinGrabber :: estimateCalibration()
         std::vector< std::vector<Point2f> > depth_points (30);
         for (int i = 0; i < model_points.size(); ++i)
         {
-            for (int k = 0; k < 100; ++k)
+            for (int k = 0; k < 50; ++k)
             {
                 int r = rng(depth_height);
                 int c = rng(depth_width);
-                int depth = rng.uniform(NUI_IMAGE_DEPTH_MINIMUM_NEAR_MODE, NUI_IMAGE_DEPTH_MAXIMUM_NEAR_MODE);
+                int depth = rng.uniform(NUI_IMAGE_DEPTH_MINIMUM_NEAR_MODE, NUI_IMAGE_DEPTH_MINIMUM_NEAR_MODE * 2);
                 LONG color_c, color_r;
                 HRESULT ret = nui->sensor->NuiImageGetColorPixelCoordinatesFromDepthPixelAtResolution(
                             nui->colorResolution,
@@ -1014,7 +1019,7 @@ void Kin4WinGrabber::updateCalibrationMinMaxDepth ()
     }
     else
     {
-        m_calib_data->setMinDepthInMeters(0.8f);
+        m_calib_data->setMinDepthInMeters(0.4f);
         m_calib_data->setMaxDepthInMeters(5.0f);
     }
 }
@@ -1052,8 +1057,8 @@ void Kin4WinGrabber :: run()
                 QWriteLocker locker(&m_lock);
                 m_current_image.swap(m_rgbd_image);
                 // FIXME: move this to rgbd_processor.
-                if (m_align_depth_to_color)
-                    nui->postprocessDepthData(m_rgbd_image.rawDepth16bitsRef().ptr<uint16_t>());
+                // if (m_align_depth_to_color)
+                    // nui->postprocessDepthData(m_rgbd_image.rawDepth16bitsRef().ptr<uint16_t>());
                 cv::flip(m_rgbd_image.rawDepth16bits(), m_rgbd_image.rawDepth16bitsRef(), 1);
                 cv::flip(m_rgbd_image.rawRgb(), m_rgbd_image.rawRgbRef(), 1);
             }
