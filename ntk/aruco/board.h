@@ -13,7 +13,7 @@
 
 #ifndef _Aruco_board_h
 #define _Aruco_board_h
-// #include <opencv/cv.h>
+// #include <opencv2/core/core.hpp>
 #include <string>
 #include <vector>
 #include "marker.h"

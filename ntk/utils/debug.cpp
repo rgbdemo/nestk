@@ -189,7 +189,7 @@ QMutex MsgHandler::mutex;
 namespace ntk
 {
   int ntk_debug_level = 0;
-  int ntk_log_level = 0;
+  int ntk_log_level = 2;
 
   extern QTextStream qErr;
   extern QTextStream qOut;

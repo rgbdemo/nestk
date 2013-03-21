@@ -18,10 +18,12 @@
  */
 
 #include "opencv_utils.h"
-#include <opencv/highgui.h>
-// #include <opencv/cv.h>
+#include <opencv2/highgui/highgui.hpp>
+// #include <opencv2/core/core.hpp>
 
+#ifdef NESTK_USE_PCL
 #include <pcl/io/lzf.h>
+#endif /* NESTK_USE_PCL */
 
 #include <lz4.h>
 
@@ -623,6 +625,7 @@ cv::Point3f computeCentroid(const std::vector<cv::Point3f>& points)
 
   cv::Mat1w imread_Mat1w_lzf(const std::string& filename)
   {
+#ifdef NESTK_USE_PCL
     ntk_throw_exception_if(QSysInfo::ByteOrder != QSysInfo::LittleEndian, "Cannot use raw with big endian");
     QFile f (filename.c_str());
     f.open (QIODevice::ReadOnly);
@@ -640,10 +643,15 @@ cv::Point3f computeCentroid(const std::vector<cv::Point3f>& points)
     unsigned int nbytes = pcl::lzfDecompress (lzf_data.constData(), lzf_data.size(), m.ptr<char*>(), total_bytes);
     ntk_throw_exception_if (nbytes != total_bytes, "Could not decode the image");
     return m;
+#else
+    return cv::Mat1w(0, 0);
+#endif /* NESTK_USE_PCL */
   }
+
 
   cv::Mat1w imread_Mat1w_grad_lzf(const std::string& filename)
   {
+#ifdef NESTK_USE_PCL
     ntk_throw_exception_if(QSysInfo::ByteOrder != QSysInfo::LittleEndian, "Cannot use raw with big endian");
     QFile f (filename.c_str());
     f.open (QIODevice::ReadOnly);
@@ -677,6 +685,9 @@ cv::Point3f computeCentroid(const std::vector<cv::Point3f>& points)
     }
 
     return m;
+#else
+    return cv::Mat1w(0, 0);
+#endif /* NESTK_USE_PCL */
   }
 
   cv::Mat1w imread_Mat1w_lz4(const std::string& filename)
@@ -702,6 +713,7 @@ cv::Point3f computeCentroid(const std::vector<cv::Point3f>& points)
 
   cv::Mat1w imread_Mat1w_openni_lzf(const std::string& filename)
   {
+#ifdef NESTK_USE_PCL
     ntk_throw_exception_if(QSysInfo::ByteOrder != QSysInfo::LittleEndian, "Cannot use raw with big endian");
     QFile f (filename.c_str());
     f.open (QIODevice::ReadOnly);
@@ -730,7 +742,11 @@ cv::Point3f computeCentroid(const std::vector<cv::Point3f>& points)
     ntk_throw_exception_if (!openni_ok, "Could not OpenNI decode the image");
     ntk_throw_exception_if (ni_bytes != sizeof(uint16_t)*rows*cols, "Corrupted openni output");
     return m;
+#else
+    return cv::Mat1w(0, 0);
+#endif /* NESTK_USE_PCL */
   }
+
 
   cv::Mat1w imread_Mat1w_openni_lz4(const std::string& filename)
   {
@@ -818,6 +834,7 @@ cv::Point3f computeCentroid(const std::vector<cv::Point3f>& points)
 
   void imwrite_Mat1w_lzf(const std::string& filename, const cv::Mat1w& m)
   {
+#ifdef NESTK_USE_PCL
       ntk_throw_exception_if(QSysInfo::ByteOrder != QSysInfo::LittleEndian, "Cannot use raw with big endian");
 
       qint32 rows = m.rows, cols = m.cols;
@@ -836,10 +853,12 @@ cv::Point3f computeCentroid(const std::vector<cv::Point3f>& points)
       file_stream.writeRawData(lzf_data.constData(), lzf_data.size());
       ntk_throw_exception_if (file_stream.status() != QDataStream::Ok, "Could not write to file.");
       f.close ();
+#endif /* NESTK_USE_PCL */
   }
 
   void imwrite_Mat1w_grad_lzf(const std::string& filename, const cv::Mat1w& m)
   {
+#ifdef NESTK_USE_PCL
       ntk_throw_exception_if(QSysInfo::ByteOrder != QSysInfo::LittleEndian, "Cannot use raw with big endian");
 
       qint32 rows = m.rows, cols = m.cols;
@@ -874,6 +893,7 @@ cv::Point3f computeCentroid(const std::vector<cv::Point3f>& points)
       file_stream.writeRawData(lzf_data.constData(), lzf_data.size());
       ntk_throw_exception_if (file_stream.status() != QDataStream::Ok, "Could not write to file.");
       f.close ();
+#endif /* NESTK_USE_PCL */
   }
 
   void imwrite_Mat1w_lz4(const std::string& filename, const cv::Mat1w& m)
@@ -901,6 +921,7 @@ cv::Point3f computeCentroid(const std::vector<cv::Point3f>& points)
 
   void imwrite_Mat1w_openni_lzf(const std::string& filename, const cv::Mat1w& m)
   {
+#ifdef NESTK_USE_PCL
       ntk_throw_exception_if(QSysInfo::ByteOrder != QSysInfo::LittleEndian, "Cannot use raw with big endian");
 
       qint32 rows = m.rows, cols = m.cols;
@@ -930,6 +951,7 @@ cv::Point3f computeCentroid(const std::vector<cv::Point3f>& points)
       file_stream.writeRawData(lzf_data.constData(), lzf_data.size());
       ntk_throw_exception_if (file_stream.status() != QDataStream::Ok, "Could not write to file.");
       f.close ();
+#endif /* NESTK_USE_PCL */
   }
 
   void imwrite_Mat1w_openni_lz4(const std::string& filename, const cv::Mat1w& m)

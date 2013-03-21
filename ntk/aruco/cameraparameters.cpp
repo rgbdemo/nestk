@@ -1,6 +1,6 @@
 #include "cameraparameters.h"
 #include <fstream>
-// #include <opencv/cv.h>
+// #include <opencv2/core/core.hpp>
 using namespace std;
 namespace aruco
 {

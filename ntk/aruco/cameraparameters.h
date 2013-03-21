@@ -13,7 +13,7 @@
 
 #ifndef _Aruco_CameraParameters_H
 #define  _Aruco_CameraParameters_H
-// #include <opencv/cv.h>
+// #include <opencv2/core/core.hpp>
 #include <ntk/core.h>
 #include <string>
 using namespace std;

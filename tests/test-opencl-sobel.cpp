@@ -1,4 +1,4 @@
-#include <opencv/cv.h>
+#include <opencv2/core/core.hpp>
 #include <ntk/gpu/opencl.h>
 
 using namespace cv;

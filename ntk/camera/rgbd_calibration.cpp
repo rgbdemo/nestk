@@ -27,7 +27,7 @@
 #include <ntk/numeric/utils.h>
 #include <ntk/mesh/mesh.h>
 
-#include <opencv/highgui.h>
+#include <opencv2/highgui/highgui.hpp>
 
 #include <QDir>
 
