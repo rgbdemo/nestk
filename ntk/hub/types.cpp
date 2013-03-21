@@ -5,7 +5,7 @@
 #include <QtGlobal>
 #include <QImage>
 #include <mesh/mesh.h>
-#include <opencv/cv.h>
+#include <opencv2/core/core.hpp>
 
 namespace ntk { namespace hub {
 

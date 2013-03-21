@@ -163,9 +163,10 @@ bool RGBDGrabberFactory :: createFreenectGrabbers(const ntk::RGBDGrabberFactory:
     new_data.grabber = k_grabber;
     new_data.type = FREENECT;
     new_data.processor = createProcessor(FREENECT);
-    grabbers.push_back(new_data);
-
     bool ok = k_grabber->connectToDevice();
+    if(ok)
+        grabbers.push_back(new_data);
+
     return ok;
 #endif
 }
