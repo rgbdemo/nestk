@@ -365,7 +365,13 @@ public:
         if (FAILED(ret))
             return;
 
-        INuiFrameTexture* texture = depthFrame.pFrameTexture;
+        BOOL nearModeOperational = false;
+        INuiFrameTexture* texture = 0;
+        ret = sensor->NuiImageFrameGetDepthImagePixelFrameTexture(depthStreamHandle, &depthFrame, &nearModeOperational, &texture);
+
+        if (FAILED(ret))
+            return;
+
         NUI_LOCKED_RECT lockedRect;
         texture->LockRect(0, &lockedRect, NULL, 0);
         if (0 != lockedRect.Pitch)
@@ -375,7 +381,7 @@ public:
             const int width  = surfaceDesc.Width;
             const int height = surfaceDesc.Height;
 
-            uint16_t* buf = reinterpret_cast<uint16_t*>(lockedRect.pBits);
+            NUI_DEPTH_IMAGE_PIXEL* extended_buf = reinterpret_cast<NUI_DEPTH_IMAGE_PIXEL*>(lockedRect.pBits);
 
             ntk_assert(width  == that->m_current_image.rawDepth16bits().cols, "Bad width");
             ntk_assert(height == that->m_current_image.rawDepth16bits().rows, "Bad height");
@@ -384,14 +390,14 @@ public:
             {
                 QWriteLocker locker(&that->m_lock);
                 uint16_t* depth_buf = that->m_current_image.rawDepth16bitsRef().ptr<uint16_t>();
-                mapDepthFrameToRgbFrame(buf, depth_buf);
+                mapDepthFrameToRgbFrame(extended_buf, depth_buf);
             }
             else
             {
                 QWriteLocker locker(&that->m_lock);
                 uint16_t* depth_buf = that->m_current_image.rawDepth16bitsRef().ptr<uint16_t>();
                 cv::Vec2w* depth_to_color_coords = that->m_current_image.depthToRgbCoordsRef().ptr<cv::Vec2w>();
-                extractDepthAndColorCoords (buf, depth_buf, depth_to_color_coords);
+                extractDepthAndColorCoords (extended_buf, depth_buf, depth_to_color_coords);
             }
         }
         else
@@ -585,17 +591,21 @@ public:
         }
     }
 
-    void extractDepthAndColorCoords (uint16_t* depth_d16, uint16_t* depth_values, cv::Vec2w* color_coords)
+    void extractDepthAndColorCoords (NUI_DEPTH_IMAGE_PIXEL* extended_depth, uint16_t* depth_values, cv::Vec2w* color_coords)
     {
         const size_t depth_width = getDepthWidth();
         const size_t depth_height = getDepthHeight();
         const size_t rgb_width = getColorWidth();
 
+        // First generate packed depth values from extended depth values, which include near pixels.
+        for (int i = 0; i < depth_width*depth_height; ++i)
+            depth_values[i] = extended_depth[i].depth << NUI_IMAGE_PLAYER_INDEX_SHIFT;
+
         sensor->NuiImageGetColorPixelCoordinateFrameFromDepthPixelFrameAtResolution(
                     colorResolution,
                     depthResolution,
                     depth_width*depth_height,
-                    depth_d16,
+                    depth_values, // depth_d16
                     depth_width*depth_height*2,
                     colorCoordinates
                     );
@@ -607,34 +617,27 @@ public:
             (*color_coords)[0] = r;
             (*color_coords)[1] = c;
             ++color_coords;
-        }
 
-        for (int i = 0; i < depth_width*depth_height; ++i)
-        {
-            uint16_t d = *depth_d16++;
-            if (d < NUI_IMAGE_DEPTH_MINIMUM_NEAR_MODE
-                    || d > NUI_IMAGE_DEPTH_MAXIMUM
-                    || d == NUI_IMAGE_DEPTH_TOO_FAR_VALUE
-                    || d == NUI_IMAGE_DEPTH_NO_VALUE
-                    || d == NUI_IMAGE_DEPTH_UNKNOWN_VALUE)
-                *depth_values = 0;
-            else
-                *depth_values = NuiDepthPixelToDepth(d);
-            ++depth_values;
+            // Restore unshifted value.
+            depth_values[i] = extended_depth[i].depth;
         }
     }
 
-    void mapDepthFrameToRgbFrame (uint16_t* depth_d16, uint16_t* depth_values)
+    void mapDepthFrameToRgbFrame (NUI_DEPTH_IMAGE_PIXEL* extended_depth, uint16_t* depth_values)
     {
         const size_t depth_width = getDepthWidth();
         const size_t depth_height = getDepthHeight();
         const size_t rgb_width = getColorWidth();
 
+        // First generate packed depth values from extended depth values, which include near pixels.
+        for (int i = 0; i < depth_width*depth_height; ++i)
+            depth_values[i] = extended_depth[i].depth << NUI_IMAGE_PLAYER_INDEX_SHIFT;
+
         sensor->NuiImageGetColorPixelCoordinateFrameFromDepthPixelFrameAtResolution(
                     colorResolution,
                     depthResolution,
                     depth_width*depth_height,
-                    depth_d16,
+                    depth_values, // depth_d16
                     depth_width*depth_height*2,
                     colorCoordinates
                     );
@@ -650,18 +653,27 @@ public:
         {
             int c = colorCoordinates[i*2] * ratio;
             int r = colorCoordinates[i*2+1] * ratio;
+            // int r = i / depth_width;
+            // int c = i % depth_width;
 
-            uint16_t d = *depth_d16++;
+            // uint16_t d = *depth_d16++;
+            uint16_t depth_in_mm = extended_depth[i].depth;
+
+            if (depth_in_mm == 0)
+                continue;
+
+#if 0
             if (d < NUI_IMAGE_DEPTH_MINIMUM_NEAR_MODE
                     || d > NUI_IMAGE_DEPTH_MAXIMUM
                     || d == NUI_IMAGE_DEPTH_NO_VALUE
                     || d == NUI_IMAGE_DEPTH_TOO_FAR_VALUE
                     || d == NUI_IMAGE_DEPTH_UNKNOWN_VALUE)
                 continue;
+#endif
 
             if (c >= 0 && c < depth_width && r >= 0 && r < depth_height)
             {
-                uint16_t depth_in_mm = NuiDepthPixelToDepth(d);
+                // uint16_t depth_in_mm = NuiDepthPixelToDepth(d);
                 int idx = r*depth_width+c;
                 depth_values[idx] = depth_in_mm;
             }
