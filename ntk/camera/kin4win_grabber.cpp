@@ -420,13 +420,18 @@ public:
             // Signal the thread.
             SetEvent(stopProcessingEvent);
 
+            DWORD ret = WAIT_TIMEOUT;
+
             // Wait for thread to stop.
-            if (0 != processingThreadHandle)
+            for (int i = 0; 0 != processingThreadHandle && ret == WAIT_TIMEOUT && i < 5; ++i)
             {
-                WaitForSingleObject(processingThreadHandle, INFINITE);
-                CloseHandle(processingThreadHandle);
+                ret = WaitForSingleObject(processingThreadHandle, 1000);
             }
 
+            if (WAIT_TIMEOUT == ret)
+                ntk_warn ("Could not properly shutdown Kinect for Windows grabber.\n");
+
+            CloseHandle(processingThreadHandle);
             CloseHandle(stopProcessingEvent);
         }
 
