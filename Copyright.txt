@@ -1,7 +1,7 @@
- The rgbd library is Copyright (C) 2013 ManCTL SARL.
+ The nestk/rgbd library is Copyright (C) 2013 ManCTL SARL.
  Contact: ManCTL (contact@manctl.com)
 
- You may use, distribute and copy the rgbd library under the terms of
+ You may use, distribute and copy the nestk/rgbd library under the terms of
  GNU Lesser General Public License version 2.1, which is displayed below.
 
                    GNU LESSER GENERAL PUBLIC LICENSE
