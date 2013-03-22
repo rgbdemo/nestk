@@ -14,10 +14,11 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * Author: Nicolas Burrus <nicolas.burrus@manctl.com>
+ * Author: Nicolas Tisserand <nicolas.tisserand@manctl.com>
  */
 
-#pragma once
+#ifndef NTK_HUB_H
+# define NTK_HUB_H
 
 #include "hub/types.h"
 
@@ -62,3 +63,5 @@ void setImage (const String& name, const Matrix& matrix);
 void setMesh  (const String& name, const Mesh&  mesh);
 
 } }
+
+#endif // !NTK_HUB_H

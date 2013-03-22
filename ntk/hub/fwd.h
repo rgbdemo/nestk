@@ -14,13 +14,14 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * Author: Nicolas Burrus <nicolas.burrus@manctl.com>
+ * Author: Nicolas Tisserand <nicolas.tisserand@manctl.com>
  */
 
 // This file was intentionally written using some very wide text lines.
 // Please keep it this way.
 
-#pragma once
+#ifndef NTK_HUB_FWD_H
+# define NTK_HUB_FWD_H
 
 // C Object
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -139,3 +140,5 @@ template < typename Arg0, typename Arg1, typename Arg2                          
 template < typename Arg0, typename Arg1, typename Arg2, typename Arg3                               > Class (Arg0 arg0, Arg1 arg1, Arg2 arg2, Arg3 arg3                      ) : Delegate(arg0, arg1, arg2, arg3            ) { } \
 template < typename Arg0, typename Arg1, typename Arg2, typename Arg3, typename Arg4                > Class (Arg0 arg0, Arg1 arg1, Arg2 arg2, Arg3 arg3, Arg4 arg4           ) : Delegate(arg0, arg1, arg2, arg3, arg4      ) { } \
 template < typename Arg0, typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5 > Class (Arg0 arg0, Arg1 arg1, Arg2 arg2, Arg3 arg3, Arg4 arg4, Arg5 arg5) : Delegate(arg0, arg1, arg2, arg3, arg4, arg5) { }
+
+#endif // !NTK_HUB_FWD_H

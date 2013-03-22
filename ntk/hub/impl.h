@@ -14,13 +14,14 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * Author: Nicolas Burrus <nicolas.burrus@manctl.com>
+ * Author: Nicolas Tisserand <nicolas.tisserand@manctl.com>
  */
 
 // This file is intentionally written using some very wide text lines.
 // Please keep it this way.
 
-#pragma once
+#ifndef NTK_HUB_IMPL_H
+# define NTK_HUB_IMPL_H
 
 #include "fwd.h"
 
@@ -68,3 +69,5 @@ Impl (That* that)              \
 #define FWD_IMPL_2_CONST(Ret, Class, Method, Arg0, Arg1            ) FWD_OBJ_2_CV(Class::Method, impl, Ret, Method, Arg0, Arg1            , const)
 #define FWD_IMPL_3_CONST(Ret, Class, Method, Arg0, Arg1, Arg2      ) FWD_OBJ_3_CV(Class::Method, impl, Ret, Method, Arg0, Arg1, Arg2      , const)
 #define FWD_IMPL_4_CONST(Ret, Class, Method, Arg0, Arg1, Arg2, Arg3) FWD_OBJ_4_CV(Class::Method, impl, Ret, Method, Arg0, Arg1, Arg2, Arg3, const)
+
+#endif // !NTK_HUB_IMPL_H

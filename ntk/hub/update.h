@@ -14,10 +14,11 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * Author: Nicolas Burrus <nicolas.burrus@manctl.com>
+ * Author: Nicolas Tisserand <nicolas.tisserand@manctl.com>
  */
 
-#pragma once
+#ifndef NTK_HUB_UPDATE_H
+# define NTK_HUB_UPDATE_H
 
 #include "hub.h"
 #include "ntk/thread/event.h"
@@ -51,3 +52,5 @@ typedef Hub::Update HubUpdate;
 ntk_ptr_typedefs(HubUpdate)
 
 } }
+
+#endif // !NTK_HUB_UPDATE_H

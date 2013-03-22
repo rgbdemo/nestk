@@ -14,10 +14,11 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * Author: Nicolas Burrus <nicolas.burrus@manctl.com>
+ * Author: Nicolas Tisserand <nicolas.tisserand@manctl.com>
  */
 
-#pragma once
+#ifndef NTK_HUB_HUB_H
+# define NTK_HUB_HUB_H
 
 #include "ntk/thread/event.h"
 #include "types.h"
@@ -93,3 +94,5 @@ private:
 };
 
 } }
+
+#endif // !NTK_HUB_HUB_H

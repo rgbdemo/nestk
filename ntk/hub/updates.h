@@ -14,13 +14,16 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * Author: Nicolas Burrus <nicolas.burrus@manctl.com>
+ * Author: Nicolas Tisserand <nicolas.tisserand@manctl.com>
  */
 
-#pragma once
+#ifndef NTK_HUB_UPDATES_H
+# define NTK_HUB_UPDATES_H
 
 #include "updates/real-update.h"
 #include "updates/string-update.h"
 #include "updates/strings-update.h"
 #include "updates/image-update.h"
 #include "updates/mesh-update.h"
+
+#endif // !NTK_HUB_UPDATES_H

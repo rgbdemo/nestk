@@ -14,10 +14,11 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * Author: Nicolas Burrus <nicolas.burrus@manctl.com>
+ * Author: Nicolas Tisserand <nicolas.tisserand@manctl.com>
  */
 
-#pragma once
+#ifndef NTK_HUB_OUTLET_IMPL_H
+# define NTK_HUB_OUTLET_IMPL_H
 
 #include "outlet.h"
 #include "hub.h"
@@ -72,3 +73,5 @@ struct Outlet::Impl : public ntk::EventListener
 };
 
 } }
+
+#endif // !NTK_HUB_OUTLET_IMPL_H
