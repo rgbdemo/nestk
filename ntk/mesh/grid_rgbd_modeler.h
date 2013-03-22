@@ -17,26 +17,8 @@
  * Author: Nicolas Burrus <nicolas.burrus@manctl.com>
  */
 
-/**
- * This file is part of the nestk library.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- * Author: Nicolas Burrus <nicolas.burrus@manctl.com>, (C) 2012
- */
-
-#pragma once
+#ifndef NTK_MESH_GRID_RGBD_MODELER_H
+# define NTK_MESH_GRID_RGBD_MODELER_H
 
 #include <ntk/core.h>
 #include <ntk/camera/rgbd_calibration.h>
@@ -76,3 +58,5 @@ protected:
 ntk_ptr_typedefs(GridRGBDModeler)
 
 } // ntk
+
+#endif // !NTK_MESH_GRID_RGBD_MODELER_H

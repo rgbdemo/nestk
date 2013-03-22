@@ -17,7 +17,6 @@
  * Author: Nicolas Burrus <nicolas.burrus@manctl.com>
  */
 
-
 #include "grid_rgbd_modeler.h"
 #include <ntk/utils/opencv_utils.h>
 #include <ntk/geometry/pose_3d.h>
