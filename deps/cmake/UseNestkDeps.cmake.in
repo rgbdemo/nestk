@@ -1,0 +1,123 @@
+SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${nestk_deps_SOURCE_DIR}/cmake)
+
+INCLUDE_DIRECTORIES(${nestk_deps_SOURCE_DIR}/include)
+INCLUDE_DIRECTORIES( BEFORE ${nestk_deps_SOURCE_DIR} ${nestk_deps_BINARY_DIR} )
+
+## Eigen stuff.
+INCLUDE_DIRECTORIES( ${nestk_deps_SOURCE_DIR}/eigen)
+
+## Vectorial stuff.
+INCLUDE_DIRECTORIES( ${nestk_deps_SOURCE_DIR}/vectorial/include)
+
+# For libfreenect
+IF (NESTK_USE_FREENECT AND NESTK_USE_EMBEDDED_FREENECT)
+    if (WIN32)
+      include_directories("${nestk_deps_SOURCE_DIR}/libfreenect/platform/windows")
+      include_directories("${nestk_deps_SOURCE_DIR}/libfreenect/platform/windows/libusb10emu")
+    endif()
+    include_directories(${nestk_deps_SOURCE_DIR}/libfreenect/include)
+    ## LIBUSB
+    if(WIN32)
+      include_directories("${nestk_deps_SOURCE_DIR}/libfreenect/platform/windows")
+      include_directories("${nestk_deps_SOURCE_DIR}/libfreenect/platform/windows/libusb10emu")
+     endif()
+    INCLUDE_DIRECTORIES(${LIBUSB_1_INCLUDE_DIR})
+    SET(FREENECT_LIBRARIES freenect)
+ENDIF(NESTK_USE_FREENECT AND NESTK_USE_EMBEDDED_FREENECT)
+
+# Kinect For Windows SDK
+SET(NESTK_USE_KIN4WIN @NESTK_USE_KIN4WIN@)
+
+if(WIN32)
+    if(NESTK_USE_KIN4WIN)
+        include_directories("${KINECTSDK_DIR}/inc")
+        if(ARCHITECTURE_IS_X86_64)
+            set(KINECTSDK_LIBRARY "${KINECTSDK_DIR}/lib/amd64/Kinect10.lib")
+        else()
+            set(KINECTSDK_LIBRARY "${KINECTSDK_DIR}/lib/x86/Kinect10.lib")
+        endif()
+    endif()
+endif()
+
+IF (NESTK_USE_KIN4WIN)
+    ADD_DEFINITIONS(-DNESTK_USE_KIN4WIN)
+ENDIF()
+
+# opengl
+FIND_PACKAGE(OpenGL REQUIRED)
+
+# GLUT
+FIND_PACKAGE(GLUT REQUIRED)
+INCLUDE_DIRECTORIES(${GLUT_INCLUDE_DIR})
+ADD_DEFINITIONS(-DGLUT_NO_LIB_PRAGMA) # FIX issues on Windows 64 bits
+
+# X11
+FIND_LIBRARY(X11_LIBRARY X11)
+IF (NOT X11_LIBRARY)
+  SET(X11_LIBRARY "")
+ENDIF()
+
+# GLEW
+IF (NESTK_USE_EMBEDDED_GLEW)
+  set(GLEW_INCLUDE_DIR "${nestk_deps_SOURCE_DIR}/glew/include" CACHE FILEPATH "" FORCE)
+  INCLUDE_DIRECTORIES(${GLEW_INCLUDE_DIR})
+  set(GLEW_LIBRARIES "glew" CACHE FILEPATH "" FORCE)
+  ADD_DEFINITIONS(-DNESTK_USE_GLEW)
+ENDIF()
+
+# OPENCL
+IF (NESTK_USE_EMBEDDED_OPENCL)
+  FIND_PACKAGE(OPENCL)
+  INCLUDE_DIRECTORIES(${nestk_deps_SOURCE_DIR}/opencl11)
+  IF (OPENCL_FOUND)
+    ADD_DEFINITIONS(-DNESTK_USE_OPENCL)
+    SET(OPENCL_LIBRARIES OpenCL)
+    SET(HAVE_OPENCL 1)
+  ENDIF()
+ENDIF()
+
+# PMDSDK
+IF (NESTK_USE_PMDSDK AND NESTK_USE_EMBEDDED_PMDSDK)
+  SET(PMD_LIBRARIES pmdaccess2)
+  ADD_DEFINITIONS(-DNESTK_USE_PMDSDK)
+  IF (UNIX AND NOT APPLE)
+      IF (ARCHITECTURE_IS_X86_64)
+        MESSAGE("Using 64bit camcube libraries.")
+        INCLUDE_DIRECTORIES(${nestk_deps_SOURCE_DIR}/pmdsdk/linux/x86-64/include)
+        LINK_DIRECTORIES(${nestk_deps_SOURCE_DIR}/pmdsdk/linux/x86-64/lib)
+        execute_process(
+          COMMAND ${CMAKE_COMMAND} -E make_directory "${EXECUTABLE_OUTPUT_PATH}"
+          COMMAND ${CMAKE_COMMAND} -E copy ${nestk_deps_SOURCE_DIR}/pmdsdk/linux/x86-64/lib/camboardnano.L64.pap ${EXECUTABLE_OUTPUT_PATH}/camboardnano.L64.pap
+          COMMAND ${CMAKE_COMMAND} -E copy ${nestk_deps_SOURCE_DIR}/pmdsdk/linux/x86-64/lib/camboardnanoproc.L64.ppp ${EXECUTABLE_OUTPUT_PATH}/camboardnanoproc.L64.ppp)
+      ELSE ()
+        MESSAGE("Using 32bit camcube libraries.")
+        INCLUDE_DIRECTORIES(${nestk_deps_SOURCE_DIR}/pmdsdk/linux/x86/include)
+        LINK_DIRECTORIES(${nestk_deps_SOURCE_DIR}/pmdsdk/linux/x86/lib)
+        execute_process(
+          COMMAND ${CMAKE_COMMAND} -E make_directory "${EXECUTABLE_OUTPUT_PATH}"
+          COMMAND ${CMAKE_COMMAND} -E copy ${nestk_deps_SOURCE_DIR}/pmdsdk/linux/x86/lib/camboardnano.L32.pap ${EXECUTABLE_OUTPUT_PATH}/camboardnano.L32.pap
+          COMMAND ${CMAKE_COMMAND} -E copy ${nestk_deps_SOURCE_DIR}/pmdsdk/linux/x86/lib/camboardnanoproc.L32.ppp ${EXECUTABLE_OUTPUT_PATH}/camboardnanoproc.L32.ppp)
+      ENDIF()
+  ELSEIF (WIN32)
+    IF (ARCHITECTURE_IS_X86_64)
+        MESSAGE("Using Win64 camcube library.")
+        INCLUDE_DIRECTORIES(${nestk_deps_SOURCE_DIR}/pmdsdk/windows/x86-64/include)
+        LINK_DIRECTORIES(${nestk_deps_SOURCE_DIR}/pmdsdk/windows/x86-64/lib)
+        execute_process(
+          COMMAND ${CMAKE_COMMAND} -E make_directory "${EXECUTABLE_OUTPUT_PATH}"
+          COMMAND ${CMAKE_COMMAND} -E copy ${nestk_deps_SOURCE_DIR}/pmdsdk/windows/x86-64/lib/camboardnano.W64.pap ${EXECUTABLE_OUTPUT_PATH}/camboardnano.W64.pap
+          COMMAND ${CMAKE_COMMAND} -E copy ${nestk_deps_SOURCE_DIR}/pmdsdk/windows/x86-64/lib/camboardnanoproc.W64.ppp ${EXECUTABLE_OUTPUT_PATH}/camboardnanoproc.W64.ppp)
+    ELSE()
+        MESSAGE("Using Win32 camcube library.")
+        INCLUDE_DIRECTORIES(${nestk_deps_SOURCE_DIR}/pmdsdk/windows/x86/include)
+        LINK_DIRECTORIES(${nestk_deps_SOURCE_DIR}/pmdsdk/windows/x86/lib)
+        execute_process(
+          COMMAND ${CMAKE_COMMAND} -E make_directory "${EXECUTABLE_OUTPUT_PATH}"
+          COMMAND ${CMAKE_COMMAND} -E copy ${nestk_deps_SOURCE_DIR}/pmdsdk/windows/x86/lib/camboardnano.W32.pap ${EXECUTABLE_OUTPUT_PATH}/camboardnano.W32.pap
+          COMMAND ${CMAKE_COMMAND} -E copy ${nestk_deps_SOURCE_DIR}/pmdsdk/windows/x86/lib/camboardnanoproc.W32.ppp ${EXECUTABLE_OUTPUT_PATH}/camboardnanoproc.W32.ppp)
+    ENDIF()
+  ELSE()
+    MESSAGE(FATAL_ERROR "PMDSDK support is not available on this platform. Only Linux and Windows are available.")
+  ENDIF()
+ENDIF()
+
