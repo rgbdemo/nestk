@@ -18,9 +18,9 @@
  */
 
 #include "openni2_grabber.h"
-#include <OpenNI2/OpenNI.h>
+#include <OpenNI.h>
 
-#include <brief/impl.h>
+#include <ntk/hub/impl.h>
 #include <ntk/camera/calibration.h>
 
 #include <set>
