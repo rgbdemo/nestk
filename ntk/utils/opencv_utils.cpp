@@ -26,8 +26,6 @@
 #include <pcl/io/lzf.h>
 #endif /* NESTK_USE_PCL */
 
-#include <lz4.h>
-
 #include <fstream>
 
 #include <QImage>
@@ -691,27 +689,6 @@ cv::Point3f computeCentroid(const std::vector<cv::Point3f>& points)
 #endif /* NESTK_USE_PCL */
   }
 
-  cv::Mat1w imread_Mat1w_lz4(const std::string& filename)
-  {
-    ntk_throw_exception_if(QSysInfo::ByteOrder != QSysInfo::LittleEndian, "Cannot use raw with big endian");
-    QFile f (filename.c_str());
-    f.open (QIODevice::ReadOnly);
-    QDataStream file_stream (&f);
-
-    qint32 rows = -1, cols = -1;
-    file_stream >> rows >> cols;
-    unsigned int total_bytes = rows*cols*sizeof(uint16_t);
-    QByteArray lz4_data (f.size(), 0);
-    int nread_bytes = file_stream.readRawData(lz4_data.data(), f.size());
-    lz4_data.truncate(nread_bytes);
-
-    cv::Mat1w m (rows, cols);
-    int nbytes = LZ4_uncompress(lz4_data.constData(), m.ptr<char>(), total_bytes);
-    ntk_throw_exception_if (nbytes != nread_bytes, "Could not LZ4 uncompress the image");
-
-    return m;
-  }
-
   cv::Mat1w imread_Mat1w_openni_lzf(const std::string& filename)
   {
 #ifdef NESTK_USE_PCL
@@ -746,39 +723,6 @@ cv::Point3f computeCentroid(const std::vector<cv::Point3f>& points)
 #else
     return cv::Mat1w(0, 0);
 #endif /* NESTK_USE_PCL */
-  }
-
-
-  cv::Mat1w imread_Mat1w_openni_lz4(const std::string& filename)
-  {
-    ntk_throw_exception_if(QSysInfo::ByteOrder != QSysInfo::LittleEndian, "Cannot use raw with big endian");
-    QFile f (filename.c_str());
-    f.open (QIODevice::ReadOnly);
-    QDataStream file_stream (&f);
-
-    qint32 rows = -1, cols = -1, lz4_osize = -1;
-    file_stream >> rows >> cols >> lz4_osize;
-
-    unsigned int total_bytes = rows*cols*sizeof(uint16_t);
-    QByteArray lzf_data (f.size(), 0);
-    int nread_bytes = file_stream.readRawData(lzf_data.data(), f.size());
-    lzf_data.truncate(nread_bytes);
-
-    QByteArray openni_data (lz4_osize, 0);
-
-    int nbytes = LZ4_uncompress(lzf_data.constData(), openni_data.data(), lz4_osize);
-    ntk_throw_exception_if (nbytes != nread_bytes, "Could not LZ4 uncompress the image");
-
-    cv::Mat1w m (rows, cols);
-    unsigned int ni_bytes = 0;
-    bool openni_ok = openni_uncompress_depth_16z(reinterpret_cast<const unsigned char*>(openni_data.constData()),
-                                                 lz4_osize,
-                                                 m.ptr<unsigned short>(),
-                                                 &ni_bytes);
-
-    ntk_throw_exception_if (!openni_ok, "Could not OpenNI decode the image");
-    ntk_throw_exception_if (ni_bytes != sizeof(uint16_t)*rows*cols, "Corrupted openni output");
-    return m;
   }
 
   cv::Mat1w imread_Mat1w_openni(const std::string& filename)
@@ -897,29 +841,6 @@ cv::Point3f computeCentroid(const std::vector<cv::Point3f>& points)
 #endif /* NESTK_USE_PCL */
   }
 
-  void imwrite_Mat1w_lz4(const std::string& filename, const cv::Mat1w& m)
-  {
-      ntk_throw_exception_if(QSysInfo::ByteOrder != QSysInfo::LittleEndian, "Cannot use raw with big endian");
-
-      qint32 rows = m.rows, cols = m.cols;
-
-      /* compressed data could be bigger, factor 2 to make sure it's safe. */
-      int total_bytes = m.rows * m.cols * sizeof(uint16_t);
-
-      QByteArray lz4_data (LZ4_compressBound(total_bytes), 0u);
-      unsigned int nbytes = LZ4_compress(m.ptr<char>(), lz4_data.data(), total_bytes);
-      ntk_throw_exception_if (nbytes == 0, "Could not compress stream.");
-      lz4_data.truncate (nbytes);
-
-      QFile f (filename.c_str());
-      f.open (QIODevice::WriteOnly);
-      QDataStream file_stream (&f);
-      file_stream << rows << cols;
-      file_stream.writeRawData(lz4_data.constData(), lz4_data.size());
-      ntk_throw_exception_if (file_stream.status() != QDataStream::Ok, "Could not write to file.");
-      f.close ();
-  }
-
   void imwrite_Mat1w_openni_lzf(const std::string& filename, const cv::Mat1w& m)
   {
 #ifdef NESTK_USE_PCL
@@ -953,36 +874,6 @@ cv::Point3f computeCentroid(const std::vector<cv::Point3f>& points)
       ntk_throw_exception_if (file_stream.status() != QDataStream::Ok, "Could not write to file.");
       f.close ();
 #endif /* NESTK_USE_PCL */
-  }
-
-  void imwrite_Mat1w_openni_lz4(const std::string& filename, const cv::Mat1w& m)
-  {
-      ntk_throw_exception_if(QSysInfo::ByteOrder != QSysInfo::LittleEndian, "Cannot use raw with big endian");
-
-      qint32 rows = m.rows, cols = m.cols;
-      int total_bytes = m.rows * m.cols * sizeof(uint16_t);
-
-      QByteArray openni_data (total_bytes * 2, 0u);
-
-      unsigned int openni_compressed_size = 0;
-      bool ok = openni_compress_depth_16z (m.ptr<unsigned short>(), total_bytes,
-                                           reinterpret_cast<unsigned char*>(openni_data.data()),
-                                           &openni_compressed_size);
-
-      ntk_throw_exception_if (!ok, "OpenNI compression failed.");
-
-      QByteArray lz4_data (LZ4_compressBound(openni_compressed_size), 0u);
-      unsigned int nbytes = LZ4_compress(openni_data.constData(), lz4_data.data(), openni_compressed_size);
-      ntk_throw_exception_if (nbytes == 0, "Could not compress stream.");
-      lz4_data.truncate (nbytes);
-
-      QFile f (filename.c_str());
-      f.open (QIODevice::WriteOnly);
-      QDataStream file_stream (&f);
-      file_stream << rows << cols << (qint32) openni_compressed_size;
-      file_stream.writeRawData(lz4_data.constData(), lz4_data.size());
-      ntk_throw_exception_if (file_stream.status() != QDataStream::Ok, "Could not write to file.");
-      f.close ();
   }
 
   void imwrite_Mat1w_openni(const std::string& filename, const cv::Mat1w& m)

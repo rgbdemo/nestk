@@ -367,20 +367,10 @@ cv::Mat1w imread_Mat1w_grad_lzf(const std::string& filename);
 /*! Write a 16 bits image to binary file, transformed into gradient and compressed in LZF. Only works for Little Endian platforms. */
 void imwrite_Mat1w_grad_lzf(const std::string& filename, const cv::Mat1w& m);
 
-/*! Read a 16 bits image from raw binary file, compressed in LZ4. Only works for Little Endian platforms. */
-cv::Mat1w imread_Mat1w_lz4(const std::string& filename);
-/*! Write a 16 bits image to binary file, compressed in LZ4. Only works for Little Endian platforms. */
-void imwrite_Mat1w_lz4(const std::string& filename, const cv::Mat1w& m);
-
 /*! Read a 16 bits image from raw binary file, compressed with OpenNI + LZF. Only works for Little Endian platforms. */
 cv::Mat1w imread_Mat1w_openni_lzf(const std::string& filename);
 /*! Write a 16 bits image to binary file, compressed with OpenNI + LZF. Only works for Little Endian platforms. */
 void imwrite_Mat1w_openni_lzf(const std::string& filename, const cv::Mat1w& m);
-
-/*! Read a 16 bits image from raw binary file, compressed with OpenNI + LZ4. Only works for Little Endian platforms. */
-cv::Mat1w imread_Mat1w_openni_lz4(const std::string& filename);
-/*! Write a 16 bits image to binary file, compressed with OpenNI + LZ4. Only works for Little Endian platforms. */
-void imwrite_Mat1w_openni_lz4(const std::string& filename, const cv::Mat1w& m);
 
 /*! Read a 16 bits image from raw binary file, compressed with OpenNI. Only works for Little Endian platforms. */
 cv::Mat1w imread_Mat1w_openni(const std::string& filename);

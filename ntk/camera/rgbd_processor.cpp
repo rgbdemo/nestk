@@ -94,6 +94,7 @@ void subsampleDepthSmooth (const cv::Mat1f& depth_im, cv::Mat1f& subsampled_im, 
 
 void computeNormalsEigen (const cv::Mat1f& depth_im, const ntk::Pose3D& depth_pose, cv::Mat3f& normals_im)
 {
+#ifdef NESTK_USE_PCL
     ntk_ensure (depth_pose.isValid(), "Calibration required.");
 
     ntk::TimeCount tc_normals("Normals", 1);
@@ -146,6 +147,7 @@ void computeNormalsEigen (const cv::Mat1f& depth_im, const ntk::Pose3D& depth_po
     }
 
     tc_normals.stop(" -- transformation to Mat1f");
+#endif
 }
 
 void computeNormals (const cv::Mat1f& depth_im, const ntk::Pose3D& depth_pose, cv::Mat3f& normals_im)

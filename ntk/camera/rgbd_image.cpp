@@ -247,8 +247,7 @@ void RGBDImage :: loadFromDir(const std::string& dir,
         }
         else if (is_file(dir + "/raw/depth16bits.lz4"))
         {
-            rawDepth16bitsRef() = imread_Mat1w_openni_lz4(dir + "/raw/depth16bits.lz4");
-            ntk_ensure(rawDepth16bitsRef().data, ("Could not read lz4 depth image from " + dir).c_str());
+	    ntk_assert (0, "LZ4 parsing is not supported anymore.");
         }
 
         if (is_file(dir + "/raw/amplitude.raw"))
