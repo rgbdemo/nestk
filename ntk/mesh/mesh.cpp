@@ -628,13 +628,13 @@ void Mesh::loadFromPlyFile(const char* filename)
         faces.resize(ply_faces.size());
         foreach_idx(i, ply_faces)
         {
-            const PlyFace& f = ply_faces[i];
+            PlyFace& f = ply_faces[i];
             ntk_ensure(f.nverts == 3, "Only triangles are supported.");
             for (int j = 0; j < f.nverts; ++j)
                 faces[i].indices[j] = f.verts[j];
+	    free (f.verts); // FIXME: should we free other fields?
         }
     }
-
 }
 
 void Mesh:: clear()
