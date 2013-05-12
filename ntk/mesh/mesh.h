@@ -66,7 +66,7 @@ namespace ntk
   {
   public:
     Face(unsigned i1, unsigned i2, unsigned i3)
-    { indices[0] = i1; indices[1] = i2; indices[2] = i2; }
+    { indices[0] = i1; indices[1] = i2; indices[2] = i3; }
 
     Face() {}
 
