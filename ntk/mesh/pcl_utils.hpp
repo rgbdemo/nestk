@@ -86,22 +86,22 @@ void rgbdImageToPointCloud(pcl::PointCloud<PointT>& cloud,
         cloud.clear();
     }
 
-    for (int r = 0; r < image.depth().rows; r += subsampling_factor)
-        for (int c = 0; c < image.depth().cols; c += subsampling_factor)
-        {
-            float d = image.depth()(r,c);            
-            bool mask_ok = !image.depthMask().data || image.depthMask()(r,c);
-            if (d < 1e-5 || !mask_ok)
-                continue;
-            cv::Point3f p = pose.unprojectFromImage(cv::Point2f(c,r),d);
-            PointT pcl_p;
-            pcl_p.x = p.x;
-            pcl_p.y = p.y;
-            pcl_p.z = p.z;
-            if (keep_dense)
-                cloud.points[r*cloud.width+c] = pcl_p;
-            else
-                cloud.push_back(pcl_p);
+    for (int r = 0, cloud_r = 0; r < image.depth().rows; r += subsampling_factor, ++cloud_r)
+    for (int c = 0, cloud_c = 0; c < image.depth().cols; c += subsampling_factor, ++cloud_c)
+    {
+        float d = image.depth()(r,c);
+        bool mask_ok = !image.depthMask().data || image.depthMask()(r,c);
+        if (d < 1e-5 || !mask_ok)
+            continue;
+        cv::Point3f p = pose.unprojectFromImage(cv::Point2f(c,r),d);
+        PointT pcl_p;
+        pcl_p.x = p.x;
+        pcl_p.y = p.y;
+        pcl_p.z = p.z;
+        if (keep_dense)
+            cloud.points[cloud_r*cloud.width+cloud_c] = pcl_p;
+        else
+            cloud.push_back(pcl_p);
         }   
 }
 
@@ -132,33 +132,33 @@ void rgbdImageToPointCloud(pcl::PointCloud<pcl::PointNormal>& cloud,
     Pose3D rotation_pose;
     rotation_pose.applyTransformAfter(cv::Vec3f(0,0,0), pose.cvEulerRotation());
 
-    for (int r = 0; r < image.depth().rows; r += subsampling_factor)
-        for (int c = 0; c < image.depth().cols; c += subsampling_factor)
-        {
-            float d = image.depth()(r,c);
+    for (int r = 0, cloud_r = 0; r < image.depth().rows; r += subsampling_factor, ++cloud_r)
+    for (int c = 0, cloud_c = 0; c < image.depth().cols; c += subsampling_factor, ++cloud_c)
+    {
+        float d = image.depth()(r,c);
 
-            bool mask_ok = !image.depthMask().data || image.depthMask()(r,c);
-            if (d < 1e-5 || !mask_ok)
-                continue;
+        bool mask_ok = !image.depthMask().data || image.depthMask()(r,c);
+        if (d < 1e-5 || !mask_ok)
+            continue;
 
-            if (!image.isValidNormal(r,c))
-                continue;
+        if (!image.isValidNormal(r,c))
+            continue;
 
-            cv::Point3f p = pose.unprojectFromImage(cv::Point2f(c,r), d);
-            cv::Vec3f normal = image.normal()(r,c);
-            cv::Vec3f n = rotation_pose.invCameraTransform(normal);
-            PointT pcl_p;
-            pcl_p.x = p.x;
-            pcl_p.y = p.y;
-            pcl_p.z = p.z;
-            pcl_p.normal_x = n[0];
-            pcl_p.normal_y = n[1];
-            pcl_p.normal_z = n[2];
+        cv::Point3f p = pose.unprojectFromImage(cv::Point2f(c,r), d);
+        cv::Vec3f normal = image.normal()(r,c);
+        cv::Vec3f n = rotation_pose.invCameraTransform(normal);
+        PointT pcl_p;
+        pcl_p.x = p.x;
+        pcl_p.y = p.y;
+        pcl_p.z = p.z;
+        pcl_p.normal_x = n[0];
+        pcl_p.normal_y = n[1];
+        pcl_p.normal_z = n[2];
 
-            if (keep_dense)
-                cloud.points[r*cloud.width+c] = pcl_p;
-            else
-                cloud.push_back(pcl_p);
+        if (keep_dense)
+            cloud.points[cloud_r*cloud.width+cloud_c] = pcl_p;
+        else
+            cloud.push_back(pcl_p);
         }
 }
 
