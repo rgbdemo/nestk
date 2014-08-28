@@ -571,7 +571,7 @@ namespace ntk
             remap(m_image->rawDepthRef(), m_image->depthRef(),
                   m_image->calibration()->depth_undistort_map1,
                   m_image->calibration()->depth_undistort_map2,
-                  CV_INTER_LINEAR);
+                  CV_INTER_NN);
             ntk_assert(m_image->depth().data != 0, "Should be ok");
         }
         else
