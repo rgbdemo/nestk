@@ -134,10 +134,10 @@ void RGBDCalibration :: loadFromFile(const char* filename)
     cv::FileStorage calibration_file (filename, CV_STORAGE_READ);
     readMatrix(calibration_file, "rgb_intrinsics", rgb_intrinsics);
     readMatrix(calibration_file, "rgb_distortion", rgb_distortion);
-    zero_rgb_distortion = rgb_distortion(0,0) < 1e-5 ? true : false;
+    zero_rgb_distortion = fabs(rgb_distortion(0,0)) < 1e-5 ? true : false;
     readMatrix(calibration_file, "depth_intrinsics", depth_intrinsics);
     readMatrix(calibration_file, "depth_distortion", depth_distortion);
-    zero_depth_distortion = depth_distortion(0,0) < 1e-5 ? true : false;
+    zero_depth_distortion = fabs(depth_distortion(0,0)) < 1e-5 ? true : false;
 
     readMatrix(calibration_file, "R", R);
     readMatrix(calibration_file, "T", T);
